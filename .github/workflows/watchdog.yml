@@ -1,0 +1,20 @@
+name: Collector watchdog
+on:
+  schedule:
+    - cron: '47 */2 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Fail when the last hourly collector run is over three hours old
+        run: python watchdog.py
