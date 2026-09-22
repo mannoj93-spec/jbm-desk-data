@@ -33,6 +33,7 @@ def forecast(kind='touch'):
         'interval': {'type':'interval','lo':90,'hi':110,'coverage':.9},
         'lean': {'type':'lean','direction':'down'},
         'predicate': {'type':'predicate','series':'high','op':'>','value':110,'by_utc':schema.iso(START+H)},
+        'range': {'type':'range','q10':.05,'q50':.1,'q90':.2},
     }
     return {'id':'test-forecast','instrument':schema.INSTRUMENT,'reference_price':100,
             'start_utc':schema.iso(START),'horizon_utc':schema.iso(START+H),'events':[events[kind]]}
