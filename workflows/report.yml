@@ -1,0 +1,52 @@
+name: Weekly report
+on:
+  schedule:
+    - cron: '30 0 * * 1'
+  workflow_dispatch:
+permissions:
+  contents: write
+  issues: write
+concurrency:
+  group: repo-write
+  queue: max
+  cancel-in-progress: false
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build report
+        id: report
+        continue-on-error: true
+        run: python report.py --days 7
+      - name: Persist reports, scores, and their observation evidence
+        if: always()
+        run: bash scripts/commit_push.sh reports registry/scores.jsonl registry/evidence tests/results.jsonl
+      - name: Fail if report construction failed
+        if: steps.report.outcome == 'failure'
+        run: exit 1
+      - name: Open report issue after successful persistence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          head -c 60000 reports/latest.md > body.md
+          gh issue create --title "Desk report $(date -u +%F)" --body-file body.md
+      - name: Preserve work on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: report-recovery-${{ github.run_id }}
+          path: |
+            reports
+            registry
+            tests/results.jsonl
+          retention-days: 7
