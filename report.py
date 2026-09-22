@@ -13,7 +13,7 @@ from storage import atomic_bytes, read_rows, read_json, loads
 from scoring import score_registry
 from research import run_tests
 
-REPORT_VERSION = "report-2.0-2026-09-22"
+REPORT_VERSION = "report-2.1-2026-09-23"
 
 
 def iso(ms):
@@ -65,21 +65,26 @@ def build(base, now, days=7):
                 alerts.append(f"{iso(run['t'])}: history {name}: {status['err']}")
         if run.get("liq", {}).get("err"):
             alerts.append(f"{iso(run['t'])}: liquidations: {run['liq']['err']}")
+        for name, status in (run.get("forward") or {}).items():
+            if status.get("err"):
+                alerts.append(f"{iso(run['t'])}: forward book {name}: {status['err']}")
         if not run.get("critical_ok", False):
             alerts.append(f"{iso(run['t'])}: critical collection failed")
-    sources = {}
-    for snap in read("data/snap/*.jsonl"):
-        if not since <= snap["t"] <= now:
-            continue
-        for name, value in dict(snap.get("oi", {}), **{k:v for k,v in snap.items() if isinstance(v,dict) and "st" in v}).items():
+    sources, current = {}, set()
+    for snap in sorted((r for r in read("data/snap/*.jsonl") if since <= r["t"] <= now), key=lambda r: r["t"]):
+        members = dict(snap.get("oi", {}), **{k:v for k,v in snap.items() if isinstance(v,dict) and "st" in v})
+        current = set(members)          # sources in the most recent snapshot
+        for name, value in members.items():
             sources.setdefault(name, []).append(value)
     lines.extend(["", "| Source | OK / observed | Latest status |", "|---|---:|---|"])
     for name, values in sorted(sources.items()):
         good = sum(v.get("st") == "ok" for v in values)
         latest = values[-1]
         status = str(latest.get("err") or latest.get("st")).replace("|", "/").replace("\n", " ")
+        if name not in current:
+            status = "retired: absent from the latest snapshot (see collector.py)"
         lines.append(f"| {name} | {good}/{len(values)} | {status} |")
-        if latest.get("st") != "ok":
+        if name in current and latest.get("st") != "ok":
             alerts.append(f"Latest {name} snapshot unavailable: {status}")
         if len(values) >= 12 and good / len(values) <= .5:
             fold.append(f"Endpoint review: {name} succeeded in {good}/{len(values)} observations.")
@@ -147,6 +152,21 @@ def build(base, now, days=7):
                      "Requires a covering follow-up at least six hours after close; latest stored totals are not guaranteed final.")
     else:
         lines.append("Insufficient live capture/follow-up evidence to estimate revision.")
+    lines.extend(["", "## 3b. Forward-only books (requirement 50)",
+                  "Value starts on the first stored run; no source retains these books."])
+    for label, pattern, count in (("Deribit BTC options, per-strike OI", "data/options/deribit_btc/*.jsonl",
+                                   lambda r: f"{len(r.get('rows', []))} strikes with OI"),
+                                  ("Hyperliquid BTC position map", "data/hl_positions/btc/*.jsonl",
+                                   lambda r: f"{len(r.get('positions', []))} BTC positions in top {r.get('accounts_ranked')}")):
+        paths = sorted(base.glob(pattern))
+        window = [r for path in paths[-days - 1:] for r in read(path.relative_to(base).as_posix()) if since <= r["t"] <= now]
+        if not window:
+            lines.append(f"- {label}: no stored runs in window.")
+            continue
+        hours = len({r["t"] // H for r in window})
+        lines.append(f"- {label}: {hours} hourly runs from {iso(window[0]['t'])} to {iso(window[-1]['t'])}; latest {count(window[-1])}.")
+        if now - window[-1]["t"] > 3 * H:
+            alerts.append(f"{label}: stale; last stored run {iso(window[-1]['t'])}")
     lines.extend(["", "## 4. Forecast registry"])
     manifest = read_json(base / "state/forecast_manifest.json", {})
     registered_sources = {entry["source"] for entry in manifest.values()}

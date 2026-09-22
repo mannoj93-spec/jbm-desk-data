@@ -5,10 +5,10 @@ import math
 from pathlib import Path
 import time
 import urllib.request
-from schema import H, MINUTE, SERIES, ms, num, predicate_step, validate
+from schema import H, MINUTE, SERIES, ms, num, observed_time, predicate_step, validate
 from storage import atomic_json, digest, loads, read_json, read_rows
 
-VERSION = "scoring-2.0"
+VERSION = "scoring-2.1"
 
 
 class Unscorable(ValueError):
@@ -87,8 +87,8 @@ def predicate(ev, bars, start, reader):
         values = [(b[0] + MINUTE, b[1] if series == "high" else b[2]) for b in bars]
     else:
         _, name, field = series.split(":")
-        # Stored history timestamps are interval starts. Score only closed intervals.
-        values = [(r["t"] + step, r.get("f", {}).get(field)) for r in reader(name)]
+        # A snapshot row describes its stamp; an interval row describes its close (schema.SERIES_KIND).
+        values = [(observed_time(name, r["t"]), r.get("f", {}).get(field)) for r in reader(name)]
     relevant = {}
     wanted = set(expected)
     for timestamp, value in values:
@@ -129,7 +129,21 @@ def score(fc, bars, reader):
             predicate_evidence.append({"event_index": len(results) - 1, "observations": evidence})
             continue
         if kind == "interval":
-            results.append(dict(common, inside=ev["lo"] <= bars[-1][3] <= ev["hi"], nominal=ev["coverage"]))
+            y, lo, hi, alpha = bars[-1][3], ev["lo"], ev["hi"], 1 - ev["coverage"]
+            # Winkler / Gneiting-Raftery interval score (lower is better), in price points.
+            width_penalty = (hi - lo) + (2 / alpha) * max(0.0, lo - y) + (2 / alpha) * max(0.0, y - hi)
+            results.append(dict(common, inside=lo <= y <= hi, nominal=ev["coverage"], realized=y,
+                                interval_score=round(width_penalty, 8)))
+            continue
+        if kind == "range":
+            realized = math.log(max(b[1] for b in bars) / min(b[2] for b in bars))
+            q = {0.1: ev["q10"], 0.5: ev["q50"], 0.9: ev["q90"]}
+            pinball = {f"q{int(k * 100)}": round(max(k * (realized - v), (k - 1) * (realized - v)), 10) for k, v in q.items()}
+            result = dict(common, realized_ln_range=round(realized, 10), covered_80=ev["q10"] <= realized <= ev["q90"],
+                          pinball=pinball)
+            # runbook E2 primary loss: absolute error of ln(range), point forecast = median.
+            result["abs_log_error"] = round(abs(math.log(ev["q50"]) - math.log(realized)), 10) if realized > 0 else None
+            results.append(result)
             continue
         if kind == "lean":
             delta = bars[-1][3] - fc["reference_price"]

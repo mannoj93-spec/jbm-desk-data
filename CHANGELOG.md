@@ -1,3 +1,64 @@
+# Reliability revision 2.2 — 2026-09-23
+
+Audit of the deployed 2.1 repository against the live sources. Every defect below was measured,
+reproduced by a regression test that fails on 2.1 (`regression/test_rev22.py`), and fixed.
+
+## Data loss
+
+- **Taker history lost one row per 500-row page.** Binance's taker endpoint filters `endTime` on
+  the interval close; the ratio and OI endpoints filter on the stamp. Paging with
+  `endTime = oldest − 1` skipped `oldest − step` on every taker page: 17 missing 5m intervals and
+  1 missing 1h interval in the stored history, each exactly 500 rows apart. Paging is now
+  endpoint-aware. A live backfill with the fix recovered all 18 rows; the oldest ages out of
+  Binance's ~30-day window around 2026-09-23 04:50Z, so run one manual backfill after deploying.
+- **Liquidation pages could drop the second order of a same-millisecond pair.** OKX `after`
+  returns records strictly earlier than the given ts; ~2% of stored timestamps (50 of 2,493)
+  carry two orders. Pages now re-request the boundary millisecond and deduplicate by key.
+- **One unexpected response aborted the rest of the history run.** An exception inside any series
+  block (for example a missing `fundingRate` key) skipped every later series that hour. Each
+  series is now isolated; its error is recorded and the others proceed.
+
+## Meaning of timestamps
+
+- **Snapshot series were scored one interval late.** Measured: the Binance 1h ratio and OI rows
+  equal the 5m rows at the same stamp, and the OKX account-ratio row stamped T is published before
+  T+1h — they are values *as of* the stamp. 2.1 read every series at stamp + step, so a predicate
+  "top notional under 68% at 06Z" (the template's own example) was scored on the 05:00 value.
+  `schema.SERIES_KIND` now classifies each series; predicates read snapshots at their stamp and
+  intervals at their close; research views admit snapshots at stamp + 5 minutes (M-01) instead of
+  stamp + 1 hour. Scoring version `scoring-2.1`. No forecast had been registered under 2.1.
+- The hourly snapshot series are now collected once published (stamp + 5m) rather than an hour later.
+
+## Forward-only books (desk requirement 50)
+
+- Deribit per-strike BTC option open interest with mark IV, hourly, daily files.
+- Hyperliquid position map: BTC positions of the top 200 accounts by account value, with
+  liquidation price and leverage type; ranking cached six hours.
+- Both are isolated from the critical path; failures are reported per run and in the weekly report.
+
+## Sources
+
+- Retired `bitget_COIN` (Bitget 40309 "The symbol has been removed") and `bitmex` (XBTUSD and
+  XBTUSDT settled 2026-09-16; no XBT perpetual open). The report lists them as retired, not failing.
+- 4xx responses now keep the venue's own error code and message.
+
+## Scoring and monitoring
+
+- `range` event type: q10/q50/q90 of ln(high/low) over the window — the desk's E2 target — scored
+  by coverage, pinball loss, and absolute log error of the median.
+- `interval` events carry the interval (Winkler) score.
+- `watchdog.py` and the Collector watchdog workflow: fail when the last hourly run is over 3 hours old.
+- The report adds a forward-books section and per-run forward-book alerts.
+
+## Not changed, and open
+
+- The repository and the crypto-desk skill (package 10.1, `baserates.md` §4) each describe a
+  forecast registry: this repository's issue intake and the skill's registry artifact. One must be
+  chosen as the place forecasts are registered and scored; this revision changes neither.
+- Action versions (`checkout@v4`, `setup-python@v5`, `upload-artifact@v4`) are unchanged; no run
+  annotation was available to show a deprecation.
+- Bybit is unreachable from US runners (CloudFront 403); its funding stays via Hyperliquid's aggregator.
+
 # Reliability revision 2.1 — 2026-09-22
 
 ## Correctness and recovery

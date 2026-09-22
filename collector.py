@@ -12,6 +12,9 @@ Keeps what the venues forget, in three shapes:
      revises after the hour closes. Once a day the feed is paged to its boundary (O14).
   3. Snapshot of current-only data: OI on every book, funding fields by name, depth,
      Coinbase premium components, Bitfinex margin positions.
+  4. Forward-only books no source retains (runbook F requirement 50): Deribit per-strike
+     option open interest with mark IV, and the Hyperliquid position map (top accounts by
+     account value -> BTC positions with liquidation price and leverage type).
 
 Nothing is derived here beyond unit conversion that the runbook fixes per venue.
 Everything else is computed at read time by versioned code (report.py or a skill thread).
@@ -25,8 +28,9 @@ the workflow commits first and fails afterwards so GitHub emails the owner.
 import gzip, json, math, os, sys, time, urllib.request, urllib.error, datetime as dt
 from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
+from schema import SERIES_KIND
 
-CODE_VERSION = "collector-2.1-2026-09-22"
+CODE_VERSION = "collector-2.2-2026-09-23"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -71,7 +75,12 @@ def get(url, body=None, tries=4, pause=0.0):
         except urllib.error.HTTPError as e:
             last = f"HTTP {e.code}"
             if e.code in (400, 401, 403, 404, 451):
-                return None, last          # not transient
+                # Keep the venue's own reason (e.g. Bitget 40309 "symbol has been removed").
+                try:
+                    detail = body_error(json.loads(e.read().decode()))
+                except Exception:
+                    detail = None
+                return None, last + (f" ({detail})" if detail else "")   # not transient
             time.sleep(2 + 3 * i)
         except Exception as e:
             last = type(e).__name__ + ": " + str(e)[:80]
@@ -113,11 +122,17 @@ def save_state(st):
     atomic_json(STATE, st)
 
 
-def append_rows(rel_dir, rows):
+def day(ms):
+    return dt.datetime.fromtimestamp(ms / 1000, dt.timezone.utc).strftime("%Y-%m-%d")
+
+
+def append_rows(rel_dir, rows, partition=month):
+    """Monthly files by default; large forward-only books use daily files (partition=day)
+    so an hourly commit rewrites a small file."""
     by_month = {}
     for row in rows:
         row = dict(row, code_version=CODE_VERSION, code_commit=os.environ.get("GITHUB_SHA", "local"), observed_at=int(time.time()*1000))
-        by_month.setdefault(month(row["t"]), []).append(row)
+        by_month.setdefault(partition(row["t"]), []).append(row)
     def key(row):
         if rel_dir == "liq/orders":
             return (row["t"], row.get("posSide"), row.get("side"), row.get("sz_contracts"), row.get("bkPx"))
@@ -130,7 +145,14 @@ def append_rows(rel_dir, rows):
 def binance_futures_data(name, ep, period, fields, ckpt):
     """Stage the entire backward fetch; failed pages never advance a checkpoint."""
     step = M5 if period == "5m" else H
-    closed_before = NOW - step
+    interval = SERIES_KIND.get(name, "interval") == "interval"
+    # Interval rows (taker volume) exist once their interval closes; snapshot rows (ratios, OI)
+    # describe their stamp and are published about five minutes after it.
+    closed_before = NOW - (step if interval else M5)
+    # Measured 2026-09-22: the taker endpoint filters endTime on the interval CLOSE, the
+    # snapshot endpoints on the stamp. Paging with endTime = oldest - 1 therefore dropped one
+    # taker row per 500-row page (17 x 5m gaps, 1 x 1h gap, each exactly 500 rows apart).
+    page_overlap = step - 1 if interval else -1
     base = f"{BN}/futures/data/{ep}?symbol=BTCUSDT&period={period}&limit=500"
     out, end, calls, complete, err = {}, NOW, 0, False, None
     while calls < 40:
@@ -168,7 +190,7 @@ def binance_futures_data(name, ep, period, fields, ckpt):
             if ckpt and min(stamps) <= ckpt:
                 complete = True
                 break
-            end = min(stamps) - 1
+            end = min(stamps) + page_overlap
         except (KeyError, TypeError, ValueError) as exc:
             err = str(exc)
             break
@@ -274,6 +296,15 @@ def deribit_dvol(ckpt):
     return [rows[t] for t in sorted(rows)], None
 
 
+def isolated(name, fn):
+    """One series' failure (including an unexpected response shape) never stops the others."""
+    try:
+        return fn()
+    except Exception as e:
+        RUN["series"][name] = {"added": 0, "err": f"{type(e).__name__}: {str(e)[:120]}"}
+        return None
+
+
 def collect_series(st):
     ck = st.setdefault("series", {})
     ratio = ["longAccount", "shortAccount", "longShortRatio"]
@@ -284,27 +315,31 @@ def collect_series(st):
     for ep, fields in specs:
         for period in ("5m", "1h"):
             name = f"binance_{ep}_{period}"
-            rows, err, calls = binance_futures_data(name, ep, period, fields, None if BACKFILL else ck.get(name))
-            added = append_rows(f"series/{name}", rows) if rows else 0
-            if rows:
-                ck[name] = max(ck.get(name) or 0, rows[-1]["t"])
-            RUN["series"][name] = {"added": added, "calls": calls, "err": err,
-                                   "first": iso(rows[0]["t"]) if rows else None, "last": iso(ck[name]) if name in ck else None}
-            if ep in ("globalLongShortAccountRatio", "topLongShortAccountRatio", "topLongShortPositionRatio"):
-                if err:
-                    critical_ok = False
+            def one(name=name, ep=ep, period=period, fields=fields):
+                rows, err, calls = binance_futures_data(name, ep, period, fields, None if BACKFILL else ck.get(name))
+                added = append_rows(f"series/{name}", rows) if rows else 0
+                if rows:
+                    ck[name] = max(ck.get(name) or 0, rows[-1]["t"])
+                RUN["series"][name] = {"added": added, "calls": calls, "err": err,
+                                       "first": iso(rows[0]["t"]) if rows else None, "last": iso(ck[name]) if name in ck else None}
+                return err is None
+            ok = isolated(name, one)
+            if ep in ("globalLongShortAccountRatio", "topLongShortAccountRatio", "topLongShortPositionRatio") and not ok:
+                critical_ok = False
 
     name = "binance_funding_settled"
-    rows, err = binance_funding(None if BACKFILL else ck.get(name))
-    rows = [r for r in rows if r["t"] <= NOW and (BACKFILL or r["t"] > (ck.get(name) or {}).get(r["sym"], 0))]
-    if any(r["f"]["funding_settled_8h"] is None for r in rows):
-        rows, err = [], "missing/non-finite settled funding value"
-    added = append_rows(f"series/{name}", rows) if rows else 0
-    if rows:
-        ck.setdefault(name, {})
-        for r in rows:
-            ck[name][r["sym"]] = max(ck[name].get(r["sym"], 0), r["t"])
-    RUN["series"][name] = {"added": added, "err": err}
+    def funding():
+        rows, err = binance_funding(None if BACKFILL else ck.get(name))
+        rows = [r for r in rows if r["t"] <= NOW and (BACKFILL or r["t"] > (ck.get(name) or {}).get(r["sym"], 0))]
+        if any(r["f"]["funding_settled_8h"] is None for r in rows):
+            rows, err = [], "missing/non-finite settled funding value"
+        added = append_rows(f"series/{name}", rows) if rows else 0
+        if rows:
+            ck.setdefault(name, {})
+            for r in rows:
+                ck[name][r["sym"]] = max(ck[name].get(r["sym"], 0), r["t"])
+        RUN["series"][name] = {"added": added, "err": err}
+    isolated(name, funding)
 
     okx_specs = [
         ("okx_mark_1h", "/market/history-mark-price-candles?instId=BTC-USDT-SWAP&bar=1H&limit=100", okx_candle),
@@ -312,35 +347,43 @@ def collect_series(st):
         ("okx_funding_settled", "/public/funding-rate-history?instId=BTC-USDT-SWAP&limit=100", okx_funding_rec),
     ]
     for name, path, parse in okx_specs:
-        ckpt = NOW - 120 * 86_400_000 if BACKFILL or name not in ck else ck.get(name)
-        rows, err, pages = okx_backward(path, parse, ckpt, max_pages=40 if BACKFILL or name not in ck else 5)
+        def okx_one(name=name, path=path, parse=parse):
+            ckpt = NOW - 120 * 86_400_000 if BACKFILL or name not in ck else ck.get(name)
+            rows, err, pages = okx_backward(path, parse, ckpt, max_pages=40 if BACKFILL or name not in ck else 5)
+            added = append_rows(f"series/{name}", rows) if rows else 0
+            if rows:
+                ck[name] = max(ck.get(name) or 0, rows[-1]["t"])
+            RUN["series"][name] = {"added": added, "pages": pages, "err": err}
+        isolated(name, okx_one)
+
+    name = "okx_acct_ratio_1h"
+    def okx_ratio():
+        js, err = get(f"{OKX}/rubik/stat/contracts/long-short-account-ratio?ccy=BTC&period=1H")
+        rows = []
+        if js:
+            for t, v in js.get("data", []):
+                t = int(t)
+                # Snapshot stamped t (published before t+1h, measured); t+1h cut kept as the
+                # conservative retrieval rule so each stored value is final.
+                if t + H <= NOW and (BACKFILL or t > (ck.get(name) or 0)):
+                    rows.append({"t": t, "f": {"longShortRatio": f(v)}, "r": NOW})
+            rows.sort(key=lambda r: r["t"])
+        if any(r["f"]["longShortRatio"] is None for r in rows):
+            rows, err = [], "missing/non-finite account ratio"
         added = append_rows(f"series/{name}", rows) if rows else 0
         if rows:
             ck[name] = max(ck.get(name) or 0, rows[-1]["t"])
-        RUN["series"][name] = {"added": added, "pages": pages, "err": err}
-
-    name = "okx_acct_ratio_1h"
-    js, err = get(f"{OKX}/rubik/stat/contracts/long-short-account-ratio?ccy=BTC&period=1H")
-    rows = []
-    if js:
-        for t, v in js.get("data", []):
-            t = int(t)
-            if t + H <= NOW and (BACKFILL or t > (ck.get(name) or 0)):
-                rows.append({"t": t, "f": {"longShortRatio": f(v)}, "r": NOW})
-        rows.sort(key=lambda r: r["t"])
-    if any(r["f"]["longShortRatio"] is None for r in rows):
-        rows, err = [], "missing/non-finite account ratio"
-    added = append_rows(f"series/{name}", rows) if rows else 0
-    if rows:
-        ck[name] = max(ck.get(name) or 0, rows[-1]["t"])
-    RUN["series"][name] = {"added": added, "err": err}
+        RUN["series"][name] = {"added": added, "err": err}
+    isolated(name, okx_ratio)
 
     name = "deribit_dvol_1h"
-    rows, err = deribit_dvol(None if BACKFILL else ck.get(name))
-    added = append_rows(f"series/{name}", rows) if rows else 0
-    if rows:
-        ck[name] = max(ck.get(name) or 0, rows[-1]["t"])
-    RUN["series"][name] = {"added": added, "err": err}
+    def dvol():
+        rows, err = deribit_dvol(None if BACKFILL else ck.get(name))
+        added = append_rows(f"series/{name}", rows) if rows else 0
+        if rows:
+            ck[name] = max(ck.get(name) or 0, rows[-1]["t"])
+        RUN["series"][name] = {"added": added, "err": err}
+    isolated(name, dvol)
     return critical_ok
 
 
@@ -371,14 +414,22 @@ def collect_liq(st):
             break
         ts = [int(d["ts"]) for d in det]
         got += det
-        oldest = min(ts) if oldest is None else min(oldest, min(ts))
+        page_oldest = min(ts)
+        if oldest is not None and page_oldest >= oldest:
+            # A page holding only the boundary millisecond: step strictly past it.
+            if after == oldest:
+                err = "liquidation pagination made no progress"
+                break
+            after = oldest
+            continue
+        oldest = page_oldest if oldest is None else min(oldest, page_oldest)
         newest = max(ts) if newest is None else max(newest, max(ts))
-        if min(ts) <= floor:
+        if page_oldest <= floor:
             break
-        if after is not None and min(ts) >= after:
-            err = "liquidation pagination made no progress"
-            break
-        after = min(ts)
+        # `after` returns records strictly earlier than it. ~2% of stored timestamps carry two
+        # orders (measured), so paging from the oldest ts itself could drop the second order of
+        # a pair split across pages. Re-request the boundary millisecond; keys deduplicate it.
+        after = page_oldest + 1
     if pages >= max_pages and (oldest is None or oldest > floor):
         err = err or "liquidation page cap reached before coverage boundary"
     if err:
@@ -390,7 +441,7 @@ def collect_liq(st):
         if size is None or size < 0 or price is None or price <= 0:
             raise ValueError("invalid liquidation size or price")
         k = liq_key(d)
-        if k in seen:
+        if k in seen:           # also drops the boundary order returned on two overlapping pages
             continue
         seen.add(k)
         new.append({"t": int(d["ts"]), "posSide": d.get("posSide"), "side": d.get("side"),
@@ -507,7 +558,8 @@ def snapshot():
             out["funding_interval_h"] = f(fr["data"][0].get("fundingRateInterval"))
         return out
     oi["bitget_USDT"] = snap_source("", lambda: bitget("BTCUSDT", "USDT-FUTURES"))
-    oi["bitget_COIN"] = snap_source("", lambda: bitget("BTCUSD", "COIN-FUTURES"))
+    # bitget_COIN retired 2026-09-23: Bitget answers 40309 "The symbol has been removed" for the
+    # BTCUSD coin-margined perp; only dated coin futures (e.g. BTCUSDU26) remain listed.
     oi["bitget_USDC"] = snap_source("", lambda: bitget("BTCPERP", "USDC-FUTURES"))
 
     def okx_oi(inst):
@@ -573,14 +625,9 @@ def snapshot():
                 "mark": f(t.get("markPrice")), "funding_unreliable": f(t.get("fundingRate"))}
     oi["kraken"] = snap_source("", kraken)
 
-    def bitmex():
-        d = need(get("https://www.bitmex.com/api/v1/instrument?symbol=XBTUSD"))[0]
-        if d.get("state") != "Open":           # Sep 22 2026: XBTUSD and XBTUSDT report Settled (settle Sep 16), OI 0
-            raise RuntimeError(f"instrument state {d.get('state')}, settle {d.get('settle')}")
-        mk = f(d["markPrice"])
-        return {"raw": f(d["openInterest"]), "unit": "USD contracts, inverse", "mark": mk,
-                "oi_btc": round(f(d["openInterest"]) / mk, 3), "inverse": True, "funding_current": f(d.get("fundingRate"))}
-    oi["bitmex"] = snap_source("", bitmex)
+    # bitmex retired 2026-09-23: XBTUSD and XBTUSDT settled Sep 16 (OI 0) and no XBT perpetual is
+    # Open in /instrument/active (XBT_USDT Delisted; XBT_USDC Unlisted). Re-add if one relists.
+
 
     def dydx():
         m = need(get("https://indexer.dydx.trade/v4/perpetualMarkets?ticker=BTC-USD"))["markets"]["BTC-USD"]
@@ -633,7 +680,103 @@ def snapshot():
     return S
 
 
-# ------------------------------------------------------------------ 4. registration clock
+# ------------------------------------------------------------------ 4. forward-only books
+DERIBIT = "https://www.deribit.com/api/v2/public"
+HL_INFO = "https://api.hyperliquid.xyz/info"
+HL_LEADERBOARD = "https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
+HL_TOP_N = 200
+HL_TOP_REFRESH = 6 * H
+
+
+def collect_deribit_options():
+    """Per-strike BTC option open interest and mark IV (runbook F requirement 50; with mark IV
+    it also preserves the published surface requirement 49 would otherwise reconstruct).
+    One compact row per run in a daily file; instruments with zero OI are omitted and counted."""
+    js = need(get(f"{DERIBIT}/get_book_summary_by_currency?currency=BTC&kind=option", pause=0.2))
+    res = js.get("result") if isinstance(js, dict) else None
+    if not isinstance(res, list) or not res:
+        raise ValueError("empty Deribit option summary")
+    rows, underlying, zero = [], {}, 0
+    for x in res:
+        oi, iv = f(x.get("open_interest")), f(x.get("mark_iv"))
+        name = x.get("instrument_name")
+        if not isinstance(name, str) or oi is None or oi < 0:
+            raise ValueError("invalid Deribit option row")
+        if oi == 0:
+            zero += 1
+            continue
+        rows.append([name, oi, iv])
+        expiry = name.split("-")[1]
+        u = f(x.get("underlying_price"))
+        if u:
+            underlying.setdefault(expiry, u)
+    rows.sort()
+    t_event = max(int(x.get("creation_timestamp") or 0) for x in res)
+    out = {"t": NOW, "t_event": t_event, "unit": "open_interest in BTC (contracts of 1 BTC); mark_iv in % vol",
+           "fields": ["instrument", "open_interest_btc", "mark_iv"], "rows": rows,
+           "underlying": underlying, "instruments": len(res), "zero_oi_omitted": zero}
+    added = append_rows("options/deribit_btc", [out], partition=day)
+    return {"added": added, "instruments": len(res), "with_oi": len(rows),
+            "total_oi_btc": round(sum(r[1] for r in rows), 1), "err": None}
+
+
+def hl_top_accounts(st):
+    """Top accounts by account value, refreshed every six hours (the leaderboard is ~40 MB)."""
+    cache = st.get("hl_top") or {}
+    if cache.get("t") and NOW - cache["t"] < HL_TOP_REFRESH and len(cache.get("addresses", [])) >= HL_TOP_N // 2:
+        return cache
+    js = need(get(HL_LEADERBOARD))
+    rows = js.get("leaderboardRows") if isinstance(js, dict) else None
+    if not isinstance(rows, list) or len(rows) < HL_TOP_N:
+        raise ValueError("Hyperliquid leaderboard missing or short")
+    ranked = sorted(((f(r.get("accountValue")) or 0.0, r.get("ethAddress")) for r in rows
+                     if isinstance(r.get("ethAddress"), str)), reverse=True)[:HL_TOP_N]
+    cache = {"t": NOW, "addresses": [a for _, a in ranked], "min_account_value": round(ranked[-1][0], 2),
+             "rank_basis": "leaderboard accountValue, descending"}
+    st["hl_top"] = cache
+    return cache
+
+
+def collect_hl_positions(st):
+    """Hyperliquid position map: BTC positions of the top accounts with liquidation price and
+    leverage type (runbook F requirement 50). Current-only at the source; forward-only here."""
+    top = hl_top_accounts(st)
+    positions, failed = [], 0
+    for addr in top["addresses"]:
+        js, err = get(HL_INFO, body={"type": "clearinghouseState", "user": addr}, tries=2, pause=0.05)
+        if err or not isinstance(js, dict):
+            failed += 1
+            continue
+        acct = f((js.get("marginSummary") or {}).get("accountValue"))
+        for ap in js.get("assetPositions") or []:
+            pos = ap.get("position") or {}
+            if pos.get("coin") != "BTC":
+                continue
+            lev = pos.get("leverage") or {}
+            positions.append([addr, acct, f(pos.get("szi")), f(pos.get("entryPx")), f(pos.get("liquidationPx")),
+                              lev.get("type"), f(lev.get("value")), f(pos.get("positionValue")),
+                              f(pos.get("unrealizedPnl")), f(pos.get("marginUsed"))])
+    if failed > len(top["addresses"]) // 2:
+        raise RuntimeError(f"{failed}/{len(top['addresses'])} clearinghouseState calls failed")
+    out = {"t": NOW, "accounts_ranked": len(top["addresses"]), "accounts_failed": failed,
+           "ranked_at": top["t"], "min_account_value": top["min_account_value"], "rank_basis": top["rank_basis"],
+           "fields": ["address", "account_value", "szi_btc", "entry_px", "liquidation_px", "leverage_type",
+                      "leverage", "position_value", "unrealized_pnl", "margin_used"],
+           "positions": positions}
+    added = append_rows("hl_positions/btc", [out], partition=day)
+    return {"added": added, "positions": len(positions), "accounts_failed": failed, "err": None}
+
+
+def collect_forward(st):
+    RUN["forward"] = {}
+    for name, fn in (("deribit_options", collect_deribit_options), ("hl_positions", lambda: collect_hl_positions(st))):
+        try:
+            RUN["forward"][name] = fn()
+        except Exception as e:
+            RUN["forward"][name] = {"added": 0, "err": f"{type(e).__name__}: {str(e)[:120]}"}
+
+
+# ------------------------------------------------------------------ 5. registration clock
 def register():
     new, errors = register_content(BASE, NOW)
     RUN["registered_new"] = new
@@ -693,13 +836,16 @@ def main():
                                             if isinstance(v, dict) and v.get("st") == "error"}}
         except Exception as e:
             RUN["errors"]["snap"] = type(e).__name__ + ": " + str(e)[:120]
+        collect_forward(st)
+        save_state(st)
     RUN["elapsed_s"] = round(time.time() - NOW / 1000, 1)
     RUN["critical_ok"] = critical_ok
     RUN["t"] = NOW
     append_rows("runs", [RUN])
     added = sum((v.get("added") or 0) for v in RUN["series"].values())
     print(f"{iso(NOW)} {CODE_VERSION} mode={RUN['mode']} series_rows+={added} liq_new={RUN['liq'].get('new')} "
-          f"books={RUN['snap'].get('books_ok')}/{RUN['snap'].get('books')} critical_ok={critical_ok} "
+          f"books={RUN['snap'].get('books_ok')}/{RUN['snap'].get('books')} "
+          f"forward={ {k: v.get('err') or v.get('added') for k, v in RUN.get('forward', {}).items()} } critical_ok={critical_ok} "
           f"elapsed={RUN['elapsed_s']}s")
     if not critical_ok:
         sys.exit(2)

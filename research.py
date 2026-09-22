@@ -5,7 +5,7 @@ Post-registration does not mean proven free of look-ahead or statistically indep
 """
 import importlib.util
 from pathlib import Path
-from schema import H, SERIES, num
+from schema import H, SERIES, known_time, num
 from scoring import fetch_bars
 from storage import append_unique, digest, read_json, read_rows
 from registration import test_hash
@@ -29,12 +29,13 @@ class Ctx:
     def series(self, name):
         if name not in SERIES:
             raise ValueError("point-in-time views support fixed-cadence registered series only")
-        step = SERIES[name][0]
         unique = {}
         for row in self._rows(f"data/series/{name}/*.jsonl"):
             # Legacy rows have no verified completion/availability stamp. Fail closed.
+            # A row is admissible only after both its knowledge time (never its stamp; snapshot
+            # rows at T+5m, interval rows at their close) and the time the collector wrote it.
             seen = row.get("observed_at")
-            if seen is not None and max(seen, row["t"] + step) <= self.cutoff:
+            if seen is not None and max(seen, known_time(name, row["t"])) <= self.cutoff:
                 unique.setdefault(row["t"], row)
         return [unique[t] for t in sorted(unique)]
 

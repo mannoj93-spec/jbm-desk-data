@@ -1,12 +1,16 @@
-# JBM desk data — reliability revision 2.1
+# JBM desk data — reliability revision 2.2
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
 It does not trade or change a skill package automatically.
 
-This revision addresses scoring, checkpoint recovery, forecast validation, persistence,
-research labeling, and monitoring defects in the supplied project. See [CHANGELOG.md](CHANGELOG.md)
-and [VALIDATION.md](VALIDATION.md).
+Revision 2.2 (2026-09-23) follows the first live deployment and an audit against the live
+sources: it fixes two pagination defects that lost rows, corrects the timestamp meaning of
+snapshot series, adds the forward-only books the desk's requirement 50 names (Deribit per-strike
+option OI and the Hyperliquid position map), adds range and interval scores, retires two dead
+books, and adds a watchdog. See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md](VALIDATION.md).
+
+**Deployed** on GitHub Actions since 2026-09-22 23:24Z (first run `runner: github`).
 
 ## Quick start / upgrade
 
@@ -43,6 +47,7 @@ The GitHub workflows use the repository's scoped `GITHUB_TOKEN` for commits and 
 | Hourly collector | Hourly at :07 UTC; manual | Preserve history, snapshots, liquidations, and registration records |
 | Forecast intake | Owner's forecast issues opened/edited/reopened; hourly :37 recovery; manual | Validate, freeze, persist, then acknowledge a forecast |
 | Weekly report | Monday 00:30 UTC; manual | Coverage, errors, forecast scores, research summaries, review candidates |
+| Collector watchdog | Every two hours at :47 UTC; manual | Fails (so GitHub emails the owner) when the last hourly collector run is over three hours old |
 | Regression and numerical fixtures | Code/workflow pushes and pull requests; manual | Arithmetic fixtures and offline failure-path regression tests |
 
 Writing workflows share `repo-write` with `queue: max`. This allows up to 100 pending
@@ -51,9 +56,10 @@ issues missed by event delivery or queueing. A repository owned by an organizati
 needs an explicit authorized-user policy before phone intake can be used: the default
 accepts only an individual repository owner's login.
 
-Scheduled jobs can be delayed. An absent collector is not detected instantly: Actions
-failures and the weekly report are the current monitoring channels. A stopped or disabled
-report cannot notify you about itself; external uptime monitoring is a future addition.
+Scheduled jobs can be delayed. A failing collector fails its own workflow; a silent one (disabled
+schedule, stuck queue) is caught by the watchdog within about two hours. The watchdog runs on the
+same Actions scheduler, so a platform-wide scheduling outage silences both; that case still
+surfaces only at the weekly report or by looking. External uptime monitoring remains a future addition.
 
 ## Forecasts from a phone
 
@@ -86,9 +92,18 @@ only for development; GitHub records label the registering commit.
   comparisons. A flat lean is reported as `flat`, not a win for either direction.
 - Same-minute race ties retain both log-score and Brier bounds. Log probabilities use a
   documented `1e-4` clip; Brier scores use the original probability.
-- Predicates use **interval closing times**. A stored hourly row stamped 05:00 is eligible
-  as a completed interval at 06:00. `at_utc` requires that exact completed interval;
-  `by_utc` requires all expected completed intervals after start through the deadline.
+- Predicates read each series by what its stamp means (`schema.SERIES_KIND`, measured live
+  2026-09-22). **Snapshot** series — the Binance account/position ratios, Binance OI and the OKX
+  account ratio — describe the value *as of* the stamp: `at_utc 06:00Z` reads the row stamped
+  06:00. **Interval** series — Binance taker volumes, OKX mark/index candles, DVOL — describe
+  `[stamp, stamp + step)` and are read at their close: `at_utc 06:00Z` reads the row stamped
+  05:00 for an hourly series. `by_utc` requires every expected observation after start through
+  the deadline. (2.1 read every series at its close, so a snapshot predicate was scored one
+  interval late — an hour for the `_1h` series; no forecast had been registered.)
+- `range` events forecast ln(max high ÷ min low) over `[start, horizon)` as quantiles q10/q50/q90
+  (runbook E2's target). Scores: realized ln range, 80% coverage, pinball loss per quantile, and
+  the absolute error of ln(q50) against ln(realized) — E2's primary loss.
+- `interval` events also carry the interval (Winkler) score: width plus 2/α times any miss.
 - Only the fixed-cadence series and fields listed in `schema.SERIES` are machine-scored.
   Variable-cadence settled funding is collected but is not a supported predicate input.
 - Each completed forecast retains its frozen input SHA-256, scorer version, full normalized
@@ -105,7 +120,9 @@ Scores key on ID plus full forecast hash. Legacy score files are preserved and f
 manual migration rather than silently rescored.
 
 New data rows carry `code_version`, `code_commit`, and `observed_at` (the time the completed
-fetch is written). Existing observations retain their original bytes and provenance.
+fetch is written). Research views admit a row only after both `observed_at` and its knowledge
+time: stamp + 5 minutes for snapshot series (the desk's M-01, verified on the Binance archive),
+the interval close for interval series. Existing observations retain their original bytes and provenance.
 We do not invent availability timestamps for legacy rows. Three legacy DVOL duplicate
 rows remain in the supplied snapshot; reports count unique timestamps and disclose them.
 
@@ -126,6 +143,14 @@ Unexpected source gaps remain visible in reports. If a checkpoint has fallen out
 source retention, use an explicit backfill after reviewing the gap. A measured HTTP 400
 boundary is tolerated only during Binance backfill after older data has been received;
 other failures retain the prior checkpoint.
+
+Forward-only books use daily files so each hourly commit rewrites a small file:
+`data/options/deribit_btc/YYYY-MM-DD.jsonl` (every BTC option with non-zero OI: instrument, OI in
+BTC, mark IV; underlying price per expiry; about 30 KB per run) and
+`data/hl_positions/btc/YYYY-MM-DD.jsonl` (BTC positions of the top 200 Hyperliquid accounts by
+account value, with liquidation price and cross/isolated leverage; the ranking is refreshed every
+six hours from the ~40 MB leaderboard and cached in `state/checkpoints.json`). The option book
+adds roughly 22 MB of text a month before git compression; watch repository size.
 
 Monthly JSONL files retain first observations. Source revisions do not overwrite them.
 This release does not implement general revision history for every exchange series.

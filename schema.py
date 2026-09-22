@@ -17,6 +17,8 @@ EVENT_KEYS = {
     "interval": {"lo", "hi", "coverage"},
     "lean": {"direction", "basis", "invalidation"},
     "predicate": {"series", "op", "value", "at_utc", "by_utc"},
+    # Desk forecast target (runbook E2): ln(max high / min low) over [start, horizon), quantiles.
+    "range": {"q10", "q50", "q90"},
 }
 SERIES = {}
 for endpoint, fields in {
@@ -31,6 +33,27 @@ for endpoint, fields in {
 for name in ("okx_mark_1h", "okx_index_1h", "deribit_dvol_1h"):
     SERIES[name] = (H, {"o", "h", "l", "c"})
 SERIES["okx_acct_ratio_1h"] = (H, {"longShortRatio"})
+
+# Stamp semantics, measured live 2026-09-22 (see CHANGELOG 2.2):
+#   snapshot -- the row stamped T is the value AS OF T (Binance 1h ratio/OI rows equal the 5m
+#               rows at the same stamp; OKX account ratio stamped T is published before T+1h).
+#               Knowledge time is T+5m (Binance M-01, verified field by field in the archive).
+#   interval -- the row stamped T summarises [T, T+step) and is known at its close T+step
+#               (Binance taker volumes sum the twelve 5m rows from T; OKX/Deribit candles).
+KNOWLEDGE_LAG = 5 * MINUTE
+SERIES_KIND = {name: ("interval" if name.startswith("binance_takerlongshortRatio")
+                      or name in ("okx_mark_1h", "okx_index_1h", "deribit_dvol_1h") else "snapshot")
+               for name in SERIES}
+
+
+def observed_time(name, t):
+    """The instant a stored row describes: its stamp (snapshot) or its interval close."""
+    return t if SERIES_KIND[name] == "snapshot" else t + SERIES[name][0]
+
+
+def known_time(name, t):
+    """Earliest instant a stored row could have been known (never its stamp)."""
+    return t + KNOWLEDGE_LAG if SERIES_KIND[name] == "snapshot" else t + SERIES[name][0]
 
 
 def num(x):
@@ -152,6 +175,10 @@ def validate(fc, now=None):
                 or not num(inv.get("level")) or inv.get("level", 0) <= 0
                 or inv.get("dir") not in ("above", "below") or inv.get("basis") not in ("close_1h", "close_4h")):
                 fail("invalidation requires level, dir above/below, basis close_1h/close_4h")
+        if kind == "range":
+            qs = [ev.get(k) for k in ("q10", "q50", "q90")]
+            if not all(num(q) for q in qs) or not 0 < qs[0] <= qs[1] <= qs[2] < 1:
+                fail("range requires 0 < q10 <= q50 <= q90 < 1, in ln(high/low) units")
         if kind == "predicate":
             series = ev.get("series")
             if series is None:
