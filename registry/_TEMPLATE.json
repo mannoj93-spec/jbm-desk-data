@@ -8,12 +8,76 @@
   "horizon_utc": "2026-09-26T04:00:00Z",
   "event_regime": "no tier-one US print inside the horizon",
   "events": [
-    {"name": "touch 88,000", "type": "touch", "level": 88000, "dir": "up", "p": 0.41, "p_class": "model"},
-    {"name": "close above 86,200 at horizon", "type": "terminal", "level": 86200, "dir": "above", "p": 0.50, "p_class": "model"},
-    {"name": "88,000 before 84,500", "type": "race", "a": {"level": 88000, "dir": "up"}, "b": {"level": 84500, "dir": "down"}, "p": 0.36, "p_class": "model"},
-    {"name": "terminal 90% interval", "type": "interval", "lo": 82100, "hi": 90400, "coverage": 0.90},
-    {"name": "lean", "type": "lean", "direction": "up", "basis": "derived", "invalidation": {"level": 84500, "dir": "below", "basis": "close_4h"}},
-    {"name": "pre-mortem: top notional under 68% at 06Z", "type": "predicate", "series": "series:binance_topLongShortPositionRatio_1h:longAccount", "op": "<", "value": 0.68, "at_utc": "2026-09-23T06:00:00Z"},
-    {"name": "pre-mortem: a 1h close under 85,000 by 12Z", "type": "predicate", "series": "close_1h", "op": "<", "value": 85000, "by_utc": "2026-09-23T12:00:00Z"}
+    {
+      "name": "touch 88,000",
+      "type": "touch",
+      "level": 88000,
+      "dir": "up",
+      "p": 0.41,
+      "p_class": "model"
+    },
+    {
+      "name": "close above 86,200 at horizon",
+      "type": "terminal",
+      "level": 86200,
+      "dir": "above",
+      "p": 0.5,
+      "p_class": "model"
+    },
+    {
+      "name": "88,000 before 84,500",
+      "type": "race",
+      "a": {
+        "level": 88000,
+        "dir": "up"
+      },
+      "b": {
+        "level": 84500,
+        "dir": "down"
+      },
+      "p": 0.36,
+      "p_class": "model"
+    },
+    {
+      "name": "terminal 90% interval",
+      "type": "interval",
+      "lo": 82100,
+      "hi": 90400,
+      "coverage": 0.9
+    },
+    {
+      "name": "72h ln(high/low) quantiles",
+      "type": "range",
+      "q10": 0.028,
+      "q50": 0.045,
+      "q90": 0.075
+    },
+    {
+      "name": "lean",
+      "type": "lean",
+      "direction": "up",
+      "basis": "derived",
+      "invalidation": {
+        "level": 84500,
+        "dir": "below",
+        "basis": "close_4h"
+      }
+    },
+    {
+      "name": "pre-mortem: top notional under 68% at 06Z",
+      "type": "predicate",
+      "series": "series:binance_topLongShortPositionRatio_1h:longAccount",
+      "op": "<",
+      "value": 0.68,
+      "at_utc": "2026-09-23T06:00:00Z"
+    },
+    {
+      "name": "pre-mortem: a 1h close under 85,000 by 12Z",
+      "type": "predicate",
+      "series": "close_1h",
+      "op": "<",
+      "value": 85000,
+      "by_utc": "2026-09-23T12:00:00Z"
+    }
   ]
 }

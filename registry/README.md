@@ -17,8 +17,10 @@ write-once. `scores.jsonl` and `evidence/` retain completed results and observat
 Do not manually modify frozen files, receipts, scores, or manifests.
 
 Missing data remains unscorable and retryable. A price interval is `[start, horizon)`.
-Predicates are evaluated at interval CLOSE timestamps; machine predicates support only
-fixed-cadence names and fields in `schema.SERIES`. Manual predicates carry only type/name.
+Snapshot series (ratios, OI) are read at their stamp; interval series (taker volume, candles,
+DVOL) at their close — see `schema.SERIES_KIND` and the root README. Machine predicates support
+only fixed-cadence names and fields in `schema.SERIES`. `range` events take q10/q50/q90 of
+ln(high/low) over the forecast window. Manual predicates carry only type/name.
 Settled funding predicates are not implemented.
 
 Public issues are public before validation. The schema is not a private-information filter.
