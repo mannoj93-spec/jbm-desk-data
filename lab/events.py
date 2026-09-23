@@ -52,6 +52,32 @@ def collapse(events, window_ms, key=lambda e: (e["detector"], e["direction"])):
     return heads
 
 
+def collapse_as_known(events, window_ms, key, known):
+    """Episodes built in the order the decisions became KNOWN (lab-2.1): events are taken by
+    (known(e), t_event, event_id); an event joins an existing episode of its key when its t_event
+    lies within window_ms of that episode's firings ([first - window, last + window]; within an
+    episode consecutive firings are at most window_ms apart), otherwise it heads a new episode. When
+    every event has the same knowledge time this is exactly collapse(). A decision learned later -
+    e.g. one whose inputs arrived late, frozen by a later lab run - can join an episode but never
+    displaces its head, merges two episodes, or removes an observation that was already known."""
+    heads, eps = [], {}
+    for e in sorted(events, key=lambda x: (known(x), x["t_event"], x["event_id"])):
+        k, t = key(e), e["t_event"]
+        ep = next((x for x in eps.get(k, []) if x["first"] - window_ms <= t <= x["last"] + window_ms), None)
+        if ep is not None:
+            ep["first"], ep["last"] = min(ep["first"], t), max(ep["last"], t)
+            ep["head"]["episode_size"] += 1
+            e["episode_id"] = ep["head"]["event_id"]
+            e["episode_head"] = False
+            continue
+        e["episode_id"] = e["event_id"]
+        e["episode_head"] = True
+        e["episode_size"] = 1
+        eps.setdefault(k, []).append({"first": t, "last": t, "head": e})
+        heads.append(e)
+    return sorted(heads, key=lambda x: (x["t_event"], x["event_id"]))
+
+
 def control_times(start, end, every=H):
     first = -(-start // every) * every
     return list(range(first, end, every))

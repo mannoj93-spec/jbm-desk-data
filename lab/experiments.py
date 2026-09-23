@@ -1,4 +1,4 @@
-"""Versioned designs, sample accounting, out-of-sample baselines and promotion (lab-2.0).
+"""Versioned designs, sample accounting, out-of-sample baselines and recorded checkpoints (lab-2.1).
 
 EVALUATION VERSION. A design is evaluated under a version id that binds the design JSON to the
 semantic implementation (lab/versioning.py). The first lab run that sees a version id stamps its
@@ -30,19 +30,31 @@ REFERENCE. Either another event group, or scheduled controls labelled in both di
 combined with the test group's long share: reference = p_long x long outcome + (1 - p_long) x
 short outcome at each control time.
 
-BASELINE (lab/baseline.py). Out-of-sample: predictions from an OLS fit on controls whose labels
-matured before the prediction's UTC day; added value = test residuals minus reference residuals.
+BASELINE (lab/baseline.py). One model per horizon, fitted on same-horizon control labels that were
+available before the prediction's UTC day (and before a checkpoint's cutoff); added value = test
+residuals minus reference residuals. A horizon without an identifiable baseline has no comparison.
+
+CHECKPOINTS (lab-2.1). A verdict is only ever produced at a scheduled look, from a precisely bounded
+dataset (checkpoint_sample): cutoff C = the earliest time at which the look's n retained test
+observations were known (outcome available and decision frozen); test, reference, direction mix,
+severity, blocks, baseline training rows and predictions, data quality and the multiplicity count
+are all as of C. The look's manifest (every input row, prediction and criterion), its sha256, the
+checks and the verdict are appended to research/v2/<design>/<version>/checkpoints.jsonl the first
+time the look completes and are never recomputed: later data can be audited against the record
+(drift) but never changes it. A look is PENDING until its n observations are known. Correcting a
+completed checkpoint needs a new evaluation version (any semantic code or design change produces
+one), which keeps the old version's records untouched.
 
 PROMOTION ("supported") requires, at a scheduled look, ALL of:
-  data quality    the pass is "available"; incomplete labels <= 10% of scorable ones; the primary
-                  variant is not descriptive-only
+  data quality    incomplete labels <= 10% of the test labels that ended by the cutoff; the design is
+                  not descriptive-only
   maturity/count  retained test observations >= min_retained_observations and test-bearing
                   dependence blocks >= min_dependence_blocks
   looks           evaluated only at checkpoints of 1, 1.5, 2 and 3 x min_retained_observations, on
-                  the first N retained test observations (no continuous peeking)
+                  the first N retained test observations known by the cutoff (no continuous peeking)
   effect          the multiplicity-adjusted interval of test - reference excludes zero in the
                   hypothesised direction; alpha = 0.10 / (variants tried in the family x 4 looks)
-                  (Bonferroni; the variant count includes every version and the legacy lab-1.0)
+                  (Bonferroni; the variant count, as of the cutoff, includes every version and the legacy lab-1.0)
   baseline        the baseline is identifiable for >= 80% of retained test observations and the
                   adjusted interval of the residual difference excludes zero the same way
   comparability   for event-group references, median severity within 25% between the groups
@@ -55,11 +67,14 @@ import hashlib
 import json
 from pathlib import Path
 
+from storage import append_unique
+
 from lab import outcomes, stats, versioning
 from lab.asof import Known
+from lab import baseline as baseline_mod
 from lab.baseline import FEATURES, Baseline, features_at
-from lab.common import DAY, H, LAB_VERSION, MINUTE, ROOT, append, atomic_json, iso, read_dir, read_json
-from lab.events import collapse
+from lab.common import DAY, H, LAB_VERSION, MINUTE, ROOT, append, atomic_json, ceil_minute, iso, read_dir, read_json
+from lab.events import collapse, collapse_as_known
 
 REGISTRY = "state/lab_registrations.json"
 LOOKS = (1.0, 1.5, 2.0, 3.0)
@@ -161,8 +176,10 @@ def _rows(labelled, groups, h, phase, registered):
         if not v or v["status"] != "complete":
             continue
         items.append(dict(bf or {k: None for k in FEATURES}, entry_t=v["entry_t"], exit_t=v["exit_t"], y=v["ret_net"],
+                          label_available=v.get("label_available", v["exit_t"] + MINUTE),
+                          known_at=max(v.get("label_available", v["exit_t"] + MINUTE), e.get("t_persisted") or 0),
                           d=e["direction"], t_event=e["t_event"], event_id=e["event_id"],
-                          severity=(e.get("features") or {}).get("severity")))
+                          decision_key=e.get("decision_key"), severity=(e.get("features") or {}).get("severity")))
     return items
 
 
@@ -188,7 +205,14 @@ def _mean(xs):
     return sum(xs) / len(xs) if xs else None
 
 
-def summarize(labelled, design, registered, phase, raw_firings, baseline, n_variants, regime_of=None):
+def summarize(labelled, design, registered, phase, raw_firings, baselines, n_variants, regime_of=None):
+    """Descriptive per-horizon summary. `baselines` maps each horizon to its own Baseline (a single
+    Baseline is accepted only for a one-horizon design). Verdicts never come from here: they come
+    from recorded checkpoints (checkpoints())."""
+    if not isinstance(baselines, dict):
+        if len(design["outcome"]["horizons_min"]) != 1:
+            raise ValueError("one baseline per horizon is required")
+        baselines = {design["outcome"]["horizons_min"][0]: baselines}
     test_g = design["comparison"]["test_group"]
     test_g = set(test_g) if isinstance(test_g, list) else {test_g}
     ref_g = design["comparison"]["reference_group"]
@@ -196,6 +220,7 @@ def summarize(labelled, design, registered, phase, raw_firings, baseline, n_vari
     adj = ALPHA / max(1, n_variants * len(LOOKS))
     out = {}
     for h in design["outcome"]["horizons_min"]:
+        baseline = baselines.get(h)
         test_all = _rows(labelled, test_g, h, phase, registered)
         test, test_drop = stats.nonoverlap_intervals(test_all)
         p_long = sum(1 for r in test if r["d"] > 0) / len(test) if test else 0.5
@@ -213,6 +238,8 @@ def summarize(labelled, design, registered, phase, raw_firings, baseline, n_vari
         # out-of-sample baseline residuals
         def resid(rows, combined=False):
             got, missing = [], {}
+            if baseline is None:
+                return got, {"no baseline for this horizon": len(rows)}
             for r in rows:
                 if combined:
                     pl, el = baseline.predict(r["_long"])
@@ -255,7 +282,8 @@ def summarize(labelled, design, registered, phase, raw_firings, baseline, n_vari
             "test_share_long": p_long if test else None,
             "diff_test_minus_reference": {"alpha_0.10": diff[ALPHA] if diff else None,
                                           "adjusted": diff[adj] if diff else None, "adjusted_alpha": adj},
-            "baseline": {"method": "OLS on controls matured before each UTC day (out-of-sample)",
+            "baseline": {"method": "OLS on same-horizon controls known before each UTC day (out-of-sample)",
+                         "model": baseline.describe() if baseline is not None else None,
                          "predictors": list(FEATURES), "test_residual": stats.describe([r["y"] for r in rt]),
                          "reference_residual": stats.describe([r["y"] for r in rr]),
                          "identifiable_share_test": len(rt) / len(test) if test else None,
@@ -278,91 +306,277 @@ def _wrong(ci, sign):
     return ci is not None and ((sign < 0 and ci[0] > 0) or (sign > 0 and ci[1] < 0))
 
 
-def evaluate_look(design, summary_h, n, baseline, n_variants):
-    """Promotion checks on the first n retained test observations (chronological)."""
-    sign = design["comparison"]["hypothesised_sign"]
-    adj = ALPHA / max(1, n_variants * len(LOOKS))
-    test = summary_h["_test"][:n]
-    cutoff = test[-1]["exit_t"]
-    ref = [r for r in summary_h["_ref"] if r["entry_t"] < cutoff]
+# ---- checkpoints --------------------------------------------------------------------------------
+CHECKPOINT_SCHEMA = "checkpoint/1"
+TERMINAL = ("supported", "retired")
+
+
+def checkpoint_sample(labelled, design, registered, n):
+    """The precisely bounded dataset of a checkpoint that needs n retained test observations, or
+    None while it is pending.
+
+    Cutoff C = the earliest time at which n retained test observations were KNOWN: the smallest
+    known_at (= max(label_available, t_persisted): the outcome was available AND the decision was
+    frozen) such that the evaluation-phase test labels available by then retain >= n after
+    interval thinning (all intervals of one horizon have equal length, so the retained count only
+    grows as labels arrive). Everything else is bounded by C: reference or control labels
+    available by C, the test group's direction mix, severity, dependence blocks, and the quality
+    window (labels that ended by C). Nothing known after C can enter, so appending later
+    observations - or changing later outcomes, directions, severities or controls - cannot change
+    the sample."""
+    h = design["outcome"]["primary_horizon"]
+    test_g = design["comparison"]["test_group"]
+    test_g = set(test_g) if isinstance(test_g, list) else {test_g}
+    ref_g = design["comparison"]["reference_group"]
+    rows = _rows(labelled, test_g, h, "evaluation", registered)
+    times = sorted({r["known_at"] for r in rows})
+    lo, hi, cut = 0, len(times) - 1, None
+    while lo <= hi:                                              # smallest C with >= n retained
+        mid = (lo + hi) // 2
+        kept, _ = stats.nonoverlap_intervals([r for r in rows if r["known_at"] <= times[mid]])
+        if len(kept) >= n:
+            cut, hi = times[mid], mid - 1
+        else:
+            lo = mid + 1
+    if cut is None:
+        kept, _ = stats.nonoverlap_intervals(rows)
+        return {"pending": True, "retained": len(kept), "need": n}
+    test = [dict(r) for r in stats.nonoverlap_intervals([r for r in rows if r["known_at"] <= cut])[0][:n]]
+    p_long = sum(1 for r in test if r["d"] > 0) / len(test)
+    known = lambda rs: [dict(r) for r in rs if r["known_at"] <= cut]
+    if ref_g == "control":
+        ref_all = _combine_controls(known(_rows(labelled, {"control_long"}, h, "evaluation", registered)),
+                                    known(_rows(labelled, {"control_short"}, h, "evaluation", registered)), p_long)
+    else:
+        ref_all = known(_rows(labelled, {ref_g}, h, "evaluation", registered))
+    ref, _ = stats.nonoverlap_intervals(ref_all)
+    ended = complete_known = 0                                   # quality window: test labels that ended by C
+    for e, labs, _ in labelled:
+        if e["group"] not in test_g or not _in_phase(e, "evaluation", registered):
+            continue
+        v = labs.get(h) or labs.get(str(h)) or {}
+        end = v.get("exit_t") or (ceil_minute(e["t_available"]) + h * MINUTE)
+        if end + MINUTE > cut or (e.get("t_persisted") or 0) > cut:
+            continue
+        ended += 1
+        complete_known += v.get("status") == "complete" and v.get("label_available", end + MINUTE) <= cut
+    return {"pending": False, "cutoff": cut, "test": test, "reference": ref, "p_long": p_long, "horizon": h,
+            "quality": {"labels_ended_by_cutoff": ended, "complete_and_known": complete_known,
+                        "incomplete_share": 1 - complete_known / ended if ended else 0.0}}
+
+
+def _manifest_row(r, prediction, combined=False):
+    row = {"key": r.get("decision_key") or r.get("event_id"), "t_event": r["t_event"], "entry_t": r["entry_t"],
+           "exit_t": r["exit_t"], "label_available": r["label_available"], "known_at": r["known_at"],
+           "y": r["y"], "d": r["d"],
+           "severity": r.get("severity"), "prediction": prediction}
+    if combined:
+        row.update(y_long=r["_long"]["y"], y_short=r["_short"]["y"])
+    return row
+
+
+def build_manifest(design, sample, baseline, n_variants):
+    """Everything a verdict depends on, with the out-of-sample predictions made as of the cutoff."""
+    combined = design["comparison"]["reference_group"] == "control"
+    p_long, cut = sample["p_long"], sample["cutoff"]
+    reasons = {}
+
+    def pred(r, comb):
+        if baseline is None:
+            reasons["no baseline for this horizon"] = reasons.get("no baseline for this horizon", 0) + 1
+            return None
+        if comb:
+            pl, el = baseline.predict(r["_long"], cutoff=cut)
+            ps, es = baseline.predict(r["_short"], cutoff=cut)
+            if pl is None or ps is None:
+                reasons[el or es] = reasons.get(el or es, 0) + 1
+                return None
+            return p_long * pl + (1 - p_long) * ps
+        p, err = baseline.predict(r, cutoff=cut)
+        if p is None:
+            reasons[err] = reasons.get(err, 0) + 1
+        return p
+    return {"cutoff": cut, "horizon": sample["horizon"], "p_long": p_long, "quality": sample["quality"],
+            "criteria": {"alpha": ALPHA, "n_variants": n_variants, "looks": len(LOOKS),
+                         "adjusted_alpha": ALPHA / max(1, n_variants * len(LOOKS)),
+                         "min_dependence_blocks": design.get("min_dependence_blocks", 20),
+                         "severity_balance_max": design.get("severity_balance_max", 0.25),
+                         "hypothesised_sign": design["comparison"]["hypothesised_sign"],
+                         "severity_check": design["comparison"]["reference_group"] != "control",
+                         "max_incomplete_share": 0.10, "min_baseline_share": 0.8},
+            "baseline": dict(baseline.describe(cut) if baseline is not None else {"horizon_min": sample["horizon"]},
+                             unidentified=reasons),
+            "test": [_manifest_row(r, pred(r, False)) for r in sample["test"]],
+            "reference": [_manifest_row(r, pred(r, combined), combined) for r in sample["reference"]]}
+
+
+def evaluate_manifest(m):
+    """(checks, verdict) from a manifest alone - so a recorded checkpoint can be re-verified."""
+    c = m["criteria"]
+    sign, adj = c["hypothesised_sign"], c["adjusted_alpha"]
+    test = [dict(r) for r in m["test"]]
+    ref = [dict(r) for r in m["reference"]]
     blocks = stats.dependence_blocks(test + ref)
     test_blocks = len({r["block"] for r in test})
     diff = stats.block_bootstrap(test, ref, alphas=(adj,))
-    p_long = sum(1 for r in test if r["d"] > 0) / len(test)
-
-    def res(rows, combined):
-        out = []
-        for r in rows:
-            if combined:
-                pl, _ = baseline.predict(r["_long"])
-                ps, _ = baseline.predict(r["_short"])
-                p = p_long * pl + (1 - p_long) * ps if pl is not None and ps is not None else None
-            else:
-                p, _ = baseline.predict(r)
-            if p is not None:
-                out.append(dict(r, y=r["y"] - p))
-        return out
-    combined = design["comparison"]["reference_group"] == "control"
-    rt, rr = res(test, False), res(ref, combined)
+    rt = [dict(r, y=r["y"] - r["prediction"]) for r in test if r["prediction"] is not None]
+    rr = [dict(r, y=r["y"] - r["prediction"]) for r in ref if r["prediction"] is not None]
     rdiff = stats.block_bootstrap(rt, rr, alphas=(adj,))
     cut = blocks // 2
     halves = [_mean([r["y"] for r in test if r["block"] < cut]), _mean([r["y"] for r in ref if r["block"] < cut]),
               _mean([r["y"] for r in test if r["block"] >= cut]), _mean([r["y"] for r in ref if r["block"] >= cut])]
     same_sign = None not in halves and (halves[0] - halves[1]) * sign > 0 and (halves[2] - halves[3]) * sign > 0
     checks = {
-        "blocks": {"ok": test_blocks >= design.get("min_dependence_blocks", 20),
-                   "value": test_blocks, "need": design.get("min_dependence_blocks", 20)},
-        "effect_adjusted": {"ok": _excludes(diff[adj] if diff else None, sign), "interval": diff[adj] if diff else None,
-                            "alpha": adj},
-        "baseline_identifiable": {"ok": len(rt) >= 0.8 * len(test), "share": len(rt) / len(test)},
+        "quality": {"ok": m["quality"]["incomplete_share"] <= c["max_incomplete_share"], **m["quality"]},
+        "blocks": {"ok": test_blocks >= c["min_dependence_blocks"], "value": test_blocks,
+                   "need": c["min_dependence_blocks"]},
+        "effect_adjusted": {"ok": _excludes(diff[adj] if diff else None, sign),
+                            "interval": diff[adj] if diff else None, "alpha": adj},
+        "baseline_identifiable": {"ok": len(rt) >= c["min_baseline_share"] * len(test), "share": len(rt) / len(test),
+                                  "horizon_min": m["baseline"].get("horizon_min")},
         "baseline_added_value": {"ok": _excludes(rdiff[adj] if rdiff else None, sign),
                                  "interval": rdiff[adj] if rdiff else None},
         "stability": {"ok": same_sign, "halves": halves},
     }
-    sev = summary_h.get("severity")
-    if sev is not None:
-        a, b = sev.get("test_median"), sev.get("reference_median")
-        ok = a is not None and b not in (None, 0) and abs(a / b - 1) <= design.get("severity_balance_max", 0.25)
-        checks["comparability"] = {"ok": ok, "test_median": a, "reference_median": b}
-    wrong = _wrong(diff[adj] if diff else None, sign)
-    return checks, wrong
+    if c["severity_check"]:
+        st = sorted(r["severity"] for r in test if r["severity"] is not None)
+        sr = sorted(r["severity"] for r in ref if r["severity"] is not None)
+        a = st[len(st) // 2] if st else None
+        b = sr[len(sr) // 2] if sr else None
+        checks["comparability"] = {"ok": a is not None and b not in (None, 0) and abs(a / b - 1) <= c["severity_balance_max"],
+                                   "test_median": a, "reference_median": b}
+    if _wrong(diff[adj] if diff else None, sign):
+        verdict = "retired"
+    elif all(x["ok"] for x in checks.values()):
+        verdict = "supported"
+    elif not checks["baseline_identifiable"]["ok"] or not checks["quality"]["ok"]:
+        verdict = "blocked"
+    else:
+        verdict = "not_met"
+    return checks, verdict
 
 
-def status(design, pass_state, summary_eval, quality, baseline, n_variants, superseded=False):
-    """(status, reason, look record)."""
-    if superseded:
-        return "retired", "superseded by a newer evaluation version", None
-    h = str(design["outcome"]["primary_horizon"])
-    s = (summary_eval or {}).get(h)
-    retained = s["counts"]["test"]["retained"] if s else 0
-    if not s or retained == 0:
-        return "exploratory", "no evaluation observations yet", None
-    if design.get("descriptive_only"):
-        return "blocked", "descriptive-only design: not eligible for promotion", None
-    if pass_state != "available":
-        return "under prospective evaluation", f"data state {pass_state}; promotion requires 'available'", None
-    if quality.get("incomplete_share", 0) > 0.10:
-        return "blocked", f"{quality['incomplete_share']:.0%} of labels incomplete (missing bars); limit 10%", None
+def manifest_sha(m):
+    return hashlib.sha256(json.dumps(m, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def load_checkpoints(base, design):
+    """Completed checkpoint records of this version, first record per look wins."""
+    out = {}
+    p = Path(base) / ns(design) / "checkpoints.jsonl"
+    if p.exists():
+        for line in p.read_text().splitlines():
+            if line.strip():
+                r = json.loads(line)
+                out.setdefault(r["look"], r)
+    return out
+
+
+def verify_checkpoint(record, design=None):
+    """True when the stored manifest hashes to its recorded sha256, is internally consistent (n test
+    rows, the record's cutoff, every row known by the cutoff, the adjusted alpha implied by its
+    variant count and looks, the look's n for the design when given) and re-evaluates to the
+    recorded verdict. The hash is tamper-EVIDENT against accidental change, not a signature: the
+    repository history is the audit trail for deliberate edits."""
+    m = record.get("manifest")
+    if not m or manifest_sha(m) != record.get("manifest_sha256"):
+        return False
+    c = m.get("criteria") or {}
+    try:
+        ok = (record.get("n") == len(m["test"]) and record.get("cutoff") == m["cutoff"]
+              and all(r["known_at"] <= m["cutoff"] for r in m["test"] + m["reference"])
+              and abs(c["adjusted_alpha"] - c["alpha"] / max(1, c["n_variants"] * c["looks"])) < 1e-15
+              and c["looks"] == len(LOOKS) and 1 <= record.get("look", 0) <= len(LOOKS))
+        if ok and design is not None:
+            ok = (record.get("n") == int(design["min_retained_observations"] * LOOKS[record["look"] - 1])
+                  and record.get("version") == design["_version"] and m["horizon"] == design["outcome"]["primary_horizon"]
+                  and c["hypothesised_sign"] == design["comparison"]["hypothesised_sign"])
+    except (KeyError, TypeError):
+        return False
+    return ok and evaluate_manifest(m)[1] == record.get("verdict")
+
+
+def _manifest_diff(a, b):
+    """Which parts of two manifests differ (for the drift audit)."""
+    out = {}
+    for k in sorted(set(a) | set(b)):
+        if k in ("test", "reference"):
+            ra = {json.dumps(r, sort_keys=True) for r in a.get(k) or []}
+            rb = {json.dumps(r, sort_keys=True) for r in b.get(k) or []}
+            if ra != rb:
+                out[k] = {"only_recorded": len(ra - rb), "only_current": len(rb - ra)}
+        elif json.dumps(a.get(k), sort_keys=True) != json.dumps(b.get(k), sort_keys=True):
+            out[k] = "changed"
+    return out
+
+
+def checkpoints(lab, design, labelled, registered, baselines, variants_at, write):
+    """Walk the scheduled looks in order. Completed looks come from the record and are never
+    recomputed; the first look not yet recorded is computed from its bounded sample when that
+    sample exists (and recorded), otherwise it is pending. A terminal verdict (supported /
+    retired) ends the walk. Returns (records, pending, drift)."""
+    done = load_checkpoints(lab.base, design)
     need = design["min_retained_observations"]
-    points = [int(need * f) for f in LOOKS]
-    done = [p for p in points if retained >= p]
-    if not done:
-        return "under prospective evaluation", f"{retained}/{need} retained test observations before the first look", None
-    last = None
-    for n in done:
-        checks, wrong = evaluate_look(design, s, n, baseline, n_variants)
-        last = {"n": n, "checks": checks}
-        if wrong:
-            return "retired", f"look at n={n}: adjusted effect interval wholly on the wrong side", last
-        if all(c["ok"] for c in checks.values()):
-            return "supported", f"every promotion criterion met at the look n={n}", last
-    missing = [k for k, c in last["checks"].items() if not c["ok"]]
-    if "baseline_identifiable" in missing:
-        return "blocked", "baseline not identifiable for enough observations", last
-    nxt = next((p for p in points if p > retained), None)
-    return ("under prospective evaluation",
-            f"look n={last['n']} failed: {', '.join(missing)}" + (f"; next look at {nxt}" if nxt else "; no looks left"),
-            last)
+    h = design["outcome"]["primary_horizon"]
+    records, pending, drift = [], None, []
+    for k, factor in enumerate(LOOKS, 1):
+        n = int(need * factor)
+        rec = done.get(k)
+        sample = checkpoint_sample(labelled, design, registered, n)
+        if rec is not None:
+            if not sample["pending"]:
+                again = build_manifest(design, sample, baselines.get(h), rec["manifest"]["criteria"]["n_variants"])
+                if manifest_sha(again) != rec["manifest_sha256"]:
+                    drift.append({"look": k, "recorded_sha256": rec["manifest_sha256"], "current_sha256": manifest_sha(again),
+                                  "differs": _manifest_diff(rec["manifest"], again),
+                                  "note": "current data would give a different sample; the record stands"})
+            else:
+                drift.append({"look": k, "note": "the recorded sample is no longer reproducible from current data"})
+            records.append(rec)
+            if rec["verdict"] in TERMINAL:
+                break
+            continue
+        if sample["pending"]:
+            pending = {"look": k, "need": n, "retained": sample["retained"]}
+            break
+        m = build_manifest(design, sample, baselines.get(h), variants_at(sample["cutoff"]))
+        checks, verdict = evaluate_manifest(m)
+        rec = {"schema": CHECKPOINT_SCHEMA, "design": design["id"], "version": design["_version"], "look": k, "n": n,
+               "cutoff": sample["cutoff"], "completed_at": lab.now, "lab_version": LAB_VERSION,
+               "checks": checks, "verdict": verdict, "manifest": m, "manifest_sha256": manifest_sha(m)}
+        if write:
+            append_unique(Path(lab.base) / ns(design) / "checkpoints.jsonl", [rec], key=lambda r: (r["look"],))
+            rec = load_checkpoints(lab.base, design).get(k, rec)      # a record already stored stands
+            verdict = rec["verdict"]
+        records.append(rec)
+        if verdict in TERMINAL:
+            break
+    return records, pending, drift
+
+
+def status(design, records, pending, superseded=False):
+    """(status, reason) from recorded checkpoints only."""
+    if superseded:
+        return "retired", "superseded by a newer evaluation version"
+    if design.get("descriptive_only"):
+        return "blocked", "descriptive-only design: not eligible for promotion"
+    for r in records:
+        if r["verdict"] in TERMINAL and not verify_checkpoint(r, design):
+            return "blocked", (f"checkpoint {r['look']} record fails re-verification (manifest hash or verdict); "
+                               "no status is derived from it")
+        if r["verdict"] == "supported":
+            return "supported", f"checkpoint {r['look']} (n={r['n']}, cutoff {iso(r['cutoff'])}): every criterion met"
+        if r["verdict"] == "retired":
+            return "retired", f"checkpoint {r['look']} (n={r['n']}): adjusted effect interval wholly on the wrong side"
+    if records:
+        last = records[-1]
+        missing = [k for k, c in last["checks"].items() if not c["ok"]]
+        nxt = f"; next checkpoint needs {pending['need']} ({pending['retained']} so far)" if pending else "; no checkpoints left"
+        st = "blocked" if last["verdict"] == "blocked" else "under prospective evaluation"
+        return st, f"checkpoint {last['look']} {last['verdict']}: {', '.join(missing)} failed{nxt}"
+    if pending and pending["retained"] > 0:
+        return "under prospective evaluation", f"{pending['retained']}/{pending['need']} retained test observations before checkpoint 1"
+    return "exploratory", "no evaluation observations yet"
 
 
 # ---- running a design ---------------------------------------------------------------------------
@@ -392,7 +606,12 @@ def regime_fn(bars):
 
 
 def load_frozen(base, design):
-    return {e["decision_key"]: e for e in read_dir(base, f"{ns(design)}/events")}
+    """Frozen decisions by decision_key; the FIRST stored record of a key wins (a duplicate line, e.g.
+    from a merge, can never replace the original freeze)."""
+    out = {}
+    for e in read_dir(base, f"{ns(design)}/events"):
+        out.setdefault(e["decision_key"], e)
+    return out
 
 
 def freeze(lab, design, events, frozen, last_cutoff):
@@ -424,13 +643,17 @@ def freeze(lab, design, events, frozen, last_cutoff):
     return merged, new, audit
 
 
-def run_design(lab, design, module, registration, n_variants, superseded=False, run_state=None):
-    """Run every variant; returns (result, ledger rows). Persists frozen decisions and outcomes of the
-    primary variant's prospective pass when lab.write."""
+def run_design(lab, design, module, registration, n_variants, superseded=False, run_state=None, variants_at=None):
+    """Run every variant; returns (result, ledger rows). Persists frozen decisions, outcomes and newly
+    completed checkpoints of the primary variant's prospective pass when lab.write. `variants_at(t)`
+    gives the family's variant count as of t (default: n_variants), so a checkpoint's multiplicity is
+    bounded by its cutoff."""
+    variants_at = variants_at or (lambda t: n_variants)
     horizons = design["outcome"]["horizons_min"]
-    funding = lab.store.funding_events()
-    known = Known(lab.store.funding_known())
-    known_assumed = Known([(t, r, t) for t, r, _ in lab.store.funding_known()])
+    funding = lab.store.funding_known()          # (t, rate, avail): labels use settlements with their availability
+    known = Known(funding)
+    funding_assumed = [(t, r, t) for t, r, _ in funding]     # reconstruction: settlement assumed known at t
+    known_assumed = Known(funding_assumed)
     snaps = lab.store.snaps()
     last_cutoff = (run_state or {}).get("last_cutoff")
     variants, ledger, audits = [], [], {}
@@ -448,40 +671,43 @@ def run_design(lab, design, module, registration, n_variants, superseded=False, 
             raw = {}
             for e in events:
                 raw[e["group"]] = raw.get(e["group"], 0) + 1
-            heads = collapse(events, design["collapse_ms"],
-                             key=lambda e: (e["detector"], e["direction"], e.get("live_status")))
+            ckey = lambda e: (e["detector"], e["direction"], e.get("live_status"))
+            if primary_pro:              # frozen decisions: episodes in the order decisions were known
+                heads = collapse_as_known(events, design["collapse_ms"], ckey,
+                                          known=lambda e: e["t_persisted"] if e.get("t_persisted") is not None
+                                          else float("inf"))
+            else:
+                heads = collapse(events, design["collapse_ms"], key=ckey)
             controls = [dict(c, group=g, direction=dr, event_id=c["event_id"] + sfx, episode_head=True, episode_size=1)
                         for c in p["controls"] for g, dr, sfx in (("control_long", 1, "L"), ("control_short", -1, "S"))]
             raw["control_long"] = len(controls) // 2
             is_pro = p["basis"] == "prospective"
-            labelled, immature, incomplete = label_all(heads + controls, p["bars"], lab.now, horizons, funding,
+            labelled, immature, incomplete = label_all(heads + controls, p["bars"], lab.now, horizons,
+                                                       funding if is_pro else funding_assumed,
                                                        snaps if is_pro else (), known if is_pro else known_assumed)
-            ctl_train = []
-            for e, labs, bf in labelled:
-                if e["group"].startswith("control") and bf:
-                    v = labs.get(design["outcome"]["primary_horizon"])
-                    if v and v["status"] == "complete":
-                        ctl_train.append(dict(bf, entry_t=v["entry_t"], exit_t=v["exit_t"], y=v["ret_net"]))
-            baseline = Baseline(ctl_train)
+            baselines = baseline_mod.build(labelled, horizons)       # one per horizon, same-horizon controls
             reg = regime_fn(p["bars"])
             scorable = sum(1 for _, labs, _ in labelled for v in labs.values() if v["status"] != "immature")
             quality = {"incomplete_share": incomplete / scorable if scorable else 0.0,
                        "immature_labels": immature, "incomplete_labels": incomplete}
             if is_pro:
-                phases = {"reanalysis": summarize(labelled, design, registration, "reanalysis", raw, baseline, n_variants, reg),
-                          "evaluation": summarize(labelled, design, registration, "evaluation", raw, baseline, n_variants, reg)}
+                phases = {"reanalysis": summarize(labelled, design, registration, "reanalysis", raw, baselines, n_variants, reg),
+                          "evaluation": summarize(labelled, design, registration, "evaluation", raw, baselines, n_variants, reg)}
             else:
-                phases = {"exploratory": summarize(labelled, design, None, "exploratory", raw, baseline, n_variants, reg)}
+                phases = {"exploratory": summarize(labelled, design, None, "exploratory", raw, baselines, n_variants, reg)}
             if primary_pro and lab.write:
                 persist(lab, design, variant, events, labelled)
-            st = None
+            st = cps = None
             if primary_pro:
-                st = status(design, p["state"], phases["evaluation"], quality, baseline, n_variants, superseded)
+                records, pending, drift = checkpoints(lab, design, labelled, registration, baselines, variants_at,
+                                                      lab.write)
+                st = status(design, records, pending, superseded)
+                cps = {"records": records, "pending": pending, "drift": drift}
             vout["passes"].append({"basis": p["basis"], "state": p["state"], "reasons": p["reasons"],
                                    "coverage": p["coverage"], "firings": sum(v for k, v in raw.items() if k != "control_long"),
                                    "episodes": len(heads), "controls": len(controls) // 2, "quality": quality,
                                    "freeze_audit": audit, "data_sha256": p.get("data_sha256"), "phases": phases,
-                                   "status": st,
+                                   "status": st, "checkpoints": cps,
                                    "window": [iso(min(p["bars"])) if p["bars"] else None,
                                               iso(max(p["bars"])) if p["bars"] else None]})
             prim = phases.get("evaluation", phases.get("exploratory")).get(str(design["outcome"]["primary_horizon"]), {})
@@ -494,10 +720,11 @@ def run_design(lab, design, module, registration, n_variants, superseded=False, 
         variants.append(vout)
     primary = next(v for v in variants if v["name"] == design["primary_variant"])
     pro = next((p for p in primary["passes"] if p["basis"] == "prospective"), None)
-    st, why, look = pro["status"] if pro and pro["status"] else ("exploratory", "no prospective pass", None)
+    st, why = pro["status"] if pro and pro["status"] else ("exploratory", "no prospective pass")
+    cps = (pro or {}).get("checkpoints") or {"records": [], "pending": None, "drift": []}
     return {"t": lab.now, "design": design["id"], "version": design["_version"], "design_sha256": design["_sha256"],
             "registered": registration["registered"] if registration else None, "module": design["module"],
-            "status": st, "status_reason": why, "look": look, "variants": variants, "lab_version": LAB_VERSION,
+            "status": st, "status_reason": why, "checkpoints": cps, "variants": variants, "lab_version": LAB_VERSION,
             "code_sha256": lab.code, "cost_model": outcomes.COST_MODEL, "n_variants_family": n_variants}, ledger
 
 

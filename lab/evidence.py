@@ -1,4 +1,4 @@
-"""Evidence cards, the research report and skill-change proposals (lab-2.0).
+"""Evidence cards, the research report and skill-change proposals (lab-2.1).
 
 Cards are versioned: research/evidence/v2/<design>@<evaluation version>.json (schema
 evidence_card/2), one per evaluation version, never overwritten by another version.
@@ -11,16 +11,18 @@ A card carries: the condition, horizons, versions and the components they bind, 
 scorable, retained, blocks), outcome distributions, 90% and multiplicity-adjusted intervals, the
 out-of-sample baseline and its residual difference, comparability, stability, regimes, costs,
 data quality, freeze audit (frozen / revised / late replays), exclusions, failures, contradictory
-evidence, every variant tried, the status with the checks of the last look, limitations, and how
-to reproduce it.
+evidence, every variant tried, the recorded checkpoints (look, n, cutoff, verdict, checks, manifest
+sha256, whether the stored manifest re-verifies), the pending look, drift between a record and the
+current data, limitations, and how to reproduce it.
 
 reports/skill_proposals.md proposes a change ONLY for a design whose current version is
-"supported"; otherwise it says why not. Nothing here edits a skill file. No card or report calls a
+"supported" by a recorded checkpoint whose manifest re-verifies, and quotes that checkpoint's
+numbers (never the growing live summary); otherwise it says why not. Nothing here edits a skill file. No card or report calls a
 result significant, profitable or an edge.
 """
 from pathlib import Path
 
-from lab import outcomes
+from lab import experiments, outcomes
 from lab.common import LAB_VERSION, atomic_json, iso, read_json
 
 CARD_SCHEMA = "evidence_card/2"
@@ -68,6 +70,22 @@ def contradictions(design, result):
     return out
 
 
+def checkpoint_view(design, result):
+    """The card's view of recorded checkpoints: everything but the per-row manifest (which stays in
+    research/v2/<design>/<version>/checkpoints.jsonl), plus whether the stored manifest re-verifies."""
+    cps = result.get("checkpoints") or {}
+    recs = []
+    for r in cps.get("records") or []:
+        recs.append({"look": r["look"], "n": r["n"], "cutoff": iso(r["cutoff"]), "cutoff_ms": r["cutoff"],
+                     "completed_at": iso(r["completed_at"]), "verdict": r["verdict"], "checks": r["checks"],
+                     "criteria": r["manifest"]["criteria"], "baseline": r["manifest"]["baseline"],
+                     "manifest_sha256": r["manifest_sha256"], "lab_version": r.get("lab_version"),
+                     "verified": experiments.verify_checkpoint(r, design)})
+    return {"file": f"{experiments.ns(design)}/checkpoints.jsonl", "records": recs,
+            "pending": cps.get("pending"), "drift": cps.get("drift") or [],
+            "rule": "a checkpoint is computed once, from data known by its cutoff, and never recomputed"}
+
+
 def card(design, result, commit, input_hashes, registration, superseded):
     primary = next(v for v in result["variants"] if v["name"] == design["primary_variant"])
     passes = {}
@@ -83,13 +101,14 @@ def card(design, result, commit, input_hashes, registration, superseded):
         "condition": design["question"], "comparison": design["comparison"],
         "horizons_min": design["outcome"]["horizons_min"], "primary_horizon_min": design["outcome"]["primary_horizon"],
         "outcome_metric": design["outcome"]["metric"], "status": result["status"],
-        "status_reason": result["status_reason"], "last_look": result.get("look"),
+        "status_reason": result["status_reason"], "checkpoints": checkpoint_view(design, result),
         "promotion_rules": "lab/experiments.py (module docstring)",
         "min_retained_observations": design["min_retained_observations"],
         "min_dependence_blocks": design.get("min_dependence_blocks", 20),
         "primary_variant": design["primary_variant"], "passes": passes,
         "baseline": {"predictors": design.get("baseline", {}).get("predictors"),
-                     "method": "OLS on controls whose labels matured before each UTC day; residual difference"},
+                     "method": "one OLS model per horizon on same-horizon controls whose labels were available "
+                               "before each UTC day (and before a checkpoint's cutoff); residual difference"},
         "costs": outcomes.COST_MODEL, "exclusions": design.get("exclusions", []),
         "failures": [f"{p['basis']}: {r}" for p in primary["passes"] for r in p["reasons"]],
         "contradictory_evidence": contradictions(design, result),
@@ -127,7 +146,9 @@ def write_cards(base, cards, now):
         entry["versions"].setdefault(c.get("evaluation_version") or "none", {})
         entry["versions"][c.get("evaluation_version") or "none"].update(status=c["status"], updated=iso(now))
         for old in c.get("superseded_versions") or []:
-            entry["versions"].setdefault(old, {}).update(status="retired (superseded)")
+            v = entry["versions"].setdefault(old, {})
+            v.update(status="retired (superseded)")
+            v.setdefault("superseded_by", c.get("evaluation_version"))
         legacy = base / "research/evidence/cards" / f"{c['design']}.json"
         if legacy.exists():
             entry["legacy_lab_1_0_card"] = {"path": legacy.relative_to(base).as_posix(),
@@ -160,6 +181,15 @@ def report(cards, now, meta):
         ph = str(c["primary_horizon_min"])
         L.append(f"### {c['design']} @ {c.get('evaluation_version')} - {c['status']}")
         L.append(f"{c['condition']} Status: {c['status_reason']}.")
+        cp = c.get("checkpoints") or {}
+        for r in cp.get("records") or []:
+            L.append(f"- checkpoint {r['look']}: n={r['n']}, cutoff {r['cutoff']}, verdict {r['verdict']}, manifest "
+                     f"{r['manifest_sha256'][:12]} ({'re-verified' if r['verified'] else 'FAILED re-verification'})")
+        if cp.get("pending"):
+            q = cp["pending"]
+            L.append(f"- checkpoint {q['look']} pending: {q['retained']}/{q['need']} retained test observations known")
+        for d in cp.get("drift") or []:
+            L.append(f"- drift at checkpoint {d['look']}: {d['note']}")
         if c.get("error"):
             L.append(f"- error: {c['status_reason']}")
         for basis, p in (c.get("passes") or {}).items():
@@ -187,14 +217,21 @@ def report(cards, now, meta):
 def skill_proposals(cards, now):
     L = ["# Proposed skill changes", "", f"Generated {iso(now)}. For human review; nothing here edits a skill file.",
          "A change is proposed only for a design whose CURRENT evaluation version is **supported** under the "
-         "lab-2.0 promotion rules (data quality, retained observations and dependence blocks, multiplicity-adjusted "
-         "effect, out-of-sample baseline added value, comparability, stability, at a scheduled look).", ""]
-    supported = [c for c in cards if c["status"] == "supported"]
+         "lab-2.1 promotion rules (data quality, retained observations and dependence blocks, multiplicity-adjusted "
+         "effect, out-of-sample baseline added value, comparability, stability) at a RECORDED checkpoint whose manifest "
+         "re-verifies; the wording quotes that checkpoint, not later data.", ""]
+
+    def evidence_cp(c):
+        return next((r for r in (c.get("checkpoints") or {}).get("records") or []
+                     if r["verdict"] == "supported" and r["verified"]), None)
+    supported = [c for c in cards if c["status"] == "supported" and evidence_cp(c)]
     if not supported:
-        L += ["**No change is proposed.** No design's current version is supported.", "",
+        L += ["**No change is proposed.** No design's current version is supported by a verified checkpoint.", "",
               "| Design @ version | Status | Why no proposal |", "|---|---|---|"]
         for c in cards:
             why = c["status_reason"]
+            if c["status"] == "supported":
+                why = "status supported but no recorded checkpoint re-verifies; proposal withheld"
             pro = (c.get("passes") or {}).get("prospective") or {}
             if pro.get("reasons"):
                 why += "; " + pro["reasons"][0]
@@ -202,15 +239,21 @@ def skill_proposals(cards, now):
         L += ["", "Reanalysis and reconstruction results are hypotheses, never grounds for a rule."]
         return "\n".join(L) + "\n"
     for c in supported:
-        ph = str(c["primary_horizon_min"])
-        ev = c["passes"]["prospective"]["phases"]["evaluation"][ph]
+        r = evidence_cp(c)
+        ch = r["checks"]
         L += [f"## {c['design']} @ {c['evaluation_version']}",
               f"Proposed wording (as a conditional base rate, not a rule): \"{c['condition']} Prospective replays since "
-              f"{c['registered_at']}: {ev['counts']['test']['retained']} retained observations in "
-              f"{ev['counts']['test']['blocks']} dependence blocks; test minus reference at {ph} minutes, "
-              f"multiplicity-adjusted interval {_ci(ev['diff_test_minus_reference']['adjusted'])}, net of assumed costs; "
-              f"out-of-sample baseline residual difference {_ci(ev['baseline']['residual_diff']['adjusted'])}.\"",
+              f"{c['registered_at']}, checkpoint {r['look']} (cutoff {r['cutoff']}): {r['n']} retained observations in "
+              f"{ch['blocks']['value']} dependence blocks; test minus reference at {c['primary_horizon_min']} minutes, "
+              f"multiplicity-adjusted interval {_ci(ch['effect_adjusted']['interval'])}, net of assumed costs; "
+              f"out-of-sample {r['baseline'].get('horizon_min')}-minute baseline residual difference "
+              f"{_ci(ch['baseline_added_value']['interval'])}.\"",
+              f"Evidence: {c['checkpoints']['file']} look {r['look']}, manifest sha256 {r['manifest_sha256']}.",
               f"Limitations: {' '.join(LIMITATIONS)}",
               f"Contradictory evidence: {c['contradictory_evidence'] or 'none recorded'}.",
               f"Card: research/evidence/v2/{c['design']}@{c['evaluation_version']}.json", ""]
+    for c in cards:
+        if c["status"] == "supported" and not evidence_cp(c):
+            L.append(f"- {c['design']} @ {c.get('evaluation_version')}: status supported but no recorded checkpoint "
+                     "re-verifies; proposal withheld.")
     return "\n".join(L) + "\n"

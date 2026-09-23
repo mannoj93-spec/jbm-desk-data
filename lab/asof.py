@@ -10,6 +10,9 @@ Time fields on every lab record (lab-2.0), and what they mean:
                     measurement: the lab runs every 6 hours, it does not execute live.
   t_persisted       the lab run (its data cutoff) that first computed and froze the decision. This is
                     the only measured decision time. t_persisted - t_available is the replay lag.
+  label_available   (on outcome labels, lab-2.1) the latest `avail` of the bars a label read: when
+                    the outcome was first knowable. A checkpoint counts an observation as known at
+                    max(label_available, t_persisted).
 Decisions are "as-of replays of collected inputs": the detector sees exactly the inputs whose
 `avail` <= t_inputs. Required inputs that arrive late DELAY the decision; when the delay exceeds
 LATE_INPUT_MAX_MS after t_event the decision is EXCLUDED (counted as late_inputs), because a signal

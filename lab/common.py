@@ -28,7 +28,7 @@ if str(ROOT) not in sys.path:
 
 from storage import append_unique, atomic_json, canonical, digest, read_json, read_rows  # noqa: E402
 
-LAB_VERSION = "lab-2.0-2026-09-23"
+LAB_VERSION = "lab-2.1-2026-09-23"
 MINUTE = 60_000
 H = 60 * MINUTE
 DAY = 24 * H
