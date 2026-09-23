@@ -6,6 +6,8 @@ Offline: every network call is simulated.
 import io
 import json
 import math
+import socket
+import time
 from pathlib import Path
 import tempfile
 import unittest
@@ -322,6 +324,123 @@ class ForwardValidationTests(unittest.TestCase):
         out, stored = self.deribit(rows)
         self.assertIn('not stored', out['raised'])
         self.assertEqual(stored, [])
+
+
+
+class FakeClock:
+    """Simulated sustained outage: every request hangs for its full socket timeout."""
+    def __init__(self):
+        self.t, self.requests = 1_000_000.0, 0
+
+    def time(self):
+        return self.t
+
+    def sleep(self, seconds):
+        self.t += max(0.0, seconds)
+
+    def hang(self, req, timeout=None, **_):
+        self.requests += 1
+        self.t += timeout
+        raise socket.timeout('timed out')
+
+    def patches(self, budget=None):
+        budget = getattr(collector, 'RUN_BUDGET_S', 1200) if budget is None else budget
+        return (patch('collector.time.time', self.time), patch('collector.time.sleep', self.sleep),
+                patch('collector.urllib.request.urlopen', side_effect=self.hang),
+                patch.object(collector, 'DEADLINE', self.t + budget, create=True))
+
+
+def cached_top(n=200):
+    return {'hl_top': {'t': collector.NOW, 'addresses': [f'0x{i:040x}' for i in range(n)],
+                       'min_account_value': 1.0, 'rank_basis': 'test'}}
+
+
+class OutageBudgetTests(unittest.TestCase):
+    """2.3 made 400 Hyperliquid requests in a sustained outage (~190 simulated minutes) and a full
+    all-venue outage ran ~285 simulated minutes; the workflow kills the job at 30."""
+
+    def test_hl_sustained_outage_stops_at_its_budget(self):
+        clock = FakeClock()
+        p1, p2, p3, p4 = clock.patches()
+        with p1, p2, p3, p4, tempfile.TemporaryDirectory() as tmp, patch.object(collector, 'BASE', tmp):
+            start = clock.t
+            with self.assertRaises(RuntimeError) as ctx:
+                collector.collect_hl_positions(cached_top())
+        self.assertLessEqual(clock.t - start, getattr(collector, 'HL_BUDGET_S', 300) + 1)
+        self.assertLess(clock.requests, 40)
+        self.assertIn('stopped: deadline', str(ctx.exception))
+
+    def test_fast_failures_stop_once_rejection_is_inevitable(self):
+        calls = []
+        def get(url, body=None, **_):
+            calls.append(body['user'])
+            return None, 'HTTP 503'
+        with tempfile.TemporaryDirectory() as tmp, patch.object(collector, 'BASE', tmp), \
+             patch.object(collector, 'get', side_effect=get):
+            with self.assertRaises(RuntimeError) as ctx:
+                collector.collect_hl_positions(cached_top())
+        self.assertEqual(len(calls), 100)                  # 100 of 200 failed: the rest cannot save the map
+        self.assertIn('rejection inevitable', str(ctx.exception))
+
+    def test_deadline_with_most_accounts_done_stores_a_degraded_map(self):
+        clock = FakeClock()
+        def get(url, body=None, **_):
+            clock.t += getattr(collector, 'HL_BUDGET_S', 300) / 150    # the budget runs out after 150 accounts
+            return GOOD_ACCOUNT, None
+        with patch('collector.time.time', clock.time), patch.object(collector, 'get', side_effect=get), \
+             tempfile.TemporaryDirectory() as tmp, patch.object(collector, 'BASE', tmp), patch.object(collector, 'NOW', START):
+            out = collector.collect_hl_positions(cached_top())
+            row = storage.read_rows(Path(tmp) / 'data/hl_positions/btc/2026-01-01.jsonl')[0]
+        self.assertEqual((out['status'], out['stopped'], out['accounts_failed']), ('degraded', 'deadline', 50))
+        self.assertEqual(row['failed'][0][1], 'not attempted: deadline')
+        self.assertEqual(len(row['positions']), 150)
+
+    def test_rate_limited_account_is_retried_after_a_backoff(self):
+        seen = []
+        def get(url, body=None, **_):
+            seen.append(body['user'])
+            return (None, 'HTTP 429') if seen.count(body['user']) == 1 and len(seen) == 1 else (GOOD_ACCOUNT, None)
+        with tempfile.TemporaryDirectory() as tmp, patch.object(collector, 'BASE', tmp), \
+             patch.object(collector, 'NOW', START), patch.object(collector, 'get', side_effect=get), \
+             patch('collector.time.sleep') as sleep:
+            out = collector.collect_hl_positions(cached_top())
+        self.assertEqual((out['status'], out['rate_limited'], len(seen)), ('complete', 1, 201))
+        sleep.assert_called_once()
+
+    def test_get_issues_no_request_after_the_run_deadline(self):
+        clock = FakeClock()
+        p1, p2, p3, p4 = clock.patches(budget=0)
+        with p1, p2, p3, p4:
+            js, err = collector.get('https://example.invalid')
+        self.assertEqual((js, clock.requests), (None, 0))
+        self.assertIn('deadline', err)
+
+    def test_get_caps_timeout_and_retry_pause_at_the_deadline(self):
+        clock = FakeClock()
+        p1, p2, p3, p4 = clock.patches(budget=30)
+        with p1, p2, p3, p4:
+            start = clock.t
+            collector.get('https://example.invalid')        # 4 tries of 25 s + pauses would be 126 s
+        self.assertLessEqual(clock.t - start, 30)
+
+    def test_full_outage_run_finishes_inside_the_workflow_limit_and_keeps_its_record(self):
+        clock = FakeClock()
+        p1, p2, p3, p4 = clock.patches()
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / 'registry').mkdir()
+            storage.atomic_json(Path(tmp) / 'state/checkpoints.json', {'series': {}, 'liq_last_ts': None})
+            with p1, p2, p3, p4, patch.object(collector, 'BASE', tmp), \
+                 patch.object(collector, 'STATE', str(Path(tmp) / 'state/checkpoints.json')), \
+                 patch.dict(collector.RUN, {'series': {}, 'liq': {}, 'snap': {}, 'errors': {}}), \
+                 patch('sys.stdout', io.StringIO()):
+                start = clock.t
+                with self.assertRaises(SystemExit):
+                    collector.main()
+                runs = list((Path(tmp) / 'data/runs').glob('*.jsonl'))
+        budget = getattr(collector, 'RUN_BUDGET_S', 1200)
+        self.assertLessEqual(clock.t - start, budget + 60)
+        self.assertLess(budget + 60, 30 * 60)                      # the workflow's timeout-minutes
+        self.assertEqual(len(runs), 1)
 
 
 class WatchdogTests(unittest.TestCase):
