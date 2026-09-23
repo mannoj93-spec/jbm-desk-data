@@ -123,6 +123,16 @@ class IsolationTests(unittest.TestCase):
             self.assertIn('KeyError', collector.RUN['series']['binance_funding_settled']['err'])
         self.assertEqual(calls, ['okx', 'okx', 'okx', 'dvol'])
 
+    def test_backfill_boundary_400_with_reason_still_ends_history(self):
+        # Found on the first GitHub backfill of 2.2: the detailed 400 no longer equalled "HTTP 400".
+        page = [{'timestamp': i * M5, 'sumOpenInterest': '1', 'sumOpenInterestValue': '1'} for i in range(500, 1000)]
+        boundary = (None, "HTTP 400 (binance code -1130: parameter 'endTime' is invalid.)")
+        with patch.object(collector, 'NOW', 1000 * M5), patch.object(collector, 'get', side_effect=[(page, None), boundary]):
+            rows, err, _ = collector.binance_futures_data('binance_openInterestHist_5m', 'openInterestHist', '5m',
+                                                          ['sumOpenInterest', 'sumOpenInterestValue'], None)
+        self.assertIsNone(err)
+        self.assertEqual(len(rows), 500)
+
     def test_http_4xx_keeps_the_venue_reason(self):
         body = json.dumps({'code': '40309', 'msg': 'The symbol has been removed'}).encode()
         err = urllib.error.HTTPError('u', 400, 'Bad Request', {}, io.BytesIO(body))
