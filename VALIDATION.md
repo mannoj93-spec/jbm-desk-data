@@ -15,6 +15,11 @@ earlier revisions and are kept as they were.
 | Live routine run under 2.6, scratch copy (15:58Z) | 17/17 books; options complete, 847 strikes; HL complete 200/200 in 82 s; 281 requests, 0 rate-limited; 154 s; stages: series 39 s, liquidations 17 s (daily probe), snapshot 15 s, forward 82 s |
 | Report and watchdog on the live copy | Hourly period judged against hourly slots (16/16, upper bound); local run excluded from scheduled figures; watchdog healthy, warns that the newest run was local |
 | `SHA256SUMS` | Covers code, docs, workflows, `cadence.json` and templates; data, state and reports change every run |
+| Deployment (GitHub, 2026-09-23) | Workflows `90fce23` (16:06:13Z, the start of the 15-minute period in `cadence.json`), persistence script `2d12847`, test update `9327896`, code and docs `e3ff93a`, new tests `d98b842`. Tree verified byte-for-byte against `SHA256SUMS` after fetch. Regression and numerical fixtures runs #15–#19 all green, one per push |
+| Manual collection on GitHub (run 35887308099, 16:14Z, manual deployment check) | `collector-2.6`, `trigger: workflow_dispatch`; 17/17 books; options and HL complete; 285 requests, 0 rate-limited; 104 s (series 36, liquidations 13 with the daily probe, snapshot 11, forward 44); committed as `8afc250` |
+| Manual watchdog on GitHub (run 35887689676, 16:17Z) | Exit 0 "collector healthy" on the last pre-2.6 scheduled run (15:22Z); warning that the newest run was manual and not counted as scheduled; sparse checkout worked |
+| Weekly report on GitHub (run 35887705789, 16:17Z) | Report 2.3 committed as `622a65f`: hourly period 16/16 slots (upper bound, trigger unrecorded), 15/15 intervals covered; 15-minute period listed with no slot yet due |
+| First scheduled 15-minute run (run 35888255376, 16:22 slot) | Process start 16:22:51Z; `trigger: schedule`, cron recorded; 17/17 books; options and HL complete; no probe (already done that UTC day); 110 s; committed as `feee7c8`. The 16:07 slot, one minute after the workflow commit, did not run |
 
 | Check (2.5.1 and earlier) | Result |
 |---|---|
@@ -55,9 +60,11 @@ earlier revisions and are kept as they were.
 
 ## Scope limits
 
-The workflow change (watchdog) and the new collector have not yet run on GitHub at the time of
-writing; the first Actions run after this commit is the deployment check. Live endpoint behaviour
-is dated and can change. This is a reliability revision, not a claim of forecasting skill.
+At the time of writing one scheduled 15-minute run has been observed; sustained scheduled
+execution at this cadence (delays, dropped slots, queueing behind intake and report) is measured
+by the weekly report from here on, not established by this record. Backlog pruning under an outage
+and the watchdog's stale and failing states are verified offline only. Live endpoint behaviour is
+dated and can change. This is a reliability revision, not a claim of forecasting skill.
 
 ## Reproduce
 
