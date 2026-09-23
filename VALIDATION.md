@@ -1,4 +1,4 @@
-# Validation record — reliability revision 2.5
+# Validation record — reliability revision 2.5.1
 
 Validated 2026-09-23 with Python 3.11 (container) against live sources; GitHub workflows select
 Python 3.12. Runtime uses the standard library only.
@@ -7,7 +7,9 @@ Python 3.12. Runtime uses the standard library only.
 |---|---|
 | Numerical fixture checks (`test_fixtures.py`) | 25 passed |
 | `SHA256SUMS` | Now covers code, docs, workflows and templates only; data, state and reports change every hour |
-| Offline regression tests (`regression/`) | 85 passed (50 from 2.1, 35 in `test_rev22.py`); 5 consecutive full runs, no flakes |
+| Offline regression tests (`regression/`) | 87 passed (50 from 2.1, 37 in `test_rev22.py`); 5 consecutive full runs, no flakes |
+| 2.5.1 late-byte tests run against 2.5 (`9090fba`) | 503 case fails (2.30 s), as intended; 200 case passes on both |
+| Live run under 2.5.1, scratch copy | 17/17 books; options and HL complete; no errors; 159 s |
 | 2.5 slow-response tests run against 2.4 (`f6fa022`) | 3 trickle tests fail, as intended; prompt response passes on both |
 | Local trickling server, 1.2 s budget | Body and headers: 1.20 s, rejected (2.4: 3.45 s and 3.57 s, accepted) |
 | Live run under 2.5, scratch copy | 17/17 books; options complete; HL complete 200/200 in 97 s; no errors; 155 s |

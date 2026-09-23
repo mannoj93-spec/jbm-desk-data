@@ -1,3 +1,24 @@
+# Reliability revision 2.5.1 — 2026-09-23
+
+From the review of 2.5: cleaning up an abandoned HTTP-error response could overrun the deadline.
+`_abort()` looked for the socket at `resp.fp.raw._sock`, which is right for a normal response, but
+an `HTTPError` wraps the response one level deeper, so the shutdown failed silently and the
+following `close()` waited on the lock held by the worker's receive. Reproduced with a local server
+that sends headers, one body byte 0.1 s before a 1.2 s deadline, then stalls:
+
+| Status | 2.5 | 2.5.1 |
+|---|---|---|
+| 503 | 2.31 s, rejected | 1.20 s, rejected; worker released at once |
+| 200 | 1.20 s, rejected | 1.20 s, rejected |
+
+- `_find_socket()` follows `fp`/`raw`/`_sock` through any wrappers to the socket.
+- `_abort()` only shuts the socket down. It no longer calls `close()` from the waiting thread, so
+  cleanup cannot block even if a future wrapper hides the socket; the worker closes its own
+  response once released, or ends at its socket timeout.
+- Tests: two late-byte stall cases (503 and 200) assert the caller returns within 0.15 s of the
+  deadline and that the abandoned worker finishes within 0.5 s, which only a shutdown that reached
+  the socket achieves. The 503 case fails on 2.5.
+
 # Reliability revision 2.5 — 2026-09-23
 
 From the review of 2.4: the deadline capped the socket timeout, but a socket timeout limits each

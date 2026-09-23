@@ -1,4 +1,4 @@
-# JBM desk data — reliability revision 2.5
+# JBM desk data — reliability revision 2.5.1
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.

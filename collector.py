@@ -30,7 +30,7 @@ from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
 from schema import SERIES_KIND
 
-CODE_VERSION = "collector-2.5-2026-09-23"
+CODE_VERSION = "collector-2.5.1-2026-09-23"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -86,16 +86,31 @@ def _read_until(stream, stop, limit=None):
     return b"".join(chunks)
 
 
+def _find_socket(obj, depth=6):
+    """The socket under a response, through whatever wrappers it has. A normal response is
+    HTTPResponse -> BufferedReader -> SocketIO -> socket; an HTTPError adds one more layer
+    (HTTPError.fp is the HTTPResponse), which 2.5 did not unwrap."""
+    for _ in range(depth):
+        if isinstance(obj, socket.socket):
+            return obj
+        obj = next((getattr(obj, name) for name in ("fp", "raw", "_sock") if getattr(obj, name, None) is not None), None)
+        if obj is None:
+            return None
+    return obj if isinstance(obj, socket.socket) else None
+
+
 def _abort(resp):
-    """Unblock a worker stuck in a receive: shut the socket down, then close the response."""
-    try:
-        resp.fp.raw._sock.shutdown(socket.SHUT_RDWR)
-    except Exception:
-        pass
-    try:
-        resp.close()
-    except Exception:
-        pass
+    """Unblock a worker stuck in a receive by shutting its socket down. Nothing here may block:
+    close() waits for the reader's lock, which the worker holds for as long as its receive runs
+    (measured: a stalled 503 body held the caller 2.31 s against a 1.2 s budget). The worker
+    closes the response itself once the shutdown releases it; if no socket is found, the daemon
+    worker ends at its own socket timeout and its result is discarded either way."""
+    sock = _find_socket(resp)
+    if sock is not None:
+        try:
+            sock.shutdown(socket.SHUT_RDWR)
+        except OSError:
+            pass
 
 
 def fetch(req, timeout, stop):
@@ -105,8 +120,9 @@ def fetch(req, timeout, stop):
     its headers or body resets it with every byte (measured on a local server: 3.45 s taken and
     the response accepted against a 1.2 s budget), and a DNS lookup is outside it altogether.
     So the request runs in a daemon worker thread and the caller waits for it only until `stop`.
-    On expiry the socket is shut down to release the worker, whatever it later returns is
-    discarded, and TimeoutError is raised. HTTP error bodies are read in the worker too."""
+    On expiry the socket is shut down (never closed from here: see _abort) to release the worker,
+    whatever it later returns is discarded, and TimeoutError is raised. HTTP error bodies are
+    read in the worker too."""
     box = {}
 
     def work():
