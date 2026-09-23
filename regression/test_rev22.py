@@ -6,12 +6,15 @@ Offline: every network call is simulated.
 import io
 import json
 import math
+import os
 import socket
+import threading
 import time
 from pathlib import Path
 import tempfile
 import unittest
 import urllib.error
+from contextlib import ExitStack, contextmanager
 from unittest.mock import patch
 
 import collector
@@ -345,9 +348,19 @@ class FakeClock:
 
     def patches(self, budget=None):
         budget = getattr(collector, 'RUN_BUDGET_S', 1200) if budget is None else budget
-        return (patch('collector.time.time', self.time), patch('collector.time.sleep', self.sleep),
-                patch('collector.urllib.request.urlopen', side_effect=self.hang),
-                patch.object(collector, 'DEADLINE', self.t + budget, create=True))
+        # Deadlines are on time.monotonic() from 2.5 (time.time() before); the fake drives both.
+        return self._patched(budget)
+
+    @contextmanager
+    def _patched(self, budget):
+        # Entered only by `with`, so a failing test can never leave the fake clock installed.
+        with ExitStack() as stack:
+            for cm in (patch('collector.time.monotonic', self.time), patch('collector.time.time', self.time),
+                       patch('collector.time.sleep', self.sleep),
+                       patch('collector.urllib.request.urlopen', side_effect=self.hang),
+                       patch.object(collector, 'DEADLINE', self.t + budget, create=True)):
+                stack.enter_context(cm)
+            yield
 
 
 def cached_top(n=200):
@@ -361,8 +374,7 @@ class OutageBudgetTests(unittest.TestCase):
 
     def test_hl_sustained_outage_stops_at_its_budget(self):
         clock = FakeClock()
-        p1, p2, p3, p4 = clock.patches()
-        with p1, p2, p3, p4, tempfile.TemporaryDirectory() as tmp, patch.object(collector, 'BASE', tmp):
+        with clock.patches(), tempfile.TemporaryDirectory() as tmp, patch.object(collector, 'BASE', tmp):
             start = clock.t
             with self.assertRaises(RuntimeError) as ctx:
                 collector.collect_hl_positions(cached_top())
@@ -387,7 +399,8 @@ class OutageBudgetTests(unittest.TestCase):
         def get(url, body=None, **_):
             clock.t += getattr(collector, 'HL_BUDGET_S', 300) / 150    # the budget runs out after 150 accounts
             return GOOD_ACCOUNT, None
-        with patch('collector.time.time', clock.time), patch.object(collector, 'get', side_effect=get), \
+        with patch('collector.time.monotonic', clock.time), patch('collector.time.time', clock.time), \
+             patch.object(collector, 'get', side_effect=get), \
              tempfile.TemporaryDirectory() as tmp, patch.object(collector, 'BASE', tmp), patch.object(collector, 'NOW', START):
             out = collector.collect_hl_positions(cached_top())
             row = storage.read_rows(Path(tmp) / 'data/hl_positions/btc/2026-01-01.jsonl')[0]
@@ -409,27 +422,24 @@ class OutageBudgetTests(unittest.TestCase):
 
     def test_get_issues_no_request_after_the_run_deadline(self):
         clock = FakeClock()
-        p1, p2, p3, p4 = clock.patches(budget=0)
-        with p1, p2, p3, p4:
+        with clock.patches(budget=0):
             js, err = collector.get('https://example.invalid')
         self.assertEqual((js, clock.requests), (None, 0))
         self.assertIn('deadline', err)
 
     def test_get_caps_timeout_and_retry_pause_at_the_deadline(self):
         clock = FakeClock()
-        p1, p2, p3, p4 = clock.patches(budget=30)
-        with p1, p2, p3, p4:
+        with clock.patches(budget=30):
             start = clock.t
             collector.get('https://example.invalid')        # 4 tries of 25 s + pauses would be 126 s
         self.assertLessEqual(clock.t - start, 30)
 
     def test_full_outage_run_finishes_inside_the_workflow_limit_and_keeps_its_record(self):
         clock = FakeClock()
-        p1, p2, p3, p4 = clock.patches()
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / 'registry').mkdir()
             storage.atomic_json(Path(tmp) / 'state/checkpoints.json', {'series': {}, 'liq_last_ts': None})
-            with p1, p2, p3, p4, patch.object(collector, 'BASE', tmp), \
+            with clock.patches(), patch.object(collector, 'BASE', tmp), \
                  patch.object(collector, 'STATE', str(Path(tmp) / 'state/checkpoints.json')), \
                  patch.dict(collector.RUN, {'series': {}, 'liq': {}, 'snap': {}, 'errors': {}}), \
                  patch('sys.stdout', io.StringIO()):
@@ -441,6 +451,101 @@ class OutageBudgetTests(unittest.TestCase):
         self.assertLessEqual(clock.t - start, budget + 60)
         self.assertLess(budget + 60, 30 * 60)                      # the workflow's timeout-minutes
         self.assertEqual(len(runs), 1)
+
+
+
+class TricklingServer:
+    """A local HTTP server that sends its response one byte at a time. Every byte resets a socket
+    timeout, so only a limit on the whole request can stop it (review of 2.4: 3.01 s taken and the
+    response accepted against a 1.2 s budget)."""
+
+    def __init__(self, phase, status=200, delay=0.07):
+        self.phase, self.status, self.delay = phase, status, delay
+        self.body = json.dumps({'ok': 1, 'pad': 'x' * 40}).encode()
+        self.sock = socket.socket()
+        self.sock.bind(('127.0.0.1', 0))
+        self.sock.listen(8)
+        self.url = f'http://127.0.0.1:{self.sock.getsockname()[1]}/x'
+        threading.Thread(target=self.serve, daemon=True).start()
+
+    def serve(self):
+        while True:
+            try:
+                conn, _ = self.sock.accept()
+            except OSError:
+                return
+            try:
+                conn.recv(65536)
+                reason = {200: b'OK', 503: b'Service Unavailable'}[self.status]
+                head = b'HTTP/1.1 %d %s\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n' % (
+                    self.status, reason, len(self.body))
+                slow, fast = (head, self.body) if self.phase == 'headers' else (b'', head)
+                conn.sendall(fast if self.phase != 'headers' else b'')
+                for chunk in (slow, self.body if self.phase != 'headers' else b''):
+                    for byte in chunk:
+                        conn.sendall(bytes([byte]))
+                        time.sleep(self.delay)
+                if self.phase == 'headers':
+                    conn.sendall(self.body)
+            except OSError:
+                pass
+            finally:
+                conn.close()
+
+    def close(self):
+        self.sock.close()
+
+
+class SlowResponseTests(unittest.TestCase):
+    """Real sockets on 127.0.0.1; each case sets a 1.2 s budget."""
+    BUDGET = 1.2
+
+    def run_get(self, server):
+        clock = getattr(collector, 'DEADLINE', None)
+        now = time.monotonic() if collector.CODE_VERSION >= 'collector-2.5' else time.time()
+        with patch.object(collector, 'DEADLINE', now + self.BUDGET, create=True), \
+             patch.dict(os.environ, {'no_proxy': '127.0.0.1,localhost', 'NO_PROXY': '127.0.0.1,localhost'}):
+            started = time.monotonic()
+            js, err = collector.get(server.url, tries=1)
+            return js, err, time.monotonic() - started
+
+    def check_stopped(self, phase, status=200):
+        server = TricklingServer(phase, status)
+        self.addCleanup(server.close)
+        js, err, took = self.run_get(server)
+        self.assertLess(took, self.BUDGET + 0.3, f'{phase}: took {took:.2f}s')
+        self.assertIsNone(js)                                   # never accepted after the deadline
+        self.assertIn('deadline', err)
+
+    def test_trickled_body_is_abandoned_at_the_deadline(self):
+        self.check_stopped('body')
+
+    def test_trickled_headers_are_abandoned_at_the_deadline(self):
+        self.check_stopped('headers')
+
+    def test_trickled_error_body_is_abandoned_at_the_deadline(self):
+        self.check_stopped('body', status=503)
+
+    def test_slow_dns_lookup_is_abandoned_at_the_deadline(self):
+        # A resolver stall happens before any socket exists, so no socket timeout applies to it.
+        real = socket.getaddrinfo
+        def stalled(*args, **kwargs):
+            time.sleep(3)
+            return real(*args, **kwargs)
+        server = TricklingServer('body', delay=0)
+        self.addCleanup(server.close)
+        with patch('socket.getaddrinfo', stalled):
+            js, err, took = self.run_get(server)
+        self.assertLess(took, self.BUDGET + 0.3)
+        self.assertIsNone(js)
+        self.assertIn('deadline', err)
+
+    def test_prompt_response_still_succeeds(self):
+        server = TricklingServer('body', delay=0)
+        self.addCleanup(server.close)
+        js, err, took = self.run_get(server)
+        self.assertEqual((js, err), ({'ok': 1, 'pad': 'x' * 40}, None))
+        self.assertLess(took, 1.0)
 
 
 class WatchdogTests(unittest.TestCase):
