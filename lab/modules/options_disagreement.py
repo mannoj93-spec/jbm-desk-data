@@ -35,8 +35,13 @@ predicted funding z-score >= +z  ->  "bearish_disagreement", direction -1; mirro
 Params: quote_policy "qualified" (default: events that are not quote-qualified are regrouped as
 <group>_ineligible, visible but outside the test group) or "mark_only" (a separately labelled,
 descriptive variant that evaluates mark-IV events regardless of quotes).
-As-of (lab/asof.py): a record's inputs are the option record and the same run's snapshot; the
-z-score histories use only earlier records already observed by then.
+As-of (lab/asof.py): an event's inputs are the option record and the same run's funding snapshot
+(t_inputs = the later of their observed_at); a control's only input is the option record, so a late
+or missing snapshot never moves a control. The z-score window is the last
+`window` earlier option records that had been observed by t_inputs; within it each historical
+funding value counts only if ITS snapshot was observed by t_inputs (separate availability per
+feature, lab-2.1). Anything not yet available is missing (never filled) and the 70% coverage rule
+applies. Funding without a snapshot observed_at is unknown.
 """
 import datetime as dt
 import math
@@ -184,6 +189,7 @@ def panel_quality(rec):
 
 
 def zscore(hist, x, window):
+    """z of x against the last `window` entries of hist (None entries are missing; >= 70% needed)."""
     h = [v for v in hist[-window:] if v is not None]
     if len(h) < window * 0.7 or x is None:
         return None
@@ -198,27 +204,35 @@ def run(lab, params):
     bars = lab.store.bars("binance_klines_1m_BTCUSDT_perp")
     policy = params.get("quote_policy", "qualified")
     events, controls, series = [], [], []
-    hist = []                                       # (observed_at, rr25_7d, funding) of earlier records
+    hist = []           # earlier records: (t, rr25_7d, rr available at, funding, funding available at)
     z, window = params["z"], params["z_window"]
     elig = {"qualified": 0, "failed": 0, "unknown": 0}
+    def zs(t_cut, rr, fund):
+        """(rr z, funding z) as of t_cut. Window = the last `window` earlier option records
+        (record-time order) already observed by t_cut - the record list exactly as it stood then, so
+        a record collected later can neither enter nor shift it. Within it a funding value counts
+        only if ITS snapshot was observed by t_cut; otherwise it is missing (never filled) and the
+        70% coverage rule decides. A value that arrives later is used by later decisions."""
+        prior = [h for h in hist if h[2] <= t_cut][-window:]
+        return (zscore([h[1] for h in prior], rr, window),
+                zscore([h[3] if h[4] is not None and h[4] <= t_cut else None for h in prior], fund, window))
+
     for rec in recs:
         s = surface(rec)
         snap = snaps.get(rec["t"]) or {}
         prem = snap.get("binance_usdt_prem") or {}
-        funding = prem.get("funding_live_predicted_8h") if prem.get("st") == "ok" else None
+        f_avail = snap.get("observed_at")                # funding is known when ITS snapshot was observed
+        funding = prem.get("funding_live_predicted_8h") if prem.get("st") == "ok" and f_avail is not None else None
         s.update(panel_quality(rec), funding_pred_8h=funding)
-        t_inputs = max(rec["observed_at"], snap.get("observed_at") or rec["observed_at"])
-        known = [h for h in hist if h[0] <= t_inputs]                  # prior records known by then
-        rz = zscore([h[1] for h in known], s["rr25_7d"], window)
-        fz = zscore([h[2] for h in known], funding, window)
-        hist.append((rec["observed_at"], s["rr25_7d"], funding))
+        # an event needs funding, so its inputs are complete when both the option record and the
+        # funding snapshot are observed
+        t_inputs = max(rec["observed_at"], f_avail) if funding is not None else rec["observed_at"]
+        rz, fz = zs(t_inputs, s["rr25_7d"], funding)
         s.update(rr25_7d_z=rz, funding_z=fz, surface_basis="descriptive: Deribit mark IV")
         series.append((rec["t"], s))
-        avail, excluded = decide(rec["t"], t_inputs)
-        if excluded:
-            continue
         ih = hash_inputs([rec["t"], s["rr25_7d"], funding])
-        if rz is not None and fz is not None:
+        avail, excluded = decide(rec["t"], t_inputs)
+        if not excluded and rz is not None and fz is not None:
             for group, cond, direction in (("bearish_disagreement", rz <= -z and fz >= z, -1),
                                            ("bullish_disagreement", rz >= z and fz <= -z, 1)):
                 if cond:
@@ -230,9 +244,19 @@ def run(lab, params):
                                                {"funding": "same run", "quote_policy": policy,
                                                 "rr25_7d_quotes": s["rr25_7d_quotes"]}, lab.code, t_inputs=t_inputs))
         if rec["t"] % 3_600_000 < 900_000:
-            controls.append(event_record(ID + ":control", VERSION, rec["t"], rec["observed_at"],
-                                         avail, -1 if (s["rr25_7d"] or 0) < 0 else 1,
-                                         "control", s, ih, BASIS_PROSPECTIVE, {}, {}, lab.code, t_inputs=t_inputs))
+            # A control's only required input is the option record: a funding snapshot arriving later
+            # (or never) cannot move, delay or exclude it. Its descriptive features are as of then.
+            t_ctl = rec["observed_at"]
+            f_ctl = funding if funding is not None and f_avail <= t_ctl else None
+            crz, cfz = zs(t_ctl, s["rr25_7d"], f_ctl)
+            c_avail, c_excl = decide(rec["t"], t_ctl)
+            if not c_excl:
+                controls.append(event_record(ID + ":control", VERSION, rec["t"], rec["observed_at"],
+                                             c_avail, -1 if (s["rr25_7d"] or 0) < 0 else 1, "control",
+                                             dict(s, funding_pred_8h=f_ctl, rr25_7d_z=crz, funding_z=cfz),
+                                             hash_inputs([rec["t"], s["rr25_7d"]]), BASIS_PROSPECTIVE, {}, {},
+                                             lab.code, t_inputs=t_ctl))
+        hist.append((rec["t"], s["rr25_7d"], rec["observed_at"], funding, f_avail if funding is not None else None))
     have = sum(1 for _, s in series if s["rr25_7d_z"] is not None)
     state = "available" if have >= params.get("min_records", 96 * 14) else "insufficient_data"
     reasons = [] if state == "available" else [f"{len(recs)} option records ({have} with a trailing z-score); "
