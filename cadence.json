@@ -1,0 +1,7 @@
+{
+  "_note": "Every schedule the collector has run under, oldest first. 'from' is when the schedule took effect on the default branch. Append a period whenever collect.yml's cron changes; never edit past periods.",
+  "periods": [
+    {"from": "2026-09-22T23:19:00Z", "minutes": [7], "cron": "7 * * * *", "change": "collect.yml installed (hourly collector)"},
+    {"from": "2026-09-23T16:06:13Z", "minutes": [7, 22, 37, 52], "cron": "7,22,37,52 * * * *", "change": "collector-2.6: every 15 minutes (workflow commit 90fce23)"}
+  ]
+}

@@ -1,3 +1,85 @@
+# Collection cadence revision 2.6 — 2026-09-23
+
+The collector runs every 15 minutes (`7,22,37,52 * * * *`) instead of hourly. This revision is
+about cadence and operational reliability only: no forecast, scoring rule, trading rule or stored
+observation changes, and every existing data file, checkpoint, frozen forecast, score and provenance
+field is kept as it was.
+
+**Schedule and time budget**
+
+- `collect.yml` keeps its file name, so the workflow's run history and dispatch URL carry over;
+  its display name is now **Collector**. Manual runs and backfill are unchanged.
+- Routine run: 10-minute network budget (`COLLECTOR_BUDGET_S=600`), collection step limit 11
+  minutes, persistence bounded at 100 s, job limit 14 minutes. Backfill keeps its own budget:
+  30 minutes of network, 35-minute step, 45-minute job. The previous 20-minute budget inside a
+  30-minute job would not fit a 15-minute slot.
+- Stage limits inside a routine run (shares of the budget): history series 40%, liquidations 15%,
+  snapshot 20%, forward books the rest. History and liquidations are checkpointed and recover next
+  run; snapshots and forward books cannot be fetched later. In simulation under 2.5, one stalled
+  venue (Binance) spent the whole budget on history and left 0 s for the 17-book snapshot; under
+  2.6 history stops at 240 s and the snapshot and forward books still run.
+- `scripts/commit_push.sh` bounds its whole push/rebase loop (`PERSIST_BUDGET_S`, 100 s for the
+  collector, 240 s default) and gives each network step at most the time left, so a hung remote
+  cannot run persistence past the job limit. Success still requires a successful push.
+- The daily liquidation boundary probe keys on the UTC day it last succeeded
+  (`state/checkpoints.json: liq_probe_day`) instead of the 00Z hour, which at the new cadence
+  would have paged the full feed four times; a failed probe is retried on the next run.
+
+**Queueing** (checked against GitHub's current concurrency documentation before the change)
+
+- Scheduled collector runs share one workflow-level group with GitHub's default queue: at most one
+  running and one pending, and a newer pending run cancels the older pending one. During an outage
+  or a long backfill, obsolete scheduled runs are dropped instead of accumulating. Nothing running is
+  ever cancelled. Manual and backfill runs have their own groups, so a scheduled run never cancels
+  a manual check.
+- Every repository writer (collector, backfill, forecast intake, weekly report) now takes
+  `repo-write` at job level with `queue: max` (up to 100 waiting jobs), so writes stay serialized
+  and intake and report work is never dropped behind collector runs. Job level also keeps a skipped
+  intake job (an issue that is not a forecast) out of the queue.
+
+**Provenance and health**
+
+- Run records carry `mode: "routine"` (`"hourly"` in older records, still read as routine),
+  `trigger` (`schedule`, `workflow_dispatch`, or `local`), the cron entry that fired, the Actions
+  run id and attempt, the budget, per-stage seconds, stages cut by their limit, whether the budget
+  was reached, and request accounting: requests, failures, deadline skips, and rate-limit
+  incidents by host (HTTP 429/418 and OKX code 50011).
+- `cadence.json` records every schedule the collector has run under. Health figures use the
+  cadence in force at each moment, so the hourly period is not reported as three runs in four
+  missing.
+- The weekly report separates **scheduled execution** (scheduler starts counted against nominal
+  slots; manual runs excluded; starts are never matched to slots, because GitHub's start delay is
+  unrecorded) from **snapshot coverage** (slot intervals holding a stored snapshot, whatever started
+  it). Pre-2.6 records do not say what started them, so their scheduled share is shown as an upper
+  bound, not a count. It also reports actual intervals between runs and between snapshots, runtime
+  percentiles, budget hits and rate limits, and groups alerts by source (count, first, last, latest
+  message) instead of one line per run.
+- Watchdog every 30 minutes (`17,47`), stale limit 90 minutes (`WATCHDOG_STALE_MIN`, repository
+  variable or dispatch input). Exit 1: stale or missing, judged on runs the schedule could have
+  started; a recent manual run does not hide a dead schedule. Exit 2: running but the latest
+  scheduled run lost critical data. Exit 0 with warnings: source failures, degraded books or rate
+  limits in recent runs. It checks out only `data/runs` and the code.
+
+**Tests**: 32 new (`regression/test_rev26.py`): cadence transition, delayed, dropped and manual
+runs, aggregation, watchdog states and threshold, workflow budgets and queues parsed from the YAML,
+a sustained outage finishing inside the budget with the persistence window left, a single stalled
+venue, bounded persistence against a hung remote, the once-a-day probe, provenance and rate-limit
+accounting, and native 5m/1h resolution without duplicates across quarter-hour runs. One 2.5
+watchdog assertion changed deliberately: a run 2 hours old is now stale (limit 90 minutes, was 3
+hours).
+
+**Limitations**
+
+- Repository growth: about 44 KB of text per routine run (12 KB gzipped), roughly 125 MB a month
+  in the working tree, mostly the Deribit option book. Git storage grows by the compressed
+  amount, but every run checks out the full tree, so checkout time grows too. A later revision
+  should compress or relocate the forward-only books; nothing here changes their format.
+- GitHub may start scheduled runs late or skip them under load; the health figures report that
+  rather than prevent it. Actions minutes are free for this public repository; a private copy
+  would use about 8,600 billed minutes a month at this cadence.
+- A manual run can wait behind a running scheduled run (one `repo-write` queue); it is never
+  cancelled by one.
+
 # Reliability revision 2.5.1 — 2026-09-23
 
 From the review of 2.5: cleaning up an abandoned HTTP-error response could overrun the deadline.

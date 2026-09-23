@@ -1,4 +1,4 @@
-# JBM desk data — reliability revision 2.5.1
+# JBM desk data — collection cadence revision 2.6
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -8,9 +8,12 @@ Revision 2.2 (2026-09-23) follows the first live deployment and an audit against
 sources: it fixes two pagination defects that lost rows, corrects the timestamp meaning of
 snapshot series, adds the forward-only books the desk's requirement 50 names (Deribit per-strike
 option OI and the Hyperliquid position map), adds range and interval scores, retires two dead
-books, and adds a watchdog. See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md](VALIDATION.md).
+books, and adds a watchdog. Revision 2.6 moves the collector from hourly to every 15 minutes
+and reworks its time budget, queueing, health figures and watchdog around that cadence.
+See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md](VALIDATION.md).
 
-**Deployed** on GitHub Actions since 2026-09-22 23:24Z (first run `runner: github`).
+**Deployed** on GitHub Actions since 2026-09-22 23:24Z (first run `runner: github`); hourly until
+the 15-minute schedule took effect (the time is in `cadence.json`).
 
 ## Quick start / upgrade
 
@@ -30,7 +33,7 @@ books, and adds a watchdog. See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md]
    Numerical fixtures and regression tests require no network or credentials.
 3. Review changes, commit, and push. The workflows request the repository permissions they
    need. Repository or organization policy must permit Actions to write contents and issues.
-4. Run **Hourly collector** manually without backfill. Check its source errors, latest timestamps,
+4. Run **Collector** (formerly *Hourly collector*) manually without backfill. Check its source errors, latest timestamps,
    and remote commit. Then run **Weekly report**. Live exchange availability and GitHub execution
    must be verified in your repository; local tests do not establish either.
 5. If a retained interval is missing, manually run the collector with **backfill** enabled.
@@ -44,31 +47,69 @@ The GitHub workflows use the repository's scoped `GITHUB_TOKEN` for commits and 
 
 | Workflow | Trigger | Purpose |
 |---|---|---|
-| Hourly collector | Hourly at :07 UTC; manual | Preserve history, snapshots, liquidations, and registration records |
+| Collector (`collect.yml`, formerly *Hourly collector*) | Every 15 minutes at :07, :22, :37, :52 UTC; manual; manual backfill | Preserve history, snapshots, liquidations, forward books and registration records |
 | Forecast intake | Owner's forecast issues opened/edited/reopened; hourly :37 recovery; manual | Validate, freeze, persist, then acknowledge a forecast |
 | Weekly report | Monday 00:30 UTC; manual | Coverage, errors, forecast scores, research summaries, review candidates |
-| Collector watchdog | Every two hours at :47 UTC; manual | Fails (so GitHub emails the owner) when the last hourly collector run is over three hours old |
+| Collector watchdog | Every 30 minutes at :17 and :47 UTC; manual | Fails (so GitHub emails the owner) when the collector is stale or missing, or running but failing |
 | Regression and numerical fixtures | Code/workflow pushes and pull requests; manual | Arithmetic fixtures and offline failure-path regression tests |
 
-Writing workflows share `repo-write` with `queue: max`. This allows up to 100 pending
-runs; it is not an unlimited queue. The hourly recovery pass revisits open forecast
-issues missed by event delivery or queueing. A repository owned by an organization
-needs an explicit authorized-user policy before phone intake can be used: the default
-accepts only an individual repository owner's login.
+**Queueing.** Every writing job (collector, backfill, forecast intake, weekly report) holds
+`repo-write`, set at job level with `queue: max`: writes are serialized and up to 100 jobs wait
+their turn, so intake and report work is not dropped behind collector runs. It is not an
+unlimited queue. Scheduled collector runs additionally share a workflow-level group with GitHub's
+default queue: one running and at most one pending, a newer pending run replacing the older one.
+During an outage or a long backfill, obsolete scheduled runs are therefore cancelled while still
+pending instead of piling up; nothing that is running is cancelled, so persistence always
+finishes. Manual and backfill runs have their own groups and are never cancelled by the schedule.
+The hourly intake recovery pass revisits open forecast issues missed by event delivery or
+queueing. A repository owned by an organization needs an explicit authorized-user policy before
+phone intake can be used: the default accepts only an individual repository owner's login.
 
-The collector's network work ends 20 minutes into a run (`COLLECTOR_BUDGET_S`) and the
-Hyperliquid map's 5 minutes into its own work, on `time.monotonic()`. The limit covers each whole
-request: DNS lookup, connection, headers and body. A request still unfinished at the deadline is
-abandoned and counted as failed, never accepted late; unreached work is recorded as such. What
-the limit does not cover: the seconds of local writing after the deadline, and the workflow's own
-commit and push, which have the remaining ~10 minutes of the 30-minute job. An abandoned request
-may keep its background thread until its socket times out or the process exits; its result is
-discarded.
+**Time budget of a routine run.** Network work ends 10 minutes into the run
+(`COLLECTOR_BUDGET_S=600`), on `time.monotonic()`. Inside it, history series may use 40%,
+liquidations 15% and the snapshot 20%; the forward books get the rest, and the Hyperliquid map at
+most 5 minutes of it. History and liquidations are checkpointed and recover on the next run;
+snapshots cannot be taken later, so one stalled venue can no longer cost every venue its snapshot.
+The limit covers each whole request: DNS lookup, connection, headers and body. A request still
+unfinished at the deadline is abandoned and counted as failed, never accepted late; unreached
+work is recorded as such. The collection step is limited to 11 minutes, persistence (commit and
+push, with rebase retries) to 100 seconds by `scripts/commit_push.sh`, and the job to 14 minutes,
+inside the 15-minute slot. Time spent waiting for `repo-write` does not count against the job
+limit. Backfill keeps a separate 30-minute budget in a 45-minute job. An abandoned request may
+keep its background thread until its socket times out or the process exits; its result is
+discarded. A normal routine run takes 1.5–2.5 minutes.
 
-Scheduled jobs can be delayed. A failing collector fails its own workflow; a silent one (disabled
-schedule, stuck queue) is caught by the watchdog within about two hours. The watchdog runs on the
-same Actions scheduler, so a platform-wide scheduling outage silences both; that case still
-surfaces only at the weekly report or by looking. External uptime monitoring remains a future addition.
+**Health.** `cadence.json` lists every schedule the collector has run under. The weekly report
+judges each period against its own cadence, so the hourly period is not counted as missing three
+runs in four, and it keeps two figures apart:
+
+- *Scheduled execution*: runs the scheduler started (`trigger: schedule` in the run record)
+  against the nominal slots that have passed. Manual runs never count. Starts are counted, not
+  matched to slots: GitHub starts scheduled jobs late by an unrecorded amount (minutes is common,
+  longer under load) and sometimes drops them, so a start time does not say which slot it served.
+  Run records before 2.6 do not record their trigger; for that period the report shows an upper
+  bound.
+- *Snapshot coverage*: slot intervals that hold at least one stored snapshot, whatever started the
+  run. This is the data actually held.
+
+It also reports the actual intervals between runs and between snapshots, runtime percentiles,
+runs that reached the budget, and rate-limit incidents by host, and it groups failures by source
+(count, first and last run, latest message) so a persistent fault stays visible without burying
+everything else. History series keep their native 5-minute and hourly resolution: the run cadence
+only changes how often the checkpoints are advanced, and row identities are deduplicated.
+
+**Watchdog timing.** The watchdog runs every 30 minutes and reads the stored run records. It
+fails with exit 1 when no run that the schedule could have started is younger than
+`WATCHDOG_STALE_MIN` minutes (default 90, six slots; set the repository variable
+`WATCHDOG_STALE_MIN` or pass it to a manual run). A recent manual run does not reset this, so a dead
+schedule is not hidden by a manual check. It fails with exit 2 when runs are arriving but the
+latest scheduled run lost critical data (the Binance share series or the snapshot), and passes
+with warnings when sources failed, books were degraded or requests were rate limited. Ninety
+minutes tolerates ordinary scheduling delays and the odd dropped run; a collector that stops is
+reported about 90–120 minutes after its last run, plus any delay in starting the watchdog. The
+watchdog runs on the same Actions scheduler, so a platform-wide scheduling outage silences both;
+that case still surfaces only at the weekly report or by looking. External uptime monitoring
+remains a future addition.
 
 ## Forecasts from a phone
 
@@ -155,7 +196,7 @@ source retention, use an explicit backfill after reviewing the gap. A measured H
 boundary is tolerated only during Binance backfill after older data has been received;
 other failures retain the prior checkpoint.
 
-Forward-only books use daily files so each hourly commit rewrites a small file:
+Forward-only books use daily files so each routine commit rewrites a small file:
 `data/options/deribit_btc/YYYY-MM-DD.jsonl` (every BTC option with non-zero OI: instrument, OI in
 BTC, mark IV; underlying price per expiry; about 30 KB per run) and
 `data/hl_positions/btc/YYYY-MM-DD.jsonl` (BTC positions of the top 200 Hyperliquid accounts by
@@ -164,8 +205,12 @@ six hours from the ~40 MB leaderboard and cached in `state/checkpoints.json`). E
 carries `status`: `complete`, or `degraded` with the failing accounts (`failed`) or excluded
 option rows (`excluded`) named. A response without the documented structure counts as failed —
 `{}` is never an empty account. Half or more accounts failing, or over 5% of option rows
-invalid, stores nothing and records the run as failed. The option book
-adds roughly 22 MB of text a month before git compression; watch repository size.
+invalid, stores nothing and records the run as failed.
+
+At the 15-minute cadence one routine run stores about 44 KB of text (options 31 KB, Hyperliquid
+map 5 KB, snapshot 5 KB, run record 3 KB; about 12 KB gzipped), roughly 4 MB a day and 125 MB a
+month before git compression, on top of history series and liquidations, which do not grow with
+the cadence. Watch repository size; see the limitations in CHANGELOG 2.6.
 
 Monthly JSONL files retain first observations. Source revisions do not overwrite them.
 This release does not implement general revision history for every exchange series.

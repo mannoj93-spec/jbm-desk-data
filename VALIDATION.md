@@ -1,9 +1,22 @@
-# Validation record — reliability revision 2.5.1
+# Validation record — collection cadence revision 2.6
 
 Validated 2026-09-23 with Python 3.11 (container) against live sources; GitHub workflows select
-Python 3.12. Runtime uses the standard library only.
+Python 3.12. Runtime uses the standard library only. Rows below the 2.6 block are the record of
+earlier revisions and are kept as they were.
 
-| Check | Result |
+| Check (2.6) | Result |
+|---|---|
+| Numerical fixture checks (`test_fixtures.py`) | 25 passed |
+| Offline regression tests (`regression/`) | 119 passed (50 from 2.1, 37 in `test_rev22.py`, 32 in `test_rev26.py`); 5 consecutive full runs, no flakes |
+| `test_rev26.py` run against 2.5.1 code and workflows (`bcccf14`) | 26 of 32 fail or error, as intended; the 6 that pass pin behaviour 2.5.1 already had (native resolution, successful push, cadence arithmetic) |
+| Simulated sustained outage of every venue, fake clock, 600 s budget | Run ends at 600.0 s, record written with every failure and `deadline_reached`; 14-minute job leaves 3.0 minutes for persistence and the recovery artifact |
+| Simulated stall of one venue (Binance), fake clock | History stops at its 240 s stage limit; snapshot and forward books still run (2.5: history took all 600 s, snapshot skipped) |
+| Hung remote, `PERSIST_BUDGET_S=8` | `commit_push.sh` exits 1 in under 20 s with "remote persistence not confirmed" (unbounded: four 30 s pushes plus rebases) |
+| Live routine run under 2.6, scratch copy (15:58Z) | 17/17 books; options complete, 847 strikes; HL complete 200/200 in 82 s; 281 requests, 0 rate-limited; 154 s; stages: series 39 s, liquidations 17 s (daily probe), snapshot 15 s, forward 82 s |
+| Report and watchdog on the live copy | Hourly period judged against hourly slots (16/16, upper bound); local run excluded from scheduled figures; watchdog healthy, warns that the newest run was local |
+| `SHA256SUMS` | Covers code, docs, workflows, `cadence.json` and templates; data, state and reports change every run |
+
+| Check (2.5.1 and earlier) | Result |
 |---|---|
 | Numerical fixture checks (`test_fixtures.py`) | 25 passed |
 | `SHA256SUMS` | Now covers code, docs, workflows and templates only; data, state and reports change every hour |

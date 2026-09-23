@@ -12,8 +12,9 @@ from schema import H, SERIES
 from storage import atomic_bytes, read_rows, read_json, loads
 from scoring import score_registry
 from research import run_tests
+import cadence
 
-REPORT_VERSION = "report-2.2-2026-09-23"
+REPORT_VERSION = "report-2.3-2026-09-23"
 
 
 def iso(ms):
@@ -51,10 +52,114 @@ def format_event(event):
 
 
 def run_coverage(runs, start, end):
-    # Scheduled run slots begin at :07; manual extra runs cannot raise coverage above 100%.
+    # Hourly slots at :07 (the pre-2.6 schedule); extra runs cannot raise coverage above 100%.
+    # Used only for the legacy period, whose records do not say what started them.
     slots = set(range((start - 7*60_000 + H - 1)//H, (end - 7*60_000)//H + 1))
     present = {((r["t"] - 7*60_000)//H) for r in runs if start <= r["t"] <= end}
     return len(slots & present), len(slots)
+
+
+def _minutes(values):
+    mid, p90 = cadence.quantiles(values)
+    return "n/a" if mid is None else f"median {mid:.1f}, p90 {p90:.1f}, max {max(values):.1f}"
+
+
+def collection_health(runs_all, runs, snaps, periods, since, now):
+    """Section 1. Scheduled execution (starts the scheduler made, counted against the nominal
+    slots of the cadence in force) and snapshot coverage (market snapshots actually stored per
+    slot interval, whatever started them) are reported separately; see cadence.py."""
+    lines, alerts = [], []
+    stale_min = cadence.stale_minutes()
+    grace = 20 * 60_000     # a slot this recent may simply not have started yet
+    by_trigger = Counter(cadence.trigger(r) or f"not recorded ({r.get('runner')})" for r in runs)
+    lines.append(f"{len(runs)} routine runs in window, by trigger: "
+                 + (", ".join(f"{k} {v}" for k, v in sorted(by_trigger.items())) or "none") + ".")
+    if not periods:
+        lines.append("No cadence history (cadence.json); scheduled execution not assessed.")
+    else:
+        lines.extend(["", "| Cadence period (UTC) | Schedule | Nominal slots | Scheduled starts | Snapshot coverage | Degraded snapshots |",
+                      "|---|---|---:|---|---|---:|"])
+        for lo, hi, minutes in cadence.spans(periods, since, now):
+            cron = [c for start, m, c in periods if start <= lo][-1]
+            due = cadence.slots(periods, lo, min(hi, now - grace + 1))
+            in_span = [r for r in runs_all if lo <= r["t"] < hi and r["t"] <= now and cadence.is_routine(r)]
+            scheduled = [r for r in in_span if cadence.trigger(r) == "schedule"]
+            legacy = [r for r in in_span if cadence.trigger(r) is None and r.get("runner") == "github"]
+            if legacy and not scheduled:
+                covered, _ = run_coverage(legacy, lo, hi) if len(minutes) == 1 and minutes == [7] else (None, None)
+                started = (f"{len(legacy)} GitHub runs, trigger not recorded (pre-2.6)"
+                           + (f"; slots with a run: {covered}/{len(due)}, an upper bound (manual runs indistinguishable)"
+                              if covered is not None else ""))
+            else:
+                share = f" ({100 * min(len(scheduled), len(due)) / len(due):.0f}%)" if due else ""
+                started = f"{len(scheduled)}{share}"
+                if legacy:
+                    started += f"; plus {len(legacy)} pre-2.6 runs with no trigger recorded"
+            buckets = [(a, b) for a, b in cadence.slot_buckets(periods, lo, hi) if b <= now]
+            stamps = [r["t"] for r in snaps if lo <= r["t"] < hi]
+            j, hit = 0, 0
+            for a, b in buckets:
+                while j < len(stamps) and stamps[j] < a:
+                    j += 1
+                hit += j < len(stamps) and stamps[j] < b
+            span_snaps = [r for r in snaps if lo <= r["t"] < hi]
+            degraded = sum(1 for r in span_snaps if any(v.get("st") != "ok" for v in (r.get("oi") or {}).values()))
+            coverage = f"{hit}/{len(buckets)} slot intervals" if buckets else "no complete interval"
+            lines.append(f"| {iso(lo)} → {iso(hi)} | `{cron}` | {len(due)} | {started} | {coverage} | {degraded}/{len(span_snaps)} |")
+        lines.append("Starts are counted, never matched to slots: GitHub starts scheduled runs late by an unrecorded "
+                     "amount and can drop them, so a start time does not identify its slot (edges can shift a count by one). "
+                     f"Slots in the last {grace // 60_000} minutes are not yet due. Manual runs never count as scheduled starts; "
+                     "they do count toward snapshot coverage, which measures data held rather than scheduler behaviour.")
+    sched = [r for r in runs if cadence.schedule_evidence(r)]
+    current = cadence.interval_minutes(periods, now) if periods else None
+    gaps = [(b["t"] - a["t"]) / 60_000 for a, b in zip(sched, sched[1:])
+            if current and cadence.interval_minutes(periods, a["t"]) == current]
+    if gaps:
+        legacy = any(cadence.trigger(r) is None for r in sched)
+        lines.append(f"Actual interval between scheduled starts under the current {current}-minute cadence (min): {_minutes(gaps)}"
+                     + ("; includes pre-2.6 GitHub runs, whose trigger is unrecorded." if legacy else "."))
+    snap_gaps = [(b["t"] - a["t"]) / 60_000 for a, b in zip(snaps, snaps[1:])]
+    if snap_gaps:
+        lines.append(f"Actual interval between stored snapshots, all triggers (min): {_minutes(snap_gaps)}.")
+    elapsed = [r["elapsed_s"] for r in runs if isinstance(r.get("elapsed_s"), (int, float))]
+    if elapsed:
+        mid, p90 = cadence.quantiles(elapsed)
+        hit_deadline = sum(1 for r in runs if r.get("deadline_reached"))
+        lines.append(f"Runtime per routine run (s): median {mid:.0f}, p90 {p90:.0f}, max {max(elapsed):.0f}; "
+                     f"{hit_deadline} run(s) reached the network budget.")
+        if hit_deadline:
+            alerts.append(f"{hit_deadline} routine run(s) reached the network budget; later stages were cut short.")
+    rate = Counter()
+    for r in runs:
+        rate.update((r.get("http") or {}).get("rate_limited_by_host") or {})
+    hl_backoffs = sum(((r.get("forward") or {}).get("hl_positions") or {}).get("rate_limited") or 0 for r in runs)
+    with_http = sum(1 for r in runs if r.get("http"))
+    lines.append("Rate-limit incidents: " + (", ".join(f"{h} {n}" for h, n in rate.most_common()) or "none recorded")
+                 + f" across {with_http} run(s) that record them (2.6+); Hyperliquid accounts retried after a 429: {hl_backoffs}.")
+    if not runs:
+        alerts.append("No routine collector run in the report window.")
+    last = [r for r in runs_all if cadence.schedule_evidence(r) and r["t"] <= now]
+    if last and now - last[-1]["t"] > stale_min * 60_000:
+        alerts.append(f"Collector stale: last scheduled run {iso(last[-1]['t'])}, over {stale_min} minutes before this report.")
+    # One alert per source, not one per run: at 96 runs a day a persistent fault would otherwise
+    # bury everything else.
+    grouped, critical = {}, []
+    for r in runs:
+        is_critical, problems = cadence.failure_summary(r)
+        if is_critical:
+            critical.append(r)
+        for source, message in problems:
+            g = grouped.setdefault(source, {"n": 0, "first": r["t"], "last": r["t"], "msg": message})
+            g["n"] += 1
+            g["last"], g["msg"] = r["t"], message
+    if critical:
+        alerts.append(f"Critical collection failed in {len(critical)}/{len(runs)} routine run(s): "
+                      + ", ".join(iso(r["t"]) for r in critical[-5:]) + (" (latest five)" if len(critical) > 5 else ""))
+    for source, g in sorted(grouped.items(), key=lambda kv: -kv[1]["last"]):
+        when = iso(g["first"]) if g["n"] == 1 else f"{iso(g['first'])} → {iso(g['last'])}"
+        cleared = "; absent from the latest run" if g["last"] < runs[-1]["t"] else ""
+        alerts.append(f"{source}: {g['n']}/{len(runs)} routine run(s), {when}; latest: {g['msg']}{cleared}")
+    return lines, alerts
 
 
 def build(base, now, days=7):
@@ -72,36 +177,21 @@ def build(base, now, days=7):
     runs_all = sorted(read("data/runs/*.jsonl"), key=lambda r: r["t"])
     if any(r["t"] > now for r in runs_all):
         alerts.append("Stored runs have future timestamps relative to this report clock; excluded from health totals.")
-    runs = [r for r in runs_all if since <= r["t"] <= now and r.get("mode") == "hourly"]
+    runs = [r for r in runs_all if since <= r["t"] <= now and cadence.is_routine(r)]
     lines.extend([f"# JBM desk report — {iso(now)}", f"Window {iso(since)} → {iso(now)}. {REPORT_VERSION}.",
                   "Stored observations are research inputs. Missing observations never count as a failed forecast.",
                   "", "## 1. Collection health"])
-    deployed = [r for r in runs_all if r.get("runner") == "github" and r.get("mode") == "hourly" and r["t"] <= now]
-    if deployed:
-        covered, expected = run_coverage(deployed, max(since, deployed[0]["t"]), now)
-        lines.append(f"GitHub hourly slots observed: {covered}/{expected}; {len(runs)} hourly runs in window (all runners). "
-                     "Slot counts approximate scheduled collection, not guaranteed uptime.")
-    else:
-        lines.append(f"{len(runs)} hourly runs in window. No GitHub deployment evidence in stored run records.")
-    if not runs:
-        alerts.append("No hourly collector run in the report window.")
-    elif now - runs[-1]["t"] > 3 * H:
-        alerts.append(f"Last hourly collector run {iso(runs[-1]['t'])}; over 3 hours old.")
-    for run in runs:
-        for key, error in run.get("errors", {}).items():
-            alerts.append(f"{iso(run['t'])}: {key}: {error}")
-        for name, status in run.get("series", {}).items():
-            if status.get("err"):
-                alerts.append(f"{iso(run['t'])}: history {name}: {status['err']}")
-        if run.get("liq", {}).get("err"):
-            alerts.append(f"{iso(run['t'])}: liquidations: {run['liq']['err']}")
-        for name, status in (run.get("forward") or {}).items():
-            if status.get("err"):
-                alerts.append(f"{iso(run['t'])}: forward book {name}: {status['err']}")
-        if not run.get("critical_ok", False):
-            alerts.append(f"{iso(run['t'])}: critical collection failed")
+    snaps = sorted((r for r in read("data/snap/*.jsonl") if since <= r["t"] <= now), key=lambda r: r["t"])
+    try:
+        periods = cadence.load(base)
+    except (ValueError, KeyError, TypeError) as exc:
+        alerts.append(f"cadence.json unreadable ({exc}); scheduled execution not assessed.")
+        periods = []
+    health_lines, health_alerts = collection_health(runs_all, runs, snaps, periods, since, now)
+    lines.extend(health_lines)
+    alerts.extend(health_alerts)
     sources, current = {}, set()
-    for snap in sorted((r for r in read("data/snap/*.jsonl") if since <= r["t"] <= now), key=lambda r: r["t"]):
+    for snap in snaps:
         members = dict(snap.get("oi", {}), **{k:v for k,v in snap.items() if isinstance(v,dict) and "st" in v})
         current = set(members)          # sources in the most recent snapshot
         for name, value in members.items():
@@ -165,9 +255,9 @@ def build(base, now, days=7):
         if not since <= hour+H <= now-6*H:
             continue
         live = next((r for r in runs_all if hour+H <= r['t'] <= hour+3*H
-                     and r.get('mode') == 'hourly' and not r.get('liq',{}).get('err')
+                     and cadence.is_routine(r) and not r.get('liq',{}).get('err')
                      and r.get('liq',{}).get('window_oldest_ms', now) <= hour), None)
-        followup = any(hour+7*H <= r['t'] <= now and r.get('mode')=='hourly' and not r.get('liq',{}).get('err')
+        followup = any(hour+7*H <= r['t'] <= now and cadence.is_routine(r) and not r.get('liq',{}).get('err')
                        and r.get('liq',{}).get('window_oldest_ms',now) <= hour for r in runs_all)
         if not live or not followup:
             continue
@@ -195,9 +285,9 @@ def build(base, now, days=7):
             continue
         hours = len({r["t"] // H for r in window})
         degraded = sum(r.get("status") == "degraded" for r in window)
-        lines.append(f"- {label}: {hours} hourly runs from {iso(window[0]['t'])} to {iso(window[-1]['t'])}; "
-                     f"latest {count(window[-1])}; {degraded} degraded snapshot(s).")
-        if now - window[-1]["t"] > 3 * H:
+        lines.append(f"- {label}: {len(window)} stored snapshots in {hours} distinct hours from {iso(window[0]['t'])} "
+                     f"to {iso(window[-1]['t'])}; latest {count(window[-1])}; {degraded} degraded snapshot(s).")
+        if now - window[-1]["t"] > cadence.stale_minutes() * 60_000:
             alerts.append(f"{label}: stale; last stored run {iso(window[-1]['t'])}")
     lines.extend(["", "## 4. Forecast registry"])
     manifest = read_json(base / "state/forecast_manifest.json", {})

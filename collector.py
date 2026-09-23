@@ -6,7 +6,8 @@ Keeps what the venues forget, in three shapes:
   1. History series (Binance positioning / OI / taker / funding, OKX mark, index,
      funding and account ratio, Deribit DVOL). Checkpointed: every run fetches every
      CLOSED interval since the last stored one, so 5m history survives even though the
-     job runs hourly (runbook D: one snapshot an hour does not preserve 5m history).
+     job runs every 15 minutes (runbook D: a periodic snapshot does not preserve 5m history;
+     the checkpoint does, whatever the cadence).
   2. OKX forced-flow feed. Individual orders, deduplicated, each stamped with the run
      that first saw it -- which is what lets report.py measure how much an hour's total
      revises after the hour closes. Once a day the feed is paged to its boundary (O14).
@@ -20,17 +21,17 @@ Nothing is derived here beyond unit conversion that the runbook fixes per venue.
 Everything else is computed at read time by versioned code (report.py or a skill thread).
 
 Usage:
-  python collector.py              # hourly run
+  python collector.py              # routine run (scheduled every 15 minutes, see cadence.json)
   python collector.py --backfill   # page every history series back to its source boundary
 Exit code 0 always, unless the critical Binance share series failed (then 2) --
 the workflow commits first and fails afterwards so GitHub emails the owner.
 """
-import gzip, json, math, os, re, socket, sys, threading, time, urllib.request, urllib.error, datetime as dt
+import gzip, json, math, os, re, socket, sys, threading, time, urllib.parse, urllib.request, urllib.error, datetime as dt
 from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
 from schema import SERIES_KIND
 
-CODE_VERSION = "collector-2.5.1-2026-09-23"
+CODE_VERSION = "collector-2.6-2026-09-23"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -40,17 +41,52 @@ H = 3_600_000
 M5 = 300_000
 BACKFILL = "--backfill" in sys.argv
 NOW = int(time.time() * 1000)
-# Run-wide network budget. The workflow kills the job at 30 minutes; persistence runs after this
-# process exits, so every request must stop well before that. A simulated all-venue outage took
-# 285 minutes under 2.3 (576 requests, each waiting its full timeout). After the deadline, get()
-# returns an error without a request, so each remaining stage fails fast and the run record is
-# still written. Override with COLLECTOR_BUDGET_S. Deadlines use time.monotonic(): a wall-clock
-# step (NTP) cannot extend or cut them.
-RUN_BUDGET_S = int(os.environ.get("COLLECTOR_BUDGET_S", 20 * 60))
+# Run-wide network budget. Persistence runs after this process exits, inside the same job, so
+# every request must stop well before the job limit (collect.yml: routine 14 minutes with a
+# 10-minute budget; backfill 45 minutes with 30). A simulated all-venue outage took 285 minutes
+# under 2.3 (576 requests, each waiting its full timeout). After the deadline, get() returns an
+# error without a request, so each remaining stage fails fast and the run record is still
+# written. The workflow sets COLLECTOR_BUDGET_S; these defaults match it for local runs.
+# Deadlines use time.monotonic(): a wall-clock step (NTP) cannot extend or cut them.
+RUN_BUDGET_S = int(os.environ.get("COLLECTOR_BUDGET_S") or (30 * 60 if BACKFILL else 10 * 60))
 DEADLINE = time.monotonic() + RUN_BUDGET_S
-RUN = {"code_version": CODE_VERSION, "t_ret": NOW, "mode": "backfill" if BACKFILL else "hourly",
+# Stage limits inside a routine run, as shares of the budget (600 s: series 240, liquidations 90,
+# snapshot 120, forward books the rest, at least 150). History series and liquidations are
+# checkpointed and recover on the next run; the snapshot and forward books cannot be fetched
+# later. Without these limits one hung venue could spend the whole budget on history and cost
+# every venue its snapshot (measured in simulation: a Binance-only stall under 2.5 left 0 s for the
+# 17-book snapshot). Backfill has no snapshot, so its series stage keeps the whole budget.
+STAGE_SHARE = {"series": 0.40, "liq": 0.15, "snap": 0.20}
+STAGE_DEADLINE = None       # set by main() around each stage; None outside a stage
+# Provenance of the run itself. `trigger` separates scheduled runs from manual ones so manual
+# checks never count as scheduled execution; records before 2.6 lack it (and say mode "hourly").
+# `schedule` is the cron entry GitHub fired, not a slot time: GitHub starts scheduled jobs late
+# by an unrecorded amount, so the intended slot is never inferred from the start time.
+RUN = {"code_version": CODE_VERSION, "t_ret": NOW, "mode": "backfill" if BACKFILL else "routine",
        "runner": "github" if os.environ.get("GITHUB_ACTIONS") else os.environ.get("RUNNER_LABEL", "local"),
+       "trigger": os.environ.get("GITHUB_EVENT_NAME") or "local",
+       "schedule": os.environ.get("SCHEDULE_CRON") or None,
+       "workflow": os.environ.get("GITHUB_WORKFLOW") or None,
+       "run_id": os.environ.get("GITHUB_RUN_ID") or None,
+       "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT") or None,
+       "budget_s": RUN_BUDGET_S,
+       "http": {"requests": 0, "failed": 0, "rate_limited": 0, "rate_limited_by_host": {}, "deadline_skipped": 0},
        "series": {}, "liq": {}, "snap": {}, "errors": {}}
+RATE_LIMIT_CODES = (418, 429)          # Binance answers 418 once a 429 is ignored
+RATE_LIMIT_BODY = re.compile(r"code 50011\b|too many requests|rate limit", re.I)   # OKX 50011, others
+
+
+def note_http(url, err=None, code=None):
+    """Per-run request accounting: request count, failures, and rate-limit incidents by host."""
+    h = RUN["http"]
+    h["requests"] += 1
+    if err is None:
+        return
+    h["failed"] += 1
+    if code in RATE_LIMIT_CODES or (code is None and RATE_LIMIT_BODY.search(err)):
+        h["rate_limited"] += 1
+        host = urllib.parse.urlparse(url).hostname or "?"
+        h["rate_limited_by_host"][host] = h["rate_limited_by_host"].get(host, 0) + 1
 
 
 def iso(ms):
@@ -159,12 +195,13 @@ def get(url, body=None, tries=4, pause=0.0, timeout=25, deadline=None):
     time.monotonic()), and no request - connection, headers and body included - or retry pause
     runs past it (see fetch)."""
     last = None
-    stop = min(DEADLINE, deadline) if deadline else DEADLINE
+    stop = min(x for x in (DEADLINE, STAGE_DEADLINE, deadline) if x is not None)
     for i in range(tries):
         if pause:
             time.sleep(min(pause, max(0.0, stop - time.monotonic())))
         remaining = stop - time.monotonic()
         if remaining < 1:
+            RUN["http"]["deadline_skipped"] += 1
             return None, (last + "; " if last else "") + "deadline reached"
         try:
             data = json.dumps(body).encode() if body is not None else None
@@ -174,11 +211,13 @@ def get(url, body=None, tries=4, pause=0.0, timeout=25, deadline=None):
             req = urllib.request.Request(url, data=data, headers=hdr)
             js = json.loads(fetch(req, min(timeout, remaining), stop).decode())
             err = body_error(js)
+            note_http(url, err)
             if err:
                 return None, err
             return js, None
         except HTTPFailure as e:
             last = f"HTTP {e.code}"
+            note_http(url, last, e.code)
             if e.code in (400, 401, 403, 404, 451):
                 # Keep the venue's own reason (e.g. Bitget 40309 "symbol has been removed").
                 try:
@@ -188,6 +227,7 @@ def get(url, body=None, tries=4, pause=0.0, timeout=25, deadline=None):
                 return None, last + (f" ({detail})" if detail else "")   # not transient
         except Exception as e:
             last = type(e).__name__ + ": " + str(e)[:80]
+            note_http(url, last)
         if i + 1 < tries:
             time.sleep(min(2 + 3 * i, max(0.0, stop - time.monotonic())))
     return None, last or "failed"
@@ -233,7 +273,7 @@ def day(ms):
 
 def append_rows(rel_dir, rows, partition=month):
     """Monthly files by default; large forward-only books use daily files (partition=day)
-    so an hourly commit rewrites a small file."""
+    so each routine commit rewrites a small file."""
     by_month = {}
     for row in rows:
         row = dict(row, code_version=CODE_VERSION, code_commit=os.environ.get("GITHUB_SHA", "local"), observed_at=int(time.time()*1000))
@@ -501,11 +541,13 @@ def liq_key(d):
 def collect_liq(st):
     """Page the OKX feed back to the last stored order minus a 6h re-capture window, so
     orders that appear late are caught and stamped with the run that first saw them.
-    Once a day (00Z run) and on backfill, page to the boundary and record it (O14)."""
+    Once per UTC day (the first run of the day that completes the probe) and on backfill, page
+    to the boundary and record it (O14). Under 2.5 the probe keyed on the 00Z hour, which at a
+    15-minute cadence would have probed four times; the checkpoint now records the day probed."""
     seen_path = os.path.join(BASE, "state", "liq_recent_keys.json")
     seen = set(read_json(seen_path, []))
     last = st.get("liq_last_ts")
-    probe = BACKFILL or dt.datetime.fromtimestamp(NOW / 1000, dt.timezone.utc).hour == 0 or last is None
+    probe = BACKFILL or last is None or st.get("liq_probe_day") != day(NOW)
     floor = 0 if probe else (last - 6 * H)
     url0 = f"{OKX}/public/liquidation-orders?instType=SWAP&uly=BTC-USDT&instId=BTC-USDT-SWAP&state=filled&limit=100"
     after, pages, err, got, oldest, newest = None, 0, None, [], None, None
@@ -565,6 +607,7 @@ def collect_liq(st):
                   "window_oldest": iso(oldest) if oldest else None, "window_newest": iso(newest) if newest else None,
                   "window_oldest_ms": oldest, "window_newest_ms": newest}
     if probe and oldest and not err:
+        st["liq_probe_day"] = day(NOW)
         append_rows("liq/boundary", [{"t": NOW, "oldest": oldest, "oldest_iso": iso(oldest), "pages": pages,
                                       "retention_days": round((NOW - oldest) / 86_400_000, 2),
                                       "hit_page_cap": pages >= max_pages}])
@@ -1000,18 +1043,39 @@ def main():
         RUN["errors"]["register"] = type(e).__name__ + ": " + str(e)[:120]
     st = load_state()
     critical_ok = True
+    stages = RUN["stage_s"] = {}
+    RUN["stage_limited"] = []
+    mark = time.monotonic()
+    def begin(name):
+        global STAGE_DEADLINE
+        share = None if BACKFILL else STAGE_SHARE.get(name)
+        STAGE_DEADLINE = None if share is None else min(DEADLINE, time.monotonic() + share * RUN_BUDGET_S)
+    def lap(name):
+        nonlocal mark
+        global STAGE_DEADLINE
+        now = time.monotonic()
+        stages[name] = round(now - mark, 1)
+        if STAGE_DEADLINE is not None and now >= STAGE_DEADLINE - 1 and now < DEADLINE - 1:
+            RUN["stage_limited"].append(name)        # cut by its stage limit, not the run budget
+        STAGE_DEADLINE = None
+        mark = now
+    begin("series")
     try:
         critical_ok = collect_series(st)
     except Exception as e:
         RUN["errors"]["series"] = type(e).__name__ + ": " + str(e)[:120]
         critical_ok = False
     save_state(st)
+    lap("series")
+    begin("liq")
     try:
         collect_liq(st)
     except Exception as e:
         RUN["errors"]["liq"] = type(e).__name__ + ": " + str(e)[:120]
     save_state(st)
+    lap("liq")
     if not BACKFILL:
+        begin("snap")
         try:
             S = snapshot()
             S["t"] = NOW
@@ -1025,8 +1089,12 @@ def main():
                                             if isinstance(v, dict) and v.get("st") == "error"}}
         except Exception as e:
             RUN["errors"]["snap"] = type(e).__name__ + ": " + str(e)[:120]
+        lap("snap")
+        begin("forward")
         collect_forward(st)
         save_state(st)
+        lap("forward")
+    RUN["deadline_reached"] = time.monotonic() >= DEADLINE
     RUN["elapsed_s"] = round(time.time() - NOW / 1000, 1)
     RUN["critical_ok"] = critical_ok
     RUN["t"] = NOW
@@ -1035,7 +1103,8 @@ def main():
     print(f"{iso(NOW)} {CODE_VERSION} mode={RUN['mode']} series_rows+={added} liq_new={RUN['liq'].get('new')} "
           f"books={RUN['snap'].get('books_ok')}/{RUN['snap'].get('books')} "
           f"forward={ {k: v.get('err') or v.get('added') for k, v in RUN.get('forward', {}).items()} } critical_ok={critical_ok} "
-          f"elapsed={RUN['elapsed_s']}s")
+          f"elapsed={RUN['elapsed_s']}s http={RUN['http']['requests']} rate_limited={RUN['http']['rate_limited']} "
+          f"trigger={RUN['trigger']}")
     if not critical_ok:
         sys.exit(2)
 
