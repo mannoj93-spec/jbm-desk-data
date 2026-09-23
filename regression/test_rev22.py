@@ -599,7 +599,8 @@ class WatchdogTests(unittest.TestCase):
             storage.append_unique(Path(tmp) / 'data/runs/2026-01.jsonl',
                                   [{'t': START, 'mode': 'hourly', 'runner': 'github'},
                                    {'t': START + 5 * H, 'mode': 'backfill'}], lambda r: r['t'])
-            self.assertEqual(watchdog.check(tmp, START + 2 * H)[0], 0)
+            # 2.6: the limit is 90 minutes (WATCHDOG_STALE_MIN), not three hours.
+            self.assertEqual(watchdog.check(tmp, START + 80 * schema.MINUTE)[0], 0)
             code, message = watchdog.check(tmp, START + 4 * H)   # a backfill run does not count as hourly
             self.assertEqual(code, 1)
             self.assertIn('silent', message)
