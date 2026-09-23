@@ -1,0 +1,58 @@
+{
+ "baseline_predictors": [],
+ "collapse_ms": 14400000,
+ "comparison": {
+  "hypothesised_sign": 1,
+  "rationale": "options skew hypothesised to lead perp positioning; oriented with the options side",
+  "reference_group": "control",
+  "test_group": [
+   "bearish_disagreement",
+   "bullish_disagreement"
+  ]
+ },
+ "exclusions": [
+  "records before 7 days of z history",
+  "panel quotes failing quality checks"
+ ],
+ "family": "F-options",
+ "id": "F1-options-perp-disagreement",
+ "min_independent_episodes": 100,
+ "module": "options_disagreement",
+ "outcome": {
+  "horizons_min": [
+   30,
+   60,
+   240,
+   480
+  ],
+  "metric": "ret_net",
+  "primary_horizon": 480
+ },
+ "primary_variant": "z2",
+ "question": "When 7-day risk reversal and perp funding disagree at extremes, does BTC follow the options side more than scheduled entries do?",
+ "status_note": "100 independent evaluation episodes is house governance (operating document), not a statistical test",
+ "variants": [
+  {
+   "name": "z2",
+   "params": {
+    "z": 2.0,
+    "z_window": 672
+   }
+  },
+  {
+   "name": "z1.5",
+   "params": {
+    "z": 1.5,
+    "z_window": 672
+   }
+  },
+  {
+   "name": "z2.5",
+   "params": {
+    "z": 2.5,
+    "z_window": 672
+   }
+  }
+ ],
+ "version": 1
+}

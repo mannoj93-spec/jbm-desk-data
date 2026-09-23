@@ -1,0 +1,64 @@
+{
+ "baseline_predictors": [],
+ "collapse_ms": 900000,
+ "comparison": {
+  "hypothesised_sign": 1,
+  "rationale": "unreplenished liquidity hypothesised to precede continuation toward the depleted side",
+  "reference_group": "fast",
+  "test_group": "slow"
+ },
+ "exclusions": [
+  "shock windows with missing seconds or recorded gaps",
+  "Hyperliquid books"
+ ],
+ "family": "E-liquidity",
+ "id": "E1-liquidity-recovery",
+ "min_independent_episodes": 100,
+ "module": "liquidity_recovery",
+ "outcome": {
+  "horizons_min": [
+   30,
+   60,
+   240,
+   480
+  ],
+  "metric": "ret_net",
+  "primary_horizon": 30
+ },
+ "primary_variant": "bybit_s30",
+ "question": "After a displayed-depth shock, do slow refills precede larger moves in the depleted side's direction than fast refills?",
+ "status_note": "100 independent evaluation episodes is house governance (operating document), not a statistical test",
+ "variants": [
+  {
+   "name": "bybit_s30",
+   "params": {
+    "instrument": "BTCUSDT",
+    "recover_frac": 0.8,
+    "recovery_s": 60,
+    "shock_frac": 0.3,
+    "venue": "bybit"
+   }
+  },
+  {
+   "name": "bybit_s50",
+   "params": {
+    "instrument": "BTCUSDT",
+    "recover_frac": 0.8,
+    "recovery_s": 60,
+    "shock_frac": 0.5,
+    "venue": "bybit"
+   }
+  },
+  {
+   "name": "deribit_s30",
+   "params": {
+    "instrument": "BTC-PERPETUAL",
+    "recover_frac": 0.8,
+    "recovery_s": 60,
+    "shock_frac": 0.3,
+    "venue": "deribit"
+   }
+  }
+ ],
+ "version": 1
+}

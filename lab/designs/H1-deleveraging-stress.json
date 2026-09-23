@@ -1,0 +1,38 @@
+{
+ "baseline_predictors": [],
+ "collapse_ms": 1800000,
+ "comparison": {
+  "hypothesised_sign": 1,
+  "rationale": "deleveraging stress hypothesised to precede continuation in the liquidation direction",
+  "reference_group": "plain_burst",
+  "test_group": "stressed_burst"
+ },
+ "exclusions": [
+  "buckets before 7 days of collected liquidation history",
+  "other venues' deleveraging data (unavailable)"
+ ],
+ "family": "H-deleveraging",
+ "id": "H1-deleveraging-stress",
+ "min_independent_episodes": 100,
+ "module": "deleveraging",
+ "outcome": {
+  "horizons_min": [
+   30,
+   60,
+   240,
+   480
+  ],
+  "metric": "ret_net",
+  "primary_horizon": 30
+ },
+ "primary_variant": "default",
+ "question": "Do OKX liquidation bursts accompanied by insurance-fund loss or ADL rows continue further than plain bursts?",
+ "status_note": "100 independent evaluation episodes is house governance (operating document), not a statistical test",
+ "variants": [
+  {
+   "name": "default",
+   "params": {}
+  }
+ ],
+ "version": 1
+}

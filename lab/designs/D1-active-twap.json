@@ -1,0 +1,46 @@
+{
+ "baseline_predictors": [],
+ "collapse_ms": 3600000,
+ "comparison": {
+  "hypothesised_sign": 1,
+  "rationale": "remaining TWAP slices hypothesised to push price in the program's direction",
+  "reference_group": "control",
+  "test_group": "active_twap"
+ },
+ "exclusions": [
+  "programs first observed after they finished",
+  "non-BTC programs"
+ ],
+ "family": "D-twap",
+ "id": "D1-active-twap",
+ "min_independent_episodes": 100,
+ "module": "twap_lifecycle",
+ "outcome": {
+  "horizons_min": [
+   30,
+   60,
+   240,
+   480
+  ],
+  "metric": "ret_net",
+  "primary_horizon": 240
+ },
+ "primary_variant": "n1m",
+ "question": "After an active BTC TWAP of a fixed-cohort account is first observed, do returns in its direction exceed scheduled entries with the same direction mix?",
+ "status_note": "100 independent evaluation episodes is house governance (operating document), not a statistical test",
+ "variants": [
+  {
+   "name": "n1m",
+   "params": {
+    "min_notional_usd": 1000000.0
+   }
+  },
+  {
+   "name": "n250k",
+   "params": {
+    "min_notional_usd": 250000.0
+   }
+  }
+ ],
+ "version": 1
+}

@@ -1,0 +1,63 @@
+{
+ "baseline_predictors": [
+  "prior_ret_60m_aligned",
+  "prior_rv_60m",
+  "funding_last"
+ ],
+ "collapse_ms": 1800000,
+ "comparison": {
+  "hypothesised_sign": -1,
+  "rationale": "absorbed flow is hypothesised to precede flow-direction underperformance; sign fixed before evaluation",
+  "reference_group": "strong",
+  "test_group": "weak"
+ },
+ "exclusions": [
+  "middle response group",
+  "windows with missing bars",
+  "first 7 days (threshold history)"
+ ],
+ "family": "A-flow",
+ "id": "A1-flow-absorption",
+ "min_independent_episodes": 100,
+ "module": "flow_absorption",
+ "outcome": {
+  "horizons_min": [
+   30,
+   60,
+   240,
+   480
+  ],
+  "metric": "ret_net",
+  "primary_horizon": 60
+ },
+ "primary_variant": "q99_weak0.5",
+ "question": "Do weak-response heavy-flow windows differ from strong-response ones in subsequent flow-direction net return?",
+ "status_note": "100 independent evaluation episodes is house governance (operating document), not a statistical test",
+ "variants": [
+  {
+   "name": "q99_weak0.5",
+   "params": {
+    "flow_quantile": 0.99,
+    "strong_min": 1.5,
+    "weak_max": 0.5
+   }
+  },
+  {
+   "name": "q95_weak0.5",
+   "params": {
+    "flow_quantile": 0.95,
+    "strong_min": 1.5,
+    "weak_max": 0.5
+   }
+  },
+  {
+   "name": "q99_weak0",
+   "params": {
+    "flow_quantile": 0.99,
+    "strong_min": 1.5,
+    "weak_max": 0.0
+   }
+  }
+ ],
+ "version": 1
+}
