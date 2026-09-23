@@ -52,6 +52,65 @@ class Ctx:
                 unique.setdefault(key, row)
         return sorted(unique.values(), key=lambda r: r["t"])
 
+    # ---- 2.7 datasets. Every accessor admits a record only once it had been written by the
+    # collector (observed_at) and, for bars, closed; nothing is back-dated to its event time.
+    def _stamped(self, pattern):
+        return sorted((r for r in self._rows(pattern)
+                       if r.get("observed_at") is not None and r["observed_at"] <= self.cutoff), key=lambda r: r["t"])
+
+    def prices(self, name):
+        """1-minute bars of a schema.PRICE_SERIES name as dicts (t = open time), deduplicated by open
+        time (first observation wins). A bar is visible once closed (t + 1m) and written."""
+        from schema import PRICE_SERIES
+        if name not in PRICE_SERIES:
+            raise ValueError("unknown price series")
+        bars = {}
+        for batch in self._stamped(f"data/prices/{name}/*.jsonl"):
+            fields = batch["fields"]
+            for bar in batch["bars"]:
+                if bar[0] + 60_000 <= self.cutoff and bar[0] not in bars:
+                    row = dict(zip(fields, bar))
+                    row["observed_at"] = batch["observed_at"]
+                    bars[bar[0]] = row
+        return [bars[t] for t in sorted(bars)]
+
+    def options(self):
+        """Per-run Deribit option records (schema 1 rows; schema 2 adds zero_oi/absent/panel...)."""
+        return self._stamped("data/options/deribit_btc/*.jsonl")
+
+    def option_quotes(self):
+        """Hourly full quote records (bid/ask/mark/24h volume) from collector 2.7."""
+        return self._stamped("data/options/deribit_btc_quotes/*.jsonl")
+
+    def option_listing(self):
+        return self._stamped("data/options/deribit_btc_listing/*.jsonl")
+
+    def hl_cohort(self):
+        """The frozen fixed cohort, only once it had been selected (selected_by_run <= cutoff)."""
+        from storage import read_json as _rj
+        cohort = _rj(self.base / "state/hl_cohort_fixed_v2.json", None)
+        if not cohort or cohort.get("selected_by_run", self.cutoff + 1) > self.cutoff:
+            return None
+        return cohort
+
+    def hl_accounts(self):
+        """hl-sample-v2 snapshots with account ids resolved: each record gains `address_of`, a dict
+        from account id ("F3", "R17") to address."""
+        cohort = self.hl_cohort()
+        fixed = [m[0] for m in cohort["members"]] if cohort else []
+        out = []
+        for rec in self._stamped("data/hl_accounts/*.jsonl"):
+            ids = {f"F{i}": a for i, a in enumerate(fixed)}
+            ids.update({f"R{j}": a for j, a in enumerate(rec.get("rotating", {}).get("members", []))})
+            out.append(dict(rec, address_of=ids))
+        return out
+
+    def hl_enrich(self):
+        return self._stamped("data/hl_enrich/*.jsonl")
+
+    def okx_insurance(self):
+        return self._stamped("data/okx_insurance/*.jsonl")
+
     def klines_1h(self, start, end):
         # Historical market prices: event-time cut only, not a claim about arrival time.
         stop = min(end, self.cutoff) // H * H

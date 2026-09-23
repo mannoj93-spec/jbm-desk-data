@@ -33,6 +33,19 @@ for endpoint, fields in {
 for name in ("okx_mark_1h", "okx_index_1h", "deribit_dvol_1h"):
     SERIES[name] = (H, {"o", "h", "l", "c"})
 SERIES["okx_acct_ratio_1h"] = (H, {"longShortRatio"})
+# 1-minute reference and executable price bars (2.7), stored as one batch record per collector run
+# in data/prices/<name>/YYYY-MM.jsonl (see enrich.py), not as data/series rows, to keep storage
+# compact. Each name states venue, instrument and price type: "klines" are last-trade bars with
+# volume and taker-buy volume; "markklines" are the exchange's mark price bars (no volume). A bar
+# opening at T is known no earlier than T + 1m and no earlier than the batch's observed_at.
+KLINE_FIELDS = {"o", "h", "l", "c", "v", "qv", "n", "tbv", "tbqv"}
+PRICE_SERIES = {
+    "binance_klines_1m_BTCUSDT_perp": ("Binance USD-M BTCUSDT perpetual", "last trade", KLINE_FIELDS),
+    "binance_markklines_1m_BTCUSDT_perp": ("Binance USD-M BTCUSDT perpetual", "mark price", {"o", "h", "l", "c"}),
+    "binance_klines_1m_BTCUSDT_spot": ("Binance spot BTCUSDT", "last trade", KLINE_FIELDS),
+    "binance_klines_1m_ETHUSDT_perp": ("Binance USD-M ETHUSDT perpetual", "last trade", KLINE_FIELDS),
+    "binance_klines_1m_SOLUSDT_perp": ("Binance USD-M SOLUSDT perpetual", "last trade", KLINE_FIELDS),
+}
 
 # Stamp semantics, measured live 2026-09-22 (see CHANGELOG 2.2):
 #   snapshot -- the row stamped T is the value AS OF T (Binance 1h ratio/OI rows equal the 5m

@@ -30,8 +30,9 @@ import gzip, json, math, os, re, socket, sys, threading, time, urllib.parse, url
 from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
 from schema import SERIES_KIND
+import enrich, hlsample, optionsbook
 
-CODE_VERSION = "collector-2.6.1-2026-09-23"
+CODE_VERSION = "collector-2.7-2026-09-23"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -56,7 +57,8 @@ DEADLINE = time.monotonic() + RUN_BUDGET_S
 # later. Without these limits one hung venue could spend the whole budget on history and cost
 # every venue its snapshot (measured in simulation: a Binance-only stall under 2.5 left 0 s for the
 # 17-book snapshot). Backfill has no snapshot, so its series stage keeps the whole budget.
-STAGE_SHARE = {"series": 0.40, "liq": 0.15, "snap": 0.20}
+# 2.7: "enrich" (1-minute bars, insurance fund) runs last and may use at most 10% (60 s).
+STAGE_SHARE = {"series": 0.40, "liq": 0.15, "snap": 0.20, "enrich": 0.10}
 STAGE_DEADLINE = None       # set by main() around each stage; None outside a stage
 # Venue isolation inside the snapshot stage (2.6.1). The stage limit alone did not isolate venues:
 # Binance is requested first, and one stalled Binance request (25 s timeout, four tries) spent the
@@ -303,18 +305,18 @@ def day(ms):
     return dt.datetime.fromtimestamp(ms / 1000, dt.timezone.utc).strftime("%Y-%m-%d")
 
 
-def append_rows(rel_dir, rows, partition=month):
+def append_rows(rel_dir, rows, partition=month, key=None):
     """Monthly files by default; large forward-only books use daily files (partition=day)
-    so each routine commit rewrites a small file."""
+    so each routine commit rewrites a small file. `key` overrides the row identity (2.7)."""
     by_month = {}
     for row in rows:
         row = dict(row, code_version=CODE_VERSION, code_commit=os.environ.get("GITHUB_SHA", "local"), observed_at=int(time.time()*1000))
         by_month.setdefault(partition(row["t"]), []).append(row)
-    def key(row):
+    def default_key(row):
         if rel_dir == "liq/orders":
             return (row["t"], row.get("posSide"), row.get("side"), row.get("sz_contracts"), row.get("bkPx"))
         return (row["t"], row.get("sym"))
-    return sum(append_unique(os.path.join(BASE, "data", rel_dir, m + ".jsonl"), rs, key)
+    return sum(append_unique(os.path.join(BASE, "data", rel_dir, m + ".jsonl"), rs, key or default_key)
                for m, rs in by_month.items())
 
 
@@ -717,14 +719,45 @@ def snapshot():
     oi["binance_BTCUSDC"] = snap_source("", lambda: bn_oi("BTCUSDC"))
     oi["binance_BTCUSD_PERP"] = snap_source("", bn_coinm)
 
+    hl_ctx = {}
+
     def hyper():
         js = need(get("https://api.hyperliquid.xyz/info", body={"type": "metaAndAssetCtxs"}))
+        hl_ctx["js"] = js                   # reused for ETH/SOL below; no extra request
         uni = js[0]["universe"]
         i = next(k for k, u in enumerate(uni) if u["name"] == "BTC")
         c = js[1][i]
         return {"raw": f(c["openInterest"]), "unit": "BTC", "oi_btc": f(c["openInterest"]), "mark": f(c["markPx"]),
                 "oracle": f(c["oraclePx"]), "cash_rate_1h": f(c["funding"]), "premium": f(c["premium"])}
     oi["hyperliquid"] = snap_source("", hyper)
+
+    # Cross-asset subset (2.7, module G): ETH and SOL on Hyperliquid (from the response above) and
+    # Binance USD-M (4 requests). Units normalised: oi_base in coin units, oi_quote = oi_base x mark in
+    # the venue's quote currency (USD for Hyperliquid, USDT for Binance). Funding is labelled with its
+    # interval. Not part of the 17 BTC open-interest books.
+    def hl_asset(coin):
+        js = hl_ctx.get("js")
+        if not js:
+            raise RuntimeError("Hyperliquid metaAndAssetCtxs unavailable in this run")
+        i = next(k for k, u in enumerate(js[0]["universe"]) if u["name"] == coin)
+        c = js[1][i]
+        oi_base, mk = f(c["openInterest"]), f(c["markPx"])
+        return {"asset": coin, "venue": "hyperliquid", "quote": "USD", "mark": mk, "oracle": f(c["oraclePx"]),
+                "funding": f(c["funding"]), "funding_interval_h": 1, "oi_base": oi_base,
+                "oi_quote": round(oi_base * mk, 2) if oi_base is not None and mk else None,
+                "day_ntl_vlm": f(c.get("dayNtlVlm")), "t_event": None}
+
+    def bn_asset(sym):
+        p = need(get(f"{BN}/fapi/v1/premiumIndex?symbol={sym}"))
+        o = need(get(f"{BN}/fapi/v1/openInterest?symbol={sym}"))
+        oi_base, mk = f(o["openInterest"]), f(p["markPrice"])
+        return {"asset": sym[:-4], "venue": "binance_usdm", "quote": "USDT", "mark": mk, "index": f(p["indexPrice"]),
+                "funding": f(p["lastFundingRate"]), "funding_interval_h": 8, "next_settle": p.get("nextFundingTime"),
+                "oi_base": oi_base, "oi_quote": round(oi_base * mk, 2) if oi_base is not None and mk else None,
+                "t_event": o.get("time"), "t_event_mark": p.get("time")}
+    for coin in ("ETH", "SOL"):
+        S[f"cross_hl_{coin}"] = snap_source("", lambda coin=coin: hl_asset(coin))
+        S[f"cross_binance_{coin}USDT"] = snap_source("", lambda coin=coin: bn_asset(coin + "USDT"))
 
     def hl_predicted():
         js = need(get("https://api.hyperliquid.xyz/info", body={"type": "predictedFundings"}))
@@ -1038,8 +1071,15 @@ def collect_hl_positions(st):
 
 
 def collect_forward(st):
+    """Forward-only books. 2.7 writes option schema 2 (optionsbook) and the Hyperliquid sample policy
+    hl-sample-v2 (hlsample). HL_SAMPLING_POLICY=v1 or OPTIONS_SCHEMA=1 in the environment restores the
+    2.6 collectors unchanged (reversible configuration; see README)."""
     RUN["forward"] = {}
-    for name, fn in (("deribit_options", collect_deribit_options), ("hl_positions", lambda: collect_hl_positions(st))):
+    me = sys.modules[__name__]
+    options = collect_deribit_options if os.environ.get("OPTIONS_SCHEMA") == "1" else lambda: optionsbook.collect(me, st)
+    hl = ((lambda: collect_hl_positions(st)) if os.environ.get("HL_SAMPLING_POLICY") == "v1"
+          else (lambda: hlsample.collect(me, st)))
+    for name, fn in (("deribit_options", options), ("hl_positions", hl)):
         try:
             RUN["forward"][name] = fn()
         except Exception as e:
@@ -1134,6 +1174,13 @@ def main():
         collect_forward(st)
         save_state(st)
         lap("forward")
+        begin("enrich")
+        try:
+            RUN["enrich"] = enrich.collect(sys.modules[__name__], st)
+        except Exception as e:
+            RUN["enrich"] = {"err": f"{type(e).__name__}: {str(e)[:160]}"}
+        save_state(st)
+        lap("enrich")
     RUN["deadline_reached"] = time.monotonic() >= DEADLINE
     RUN["elapsed_s"] = round(time.time() - NOW / 1000, 1)
     RUN["critical_ok"] = critical_ok

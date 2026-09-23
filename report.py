@@ -14,7 +14,7 @@ from scoring import score_registry
 from research import run_tests
 import cadence
 
-REPORT_VERSION = "report-2.3-2026-09-23"
+REPORT_VERSION = "report-2.4-2026-09-23"
 
 
 def iso(ms):
@@ -162,6 +162,71 @@ def collection_health(runs_all, runs, snaps, periods, since, now):
     return lines, alerts
 
 
+def research_datasets(base, since, now, read, alerts):
+    """Section 3c: the 2.7 research datasets - coverage, states and freshness, never outcomes."""
+    from schema import PRICE_SERIES
+    lines = ["", "## 3c. Research datasets (collector 2.7)",
+             "Coverage of stored inputs only. These are samples and summaries, not trading results."]
+    for name in PRICE_SERIES:
+        bars = {}
+        for path in sorted(base.glob(f"data/prices/{name}/*.jsonl"))[-2:]:
+            for batch in read(path.relative_to(base).as_posix()):
+                for bar in batch.get("bars", []):
+                    if since <= bar[0] <= now:
+                        bars.setdefault(bar[0], True)
+        if not bars:
+            lines.append(f"- {name}: no bars in window.")
+            continue
+        stamps = sorted(bars)
+        missing = sum(max(0, (b - a) // 60_000 - 1) for a, b in zip(stamps, stamps[1:]))
+        lines.append(f"- {name}: {len(stamps)} bars {iso(stamps[0])} → {iso(stamps[-1])}; {missing} missing minutes inside the span.")
+        if now - stamps[-1] > cadence.stale_minutes() * 60_000:
+            alerts.append(f"{name}: stale; last bar {iso(stamps[-1])}")
+    def recent(pattern, days_back=8):
+        paths = sorted(base.glob(pattern))[-days_back:]
+        return [r for p in paths for r in read(p.relative_to(base).as_posix()) if since <= r["t"] <= now]
+    opts = [r for r in recent("data/options/deribit_btc/*.jsonl") if r.get("schema")]
+    if opts:
+        last = opts[-1]
+        lines.append(f"- Deribit options schema 2: {len(opts)} runs; latest {len(last['rows'])} with OI, "
+                     f"{len(last.get('zero_oi', []))} zero OI, {len(last.get('absent', []))} absent, "
+                     f"{len(last.get('past_expiry', []))} past expiry; panel {last.get('panel_status')}; "
+                     f"metadata {last.get('meta_status')}.")
+    quotes = recent("data/options/deribit_btc_quotes/*.jsonl")
+    lines.append(f"- Deribit hourly quote records: {len(quotes)}.")
+    hl = recent("data/hl_accounts/*.jsonl")
+    if hl:
+        states = Counter()
+        for r in hl:
+            states.update(r.get("counts", {}))
+        lines.append(f"- Hyperliquid sample v2: {len(hl)} snapshots; account checks by state "
+                     + ", ".join(f"{k} {v}" for k, v in sorted(states.items()))
+                     + f"; fixed cohort {hl[-1]['fixed']['cohort_id']} ({hl[-1]['fixed']['size']}), rotating "
+                     f"{hl[-1]['rotating']['size']} per run.")
+    enr = recent("data/hl_enrich/*.jsonl")
+    if enr:
+        kinds = Counter((q["kind"], q["status"]) for r in enr for q in r["requests"])
+        lines.append("- Hyperliquid enrichment requests: " + ", ".join(f"{k} {st} {n}" for (k, st), n in sorted(kinds.items())) + ".")
+    ins = [r for r in read("data/okx_insurance/*.jsonl") if since <= r["t"] <= now]
+    if ins:
+        types = Counter(r["type"] for r in ins)
+        lines.append("- OKX insurance fund rows: " + ", ".join(f"{k} {v}" for k, v in sorted(types.items())) + ".")
+    exps = [r for r in read("research/experiments/*.jsonl") if r["t"] <= now]
+    if exps:
+        last_t = max(r["t"] for r in exps)
+        latest = [r for r in exps if r["t"] == last_t]
+        by = Counter(r["status"] for r in latest)
+        lines.append(f"- Research lab: {len({r['t'] for r in exps if r['t'] >= since})} runs in window; latest "
+                     f"{iso(last_t)}: " + ", ".join(f"{k} {v}" for k, v in sorted(by.items()))
+                     + " (statuses per design; see reports/research.md).")
+        if now - last_t > 30 * H:
+            alerts.append(f"research lab: no run since {iso(last_t)}")
+        errs = [r["design"] for r in latest if r["status"] == "error"]
+        if errs:
+            alerts.append("research lab: design error(s) " + ", ".join(errs))
+    return lines
+
+
 def build(base, now, days=7):
     base = Path(base)
     since = now - days * 24 * H
@@ -289,6 +354,7 @@ def build(base, now, days=7):
                      f"to {iso(window[-1]['t'])}; latest {count(window[-1])}; {degraded} degraded snapshot(s).")
         if now - window[-1]["t"] > cadence.stale_minutes() * 60_000:
             alerts.append(f"{label}: stale; last stored run {iso(window[-1]['t'])}")
+    lines.extend(research_datasets(base, since, now, read, alerts))
     lines.extend(["", "## 4. Forecast registry"])
     manifest = read_json(base / "state/forecast_manifest.json", {})
     registered_sources = {entry["source"] for entry in manifest.values()}
