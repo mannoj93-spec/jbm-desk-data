@@ -16,6 +16,7 @@ import collector
 import research
 import schema
 import scoring
+import report
 import storage
 import watchdog
 
@@ -195,8 +196,14 @@ class ScoreTypeTests(unittest.TestCase):
         realized = math.log(105 / 95)
         self.assertAlmostEqual(result[0]['realized_ln_range'], realized, 9)
         self.assertTrue(result[0]['covered_80'])
-        self.assertAlmostEqual(result[0]['abs_log_error'], abs(math.log(.1) - math.log(realized)), 9)
+        # Median error in the forecast's own units (review of ed45dd2): |q50 - realized|.
+        self.assertAlmostEqual(result[0]['abs_error_lr'], abs(.1 - realized), 9)
+        # runbook E2's primary loss is on ln(lr), the scale its baselines are fitted on; kept, renamed.
+        self.assertAlmostEqual(result[0]['abs_error_log_lr'], abs(math.log(.1) - math.log(realized)), 9)
+        x = (realized / .1) ** 2
+        self.assertAlmostEqual(result[0]['qlike'], x - math.log(x) - 1, 9)
         self.assertAlmostEqual(result[0]['pinball']['q50'], .5 * abs(realized - .1), 9)
+        self.assertNotIn('abs_log_error', result[0])
 
     def test_range_quantiles_must_be_ordered(self):
         self.assertTrue(schema.validate(self.base({'type': 'range', 'q10': .2, 'q50': .1, 'q90': .3})))
@@ -208,6 +215,113 @@ class ScoreTypeTests(unittest.TestCase):
         result, _ = scoring.score(fc, bars, lambda n: [])
         self.assertFalse(result[0]['inside'])
         self.assertAlmostEqual(result[0]['interval_score'], 9 + (2 / .2) * 1, 6)
+
+
+
+class RangeReportTests(unittest.TestCase):
+    def test_range_line_shows_every_score_and_never_bare_none(self):
+        fc = {'id': 'range-report', 'instrument': schema.INSTRUMENT, 'reference_price': 100,
+              'start_utc': schema.iso(START), 'horizon_utc': schema.iso(START + H),
+              'events': [{'name': '1h range', 'type': 'range', 'q10': .05, 'q50': .1, 'q90': .2}]}
+        bars = [(START + i * M, 105., 95., 100.) for i in range(60)]
+        result, _ = scoring.score(fc, bars, lambda n: [])
+        line = report.format_event(result[0])
+        for part in ('realized ln(H/L) 0.10008', 'inside q10-q90: True', 'pinball', '|q50 - realized| 0.00008',
+                     '(E2 primary)', 'QLIKE'):
+            self.assertIn(part, line)
+        self.assertNotEqual(line.rstrip('.').split(': ', 1)[1], 'None')
+
+    def test_interval_line_shows_score(self):
+        line = report.format_event({'name': 'iv', 'type': 'interval', 'inside': False, 'nominal': .8,
+                                    'realized': 100.0, 'interval_score': 19.0})
+        self.assertIn('interval score 19.00', line)
+
+
+def hl_board(n=200):
+    return {'leaderboardRows': [{'ethAddress': f'0x{i:040x}', 'accountValue': str(1000 - i)} for i in range(n)]}
+
+
+GOOD_ACCOUNT = {'marginSummary': {'accountValue': '500'}, 'assetPositions': [
+    {'position': {'coin': 'BTC', 'szi': '-2', 'entryPx': '75000', 'liquidationPx': '135000',
+                  'leverage': {'type': 'cross', 'value': 5}, 'positionValue': '170000',
+                  'unrealizedPnl': '-20000', 'marginUsed': '34000'}}]}
+
+
+class ForwardValidationTests(unittest.TestCase):
+    """Cases reproduced in the review of ed45dd2."""
+
+    def run_hl(self, account):
+        def get(url, body=None, **_):
+            return (hl_board(), None) if url == collector.HL_LEADERBOARD else account(body['user'])
+        with tempfile.TemporaryDirectory() as tmp, patch.object(collector, 'BASE', tmp), \
+             patch.object(collector, 'NOW', START), patch.object(collector, 'get', side_effect=get):
+            try:
+                out = collector.collect_hl_positions({})
+            except RuntimeError as exc:
+                out = {'raised': str(exc)}
+            path = Path(tmp) / 'data/hl_positions/btc/2026-01-01.jsonl'
+            rows = storage.read_rows(path) if path.exists() else []
+        return out, rows
+
+    def test_empty_object_is_a_failed_account_not_an_empty_one(self):
+        first = f'0x{0:040x}'
+        out, rows = self.run_hl(lambda user: ({}, None) if user == first else (GOOD_ACCOUNT, None))
+        self.assertEqual(out['status'], 'degraded')
+        self.assertEqual(out['accounts_failed'], 1)
+        self.assertIn('degraded', out['err'])
+        self.assertEqual(rows[0]['status'], 'degraded')
+        self.assertEqual(rows[0]['failed'][0][0], first)
+        self.assertEqual(len(rows[0]['positions']), 199)
+
+    def test_half_failed_is_not_stored(self):
+        out, rows = self.run_hl(lambda user: (None, 'HTTP 500') if int(user, 16) % 2 else (GOOD_ACCOUNT, None))
+        self.assertIn('100/200', out['raised'])
+        self.assertEqual(rows, [])
+
+    def test_all_good_is_complete(self):
+        out, rows = self.run_hl(lambda user: (GOOD_ACCOUNT, None))
+        self.assertEqual((out['status'], out['err'], rows[0]['status']), ('complete', None, 'complete'))
+
+    def test_malformed_btc_position_fails_the_account(self):
+        bad = {'marginSummary': {'accountValue': '1'}, 'assetPositions': [{'position': {'coin': 'BTC', 'szi': '1'}}]}
+        with self.assertRaises(ValueError):
+            collector.hl_account(bad)
+        null_liq = json.loads(json.dumps(GOOD_ACCOUNT))
+        null_liq['assetPositions'][0]['position']['liquidationPx'] = None     # documented: no liquidation price
+        self.assertIsNone(collector.hl_account(null_liq)[1][0][3])
+
+    def deribit(self, rows):
+        with tempfile.TemporaryDirectory() as tmp, patch.object(collector, 'BASE', tmp), \
+             patch.object(collector, 'NOW', START), patch.object(collector, 'get', return_value=({'result': rows}, None)):
+            try:
+                out = collector.collect_deribit_options()
+            except ValueError as exc:
+                out = {'raised': str(exc)}
+            path = Path(tmp) / 'data/options/deribit_btc/2026-01-01.jsonl'
+            stored = storage.read_rows(path) if path.exists() else []
+        return out, stored
+
+    @staticmethod
+    def option(strike, iv=40.0):
+        row = {'instrument_name': f'BTC-24SEP26-{strike}-C', 'open_interest': 10, 'underlying_price': 86000.0,
+               'creation_timestamp': START}
+        if iv is not None:
+            row['mark_iv'] = iv
+        return row
+
+    def test_missing_mark_iv_is_excluded_and_degrades(self):
+        rows = [self.option(80000 + 100 * i) for i in range(40)] + [self.option(99000, iv=None)]
+        out, stored = self.deribit(rows)
+        self.assertEqual((out['status'], out['with_oi'], out['excluded']), ('degraded', 40, 1))
+        self.assertIn('degraded', out['err'])
+        self.assertEqual(stored[0]['excluded'], [['BTC-24SEP26-99000-C', 'mark_iv']])
+        self.assertNotIn('BTC-24SEP26-99000-C', {r[0] for r in stored[0]['rows']})
+
+    def test_many_invalid_rows_are_not_stored(self):
+        rows = [self.option(80000 + 100 * i) for i in range(10)] + [self.option(99000, iv=None)]
+        out, stored = self.deribit(rows)
+        self.assertIn('not stored', out['raised'])
+        self.assertEqual(stored, [])
 
 
 class WatchdogTests(unittest.TestCase):
