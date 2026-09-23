@@ -1,0 +1,91 @@
+name: Research lab
+on:
+  schedule:
+    # Every 6 hours, off the collector's quarter-hour slots (7,22,37,52).
+    - cron: '41 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      reconstruct_days:
+        description: 'Also run an exploratory historical reconstruction over this many days (0 = none; scheduled runs use 60 at 00:41 UTC only)'
+        default: '0'
+permissions:
+  contents: write
+# One lab run at a time; a newer one waits rather than cancelling (outputs are append-only).
+concurrency:
+  group: research-lab
+  cancel-in-progress: false
+jobs:
+  compute:
+    # Heavy work runs WITHOUT the repository-write lock, so the 15-minute collector is never held
+    # up behind it. It reads the checked-out data and writes only research outputs.
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    outputs:
+      lab: ${{ steps.lab.outcome }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run lab
+        id: lab
+        continue-on-error: true
+        env:
+          LAB_BUDGET: '1200'
+          LAB_CACHE: ${{ runner.temp }}/lab-cache
+          DAYS_INPUT: ${{ github.event.inputs.reconstruct_days }}
+        run: |
+          days="$DAYS_INPUT"
+          if [ -z "$days" ]; then
+            if [ "$(date -u +%H)" = "00" ]; then days=60; else days=0; fi
+          fi
+          python -m lab.run update --reconstruct-days "$days" | tee lab-summary.json
+      - name: Hand research outputs to the persist job
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: research-${{ github.run_id }}
+          path: |
+            research
+            reports/research.md
+            reports/skill_proposals.md
+            state/lab_registered.json
+            lab-summary.json
+          if-no-files-found: warn
+          retention-days: 7
+  persist:
+    needs: compute
+    if: always() && needs.compute.result != 'cancelled'
+    runs-on: ubuntu-latest
+    # Shares the repository-write queue with every other writer; holds it only to commit.
+    concurrency:
+      group: repo-write
+      queue: max
+      cancel-in-progress: false
+    timeout-minutes: 8
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/download-artifact@v4
+        with:
+          name: research-${{ github.run_id }}
+          path: .
+      - name: Persist research outputs
+        env:
+          COMMIT_MESSAGE: Update research evidence
+          PERSIST_BUDGET_S: '240'
+        run: bash scripts/commit_push.sh research reports/research.md reports/skill_proposals.md state/lab_registered.json
+      - name: Fail if the lab reported an error
+        if: needs.compute.outputs.lab == 'failure'
+        run: |
+          cat lab-summary.json || true
+          exit 1
