@@ -74,6 +74,12 @@ class Store:
         return [(r["t"], r["f"]["funding_settled_8h"]) for r in self.series("binance_funding_settled")
                 if r.get("sym") == sym and r["f"].get("funding_settled_8h") is not None]
 
+    def funding_known(self, sym="BTCUSDT"):
+        """(t, settled 8h rate, avail) for as-of feature use: a settled rate is usable only from its
+        availability (max of settlement time and the collector's observed_at)."""
+        return [(r["t"], r["f"]["funding_settled_8h"], r["avail"]) for r in self.series("binance_funding_settled")
+                if r.get("sym") == sym and r["f"].get("funding_settled_8h") is not None]
+
     def options(self):
         return self._stamped("data/options/deribit_btc/*.jsonl")
 

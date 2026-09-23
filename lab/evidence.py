@@ -1,174 +1,216 @@
-"""Evidence cards, the compact research report and skill-change proposals.
+"""Evidence cards, the research report and skill-change proposals (lab-2.0).
 
-A card (research/evidence/cards/<design>.json, schema evidence_card/1) is the machine-readable
-record a reviewer needs to judge one design without re-running anything: the condition, horizon,
-versions and dependencies, independent episode counts, period and regimes, outcome distributions,
-uncertainty, the simple baseline, costs, failures and exclusions, coverage, contradictory evidence,
-every tested variant (null results included), the status, and how to reproduce it (command, code
-hash, data hashes, commit, links).
+Cards are versioned: research/evidence/v2/<design>@<evaluation version>.json (schema
+evidence_card/2), one per evaluation version, never overwritten by another version.
+research/evidence/index.json names the current version of each design, every superseded version
+and the legacy lab-1.0 cards (research/evidence/cards/, kept byte-for-byte, marked legacy and not
+evaluation evidence).
 
-reports/research.md summarises the cards. reports/skill_proposals.md proposes a change to the
-trading skill files ONLY for a design whose status is "supported"; otherwise it says, per design,
-why no change is proposed. Nothing here edits a skill file; proposals are for human review.
-Language rule: no card or report calls a result significant, profitable or an edge; intervals are
-descriptive and the number of variants tested in the family is always shown beside them.
+A card carries: the condition, horizons, versions and the components they bind, the phases
+(reanalysis / evaluation / exploratory), per-horizon sample accounting (firings, episodes,
+scorable, retained, blocks), outcome distributions, 90% and multiplicity-adjusted intervals, the
+out-of-sample baseline and its residual difference, comparability, stability, regimes, costs,
+data quality, freeze audit (frozen / revised / late replays), exclusions, failures, contradictory
+evidence, every variant tried, the status with the checks of the last look, limitations, and how
+to reproduce it.
+
+reports/skill_proposals.md proposes a change ONLY for a design whose current version is
+"supported"; otherwise it says why not. Nothing here edits a skill file. No card or report calls a
+result significant, profitable or an edge.
 """
 from pathlib import Path
 
 from lab import outcomes
-from lab.common import LAB_VERSION, atomic_json, iso
+from lab.common import LAB_VERSION, atomic_json, iso, read_json
 
-CARD_SCHEMA = "evidence_card/1"
+CARD_SCHEMA = "evidence_card/2"
 REPO_URL = "https://github.com/mannoj93-spec/jbm-desk-data"
+LIMITATIONS = [
+    "Decisions are as-of replays computed by a 6-hourly lab; decision times assume 60 s of processing after the "
+    "last required input and were not executed live (t_persisted shows when each was actually computed).",
+    "Retained observations do not overlap in their label intervals; that does not make them independent. "
+    "Intervals resample dependence blocks (overlap or same UTC day).",
+    "Intervals are descriptive bootstrap intervals; the adjusted interval divides alpha by variants x looks "
+    "(Bonferroni), which is conservative but not a formal test of profitability.",
+    "Net returns use cost model costs-1, whose fee and slippage values are assumptions (see VALIDATION.md).",
+    "'supported' means the declared criteria held on prospective replays; it is not proof of profitability.",
+]
 
 
-def _fmt(x, pct=True):
-    if x is None:
-        return "n/a"
-    return f"{x * 1e4:+.1f} bp" if pct else f"{x:.3g}"
+def _fmt(x):
+    return "n/a" if x is None else f"{x * 1e4:+.1f} bp"
+
+
+def _ci(ci):
+    return "n/a" if not ci else f"[{_fmt(ci[0])}, {_fmt(ci[1])}]"
+
+
+def _public(summary):
+    """A phase summary without the private per-observation rows."""
+    return {h: {k: v for k, v in s.items() if not k.startswith("_")} for h, s in (summary or {}).items()}
 
 
 def contradictions(design, result):
-    """Evidence that cuts against the design's hypothesis, gathered mechanically."""
     out, sign = [], design["comparison"]["hypothesised_sign"]
     ph = str(design["outcome"]["primary_horizon"])
     for v in result["variants"]:
         for p in v["passes"]:
             for phase, summ in p["phases"].items():
                 for h, s in summ.items():
-                    ci = s.get("diff_test_minus_reference_90")
-                    if ci and ((sign > 0 and ci["hi90"] < 0) or (sign < 0 and ci["lo90"] > 0)):
-                        out.append(f"{v['name']} / {p['basis']} / {phase} / {h}m: interval "
-                                   f"[{_fmt(ci['lo90'])}, {_fmt(ci['hi90'])}] lies on the opposite side of zero")
+                    ci = (s.get("diff_test_minus_reference") or {}).get("alpha_0.10")
+                    if ci and ((sign > 0 and ci[1] < 0) or (sign < 0 and ci[0] > 0)):
+                        out.append(f"{v['name']} / {p['basis']} / {phase} / {h}m: 90% interval {_ci(ci)} lies on "
+                                   "the opposite side of zero")
                     halves = s.get("chronological_halves")
                     if h == ph and halves and None not in halves and halves[0] * halves[1] < 0:
-                        out.append(f"{v['name']} / {p['basis']} / {phase} / {h}m: the two chronological halves "
-                                   f"disagree in sign ({_fmt(halves[0])} vs {_fmt(halves[1])})")
+                        out.append(f"{v['name']} / {p['basis']} / {phase} / {h}m: chronological halves disagree "
+                                   f"({_fmt(halves[0])} vs {_fmt(halves[1])})")
     return out
 
 
-def card(design, result, family_variants, commit, input_hashes):
-    ph = str(design["outcome"]["primary_horizon"])
+def card(design, result, commit, input_hashes, registration, superseded):
     primary = next(v for v in result["variants"] if v["name"] == design["primary_variant"])
     passes = {}
     for p in primary["passes"]:
-        passes[p["basis"]] = {
-            "state": p["state"], "reasons": p["reasons"], "coverage": p["coverage"], "window": p["window"],
-            "firings": p["firings"], "independent_episodes_collapsed": p["episodes"], "controls": p["controls"],
-            "immature_labels": p["immature_labels"], "incomplete_labels": p["incomplete_labels"],
-            "data_sha256": p.get("data_sha256"),
-            "primary_horizon": {ph: {phase: summ.get(ph) for phase, summ in p["phases"].items()}},
-            "all_horizons": p["phases"]}
-    failures = [f"{p['basis']}: {r}" for p in primary["passes"] for r in p["reasons"]]
+        passes[p["basis"]] = {k: p[k] for k in ("state", "reasons", "coverage", "window", "firings", "episodes",
+                                                "controls", "quality", "freeze_audit", "data_sha256")}
+        passes[p["basis"]]["phases"] = {ph: _public(s) for ph, s in p["phases"].items()}
     return {
-        "schema": CARD_SCHEMA, "design": design["id"], "design_version": design["version"],
-        "design_sha256": design["_sha256"], "module": design["module"], "family": design["family"],
+        "schema": CARD_SCHEMA, "design": design["id"], "evaluation_version": design["_version"],
+        "design_version": design.get("version"), "design_sha256": design["_sha256"],
+        "version_components": design["_components"], "registered_at": iso(registration["registered"]) if registration else None,
+        "superseded_versions": superseded, "module": design["module"], "family": design["family"],
         "condition": design["question"], "comparison": design["comparison"],
         "horizons_min": design["outcome"]["horizons_min"], "primary_horizon_min": design["outcome"]["primary_horizon"],
-        "outcome_metric": design["outcome"]["metric"], "registered_at": iso(result["registered"]),
-        "status": result["status"], "status_reason": result["status_reason"],
-        "min_independent_episodes": design["min_independent_episodes"], "status_note": design.get("status_note"),
+        "outcome_metric": design["outcome"]["metric"], "status": result["status"],
+        "status_reason": result["status_reason"], "last_look": result.get("look"),
+        "promotion_rules": "lab/experiments.py (module docstring)",
+        "min_retained_observations": design["min_retained_observations"],
+        "min_dependence_blocks": design.get("min_dependence_blocks", 20),
         "primary_variant": design["primary_variant"], "passes": passes,
-        "baseline": {"reference_group": design["comparison"]["reference_group"],
-                     "predictors": design.get("baseline_predictors", []),
-                     "method": "test minus reference (day-block bootstrap, 90%); residual over an OLS fit on controls "
-                               "when predictors are named"},
-        "costs": outcomes.COST_MODEL, "exclusions": design.get("exclusions", []), "failures": failures,
+        "baseline": {"predictors": design.get("baseline", {}).get("predictors"),
+                     "method": "OLS on controls whose labels matured before each UTC day; residual difference"},
+        "costs": outcomes.COST_MODEL, "exclusions": design.get("exclusions", []),
+        "failures": [f"{p['basis']}: {r}" for p in primary["passes"] for r in p["reasons"]],
         "contradictory_evidence": contradictions(design, result),
-        "tested_variants": [{"name": v["name"], "params": v["params"],
-                             "by_basis": {p["basis"]: {"episodes": p["episodes"], "state": p["state"],
-                                                       "primary": {ph_: (s.get(ph) or {}).get("diff_test_minus_reference_90")
-                                                                   for ph_, s in p["phases"].items()}}
+        "tested_variants": [{"name": v["name"], "params": v["params"], "descriptive": v["descriptive"],
+                             "by_basis": {p["basis"]: {"episodes": p["episodes"], "state": p["state"]}
                                           for p in v["passes"]}} for v in result["variants"]],
-        "multiple_testing": {"variants_tested_in_family": family_variants,
-                             "note": "intervals are not adjusted; read them against the number of variants tried"},
+        "multiple_testing": {"variants_tried_in_family": result["n_variants_family"],
+                             "looks": 4, "adjustment": "Bonferroni: alpha 0.10 / (variants x looks)"},
+        "limitations": LIMITATIONS,
         "dependencies": {"lab_version": LAB_VERSION, "code_sha256": result["code_sha256"],
                          "cost_model": outcomes.COST_MODEL["version"], "inputs": input_hashes},
-        "reproduce": {"command": "python -m lab.run update" + ("" if "reconstruction" not in passes else
-                                                                " --reconstruct-days N"),
-                      "commit": commit,
-                      "links": {"design": f"{REPO_URL}/blob/{commit or 'main'}/{design['_file']}",
-                                "module": f"{REPO_URL}/blob/{commit or 'main'}/lab/modules/{design['module']}.py"}},
+        "reproduce": {"command": f"python -m lab.run update --now {result['t']}", "commit": commit,
+                      "links": {"design": f"{REPO_URL}/blob/{commit or 'main'}/{design['_file']}"}},
         "generated_at": iso(result["t"]),
     }
 
 
-def write_cards(base, cards):
+def error_card(design, res, now):
+    return {"schema": CARD_SCHEMA, "design": design["id"], "evaluation_version": design.get("_version"),
+            "module": design["module"], "family": design["family"], "condition": design["question"],
+            "status": res["status"], "status_reason": res["status_reason"], "error": res.get("error"),
+            "primary_horizon_min": design["outcome"]["primary_horizon"], "passes": {},
+            "min_retained_observations": design.get("min_retained_observations"),
+            "contradictory_evidence": [], "limitations": LIMITATIONS, "generated_at": iso(now)}
+
+
+def write_cards(base, cards, now):
+    base = Path(base)
+    index = read_json(base / "research/evidence/index.json", {"designs": {}})
     for c in cards:
-        atomic_json(Path(base) / "research/evidence/cards" / f"{c['design']}.json", c)
+        if c.get("evaluation_version"):
+            atomic_json(base / "research/evidence/v2" / f"{c['design']}@{c['evaluation_version']}.json", c)
+        entry = index["designs"].setdefault(c["design"], {"versions": {}})
+        entry["current"] = c.get("evaluation_version")
+        entry["versions"].setdefault(c.get("evaluation_version") or "none", {})
+        entry["versions"][c.get("evaluation_version") or "none"].update(status=c["status"], updated=iso(now))
+        for old in c.get("superseded_versions") or []:
+            entry["versions"].setdefault(old, {}).update(status="retired (superseded)")
+        legacy = base / "research/evidence/cards" / f"{c['design']}.json"
+        if legacy.exists():
+            entry["legacy_lab_1_0_card"] = {"path": legacy.relative_to(base).as_posix(),
+                                            "interpretation": "lab-1.0 output kept as recorded; superseded; not "
+                                                              "evaluation evidence (see CHANGELOG 2.8)"}
+    index.update(schema="evidence_index/1", updated=iso(now), lab_version=LAB_VERSION)
+    atomic_json(base / "research/evidence/index.json", index)
 
 
-def report(cards, now, run_meta):
-    L = [f"# Research evidence ({iso(now)})", "",
-         f"Lab {LAB_VERSION}; code {run_meta['code_sha256'][:12]}; commit {run_meta.get('commit') or 'n/a'}; "
-         f"cost model {outcomes.COST_MODEL['version']} (assumed fees - see VALIDATION.md). "
-         "Descriptive intervals only; no result here is described as significant or profitable.", "",
-         "| Module | Design | Status | Prospective eval episodes | Primary diff (90%) | Data state |",
-         "|---|---|---|---|---|---|"]
+def report(cards, now, meta):
+    L = [f"# Research evidence", "",
+         f"Generated {iso(now)} (input cutoff {iso(meta['cutoff'])}); {LAB_VERSION}; code {meta['code_sha256'][:12]}; "
+         f"commit {meta.get('commit') or 'n/a'}; cost model {outcomes.COST_MODEL['version']} (assumed fees). "
+         "Refreshed by the Research lab workflow every 6 hours; anything older is stale.", "",
+         "Descriptive intervals only. Decisions are as-of replays by a 6-hourly lab, not live executions.", "",
+         "| Module | Design @ version | Status | Evaluation retained / blocks (primary h) | Adjusted diff | "
+         "Baseline residual diff (adj.) | Data |", "|---|---|---|---|---|---|---|"]
     for c in cards:
         ph = str(c["primary_horizon_min"])
-        pro = c["passes"].get("prospective", {})
-        ev = (pro.get("primary_horizon", {}).get(ph, {}) or {}).get("evaluation") or {}
-        ci = ev.get("diff_test_minus_reference_90")
-        L.append(f"| {c['module']} | {c['design']} ({ph}m) | {c['status']} | "
-                 f"{ev.get('independent_test_episodes', 0)}/{c['min_independent_episodes']} | "
-                 f"{'[' + _fmt(ci['lo90']) + ', ' + _fmt(ci['hi90']) + ']' if ci else 'n/a'} | "
+        pro = (c.get("passes") or {}).get("prospective") or {}
+        ev = ((pro.get("phases") or {}).get("evaluation") or {}).get(ph) or {}
+        cnt = (ev.get("counts") or {}).get("test") or {}
+        L.append(f"| {c['module']} | {c['design']} @ {c.get('evaluation_version')} | {c['status']} | "
+                 f"{cnt.get('retained', 0)}/{c.get('min_retained_observations')} ; {cnt.get('blocks', 0)} | "
+                 f"{_ci((ev.get('diff_test_minus_reference') or {}).get('adjusted'))} | "
+                 f"{_ci(((ev.get('baseline') or {}).get('residual_diff') or {}).get('adjusted'))} | "
                  f"{pro.get('state', 'n/a')} |")
     L += ["", "## Per design", ""]
     for c in cards:
         ph = str(c["primary_horizon_min"])
-        L.append(f"### {c['design']} - {c['status']}")
-        L.append(f"{c['condition']} Status reason: {c['status_reason']}.")
-        for basis, p in c["passes"].items():
-            summ = p["primary_horizon"][ph]
-            for phase, s in summ.items():
+        L.append(f"### {c['design']} @ {c.get('evaluation_version')} - {c['status']}")
+        L.append(f"{c['condition']} Status: {c['status_reason']}.")
+        if c.get("error"):
+            L.append(f"- error: {c['status_reason']}")
+        for basis, p in (c.get("passes") or {}).items():
+            for phase, summ in p["phases"].items():
+                s = summ.get(ph)
                 if not s:
                     continue
-                ci = s.get("diff_test_minus_reference_90")
-                L.append(f"- {basis}/{phase}: {s['independent_test_episodes']} test vs "
-                         f"{s['independent_reference_episodes']} reference independent episodes over {s['days']} days; "
-                         f"test mean {_fmt(s['test'].get('mean'))}, reference mean {_fmt(s['reference'].get('mean'))}, "
-                         f"diff 90% {('[' + _fmt(ci['lo90']) + ', ' + _fmt(ci['hi90']) + ']') if ci else 'n/a'}.")
+                t, r = s["counts"]["test"], s["counts"]["reference"]
+                L.append(f"- {basis}/{phase}: test firings {t['firings']}, episodes {t['episodes']}, scorable "
+                         f"{t['scorable']}, retained {t['retained']} in {t['blocks']} blocks; reference retained "
+                         f"{r['retained']}; test mean {_fmt(s['test'].get('mean'))} vs reference "
+                         f"{_fmt(s['reference'].get('mean'))}; 90% {_ci(s['diff_test_minus_reference']['alpha_0.10'])}.")
+            if p.get("freeze_audit"):
+                L.append(f"- frozen decisions: {p['freeze_audit']}")
             if p["reasons"]:
                 L.append(f"- {basis} data: {'; '.join(p['reasons'])}")
-        if c["contradictory_evidence"]:
-            L.append(f"- contradictory evidence: {len(c['contradictory_evidence'])} item(s), e.g. {c['contradictory_evidence'][0]}")
-        L.append(f"- variants tested in family {c['family']}: {c['multiple_testing']['variants_tested_in_family']}")
+        if c.get("contradictory_evidence"):
+            L.append(f"- contradictory evidence ({len(c['contradictory_evidence'])}): {c['contradictory_evidence'][0]}")
+        if c.get("multiple_testing"):
+            L.append(f"- variants tried in family {c['family']}: {c['multiple_testing']['variants_tried_in_family']}")
         L.append("")
     return "\n".join(L) + "\n"
 
 
 def skill_proposals(cards, now):
-    L = [f"# Proposed skill changes ({iso(now)})", "",
-         "Generated for human review. Nothing here has been applied to any skill file; the lab never edits "
-         "skill files. A change is proposed only for a design whose status is **supported** (evaluation "
-         "episodes at or after registration, minimum count met, intervals excluding zero in the "
-         "hypothesised direction, both chronological halves agreeing).", ""]
+    L = ["# Proposed skill changes", "", f"Generated {iso(now)}. For human review; nothing here edits a skill file.",
+         "A change is proposed only for a design whose CURRENT evaluation version is **supported** under the "
+         "lab-2.0 promotion rules (data quality, retained observations and dependence blocks, multiplicity-adjusted "
+         "effect, out-of-sample baseline added value, comparability, stability, at a scheduled look).", ""]
     supported = [c for c in cards if c["status"] == "supported"]
     if not supported:
-        L += ["**No change is proposed.** No design has reached supported status.", "",
-              "| Design | Status | Why no proposal |", "|---|---|---|"]
+        L += ["**No change is proposed.** No design's current version is supported.", "",
+              "| Design @ version | Status | Why no proposal |", "|---|---|---|"]
         for c in cards:
             why = c["status_reason"]
             pro = (c.get("passes") or {}).get("prospective") or {}
             if pro.get("reasons"):
                 why += "; " + pro["reasons"][0]
-            L.append(f"| {c['design']} | {c['status']} | {why} |")
-        L += ["", "Exploratory reconstructions and pre-registration episodes may be read as hypotheses to watch, "
-              "never as grounds for a rule. Evaluate a revised skill with `python -m lab.skill_eval` before and "
-              "after any change a human decides to make."]
+            L.append(f"| {c['design']} @ {c.get('evaluation_version')} | {c['status']} | {why} |")
+        L += ["", "Reanalysis and reconstruction results are hypotheses, never grounds for a rule."]
         return "\n".join(L) + "\n"
     for c in supported:
         ph = str(c["primary_horizon_min"])
-        ev = c["passes"]["prospective"]["primary_horizon"][ph]["evaluation"]
-        ci = ev["diff_test_minus_reference_90"]
-        L += [f"## {c['design']}",
-              f"Proposed text (for the research-target section, as a conditional base rate, not a rule): "
-              f"\"{c['condition']} Prospective evaluation since {c['registered_at']}: "
-              f"{ev['independent_test_episodes']} independent episodes, test minus reference at {ph} minutes "
-              f"{_fmt(ev['test'].get('mean'))} vs {_fmt(ev['reference'].get('mean'))}, 90% day-block interval "
-              f"[{_fmt(ci['lo90'])}, {_fmt(ci['hi90'])}], net of assumed costs; "
-              f"{c['multiple_testing']['variants_tested_in_family']} variants tested in the family.\"",
-              f"Contradictory evidence to weigh: {c['contradictory_evidence'] or 'none recorded'}.",
-              f"Card: research/evidence/cards/{c['design']}.json", ""]
+        ev = c["passes"]["prospective"]["phases"]["evaluation"][ph]
+        L += [f"## {c['design']} @ {c['evaluation_version']}",
+              f"Proposed wording (as a conditional base rate, not a rule): \"{c['condition']} Prospective replays since "
+              f"{c['registered_at']}: {ev['counts']['test']['retained']} retained observations in "
+              f"{ev['counts']['test']['blocks']} dependence blocks; test minus reference at {ph} minutes, "
+              f"multiplicity-adjusted interval {_ci(ev['diff_test_minus_reference']['adjusted'])}, net of assumed costs; "
+              f"out-of-sample baseline residual difference {_ci(ev['baseline']['residual_diff']['adjusted'])}.\"",
+              f"Limitations: {' '.join(LIMITATIONS)}",
+              f"Contradictory evidence: {c['contradictory_evidence'] or 'none recorded'}.",
+              f"Card: research/evidence/v2/{c['design']}@{c['evaluation_version']}.json", ""]
     return "\n".join(L) + "\n"
