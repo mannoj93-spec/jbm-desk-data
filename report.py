@@ -14,7 +14,7 @@ from scoring import score_registry
 from research import run_tests
 import cadence
 
-REPORT_VERSION = "report-2.4-2026-09-23"
+REPORT_VERSION = "report-2.5-2026-09-23"
 
 
 def iso(ms):
@@ -211,7 +211,8 @@ def research_datasets(base, since, now, read, alerts):
     if ins:
         types = Counter(r["type"] for r in ins)
         lines.append("- OKX insurance fund rows: " + ", ".join(f"{k} {v}" for k, v in sorted(types.items())) + ".")
-    exps = [r for r in read("research/experiments/*.jsonl") if r["t"] <= now]
+    exps = [r for r in read("research/v2/experiments/*.jsonl") if r["t"] <= now] or \
+        [r for r in read("research/experiments/*.jsonl") if r["t"] <= now]
     if exps:
         last_t = max(r["t"] for r in exps)
         latest = [r for r in exps if r["t"] == last_t]
@@ -227,7 +228,44 @@ def research_datasets(base, since, now, read, alerts):
     return lines
 
 
-def build(base, now, days=7):
+FRESHNESS = [("collector runs", "data/runs/*.jsonl"), ("snapshots", "data/snap/*.jsonl"),
+             ("1-minute prices (BTC perp)", "data/prices/binance_klines_1m_BTCUSDT_perp/*.jsonl"),
+             ("Deribit options", "data/options/deribit_btc/*.jsonl"),
+             ("Hyperliquid account sample", "data/hl_accounts/*.jsonl"),
+             ("Hyperliquid enrichment", "data/hl_enrich/*.jsonl"), ("OKX insurance fund", "data/okx_insurance/*.jsonl"),
+             ("OKX liquidation orders", "data/liq/orders/*.jsonl"),
+             ("research lab (lab-2.0)", "research/v2/experiments/*.jsonl")]
+
+
+def provenance(base, now, kind):
+    """Header lines: generation time, input cutoff, versions, dataset freshness."""
+    def latest(pattern):
+        best = None
+        for path in sorted(base.glob(pattern))[-2:]:
+            try:
+                for r in read_rows(path):
+                    t = r.get("observed_at") if "research" not in pattern else r.get("t")
+                    if t is not None and t <= now and (best is None or t > best[0]):
+                        best = (t, r)
+            except (ValueError, OSError):
+                continue
+        return best
+    run = latest("data/runs/*.jsonl")
+    lab = latest("research/v2/experiments/*.jsonl")
+    lines = [f"Generated {iso(now)} by {REPORT_VERSION} ({kind}). Input cutoff: "
+             + (f"{iso(run[0])} (latest collector run written, {run[1].get('code_version')})" if run else "no runs")
+             + ". Research lab: " + (f"last run {iso(lab[0])}, {lab[1].get('lab_version')}" if lab else "no lab-2.0 run yet")
+             + ". This file is refreshed every 6 hours by the Research lab workflow; if the generation time is "
+               "older than that, the refresh has stopped.", "",
+             "| Dataset | Latest observation written | Age |", "|---|---|---:|"]
+    for label, pattern in FRESHNESS:
+        got = latest(pattern)
+        lines.append(f"| {label} | {iso(got[0]) if got else 'none'} | "
+                     f"{f'{(now - got[0]) / 60_000:.0f} min' if got else 'n/a'} |")
+    return lines + [""]
+
+
+def build(base, now, days=7, coverage_only=False):
     base = Path(base)
     since = now - days * 24 * H
     lines, alerts, fold = [], [], []
@@ -245,7 +283,10 @@ def build(base, now, days=7):
     runs = [r for r in runs_all if since <= r["t"] <= now and cadence.is_routine(r)]
     lines.extend([f"# JBM desk report — {iso(now)}", f"Window {iso(since)} → {iso(now)}. {REPORT_VERSION}.",
                   "Stored observations are research inputs. Missing observations never count as a failed forecast.",
-                  "", "## 1. Collection health"])
+                  ""])
+    lines.extend(provenance(base, now, "coverage refresh; forecast scoring and research tests are in the weekly "
+                                       "report" if coverage_only else "weekly report"))
+    lines.extend(["## 1. Collection health"])
     snaps = sorted((r for r in read("data/snap/*.jsonl") if since <= r["t"] <= now), key=lambda r: r["t"])
     try:
         periods = cadence.load(base)
@@ -355,34 +396,40 @@ def build(base, now, days=7):
         if now - window[-1]["t"] > cadence.stale_minutes() * 60_000:
             alerts.append(f"{label}: stale; last stored run {iso(window[-1]['t'])}")
     lines.extend(research_datasets(base, since, now, read, alerts))
-    lines.extend(["", "## 4. Forecast registry"])
-    manifest = read_json(base / "state/forecast_manifest.json", {})
-    registered_sources = {entry["source"] for entry in manifest.values()}
-    for path in sorted((base / "registry").glob("*.json")):
-        if not path.name.startswith("_") and path.relative_to(base).as_posix() not in registered_sources:
-            alerts.append(f"{path.name}: not in frozen registration manifest; collector registration required")
-    records, new, pending, scoring_alerts = score_registry(base, now, REPORT_VERSION)
-    alerts.extend(scoring_alerts)
-    completed = [r for r in records if r.get('status')=='scored']
-    late = [r for r in records if r.get('status','').startswith('late')]
-    lines.append(f"Scored: {len(completed)} total; {sum(r['status']=='scored' for r in new)} this report. Pending/retryable: {pending}. Late registrations: {len(late)}.")
-    for rec in new:
-        lines.append(f"- {rec['id']}: {rec['status']}; forecast SHA-256 {rec['forecast_sha256']}.")
-        for event in rec.get('events',[]):
-            lines.append(f"  - {format_event(event)}")
-    if new:
-        fold.append("Review newly scored forecasts and retained evidence. A small sample is not calibration.")
-    lines.extend(["", "## 5. Pre-registered research tests",
-                  "Post-registration labels describe timing only. Custom test code can bypass context helpers; leakage, episode independence and causal validity require review."])
-    tests, test_alerts = run_tests(base, now, REPORT_VERSION)
-    alerts.extend(test_alerts)
-    for rec in tests:
-        lines.append(f"- {rec['id']}: {rec['n_post_registration']} mature post-registration episodes; {rec['n_in_sample']} in-sample; {rec['n_rejected']} rejected.")
-        lines.append(f"  - Post-registration summaries: {rec['post_registration']}")
-        if rec['n_post_registration']:
-            fold.append(f"Review {rec['id']}: {rec['n_post_registration']} mature post-registration episodes; eligibility is not established by count alone.")
-    if not tests:
-        lines.append("No research tests completed successfully.")
+    if coverage_only:
+        weekly = sorted(p.name for p in (base / "reports").glob("20??-??-??.md"))
+        lines.extend(["", "## 4. Forecast registry", "Not run in the coverage refresh (scoring writes evidence); see "
+                      f"the weekly report{' reports/' + weekly[-1] if weekly else ''}.",
+                      "", "## 5. Pre-registered research tests", "Not run in the coverage refresh; see the weekly report."])
+    else:
+        lines.extend(["", "## 4. Forecast registry"])
+        manifest = read_json(base / "state/forecast_manifest.json", {})
+        registered_sources = {entry["source"] for entry in manifest.values()}
+        for path in sorted((base / "registry").glob("*.json")):
+            if not path.name.startswith("_") and path.relative_to(base).as_posix() not in registered_sources:
+                alerts.append(f"{path.name}: not in frozen registration manifest; collector registration required")
+        records, new, pending, scoring_alerts = score_registry(base, now, REPORT_VERSION)
+        alerts.extend(scoring_alerts)
+        completed = [r for r in records if r.get('status')=='scored']
+        late = [r for r in records if r.get('status','').startswith('late')]
+        lines.append(f"Scored: {len(completed)} total; {sum(r['status']=='scored' for r in new)} this report. Pending/retryable: {pending}. Late registrations: {len(late)}.")
+        for rec in new:
+            lines.append(f"- {rec['id']}: {rec['status']}; forecast SHA-256 {rec['forecast_sha256']}.")
+            for event in rec.get('events',[]):
+                lines.append(f"  - {format_event(event)}")
+        if new:
+            fold.append("Review newly scored forecasts and retained evidence. A small sample is not calibration.")
+        lines.extend(["", "## 5. Pre-registered research tests",
+                      "Post-registration labels describe timing only. Custom test code can bypass context helpers; leakage, episode independence and causal validity require review."])
+        tests, test_alerts = run_tests(base, now, REPORT_VERSION)
+        alerts.extend(test_alerts)
+        for rec in tests:
+            lines.append(f"- {rec['id']}: {rec['n_post_registration']} mature post-registration episodes; {rec['n_in_sample']} in-sample; {rec['n_rejected']} rejected.")
+            lines.append(f"  - Post-registration summaries: {rec['post_registration']}")
+            if rec['n_post_registration']:
+                fold.append(f"Review {rec['id']}: {rec['n_post_registration']} mature post-registration episodes; eligibility is not established by count alone.")
+        if not tests:
+            lines.append("No research tests completed successfully.")
     lines.extend(["", "## 6. Fold candidates", "Human review required before changing the skill package."])
     lines.extend([f"- {value}" for value in fold] or ["None."])
     fixture = base / 'test_fixtures.py'
@@ -400,14 +447,16 @@ def build(base, now, days=7):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--days',type=int,default=7)
+    parser.add_argument('--coverage-only', action='store_true',
+                        help='refresh reports/latest.md without scoring or research tests (no other side effects)')
     args = parser.parse_args()
     if not 1 <= args.days <= 365:
         parser.error('--days must be 1–365')
     base = Path(os.environ.get('OUT_DIR',Path(__file__).resolve().parent))
     now = int(time.time()*1000)
-    text = build(base,now,args.days)
+    text = build(base,now,args.days,coverage_only=args.coverage_only)
     date = dt.datetime.fromtimestamp(now/1000,dt.timezone.utc).strftime('%Y-%m-%d')
-    for name in (date+'.md','latest.md'):
+    for name in (('latest.md',) if args.coverage_only else (date+'.md','latest.md')):
         atomic_bytes(base/'reports'/name,text.encode())
     print(text)
 

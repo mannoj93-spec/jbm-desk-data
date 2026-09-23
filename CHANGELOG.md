@@ -1,3 +1,42 @@
+# Research-integrity revision 2.8 (lab-2.0) — 2026-09-23
+
+Response to the review of 2.7 (commit `900d0b1`). The default branch was inspected first: from
+`900d0b1` to the start of this work only automated data commits had landed, so every finding
+applied to the running code. Each was reproduced on `900d0b1` with `scripts/repro_integrity.py`
+(runs against any code tree) before it was fixed. The collector is unchanged (still
+`collector-2.7`): schedule, budgets, source isolation, serialized writes, recovery artifacts,
+watchdog, the fixed/rotating account policy, the six-hour ranking cache and request limits are
+untouched, and no stored observation, checkpoint, frozen forecast or lab-1.0 output is rewritten.
+
+| # | Finding (reproduced on 900d0b1) | Fix | Tests |
+|---|---|---|---|
+| 2 | Two events an hour apart whose inputs arrive together enter at the same bar, yet counted as 2 independent observations at 30 and 60 min | Thinning on actual label intervals `[entry_t, exit_t)`; dependence blocks (overlap or same UTC day, across groups) drive the bootstrap; firings / episodes / scorable / retained / blocks reported separately; nothing called independent | `test_integrity.OverlapTests` (identical entry, partial overlap, touching boundaries, all four horizons, delayed batch, outage catch-up, opposite directions, cross-group blocks, outcome-blind selection) |
+| 3 | A prior BTC bar delayed 49 min left a module G event dated 48 min before that input existed (the check used only the final bar) | Every module computes `t_inputs` over every required input (windows, prior sigma/return windows, threshold and volume history, marks, cohort records, insurance rows); > 60 min of delay excludes; optional inputs (funding, spot, spreads) only if already available; decisions frozen at the first lab run (`t_persisted`), late replays excluded from evaluation; the 60 s processing time is labelled an assumption | `AvailabilityTests` (G delayed/excluded, funding as-of, A prior bar and optional spot, C mark), `FreezeTests` (recomputation cannot alter a frozen decision; late replay excluded) |
+| 4 | 7 of 8 designs had no baseline predictors, so "supported" needed no added value; registration keyed on design JSON only | Out-of-sample baseline for every design (OLS on prior return, volatility, aligned funding, fitted on controls matured before each UTC day); unidentifiable baseline or quality blocks promotion; severity comparability for event references; Bonferroni over variants x 4 scheduled looks; evaluation versions bind design + semantic code + data dependencies; versioned namespaces for events, outcomes, registrations and cards | `VersionTests` (code-only change = new version; docstring, comment, README and data edits = same; superseded evidence stays), `test_lab.ExperimentTests` (promotion, blocking, multiplicity, severity) |
+| 5 | Ledger query 0-80 min with a deposit at minute 5 labelled a 60-75 min transition "confirmed transfer" | Per-transaction filtering to `(t0, t1]`, account/coin/side matching, `liquidatedPositions` and `liquidatedUser` checks, explicit covered / partial / failed / not_attempted / unchecked states, knowledge at decision vs later confirmation (`lab/hlevidence.py`) | `AttributionTests` |
+| 6 | 1-2 ms of timing jitter turned 3 liquidity events and 1 control into 0 and 0 | Nearest-second slots within 250 ms, deterministic duplicate resolution, 2 s freshness, 5 s availability; gaps and missing or stale seconds still fail coverage | `StreamTimingTests` (Recorder -> LocalStore -> module; exact vs jittered identical; missing, stale, sequence gap) |
+| 7 | All 12 panel quotes stale changed only counters; the event was unchanged | Descriptive mark-IV surface separated from a quote-qualified signal: the 25-delta legs of the ~7-day expiry must be fresh, two-sided, uncrossed, within 10% spread, > 1 day to expiry and have mark IV inside the quotes; failures regroup events as `*_ineligible`; unobserved quality stays unknown; a mark-only variant is labelled descriptive and never promotable | `OptionQualityTests` |
+| 8 | `reports/latest.md` was report 2.3 from 16:17Z after the 2.7 deployment | `report.py --coverage-only` refreshed every 6 hours by the Research lab workflow; every report states generation time, input cutoff, versions and per-dataset freshness; outputs merged into a fresh checkout without rewinding newer content (`scripts/merge_research.py`) | `PersistenceTests` |
+
+Qualifications. Finding 3 reproduces at 48 minutes with the repository's own synthetic
+construction (the review reported 49; the mechanism is identical). Finding 7 is a policy gap, not
+evidence that the mark-IV values were stale: mark IV is collected independently of the panel and is
+still reported, now labelled descriptive. Hyperliquid spot transfers are stored by the collector
+only as counts without times, so they cannot be attributed to an interval; they do not move perp
+margin and are excluded from transfer attribution.
+
+**Migration.** The first lab-2.0 run registers a new evaluation version for every design
+(`state/lab_registrations.json`); lab-1.0 registrations (`state/lab_registered.json`) and outputs
+(`research/evidence/cards`, `research/experiments`, `research/ledger`) are kept byte-for-byte,
+marked legacy in `research/evidence/index.json`, and never written again. Design files moved to
+`version: 2` (baseline block, `min_retained_observations`, `min_dependence_blocks`). No lab-1.0
+decision had been persisted (no module had prospective events), so nothing needed reinterpreting.
+Recomputations of data collected before registration are labelled `reanalysis`, never evaluation.
+
+**Versions.** `lab-2.0-2026-09-23`, `report-2.5-2026-09-23`; collector unchanged. Tests: 238
+regression tests (200 kept, 3 added to `test_lab.py`, 35 in `test_integrity.py`; eight 2.7
+lab tests were adapted to the new APIs with the same intent, none removed) plus 25 numerical fixtures.
+
 # Research-data revision 2.7 — 2026-09-23
 
 Adds the data and the machinery to look for testable trading advantages and to review changes to
