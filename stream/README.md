@@ -4,8 +4,9 @@ A separate, continuously running service for the second-scale data the 15-minute
 collector cannot observe: order-book reconstruction, trades and forced-flow messages. It is
 **not** run by GitHub Actions and nothing it records is committed to this repository.
 
-**Status: implemented and tested; not deployed.** No always-on host has been authorised. The
-remaining decision is listed at the end of this file.
+**Status: implemented and tested; not deployed (inactive).** No always-on host has been
+authorised, and none is deployed by this repository. The remaining decision is listed at the end
+of this file.
 
 ## What it records
 
@@ -50,6 +51,22 @@ invalid, stale or disconnected - the gap log says which - never a quiet book. Tr
 1-second mid move beyond `mid_move_sigma` sigma over `window_s` (per book, cooldown), and Bybit
 liquidations above `liq_burst_usd_60s` (bankruptcy-price notional) in 60 s. Scheduled controls fire
 every `controls_every_s`, so every trigger type has baseline captures.
+
+## Timing contract (what the research lab assumes about these files)
+
+- `derived/book1s` rows carry the actual wall-clock time the sample was taken (`t`, milliseconds),
+  the book's own timestamp (`book_ts`) and its age (`book_age_ms`). The service wakes on each whole
+  second, so `t` normally sits a few milliseconds after the boundary; it is never rounded.
+- The lab (module E, `lab/modules/liquidity.py`) assigns each row to the nearest whole second and
+  keeps it only if it is within 250 ms of that second. Two rows in one second: the one nearest the
+  boundary wins, then the earlier `t`. Rows are sorted, so file order and out-of-order arrival do
+  not matter.
+- A row whose `book_age_ms` exceeds 2,000 ms, or that lacks it, is stale and counts as missing.
+  Missing seconds are never filled from neighbouring seconds.
+- A sample is treated as usable 5 s after `t` (the flush interval); a decision is never dated
+  before the latest sample it read became usable.
+- Every disconnect, sequence gap, silence or restart in `derived/gaps` voids any shock whose
+  30-minute history or recovery window it overlaps.
 
 ## Run
 
