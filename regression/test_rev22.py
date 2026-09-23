@@ -501,7 +501,6 @@ class SlowResponseTests(unittest.TestCase):
     BUDGET = 1.2
 
     def run_get(self, server):
-        clock = getattr(collector, 'DEADLINE', None)
         now = time.monotonic() if collector.CODE_VERSION >= 'collector-2.5' else time.time()
         with patch.object(collector, 'DEADLINE', now + self.BUDGET, create=True), \
              patch.dict(os.environ, {'no_proxy': '127.0.0.1,localhost', 'NO_PROXY': '127.0.0.1,localhost'}):
@@ -539,6 +538,51 @@ class SlowResponseTests(unittest.TestCase):
         self.assertLess(took, self.BUDGET + 0.3)
         self.assertIsNone(js)
         self.assertIn('deadline', err)
+
+    def late_byte_server(self, status):
+        """Headers at once, one body byte 0.1 s before the deadline, then a 5 s stall (review of 2.5:
+        a stalled 503 held the caller 2.11 s against 1.2 s, because the abort could not reach the
+        socket under HTTPError and close() then waited behind the worker's receive)."""
+        sock = socket.socket()
+        sock.bind(('127.0.0.1', 0))
+        sock.listen(4)
+        self.addCleanup(sock.close)
+
+        def serve():
+            conn, _ = sock.accept()
+            try:
+                conn.recv(65536)
+                reason = b'OK' if status == 200 else b'Service Unavailable'
+                conn.sendall(b'HTTP/1.1 %d %s\r\nContent-Type: application/json\r\nContent-Length: 100\r\n\r\n'
+                             % (status, reason))
+                time.sleep(self.BUDGET - 0.1)
+                conn.sendall(b'{')
+                time.sleep(5)
+            except OSError:
+                pass
+            finally:
+                conn.close()
+        threading.Thread(target=serve, daemon=True).start()
+        return f'http://127.0.0.1:{sock.getsockname()[1]}/x'
+
+    def check_released(self, status):
+        before = {t for t in threading.enumerate() if t.name == 'collector-fetch'}
+        url = self.late_byte_server(status)
+        js, err, took = self.run_get(type('S', (), {'url': url})())
+        self.assertLess(took, self.BUDGET + 0.15, f'{status}: took {took:.2f}s')
+        self.assertIsNone(js)
+        self.assertIn('deadline', err)
+        # The shutdown reached the socket: the abandoned worker ends promptly, not at its timeout.
+        workers = [t for t in threading.enumerate() if t.name == 'collector-fetch' and t not in before]
+        for worker in workers:
+            worker.join(0.5)
+        self.assertFalse(any(w.is_alive() for w in workers), f'{status}: worker still blocked')
+
+    def test_stalled_error_body_is_released_at_the_deadline(self):
+        self.check_released(503)
+
+    def test_stalled_body_is_released_at_the_deadline(self):
+        self.check_released(200)
 
     def test_prompt_response_still_succeeds(self):
         server = TricklingServer('body', delay=0)
