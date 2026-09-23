@@ -38,6 +38,53 @@ T1 = T0 + 10 * H                                   # 15-minute schedule starts
 QUARTER = [7, 22, 37, 52]
 
 
+# Minimal valid answers for every non-Binance snapshot venue (2.6.1 review): a stall test must show
+# that unaffected venues are actually collected, not merely attempted.
+VENUE_ANSWERS = [
+    ('api.hyperliquid.xyz', 'metaAndAssetCtxs', [{'universe': [{'name': 'BTC'}]},
+                                                 [{'openInterest': '10', 'markPx': '1', 'oraclePx': '1', 'funding': '0', 'premium': '0'}]]),
+    ('api.hyperliquid.xyz', 'predictedFundings', [['BTC', [['HlPerp', {'fundingRate': '0', 'nextFundingTime': 1, 'fundingIntervalHours': 1}]]]]),
+    ('bitget.com', 'open-interest', {'code': '00000', 'data': {'openInterestList': [{'size': '1'}], 'ts': '1'}}),
+    ('bitget.com', 'current-fund-rate', {'code': '00000', 'data': [{'fundingRate': '0', 'fundingRateInterval': '8'}]}),
+    ('okx.com', 'open-interest', {'code': '0', 'data': [{'ts': '1', 'oi': '1', 'oiCcy': '1', 'oiUsd': '1'}]}),
+    ('okx.com', 'funding-rate', {'code': '0', 'data': [{'fundingRate': '0', 'method': 'x', 'fundingTime': '1'}]}),
+    ('okx.com', 'market/books', {'code': '0', 'data': [{'bids': [['100', '1', '0', '1']], 'asks': [['101', '1', '0', '1']], 'ts': '1'}]}),
+    ('okx.com', 'market/ticker', {'code': '0', 'data': [{'last': '1', 'ts': '1'}]}),
+    ('gateio.ws', '', {'position_size': '1', 'quanto_multiplier': '0.0001', 'mark_price': '1'}),
+    ('hbdm.com', 'swap_open_interest', {'status': 'ok', 'data': [{'amount': '1'}], 'ts': 1}),
+    ('hbdm.com', 'swap_funding_rate', {'status': 'ok', 'data': {'funding_rate': '0'}}),
+    ('deribit.com', 'ticker', {'result': {'mark_price': 1, 'open_interest': 1, 'index_price': 1, 'timestamp': 1}}),
+    ('kucoin.com', '', {'code': '200000', 'data': {'openInterest': '1000'}}),
+    ('bingx.com', 'openInterest', {'code': 0, 'data': {'openInterest': '1'}}),
+    ('bingx.com', 'premiumIndex', {'code': 0, 'data': {'markPrice': '1'}}),
+    ('kraken.com', '', {'tickers': [{'symbol': 'PF_XBTUSD', 'openInterest': 1}]}),
+    ('dydx.trade', '', {'markets': {'BTC-USD': {'openInterest': '1'}}}),
+    ('backpack.exchange', '', [{'openInterest': '1'}]),
+    ('paradex.trade', '', {'results': [{'open_interest': '1'}]}),
+    ('coinbase.com', '', {'price': '1'}),
+    ('bitfinex.com', '', [1, 2]),
+]
+NON_BINANCE_BOOKS = 14          # of 17: Binance carries BTCUSDT, BTCUSDC and the coin-margined perp
+
+
+def stalled_binance(clock):
+    """fetch(): every Binance request hangs until its deadline; every other venue answers in 0.2 s."""
+    def fetch(req, timeout, stop):
+        clock.requests += 1
+        url = req.full_url
+        if 'binance' in url:
+            clock.binance = getattr(clock, 'binance', 0) + 1
+            clock.t = max(clock.t, min(stop, clock.t + timeout))
+            raise TimeoutError('request not complete by the deadline (connect, headers or body)')
+        clock.t += 0.2
+        body = (req.data or b'').decode()
+        for host, key, answer in VENUE_ANSWERS:
+            if host in url and (key in url or key in body):
+                return json.dumps(answer).encode()
+        return b'{}'
+    return fetch
+
+
 def write_cadence(base, switch=T1):
     storage.atomic_json(Path(base) / 'cadence.json', {'periods': [
         {'from': '2026-01-01T00:00:00Z', 'minutes': [7], 'cron': '7 * * * *'},
@@ -236,6 +283,16 @@ class WatchdogStateTests(unittest.TestCase):
         self.assertEqual(code, 2)
         self.assertIn('running but failing', message)
 
+    def test_complete_snapshot_loss_is_critical_and_partial_loss_is_not(self):
+        lost = run(T1 + 15 * M, snap={'books_ok': 0, 'books': 17, 'failed': {f'b{i}': 'deadline reached' for i in range(17)}})
+        code, message = self.check([run(T1), lost], T1 + 20 * M)
+        self.assertEqual(code, 2)
+        self.assertIn('no open-interest book collected (0/17)', message)
+        partial = run(T1 + 15 * M, snap={'books_ok': 1, 'books': 17, 'failed': {f'b{i}': 'HTTP 502' for i in range(16)}})
+        self.assertEqual(self.check([run(T1), partial], T1 + 20 * M)[0], 0)
+        self.assertTrue(cadence.failure_summary(lost)[0])
+        self.assertFalse(cadence.failure_summary(dict(lost, mode='backfill', snap={}))[0])
+
     def test_source_failures_warn_without_failing(self):
         degraded = run(T1 + 15 * M, snap={'books_ok': 16, 'books': 17, 'failed': {'kraken': 'HTTP 502'}},
                        forward={'hl_positions': {'err': 'degraded: 3/200 accounts failed'}})
@@ -351,13 +408,7 @@ class OutageCompletionTests(unittest.TestCase):
 
     def test_one_hung_venue_cannot_cost_every_venue_its_snapshot(self):
         clock = FakeClock()
-        def fetch(req, timeout, stop):
-            clock.requests += 1
-            if 'binance' in req.full_url:
-                clock.t += timeout
-                raise TimeoutError('timed out')
-            clock.t += 0.2
-            return b'{}'
+        fetch = stalled_binance(clock)
         with tempfile.TemporaryDirectory() as tmp:
             (Path(tmp) / 'registry').mkdir()
             storage.atomic_json(Path(tmp) / 'state/checkpoints.json', {'series': {}, 'liq_last_ts': None})
@@ -375,9 +426,78 @@ class OutageCompletionTests(unittest.TestCase):
         self.assertLessEqual(record['stage_s']['series'], 0.40 * 600 + 1)
         self.assertIn('series', record['stage_limited'])
         self.assertEqual(len(snapped), 1)                                   # the snapshot was still taken
-        self.assertGreater(record['snap']['books_ok'] + len(record['snap']['failed']), 0)
+        self.assertEqual(record['snap']['books_ok'], NON_BINANCE_BOOKS)     # every unaffected venue collected
+        self.assertEqual(sorted(record['snap']['failed']), ['binance_BTCUSDC', 'binance_BTCUSDT', 'binance_BTCUSD_PERP'])
+        self.assertLessEqual(record['stage_s']['snap'], 0.20 * 600 + 1)
         for name, status in record['forward'].items():                      # forward books were attempted
             self.assertNotIn('deadline reached', str(status.get('err')), name)
+
+
+class VenueIsolationTests(unittest.TestCase):
+    """Review of 2.6: with Binance stalled, the 120 s snapshot stage made 5 Binance attempts, 0
+    requests to other venues, and stored 0/17 books."""
+
+    def snapshot_stage(self, clock):
+        fresh = {'http': {'requests': 0, 'failed': 0, 'rate_limited': 0, 'rate_limited_by_host': {},
+                          'deadline_skipped': 0, 'circuit_skipped': 0}}
+        with clock.patches(600), patch.object(collector, 'fetch', side_effect=stalled_binance(clock)), \
+             patch.object(collector, 'STAGE_DEADLINE', clock.t + 120), \
+             patch.object(collector, 'BREAKER_ACTIVE', True, create=True), \
+             patch.object(collector, 'TRIPPED', {}, create=True), patch.dict(collector.RUN, fresh):
+            start = clock.t
+            S = collector.snapshot()
+            return S, clock.t - start, dict(collector.RUN['http'])
+
+    def test_stalled_venue_leaves_every_other_book_collected(self):
+        clock = FakeClock()
+        S, took, http = self.snapshot_stage(clock)
+        ok = sorted(k for k, v in S['oi'].items() if v['st'] == 'ok')
+        self.assertEqual(len(ok), NON_BINANCE_BOOKS)
+        self.assertFalse(any(k.startswith('binance') for k in ok))
+        self.assertEqual(S['hl_predicted_fundings']['st'], 'ok')
+        self.assertEqual(S['depth_okx_usdt_swap']['st'], 'ok')
+        self.assertEqual(S['bitfinex_margin']['st'], 'ok')
+        self.assertLessEqual(took, 120)
+        self.assertEqual(clock.binance, 1)                    # one stalled request, then the circuit is open
+        self.assertGreater(http['circuit_skipped'], 0)
+        self.assertIn('circuit open', S['oi']['binance_BTCUSDC']['err'])
+
+    def test_each_source_is_capped_even_without_the_circuit(self):
+        clock = FakeClock()
+        with patch.object(collector, 'BREAKER_ACTIVE', False, create=True):
+            fresh = {'http': {'requests': 0, 'failed': 0, 'rate_limited': 0, 'rate_limited_by_host': {},
+                              'deadline_skipped': 0, 'circuit_skipped': 0}}
+            with clock.patches(600), patch.object(collector, 'fetch', side_effect=stalled_binance(clock)), \
+                 patch.object(collector, 'STAGE_DEADLINE', None), patch.dict(collector.RUN, fresh):
+                start = clock.t
+                v = collector.snap_source('', lambda: collector.need(collector.get(f'{collector.BN}/fapi/v1/openInterest?symbol=BTCUSDT')))
+                took = clock.t - start
+        self.assertEqual(v['st'], 'error')
+        self.assertLessEqual(took, collector.SNAP_SOURCE_S)
+
+    def test_error_statuses_do_not_open_the_circuit(self):
+        calls = []
+        def fetch(req, timeout, stop):
+            calls.append(req.full_url)
+            raise collector.HTTPFailure(503, b'{}')
+        with patch.object(collector, 'fetch', side_effect=fetch), patch('collector.time.sleep'), \
+             patch.object(collector, 'BREAKER_ACTIVE', True), patch.object(collector, 'TRIPPED', {}):
+            collector.get('https://api.gateio.ws/a', tries=2)
+            collector.get('https://api.gateio.ws/b', tries=2)
+            self.assertEqual(collector.TRIPPED, {})
+        self.assertEqual(len(calls), 4)
+
+    def test_circuit_is_limited_to_the_snapshot_stage(self):
+        calls = []
+        def fetch(req, timeout, stop):
+            calls.append(req.full_url)
+            raise TimeoutError('timed out')
+        with patch.object(collector, 'fetch', side_effect=fetch), patch('collector.time.sleep'), \
+             patch.object(collector, 'BREAKER_ACTIVE', False), patch.object(collector, 'TRIPPED', {}):
+            collector.get('https://api.hyperliquid.xyz/info', body={}, tries=2)
+            collector.get('https://api.hyperliquid.xyz/info', body={}, tries=2)
+            self.assertEqual(collector.TRIPPED, {})               # one account timing out never rejects the map
+        self.assertEqual(len(calls), 4)
 
 
 class PersistenceBudgetTests(unittest.TestCase):
