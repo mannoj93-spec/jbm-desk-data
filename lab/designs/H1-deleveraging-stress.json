@@ -1,5 +1,13 @@
 {
- "baseline_predictors": [],
+ "baseline": {
+  "method": "OLS on controls whose labels matured before each UTC day (out-of-sample); added value = test minus reference residuals",
+  "predictors": [
+   "prior_ret_60m_aligned",
+   "prior_rv_60m",
+   "funding_aligned"
+  ],
+  "severity_feature": "features.severity (event-group references: medians must be within 25%)"
+ },
  "collapse_ms": 1800000,
  "comparison": {
   "hypothesised_sign": 1,
@@ -13,7 +21,8 @@
  ],
  "family": "H-deleveraging",
  "id": "H1-deleveraging-stress",
- "min_independent_episodes": 100,
+ "min_dependence_blocks": 20,
+ "min_retained_observations": 100,
  "module": "deleveraging",
  "outcome": {
   "horizons_min": [
@@ -27,12 +36,13 @@
  },
  "primary_variant": "default",
  "question": "Do OKX liquidation bursts accompanied by insurance-fund loss or ADL rows continue further than plain bursts?",
- "status_note": "100 independent evaluation episodes is house governance (operating document), not a statistical test",
+ "severity_balance_max": 0.25,
+ "status_note": "100 retained non-overlapping observations in >= 20 dependence blocks is house governance (operating document), not a statistical test; promotion rules in lab/experiments.py",
  "variants": [
   {
    "name": "default",
    "params": {}
   }
  ],
- "version": 1
+ "version": 2
 }
