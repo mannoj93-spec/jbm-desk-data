@@ -30,7 +30,7 @@ from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
 from schema import SERIES_KIND
 
-CODE_VERSION = "collector-2.3-2026-09-23"
+CODE_VERSION = "collector-2.4-2026-09-23"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -40,6 +40,13 @@ H = 3_600_000
 M5 = 300_000
 BACKFILL = "--backfill" in sys.argv
 NOW = int(time.time() * 1000)
+# Run-wide network budget. The workflow kills the job at 30 minutes; persistence runs after this
+# process exits, so every request must stop well before that. A simulated all-venue outage took
+# 285 minutes under 2.3 (576 requests, each waiting its full timeout). After the deadline, get()
+# returns an error without a request, so each remaining stage fails fast and the run record is
+# still written. Override with COLLECTOR_BUDGET_S.
+RUN_BUDGET_S = int(os.environ.get("COLLECTOR_BUDGET_S", 20 * 60))
+DEADLINE = time.time() + RUN_BUDGET_S
 RUN = {"code_version": CODE_VERSION, "t_ret": NOW, "mode": "backfill" if BACKFILL else "hourly",
        "runner": "github" if os.environ.get("GITHUB_ACTIONS") else os.environ.get("RUNNER_LABEL", "local"),
        "series": {}, "liq": {}, "snap": {}, "errors": {}}
@@ -54,19 +61,25 @@ def month(ms):
 
 
 # ------------------------------------------------------------------ HTTP
-def get(url, body=None, tries=4, pause=0.0):
-    """Returns (json, None) or (None, reason). A 200 carrying an error body is a failure (M-19)."""
+def get(url, body=None, tries=4, pause=0.0, timeout=25, deadline=None):
+    """Returns (json, None) or (None, reason). A 200 carrying an error body is a failure (M-19).
+    No request starts after the run deadline (or the caller's earlier `deadline`), and no request
+    or retry pause runs past it: the socket timeout is capped by the time remaining."""
     last = None
+    stop = min(DEADLINE, deadline) if deadline else DEADLINE
     for i in range(tries):
         if pause:
-            time.sleep(pause)
+            time.sleep(min(pause, max(0.0, stop - time.time())))
+        remaining = stop - time.time()
+        if remaining < 1:
+            return None, (last + "; " if last else "") + "deadline reached"
         try:
             data = json.dumps(body).encode() if body is not None else None
             hdr = dict(UA)
             if data:
                 hdr["Content-Type"] = "application/json"
             req = urllib.request.Request(url, data=data, headers=hdr)
-            with urllib.request.urlopen(req, timeout=25) as r:
+            with urllib.request.urlopen(req, timeout=min(timeout, remaining)) as r:
                 js = json.loads(r.read().decode())
             err = body_error(js)
             if err:
@@ -81,10 +94,10 @@ def get(url, body=None, tries=4, pause=0.0):
                 except Exception:
                     detail = None
                 return None, last + (f" ({detail})" if detail else "")   # not transient
-            time.sleep(2 + 3 * i)
         except Exception as e:
             last = type(e).__name__ + ": " + str(e)[:80]
-            time.sleep(2 + 3 * i)
+        if i + 1 < tries:
+            time.sleep(min(2 + 3 * i, max(0.0, stop - time.time())))
     return None, last or "failed"
 
 
@@ -687,6 +700,9 @@ HL_INFO = "https://api.hyperliquid.xyz/info"
 HL_LEADERBOARD = "https://stats-data.hyperliquid.xyz/Mainnet/leaderboard"
 HL_TOP_N = 200
 HL_TOP_REFRESH = 6 * H
+HL_BUDGET_S = 300           # a normal map takes ~70 s (200 calls at ~0.33 s)
+HL_REQUEST_TIMEOUT_S = 10
+HL_RATE_LIMIT_BACKOFF_S = 5
 
 
 OPTION_NAME = re.compile(r"BTC-\d{1,2}[A-Z]{3}\d{2}-\d+(\.\d+)?-[CP]")
@@ -743,12 +759,12 @@ def collect_deribit_options():
             "err": f"degraded: {len(excluded)} option rows excluded" if excluded else None}
 
 
-def hl_top_accounts(st):
+def hl_top_accounts(st, deadline=None):
     """Top accounts by account value, refreshed every six hours (the leaderboard is ~40 MB)."""
     cache = st.get("hl_top") or {}
     if cache.get("t") and NOW - cache["t"] < HL_TOP_REFRESH and len(cache.get("addresses", [])) >= HL_TOP_N // 2:
         return cache
-    js = need(get(HL_LEADERBOARD))
+    js = need(get(HL_LEADERBOARD, tries=2, timeout=60, deadline=deadline))
     rows = js.get("leaderboardRows") if isinstance(js, dict) else None
     if not isinstance(rows, list) or len(rows) < HL_TOP_N:
         raise ValueError("Hyperliquid leaderboard missing or short")
@@ -798,11 +814,28 @@ def collect_hl_positions(st):
     leverage type (runbook F requirement 50). Current-only at the source; forward-only here.
     Any failed or malformed account marks the snapshot degraded and names the address; half or
     more failing means the map is not stored."""
-    top = hl_top_accounts(st)
+    started = time.time()
+    deadline = started + HL_BUDGET_S
+    top = hl_top_accounts(st, deadline)
     addresses = top["addresses"]
-    positions, failed = [], []
-    for addr in addresses:
-        js, err = get(HL_INFO, body={"type": "clearinghouseState", "user": addr}, tries=2, pause=0.05)
+    reject_at = (len(addresses) + 1) // 2          # this many failures means the map is not stored
+    positions, failed, stopped, rate_limited = [], [], None, 0
+    for i, addr in enumerate(addresses):
+        if len(failed) >= reject_at:
+            stopped = "rejection inevitable"
+        elif time.time() >= deadline:
+            stopped = "deadline"
+        if stopped:
+            failed.extend([a, f"not attempted: {stopped}"] for a in addresses[i:])
+            break
+        js, err = get(HL_INFO, body={"type": "clearinghouseState", "user": addr}, tries=2, pause=0.05,
+                      timeout=HL_REQUEST_TIMEOUT_S, deadline=deadline)
+        if err and err.startswith("HTTP 429"):
+            # Rate limited (seen live: 3 of 200 on a busy IP). Back off once, inside the budget.
+            rate_limited += 1
+            time.sleep(min(HL_RATE_LIMIT_BACKOFF_S, max(0.0, deadline - time.time())))
+            js, err = get(HL_INFO, body={"type": "clearinghouseState", "user": addr}, tries=1,
+                          timeout=HL_REQUEST_TIMEOUT_S, deadline=deadline)
         try:
             if err:
                 raise ValueError(err)
@@ -811,19 +844,24 @@ def collect_hl_positions(st):
             failed.append([addr, str(exc)[:60]])
             continue
         positions.extend([addr] + p for p in found)
-    if 2 * len(failed) >= len(addresses):
-        raise RuntimeError(f"{len(failed)}/{len(addresses)} accounts failed or malformed; map not stored "
-                           f"(first: {failed[:2]})")
+    elapsed = round(time.time() - started, 1)
+    attempted = len(addresses) - sum(1 for _, why in failed if why.startswith("not attempted"))
+    if len(failed) >= reject_at:
+        raise RuntimeError(f"{len(failed)}/{len(addresses)} accounts failed or not attempted "
+                           f"({attempted} attempted in {elapsed}s{'; stopped: ' + stopped if stopped else ''}); "
+                           f"map not stored (first: {failed[:2]})")
     status = "degraded" if failed else "complete"
     out = {"t": NOW, "status": status, "accounts_ranked": len(addresses), "accounts_failed": len(failed),
-           "failed": failed, "ranked_at": top["t"], "min_account_value": top["min_account_value"],
+           "failed": failed, "stopped": stopped, "elapsed_s": elapsed, "rate_limited": rate_limited, "ranked_at": top["t"], "min_account_value": top["min_account_value"],
            "rank_basis": top["rank_basis"],
            "fields": ["address", "account_value", "szi_btc", "entry_px", "liquidation_px", "leverage_type",
                       "leverage", "position_value", "unrealized_pnl", "margin_used"],
            "positions": positions}
     added = append_rows("hl_positions/btc", [out], partition=day)
     return {"added": added, "status": status, "positions": len(positions), "accounts_failed": len(failed),
-            "err": f"degraded: {len(failed)}/{len(addresses)} accounts failed or malformed" if failed else None}
+            "stopped": stopped, "elapsed_s": elapsed, "rate_limited": rate_limited,
+            "err": (f"degraded: {len(failed)}/{len(addresses)} accounts failed, malformed or not attempted"
+                    + (f" (stopped: {stopped})" if stopped else "")) if failed else None}
 
 
 def collect_forward(st):

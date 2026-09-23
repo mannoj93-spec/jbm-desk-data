@@ -1,4 +1,4 @@
-# Validation record — reliability revision 2.3
+# Validation record — reliability revision 2.4
 
 Validated 2026-09-23 with Python 3.11 (container) against live sources; GitHub workflows select
 Python 3.12. Runtime uses the standard library only.
@@ -7,7 +7,10 @@ Python 3.12. Runtime uses the standard library only.
 |---|---|
 | Numerical fixture checks (`test_fixtures.py`) | 25 passed |
 | `SHA256SUMS` | Now covers code, docs, workflows and templates only; data, state and reports change every hour |
-| Offline regression tests (`regression/`) | 73 passed (50 from 2.1, 23 in `test_rev22.py`) |
+| Offline regression tests (`regression/`) | 80 passed (50 from 2.1, 30 in `test_rev22.py`) |
+| 2.4 outage tests run against 2.3 (`22d2c65`) | 6 of 6 fail or error, as intended |
+| Simulated outage, fake clock, 2.4 | Hyperliquid only: 27 requests, 5.0 min. Every venue: 38 requests, 20.0 min, run record written (2.3: 400 requests / 190 min and 576 / 285 min) |
+| Live run under 2.4, scratch copy | 17/17 books; options complete 850/850; HL degraded 3/200 on HTTP 429, then complete 200/200 in 93 s with the backoff |
 | 2.3 tests run against `ed45dd2` | 9 of 23 in `test_rev22.py` fail or error, as intended |
 | The 13 collector, scoring and schema tests run against the 2.1 code | 11 fail or error, as intended; the 2 that pass pin behaviour 2.1 already had |
 | Live hourly run, updated collector, scratch copy of the repo | 17/17 books, 849 option strikes with OI, 29 HL BTC positions in top 200, no errors, 147 s |

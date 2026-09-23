@@ -1,4 +1,4 @@
-# JBM desk data — reliability revision 2.3
+# JBM desk data — reliability revision 2.4
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -55,6 +55,10 @@ runs; it is not an unlimited queue. The hourly recovery pass revisits open forec
 issues missed by event delivery or queueing. A repository owned by an organization
 needs an explicit authorized-user policy before phone intake can be used: the default
 accepts only an individual repository owner's login.
+
+The collector stops making requests 20 minutes into a run (`COLLECTOR_BUDGET_S`) and the
+Hyperliquid map 5 minutes into its own work, so a venue outage cannot push a run past the
+workflow's 30-minute limit and lose the hour's data; unreached work is recorded as such.
 
 Scheduled jobs can be delayed. A failing collector fails its own workflow; a silent one (disabled
 schedule, stuck queue) is caught by the watchdog within about two hours. The watchdog runs on the

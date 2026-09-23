@@ -1,3 +1,29 @@
+# Reliability revision 2.4 — 2026-09-23
+
+From the review of 2.3: the Hyperliquid map had no time limit. Measured on a simulated clock where
+every request hangs for its full timeout:
+
+| Simulated outage | 2.3 | 2.4 |
+|---|---|---|
+| Hyperliquid only | 400 requests, 190 min | 27 requests, 5.0 min, stopped at its budget |
+| Every venue, whole hourly run | 576 requests, 285 min | 38 requests, 20.0 min, run record written |
+
+The workflow kills the job at 30 minutes and persists only after the collector exits, so 2.3 could
+lose the whole hour's data in a long outage.
+
+- **Run-wide budget.** `get()` starts no request after the run deadline (20 minutes, or
+  `COLLECTOR_BUDGET_S`) and caps each socket timeout and retry pause by the time remaining; every
+  later stage fails fast and the run record is still written, leaving about 10 minutes for the
+  commit and push.
+- **Hyperliquid budget.** The map has 300 seconds (a normal map takes 70–120 s), 10-second request
+  timeouts, and stops as soon as failures reach half the accounts, when the map could no longer be
+  stored. Accounts not reached are listed as `not attempted: deadline` or `not attempted: rejection
+  inevitable`; each snapshot records `stopped`, `elapsed_s` and `rate_limited`.
+- **Rate limits.** A live run hit HTTP 429 on 3 of 200 accounts (the audit container's IP, after
+  repeated runs). A 429 now gets one retry after a 5-second backoff inside the budget; the next
+  live map was complete (200/200, 93 s).
+- Tests: 7 in `OutageBudgetTests`; the 6 that predate the 429 change all fail on 2.3.
+
 # Reliability revision 2.3 — 2026-09-23
 
 From the external review of `ed45dd2`. Each item has a regression test that fails on `ed45dd2`
