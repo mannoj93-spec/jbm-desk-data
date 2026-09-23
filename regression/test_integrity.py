@@ -76,7 +76,7 @@ def design(horizons=(30, 60, 240, 480), ref="reference"):
 
 
 def counts(rows, d, horizon):
-    s = experiments.summarize(rows, d, None, "reanalysis", {}, Baseline([]), 1)
+    s = experiments.summarize(rows, d, None, "reanalysis", {}, {}, 1)
     return s[str(horizon)]["counts"]["test"]
 
 
@@ -124,7 +124,7 @@ class OverlapTests(unittest.TestCase):
         a = T0 + 60_000
         rows = labelled([ev(T0, 1, "test", a), ev(T0 + 10 * MINUTE, 1, "reference", a + 10 * MINUTE),
                          ev(T0 + 3 * DAY // 2, 1, "test", T0 + 3 * DAY // 2 + 60_000)], self.b, T0 + 2 * DAY + H)
-        s = experiments.summarize(rows, design(), None, "reanalysis", {}, Baseline([]), 1)["60"]
+        s = experiments.summarize(rows, design(), None, "reanalysis", {}, {}, 1)["60"]
         test_blocks = {r["block"] for r in s["_test"]}
         ref_blocks = {r["block"] for r in s["_ref"]}
         self.assertEqual(len(test_blocks), 2)
@@ -135,15 +135,15 @@ class OverlapTests(unittest.TestCase):
         a = T0 + 60_000
         evs = [ev(T0, 1, "test", a), ev(T0 + 10 * MINUTE, 1, "test", a + 10 * MINUTE)]
         rows = labelled(evs, self.b, self.now)
-        kept = experiments.summarize(rows, design(), None, "reanalysis", {}, Baseline([]), 1)["60"]["_test"]
+        kept = experiments.summarize(rows, design(), None, "reanalysis", {}, {}, 1)["60"]["_test"]
         rows[0][1][60]["ret_net"], rows[1][1][60]["ret_net"] = -1.0, 1.0      # outcomes cannot change selection
-        kept2 = experiments.summarize(rows, design(), None, "reanalysis", {}, Baseline([]), 1)["60"]["_test"]
+        kept2 = experiments.summarize(rows, design(), None, "reanalysis", {}, {}, 1)["60"]["_test"]
         self.assertEqual([r["event_id"] for r in kept], [r["event_id"] for r in kept2])
 
     def test_counts_are_kept_separately(self):
         a = T0 + H + 60_000
         rows = labelled([ev(T0, 1, "test", a), ev(T0 + H, 1, "test", a)], self.b, self.now)
-        c = experiments.summarize(rows, design(), None, "reanalysis", {"test": 5}, Baseline([]), 1)["60"]["counts"]
+        c = experiments.summarize(rows, design(), None, "reanalysis", {"test": 5}, {}, 1)["60"]["counts"]
         self.assertEqual({k: c["test"][k] for k in ("firings", "episodes", "scorable", "retained", "blocks")},
                          {"firings": 5, "episodes": 2, "scorable": 2, "retained": 1, "blocks": 1})
 

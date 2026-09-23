@@ -22,6 +22,7 @@ from lab.data import Store
 from lab.events import collapse, event_record
 from lab.modules import deleveraging, flow_absorption, liquidity, twap
 from lab.baseline import Baseline
+from lab import baseline as baseline_mod
 from lab.run import Lab, main as lab_main
 
 T0 = 1_790_121_600_000                     # 2026-09-23 00:00 UTC
@@ -74,7 +75,7 @@ class OutcomeTests(unittest.TestCase):
 
     def test_costs_direction_and_funding(self):
         b = bars_from([100.0] * 600)
-        fund = [(T0 + 4 * H, 0.0001)]                                     # longs pay 1 bp at 04:00
+        fund = [(T0 + 4 * H, 0.0001), (T0 + 8 * H, 0.0)]                 # longs pay 1 bp at 04:00; series reaches 08:00
         long = outcomes.label(T0, 1, b, T0 + 10 * H, horizons=(480,), funding=fund, half_spread=1.0)[480]
         short = outcomes.label(T0, -1, b, T0 + 10 * H, horizons=(480,), funding=fund, half_spread=1.0)[480]
         base = (2 * 5.0 + 2 * 1.0 + 2 * 1.0) / 1e4
@@ -332,10 +333,17 @@ def dataset(n_days, test_y, ref_y, control_days=3, ref="reference"):
 
 
 def summaries(rows, d, reg, phase="evaluation"):
-    ctl = [dict(bf, entry_t=l[30]["entry_t"], exit_t=l[30]["exit_t"], y=l[30]["ret_net"])
-           for e, l, bf in rows if e["group"].startswith("control")]
-    base = Baseline(ctl)
+    base = baseline_mod.build(rows, d["outcome"]["horizons_min"])
     return experiments.summarize(rows, d, reg, phase, {}, base, 1), base
+
+
+def verdict(rows, d, reg, n_variants=1, superseded=False):
+    """(status, reason, records): the recorded-checkpoint path, computed without writing."""
+    base = baseline_mod.build(rows, d["outcome"]["horizons_min"])
+    lab = type("L", (), {"base": "/nonexistent-checkpoint-dir", "now": T0 + 400 * DAY_MS})()
+    records, pending, _ = experiments.checkpoints(lab, d, rows, reg, base, lambda t: n_variants, write=False)
+    st = experiments.status(d, records, pending, superseded)
+    return st[0], st[1], records
 
 
 DAY_MS = 86_400_000
@@ -362,48 +370,46 @@ class ExperimentTests(unittest.TestCase):
 
     def test_status_rules(self):
         d, reg = design(), {"registered": T0}
-        q = {"incomplete_share": 0.0}
-        s, base = summaries(dataset(10, 0.01, 0.0), d, reg)
-        st = experiments.status(d, "available", s, q, base, 1)
+        st = verdict(dataset(10, 0.01, 0.0), d, reg)
         self.assertEqual(st[0], "supported", st[1])
-        s, base = summaries(dataset(10, -0.01, 0.0), d, reg)
-        self.assertEqual(experiments.status(d, "available", s, q, base, 1)[0], "retired")
-        s, base = summaries(dataset(3, 0.01, 0.0), d, reg)
-        self.assertEqual(experiments.status(d, "available", s, q, base, 1)[0], "under prospective evaluation")
-        self.assertEqual(experiments.status(d, "available", None, q, base, 1)[0], "exploratory")
-        self.assertEqual(experiments.status(d, "available", s, q, base, 1, superseded=True)[0], "retired")
+        self.assertEqual(verdict(dataset(10, -0.01, 0.0), d, reg)[0], "retired")
+        self.assertEqual(verdict(dataset(3, 0.01, 0.0), d, reg)[0], "under prospective evaluation")
+        self.assertEqual(verdict(dataset(10, 0.01, 0.0), d, None)[0], "exploratory")
+        self.assertEqual(verdict(dataset(10, 0.01, 0.0), d, reg, superseded=True)[0], "retired")
 
     def test_promotion_blocked_without_baseline_or_quality(self):
-        d, reg, q = design(), {"registered": T0}, {"incomplete_share": 0.0}
+        d, reg = design(), {"registered": T0}
         rows = [r for r in dataset(10, 0.01, 0.0) if not r[0]["group"].startswith("control")]
-        s, base = summaries(rows, d, reg)                            # no controls: baseline unidentifiable
-        self.assertEqual(experiments.status(d, "available", s, q, base, 1)[0], "blocked")
-        s, base = summaries(dataset(10, 0.01, 0.0), d, reg)
-        self.assertNotEqual(experiments.status(d, "insufficient_data", s, q, base, 1)[0], "supported")
-        self.assertEqual(experiments.status(d, "available", s, {"incomplete_share": 0.2}, base, 1)[0], "blocked")
-        self.assertEqual(experiments.status(dict(d, descriptive_only=True), "available", s, q, base, 1)[0], "blocked")
+        self.assertEqual(verdict(rows, d, reg)[0], "blocked")         # no controls: baseline unidentifiable
+        rows = dataset(10, 0.01, 0.0)
+        for e, lab_, _ in rows:                                       # 2 of the first 6 test labels incomplete
+            if e["group"] == "test" and e["t_event"] < T0 + 2 * DAY_MS:
+                lab_[30] = {"status": "incomplete"}
+        st = verdict(rows, d, reg)
+        self.assertEqual(st[0], "blocked", st[1])
+        self.assertIn("quality", st[1])
+        self.assertEqual(verdict(dataset(10, 0.01, 0.0), dict(d, descriptive_only=True), reg)[0], "blocked")
 
     def test_multiplicity_adjustment_can_withhold_promotion(self):
-        d, reg, q = design(min_n=10), {"registered": T0}, {"incomplete_share": 0.0}
+        d, reg = design(min_n=10), {"registered": T0}
         rows = dataset(12, 0.02, 0.0)
         for e, lab_, _ in rows:
             if e["group"] == "test" and e["t_event"] == T0 + 3 * DAY_MS + 10 * MINUTE:
                 lab_[30]["ret_net"] = -0.025                           # one adverse outcome
-        s, base = summaries(rows, d, reg)
-        one = experiments.status(d, "available", s, q, base, 1)
-        many = experiments.status(d, "available", s, q, base, 500)    # 500 variants tried in the family
+        one = verdict(rows, d, reg, 1)
+        many = verdict(rows, d, reg, 500)                              # 500 variants tried in the family
         self.assertEqual(one[0], "supported", one[1])
         self.assertNotEqual(many[0], "supported")
         self.assertIn("effect_adjusted", many[1])
+        self.assertEqual(many[2][0]["manifest"]["criteria"]["n_variants"], 500)
 
     def test_severity_mismatch_blocks_promotion(self):
-        d, reg, q = design(), {"registered": T0}, {"incomplete_share": 0.0}
+        d, reg = design(), {"registered": T0}
         rows = dataset(10, 0.01, 0.0)
         for e, _, _ in rows:
             if e["group"] == "test":
                 e["features"]["severity"] = 3.0
-        s, base = summaries(rows, d, reg)
-        st = experiments.status(d, "available", s, q, base, 1)
+        st = verdict(rows, d, reg)
         self.assertNotEqual(st[0], "supported")
         self.assertIn("comparability", st[1])
 
