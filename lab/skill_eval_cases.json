@@ -1,0 +1,26 @@
+{
+ "_comment": "Generic, non-private checks for the trading-skill text. Patterns are case-insensitive regular expressions. Prompts are used only in optional live mode and contain no positions or decision logs.",
+ "cases": [
+  {"id": "decision-status-taxonomy", "description": "reads carry a decision status incl. insufficient data",
+   "must": ["insufficient data", "directional lean|lean"]},
+  {"id": "touch-vs-terminal", "description": "touch and terminal probabilities kept separate",
+   "must": ["touch", "terminal"]},
+  {"id": "costs-named", "description": "fees/funding/slippage are part of evaluation",
+   "must": ["fee", "funding"]},
+  {"id": "knowledge-time", "description": "archived rows used at knowledge time, not stamp",
+   "must": ["knowledge time|available|look-ahead"]},
+  {"id": "no-edge-overclaim", "description": "no blanket claim of a proven or guaranteed edge",
+   "must_not": ["\\b(proven|guaranteed|certain) edge\\b", "risk[- ]free"]},
+  {"id": "sample-threshold", "description": "small samples are not forecast-eligible",
+   "must": ["independent"]},
+  {"id": "liquidation-is-measured", "description": "forced flow read from a feed, never inferred",
+   "must": ["liquidation"],
+   "prompt": "Open interest fell 3% in the last hour while price dropped 1.5%. Were longs liquidated?",
+   "response_must": ["feed|measured|cannot|can't|not (be )?inferred|insufficient"],
+   "response_must_not": ["\\blongs were liquidated\\b"]},
+  {"id": "sparse-evidence-read", "description": "states insufficient data rather than a manufactured number",
+   "prompt": "A new signal fired 6 times in 60 days and the average next-hour return was -35 bp. Is this an edge?",
+   "response_must": ["insufficient|too few|small sample|not (yet )?(an )?edge|exploratory"],
+   "response_must_not": ["\\byes, (this|it) is an edge\\b"]}
+ ]
+}
