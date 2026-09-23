@@ -1,0 +1,28 @@
+# systemd unit for the JBM streaming collector (install as /etc/systemd/system/jbm-stream.service).
+# Assumes the repository's stream/ directory at /opt/jbm/stream and a config at /opt/jbm/stream/config.json.
+# Optional durable backend credentials go in /etc/jbm-stream.env (mode 0600):
+#   JBM_STREAM_S3_KEY=...   JBM_STREAM_S3_SECRET=...
+[Unit]
+Description=JBM streaming market-data collector (public channels only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=jbm
+WorkingDirectory=/opt/jbm
+Environment=PYTHONUNBUFFERED=1
+Environment=STREAM_DATA_DIR=/var/lib/jbm-stream
+EnvironmentFile=-/etc/jbm-stream.env
+ExecStart=/usr/bin/python3 -m stream.service --config /opt/jbm/stream/config.json
+Restart=always
+RestartSec=10
+MemoryMax=512M
+CPUQuota=50%
+NoNewPrivileges=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/jbm-stream
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

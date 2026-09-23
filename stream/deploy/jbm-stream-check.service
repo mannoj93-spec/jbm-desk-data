@@ -1,0 +1,10 @@
+# Heartbeat check, run by jbm-stream-check.timer. A failed unit is the alert surface
+# (journalctl / systemctl --failed); wire it to any notifier you already use.
+[Unit]
+Description=JBM streaming collector heartbeat check
+
+[Service]
+Type=oneshot
+User=jbm
+WorkingDirectory=/opt/jbm
+ExecStart=/usr/bin/python3 -m stream.check_heartbeat /var/lib/jbm-stream --max-age 60 --max-down 120
