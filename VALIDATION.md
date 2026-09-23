@@ -1,4 +1,4 @@
-# Validation record — reliability revision 2.4
+# Validation record — reliability revision 2.5
 
 Validated 2026-09-23 with Python 3.11 (container) against live sources; GitHub workflows select
 Python 3.12. Runtime uses the standard library only.
@@ -7,7 +7,10 @@ Python 3.12. Runtime uses the standard library only.
 |---|---|
 | Numerical fixture checks (`test_fixtures.py`) | 25 passed |
 | `SHA256SUMS` | Now covers code, docs, workflows and templates only; data, state and reports change every hour |
-| Offline regression tests (`regression/`) | 80 passed (50 from 2.1, 30 in `test_rev22.py`) |
+| Offline regression tests (`regression/`) | 85 passed (50 from 2.1, 35 in `test_rev22.py`); 5 consecutive full runs, no flakes |
+| 2.5 slow-response tests run against 2.4 (`f6fa022`) | 3 trickle tests fail, as intended; prompt response passes on both |
+| Local trickling server, 1.2 s budget | Body and headers: 1.20 s, rejected (2.4: 3.45 s and 3.57 s, accepted) |
+| Live run under 2.5, scratch copy | 17/17 books; options complete; HL complete 200/200 in 97 s; no errors; 155 s |
 | 2.4 outage tests run against 2.3 (`22d2c65`) | 6 of 6 fail or error, as intended |
 | Simulated outage, fake clock, 2.4 | Hyperliquid only: 27 requests, 5.0 min. Every venue: 38 requests, 20.0 min, run record written (2.3: 400 requests / 190 min and 576 / 285 min) |
 | Live run under 2.4, scratch copy | 17/17 books; options complete 850/850; HL degraded 3/200 on HTTP 429, then complete 200/200 in 93 s with the backoff |

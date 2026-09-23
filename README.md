@@ -1,4 +1,4 @@
-# JBM desk data — reliability revision 2.4
+# JBM desk data — reliability revision 2.5
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -56,9 +56,14 @@ issues missed by event delivery or queueing. A repository owned by an organizati
 needs an explicit authorized-user policy before phone intake can be used: the default
 accepts only an individual repository owner's login.
 
-The collector stops making requests 20 minutes into a run (`COLLECTOR_BUDGET_S`) and the
-Hyperliquid map 5 minutes into its own work, so a venue outage cannot push a run past the
-workflow's 30-minute limit and lose the hour's data; unreached work is recorded as such.
+The collector's network work ends 20 minutes into a run (`COLLECTOR_BUDGET_S`) and the
+Hyperliquid map's 5 minutes into its own work, on `time.monotonic()`. The limit covers each whole
+request: DNS lookup, connection, headers and body. A request still unfinished at the deadline is
+abandoned and counted as failed, never accepted late; unreached work is recorded as such. What
+the limit does not cover: the seconds of local writing after the deadline, and the workflow's own
+commit and push, which have the remaining ~10 minutes of the 30-minute job. An abandoned request
+may keep its background thread until its socket times out or the process exits; its result is
+discarded.
 
 Scheduled jobs can be delayed. A failing collector fails its own workflow; a silent one (disabled
 schedule, stuck queue) is caught by the watchdog within about two hours. The watchdog runs on the

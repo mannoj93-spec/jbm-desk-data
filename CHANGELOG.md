@@ -1,3 +1,28 @@
+# Reliability revision 2.5 — 2026-09-23
+
+From the review of 2.4: the deadline capped the socket timeout, but a socket timeout limits each
+blocking operation, not the request. Reproduced on a local server with a 1.2-second budget:
+
+| Server behaviour | 2.4 | 2.5 |
+|---|---|---|
+| Body sent one byte every 70 ms | 3.45 s, response accepted | 1.20 s, rejected: deadline |
+| Headers sent one byte every 50 ms | 3.57 s, response accepted | 1.20 s, rejected: deadline |
+| DNS lookup stalled 3 s (no socket exists yet) | not bounded | 1.2 s, rejected: deadline |
+
+- **Whole-request limit.** `fetch()` runs each request in a daemon worker thread and waits for it
+  only until the deadline, covering DNS, connection, TLS, headers, body, and HTTP error bodies.
+  On expiry it shuts the socket down to release the worker, discards any late result, and the
+  request counts as failed. Bodies are read in `read1` chunks with a deadline check between them,
+  so the worker also stops itself.
+- **Monotonic deadlines.** The run and Hyperliquid deadlines use `time.monotonic()`; a wall-clock
+  step can no longer lengthen or shorten them. Stored timestamps stay on wall-clock UTC.
+- **README** now states what the limit covers and what it does not (local writes after the
+  deadline; the workflow's commit and push; an abandoned thread's lifetime).
+- Tests: `SlowResponseTests` uses real sockets on 127.0.0.1 — trickled body, trickled headers,
+  trickled 503 body, stalled DNS, and a prompt response that must still succeed. The three trickle
+  tests fail on 2.4. The fake-clock helper now patches the clock only inside `with`, after a
+  failing test in development left it installed for the tests that followed.
+
 # Reliability revision 2.4 — 2026-09-23
 
 From the review of 2.3: the Hyperliquid map had no time limit. Measured on a simulated clock where

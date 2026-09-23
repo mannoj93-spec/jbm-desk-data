@@ -25,12 +25,12 @@ Usage:
 Exit code 0 always, unless the critical Binance share series failed (then 2) --
 the workflow commits first and fails afterwards so GitHub emails the owner.
 """
-import gzip, json, math, os, re, sys, time, urllib.request, urllib.error, datetime as dt
+import gzip, json, math, os, re, socket, sys, threading, time, urllib.request, urllib.error, datetime as dt
 from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
 from schema import SERIES_KIND
 
-CODE_VERSION = "collector-2.4-2026-09-23"
+CODE_VERSION = "collector-2.5-2026-09-23"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -44,9 +44,10 @@ NOW = int(time.time() * 1000)
 # process exits, so every request must stop well before that. A simulated all-venue outage took
 # 285 minutes under 2.3 (576 requests, each waiting its full timeout). After the deadline, get()
 # returns an error without a request, so each remaining stage fails fast and the run record is
-# still written. Override with COLLECTOR_BUDGET_S.
+# still written. Override with COLLECTOR_BUDGET_S. Deadlines use time.monotonic(): a wall-clock
+# step (NTP) cannot extend or cut them.
 RUN_BUDGET_S = int(os.environ.get("COLLECTOR_BUDGET_S", 20 * 60))
-DEADLINE = time.time() + RUN_BUDGET_S
+DEADLINE = time.monotonic() + RUN_BUDGET_S
 RUN = {"code_version": CODE_VERSION, "t_ret": NOW, "mode": "backfill" if BACKFILL else "hourly",
        "runner": "github" if os.environ.get("GITHUB_ACTIONS") else os.environ.get("RUNNER_LABEL", "local"),
        "series": {}, "liq": {}, "snap": {}, "errors": {}}
@@ -61,16 +62,92 @@ def month(ms):
 
 
 # ------------------------------------------------------------------ HTTP
+class HTTPFailure(Exception):
+    """An HTTP error status, with its (bounded) body already read inside the deadline."""
+    def __init__(self, code, body):
+        super().__init__(f"HTTP {code}")
+        self.code, self.body = code, body
+
+
+def _read_until(stream, stop, limit=None):
+    """Read a response body in chunks, stopping at `stop` (monotonic) or after `limit` bytes.
+    read1 returns whatever one receive delivers, so a trickling server cannot hold a single read
+    open while the deadline passes."""
+    reader = getattr(stream, "read1", None) or stream.read
+    chunks, size = [], 0
+    while limit is None or size < limit:
+        if time.monotonic() >= stop:
+            raise TimeoutError("response body not complete by the deadline")
+        chunk = reader(65536)
+        if not chunk:
+            break
+        chunks.append(chunk)
+        size += len(chunk)
+    return b"".join(chunks)
+
+
+def _abort(resp):
+    """Unblock a worker stuck in a receive: shut the socket down, then close the response."""
+    try:
+        resp.fp.raw._sock.shutdown(socket.SHUT_RDWR)
+    except Exception:
+        pass
+    try:
+        resp.close()
+    except Exception:
+        pass
+
+
+def fetch(req, timeout, stop):
+    """Open `req` and read its whole body, returning bytes no later than `stop` (monotonic).
+
+    The socket timeout bounds each blocking operation, not the request: a server that trickles
+    its headers or body resets it with every byte (measured on a local server: 3.45 s taken and
+    the response accepted against a 1.2 s budget), and a DNS lookup is outside it altogether.
+    So the request runs in a daemon worker thread and the caller waits for it only until `stop`.
+    On expiry the socket is shut down to release the worker, whatever it later returns is
+    discarded, and TimeoutError is raised. HTTP error bodies are read in the worker too."""
+    box = {}
+
+    def work():
+        try:
+            try:
+                resp = urllib.request.urlopen(req, timeout=timeout)
+            except urllib.error.HTTPError as exc:
+                box["resp"] = exc
+                box["http"] = (exc.code, _read_until(exc, stop, limit=8192))
+                return
+            box["resp"] = resp
+            with resp:
+                box["body"] = _read_until(resp, stop)
+        except BaseException as exc:          # delivered to the caller, never swallowed
+            box["err"] = exc
+
+    worker = threading.Thread(target=work, name="collector-fetch", daemon=True)
+    worker.start()
+    worker.join(max(0.0, stop - time.monotonic()))
+    if worker.is_alive():
+        if "resp" in box:
+            _abort(box["resp"])
+        raise TimeoutError("request not complete by the deadline (connect, headers or body)")
+    if "err" in box:
+        raise box["err"]
+    if "http" in box:
+        raise HTTPFailure(*box["http"])
+    return box["body"]
+
+
 def get(url, body=None, tries=4, pause=0.0, timeout=25, deadline=None):
     """Returns (json, None) or (None, reason). A 200 carrying an error body is a failure (M-19).
-    No request starts after the run deadline (or the caller's earlier `deadline`), and no request
-    or retry pause runs past it: the socket timeout is capped by the time remaining."""
+    No request starts after the run deadline (or the caller's earlier `deadline`, both on
+    time.monotonic()), and no request - connection, headers and body included - or retry pause
+    runs past it (see fetch)."""
     last = None
     stop = min(DEADLINE, deadline) if deadline else DEADLINE
     for i in range(tries):
         if pause:
-            time.sleep(min(pause, max(0.0, stop - time.time())))
-        remaining = stop - time.time()
+            time.sleep(min(pause, max(0.0, stop - time.monotonic())))
+        remaining = stop - time.monotonic()
         if remaining < 1:
             return None, (last + "; " if last else "") + "deadline reached"
         try:
@@ -79,25 +156,24 @@ def get(url, body=None, tries=4, pause=0.0, timeout=25, deadline=None):
             if data:
                 hdr["Content-Type"] = "application/json"
             req = urllib.request.Request(url, data=data, headers=hdr)
-            with urllib.request.urlopen(req, timeout=min(timeout, remaining)) as r:
-                js = json.loads(r.read().decode())
+            js = json.loads(fetch(req, min(timeout, remaining), stop).decode())
             err = body_error(js)
             if err:
                 return None, err
             return js, None
-        except urllib.error.HTTPError as e:
+        except HTTPFailure as e:
             last = f"HTTP {e.code}"
             if e.code in (400, 401, 403, 404, 451):
                 # Keep the venue's own reason (e.g. Bitget 40309 "symbol has been removed").
                 try:
-                    detail = body_error(json.loads(e.read().decode()))
+                    detail = body_error(json.loads(e.body.decode()))
                 except Exception:
                     detail = None
                 return None, last + (f" ({detail})" if detail else "")   # not transient
         except Exception as e:
             last = type(e).__name__ + ": " + str(e)[:80]
         if i + 1 < tries:
-            time.sleep(min(2 + 3 * i, max(0.0, stop - time.time())))
+            time.sleep(min(2 + 3 * i, max(0.0, stop - time.monotonic())))
     return None, last or "failed"
 
 
@@ -814,7 +890,7 @@ def collect_hl_positions(st):
     leverage type (runbook F requirement 50). Current-only at the source; forward-only here.
     Any failed or malformed account marks the snapshot degraded and names the address; half or
     more failing means the map is not stored."""
-    started = time.time()
+    started = time.monotonic()
     deadline = started + HL_BUDGET_S
     top = hl_top_accounts(st, deadline)
     addresses = top["addresses"]
@@ -823,7 +899,7 @@ def collect_hl_positions(st):
     for i, addr in enumerate(addresses):
         if len(failed) >= reject_at:
             stopped = "rejection inevitable"
-        elif time.time() >= deadline:
+        elif time.monotonic() >= deadline:
             stopped = "deadline"
         if stopped:
             failed.extend([a, f"not attempted: {stopped}"] for a in addresses[i:])
@@ -833,7 +909,7 @@ def collect_hl_positions(st):
         if err and err.startswith("HTTP 429"):
             # Rate limited (seen live: 3 of 200 on a busy IP). Back off once, inside the budget.
             rate_limited += 1
-            time.sleep(min(HL_RATE_LIMIT_BACKOFF_S, max(0.0, deadline - time.time())))
+            time.sleep(min(HL_RATE_LIMIT_BACKOFF_S, max(0.0, deadline - time.monotonic())))
             js, err = get(HL_INFO, body={"type": "clearinghouseState", "user": addr}, tries=1,
                           timeout=HL_REQUEST_TIMEOUT_S, deadline=deadline)
         try:
@@ -844,7 +920,7 @@ def collect_hl_positions(st):
             failed.append([addr, str(exc)[:60]])
             continue
         positions.extend([addr] + p for p in found)
-    elapsed = round(time.time() - started, 1)
+    elapsed = round(time.monotonic() - started, 1)
     attempted = len(addresses) - sum(1 for _, why in failed if why.startswith("not attempted"))
     if len(failed) >= reject_at:
         raise RuntimeError(f"{len(failed)}/{len(addresses)} accounts failed or not attempted "
