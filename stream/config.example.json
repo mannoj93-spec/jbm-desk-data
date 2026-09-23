@@ -1,0 +1,31 @@
+{
+  "_comment": "Example configuration for stream.service. Public market-data channels only; no credentials of any exchange are used. Durable backend is optional: set storage.backend to \"s3\" and export the two environment variables named below.",
+  "data_dir": "/var/lib/jbm-stream",
+  "flush_s": 5,
+  "heartbeat_s": 10,
+  "stall_s": 30,
+  "controls_every_s": 3600,
+  "upload_every_s": 300,
+  "retention_days_raw_local": 7,
+  "retention_days_derived_local": 30,
+  "local_only_deletion": false,
+  "buffer": {"pre_seconds": 300, "post_seconds": 900, "max_bytes": 67108864},
+  "triggers": {"mid_move_sigma": 4.0, "window_s": 10, "cooldown_s": 900, "liq_burst_usd_60s": 2000000},
+  "storage": {
+    "backend": "none",
+    "s3": {"endpoint": "https://<account>.r2.cloudflarestorage.com", "bucket": "<bucket>", "region": "auto",
+           "prefix": "jbm-stream", "access_key_env": "JBM_STREAM_S3_KEY", "secret_key_env": "JBM_STREAM_S3_SECRET"}
+  },
+  "venues": {
+    "deribit": {"enabled": true, "url": "wss://www.deribit.com/ws/api/v2",
+                "channels": ["book.BTC-PERPETUAL.100ms", "trades.BTC-PERPETUAL.100ms"]},
+    "hyperliquid": {"enabled": true, "url": "wss://api.hyperliquid.xyz/ws",
+                    "subscriptions": [{"type": "l2Book", "coin": "BTC"}, {"type": "l2Book", "coin": "ETH"},
+                                      {"type": "l2Book", "coin": "SOL"}, {"type": "trades", "coin": "BTC"},
+                                      {"type": "trades", "coin": "ETH"}, {"type": "trades", "coin": "SOL"}]},
+    "bybit": {"enabled": true, "url": "wss://stream.bybit.com/v5/public/linear",
+              "topics": ["orderbook.50.BTCUSDT", "publicTrade.BTCUSDT", "allLiquidation.BTCUSDT",
+                         "allLiquidation.ETHUSDT", "allLiquidation.SOLUSDT", "adlAlert.USDT"],
+              "adl_symbols": ["BTCUSDT", "ETHUSDT", "SOLUSDT"]}
+  }
+}
