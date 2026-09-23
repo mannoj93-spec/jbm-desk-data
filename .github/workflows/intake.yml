@@ -13,14 +13,16 @@ on:
 permissions:
   contents: write
   issues: write
-concurrency:
-  group: repo-write
-  queue: max
-  cancel-in-progress: false
 jobs:
   intake:
     if: github.event_name != 'issues' || (startsWith(github.event.issue.title, 'forecast') && github.event.issue.user.login == github.repository_owner)
     runs-on: ubuntu-latest
+    # Job-level so it shares one repository-write queue with the collector's job (queue: max
+    # holds up to 100 waiting jobs; nothing here is cancelled or dropped behind collector runs).
+    concurrency:
+      group: repo-write
+      queue: max
+      cancel-in-progress: false
     timeout-minutes: 15
     defaults:
       run:

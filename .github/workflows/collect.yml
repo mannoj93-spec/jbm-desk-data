@@ -1,7 +1,12 @@
-name: Hourly collector
+# File name kept (collect.yml) so the workflow's run history, badge and dispatch URL carry over
+# from the hourly collector it replaces. Schedule history lives in cadence.json.
+name: Collector
 on:
   schedule:
-    - cron: '7 * * * *'
+    # Every 15 minutes, off the quarter-hour. GitHub starts scheduled runs late (typically
+    # minutes, sometimes more) and may drop some under load; report.py counts starts against
+    # slots and never infers a slot from a start time. Keep cadence.json in step with this line.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
     inputs:
       backfill:
@@ -10,14 +15,28 @@ on:
         default: false
 permissions:
   contents: write
+# Backlog control. Scheduled runs share one group with GitHub's default queue: at most one
+# running and one pending, and a newer pending run cancels the older pending one. During an
+# outage or a long backfill, obsolete scheduled runs are therefore dropped instead of piling up;
+# a run already running is never cancelled. Manual and backfill runs have their own groups, so a
+# scheduled run never cancels a manual check.
 concurrency:
-  group: repo-write
-  queue: max
+  group: collector-${{ github.event_name == 'schedule' && 'scheduled' || (inputs.backfill && 'backfill' || 'manual') }}
   cancel-in-progress: false
 jobs:
   collect:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Routine: 14-minute job limit = setup (~1) + collection step (11: 10-minute network
+    # budget + writing) + persistence (bounded at 100 s by commit_push.sh). Backfill: 45 with a
+    # 30-minute budget. Time waiting for repo-write does not count against the limit.
+    timeout-minutes: ${{ inputs.backfill && 45 || 14 }}
+    # Every repository writer (collector, backfill, forecast intake, weekly report) holds
+    # repo-write while it runs; queue: max keeps up to 100 waiting jobs, so intake and report
+    # work is never dropped behind collector runs.
+    concurrency:
+      group: repo-write
+      queue: max
+      cancel-in-progress: false
     defaults:
       run:
         shell: bash
@@ -31,14 +50,20 @@ jobs:
       - name: Collect
         id: collect
         continue-on-error: true
+        timeout-minutes: ${{ inputs.backfill && 35 || 11 }}
         env:
           BACKFILL: ${{ inputs.backfill }}
+          COLLECTOR_BUDGET_S: ${{ inputs.backfill && '1800' || '600' }}
+          SCHEDULE_CRON: ${{ github.event.schedule }}
         run: |
           args=()
           if [ "$BACKFILL" = true ]; then args+=(--backfill); fi
           python collector.py "${args[@]}"
       - name: Persist completed series and failure diagnostics
         if: always()
+        timeout-minutes: 2
+        env:
+          PERSIST_BUDGET_S: '100'
         run: bash scripts/commit_push.sh data state registry/frozen
       - name: Fail after preserving a partial run
         if: steps.collect.outcome == 'failure'

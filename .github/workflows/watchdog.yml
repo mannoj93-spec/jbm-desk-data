@@ -1,10 +1,20 @@
 name: Collector watchdog
 on:
   schedule:
-    - cron: '47 */2 * * *'
+    # Every 30 minutes. With the 90-minute stale limit, a collector that stops is reported about
+    # 90-120 minutes after its last run, plus however late GitHub starts this check.
+    - cron: '17,47 * * * *'
   workflow_dispatch:
+    inputs:
+      stale_minutes:
+        description: 'Minutes without a scheduled run before the collector is stale (blank = repository variable or 90)'
+        required: false
+        type: string
 permissions:
   contents: read
+concurrency:
+  group: collector-watchdog
+  cancel-in-progress: true
 jobs:
   watchdog:
     runs-on: ubuntu-latest
@@ -13,8 +23,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.repository.default_branch }}
+          # Only run records and code are needed; skip the growing market-data files.
+          sparse-checkout: data/runs
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Fail when the last hourly collector run is over three hours old
+      - name: Check for a stale, missing, or failing collector
+        env:
+          WATCHDOG_STALE_MIN: ${{ inputs.stale_minutes || vars.WATCHDOG_STALE_MIN || '90' }}
         run: python watchdog.py

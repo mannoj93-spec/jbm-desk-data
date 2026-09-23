@@ -6,13 +6,15 @@ on:
 permissions:
   contents: write
   issues: write
-concurrency:
-  group: repo-write
-  queue: max
-  cancel-in-progress: false
 jobs:
   report:
     runs-on: ubuntu-latest
+    # Job-level so it shares one repository-write queue with the collector's job (queue: max
+    # holds up to 100 waiting jobs; nothing here is cancelled or dropped behind collector runs).
+    concurrency:
+      group: repo-write
+      queue: max
+      cancel-in-progress: false
     timeout-minutes: 30
     defaults:
       run:
