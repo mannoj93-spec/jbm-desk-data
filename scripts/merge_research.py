@@ -4,6 +4,11 @@
 The lab computes without the repository-write lock, so by the time its outputs are persisted the
 checkout may hold newer commits. This merge never loses or rewinds newer content:
   *.jsonl under research/            line union: existing lines kept in order, new lines appended
+  research/v2/**/checkpoints.jsonl   the same, except that a look already recorded in the checkout
+                                     is never recorded again (the first completed record stands)
+  research/v2/<design>/<version>/events/*.jsonl
+                                     the same, keyed by decision_key: a frozen decision already in
+                                     the checkout is never recorded a second time
   state/lab_registrations.json       existing keys never changed; new keys added
   state/lab_run_state.json           per key, the entry with the later last_cutoff wins
   research/evidence/**/*.json,       replaced only if the incoming file is at least as new
@@ -36,10 +41,19 @@ def stamp(path):
     return m.group(1).replace(" ", "T") if m else ""
 
 
-def merge_jsonl(src, dst):
+def merge_jsonl(src, dst, key=None):
     old = dst.read_text().splitlines() if dst.exists() else []
     seen = set(old)
     add = [l for l in src.read_text().splitlines() if l.strip() and l not in seen]
+    if key is not None:                              # one record per key; existing records win
+        have = {key(json.loads(l)) for l in old if l.strip()}
+        keep = []
+        for l in add:
+            k = key(json.loads(l))
+            if k not in have:
+                have.add(k)
+                keep.append(l)
+        add = keep
     if add:
         dst.parent.mkdir(parents=True, exist_ok=True)
         with open(dst, "a") as fh:
@@ -58,7 +72,11 @@ def main(incoming, repo):
         rel = src.relative_to(incoming)
         dst = repo / rel
         r = rel.as_posix()
-        if r.startswith("research/") and src.suffix == ".jsonl":
+        if r.startswith("research/") and src.name == "checkpoints.jsonl":
+            log.append(f"{r}: +{merge_jsonl(src, dst, key=lambda x: x.get('look'))} checkpoint records")
+        elif r.startswith("research/v2/") and src.parent.name == "events" and src.suffix == ".jsonl":
+            log.append(f"{r}: +{merge_jsonl(src, dst, key=lambda x: x.get('decision_key'))} frozen decisions")
+        elif r.startswith("research/") and src.suffix == ".jsonl":
             log.append(f"{r}: +{merge_jsonl(src, dst)} lines")
         elif r == "state/lab_registrations.json":
             cur = json.loads(dst.read_text()) if dst.exists() else {}
