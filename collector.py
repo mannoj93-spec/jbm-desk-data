@@ -30,7 +30,7 @@ from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
 from schema import SERIES_KIND
 
-CODE_VERSION = "collector-2.2-2026-09-23"
+CODE_VERSION = "collector-2.2.1-2026-09-23"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -159,8 +159,9 @@ def binance_futures_data(name, ep, period, fields, ckpt):
         js, err = get(f"{base}&endTime={end}", pause=3.1)
         calls += 1
         if err:
-            # Only the measured old-history 400 is a boundary, and only in backfill.
-            if not ckpt and out and err == "HTTP 400":
+            # Only the measured old-history 400 is a boundary, and only in backfill. 2.2 appends the
+            # venue's reason to 4xx errors ("HTTP 400 (binance code -1130 ...)"), so match the prefix.
+            if not ckpt and out and err.startswith("HTTP 400"):
                 err, complete = None, True
             break
         if not isinstance(js, list):

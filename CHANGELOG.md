@@ -1,3 +1,12 @@
+# Reliability revision 2.2.1 — 2026-09-23
+
+- The first GitHub backfill under 2.2 failed `binance_openInterestHist_5m` with
+  `HTTP 400 (binance code -1130: parameter 'endTime' is invalid.)`: 2.2 began appending the venue's
+  reason to 4xx errors, and the measured old-history boundary was matched as exactly `"HTTP 400"`.
+  It now matches the prefix. Hourly runs were unaffected (they stop at the checkpoint first); no
+  stored row was lost. Test: `test_backfill_boundary_400_with_reason_still_ends_history`.
+- The same backfill closed every taker gap: 5m and 1h taker history now have 0 missing intervals.
+
 # Reliability revision 2.2 — 2026-09-23
 
 Audit of the deployed 2.1 repository against the live sources. Every defect below was measured,
