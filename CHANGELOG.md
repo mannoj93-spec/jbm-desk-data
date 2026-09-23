@@ -1,3 +1,76 @@
+# Research-data revision 2.7 — 2026-09-23
+
+Adds the data and the machinery to look for testable trading advantages and to review changes to
+the desk's skill files against evidence. It is additive: no stored observation, checkpoint,
+frozen forecast, score or provenance field is rewritten, every new record is versioned, and each
+new collection path can be switched back without a code change. The 15-minute schedule, stage
+budgets, serialized writes, deadline handling, recovery artifacts, dedup and watchdog behaviour
+are unchanged; the six-hour ranking cache and the 200-account Hyperliquid budget are kept.
+
+**Collector (`collector-2.7`)**
+
+- *Deribit options, schema 2* (`optionsbook.py`). The per-run record keeps the schema-1 fields
+  (`[instrument, OI, mark IV]` rows, `underlying`) and adds: zero-OI instruments by name, listed
+  instruments absent from the summary, past-expiry names, instrument metadata status, the
+  per-expiry underlying (`underlying_v2`), estimated delivery price, and a 12-ticker quote panel
+  (expiries near 2/7/30 days, call/put at Black-76 delta 0.50/0.25). Full quotes (bid, ask, mark,
+  last, rolling-24h volume in BTC and USD, source time offset) go to a separate hourly record
+  `options/deribit_btc_quotes`; listing changes to `options/deribit_btc_listing`. Rolling 24h
+  volume is labelled as such and never presented as interval volume; null bid/ask means no resting
+  order, zero OI is listed, not omitted. Revert: `OPTIONS_SCHEMA=1`.
+- *Hyperliquid sampling policy `hl-sample-v2`* (`hlsample.py`). Same 200-request budget: a fixed
+  cohort of 100 (the top 100 of the first ranking seen under v2, frozen with its selection time,
+  ranking hash and member hash in `state/hl_cohort_fixed_v2.json`, never re-selected), 90 rotating
+  accounts from the top 1,000 (cursor in state), and at most 10 enrichment requests (fills, ledger,
+  TWAP history; weight-capped at 400). Every sampled account is recorded as ok_btc / ok_flat /
+  ok_other / failed / not_attempted, with margin summary and BTC/ETH/SOL positions, in
+  `hl_accounts/`; enrichment results in `hl_enrich/`. No account is selected by later performance.
+  The v1 BTC position record is still written (with `sampling_policy`). Revert:
+  `HL_SAMPLING_POLICY=v1`.
+- *Enrichment stage* (`enrich.py`, 10% of the budget, after forward books, failures isolated):
+  closed 1-minute bars for Binance USD-M BTCUSDT (last and mark), spot BTCUSDT, ETHUSDT and
+  SOLUSDT perps as batch records in `data/prices/<series>/` (checkpointed, first observation
+  wins, malformed pages rejected); OKX BTC-USDT swap insurance fund rows (balance plus every
+  bankruptcy-loss, ADL and liquidation-deposit row newer than the last) in `okx_insurance/`.
+- *Cross-asset snapshot sources*: Hyperliquid and Binance ETH and SOL mark, funding (with its
+  interval) and OI in base and quote units.
+
+**Research lab (`lab/`, `lab-1.0`)** - a separate package, run by the new *Research lab* workflow
+every 6 hours (compute without the write lock; commit through `repo-write`).
+
+- Layers with provenance: events (with their feature records), outcomes, experiments, a variants
+  ledger that keeps null results, and evidence cards. Every record carries `t_event`,
+  `t_first_observed` and `t_available`; historical reconstructions are labelled as such.
+- Outcome labels at 30 m, 1 h, 4 h, 8 h: return, range, MFE/MAE, realised volatility, and net
+  return after an explicit cost model (`costs-1`: fees and slippage are stated assumptions,
+  spread from the nearest depth snapshot, funding from settled rates). Entry is the first bar at
+  or after availability; immature and incomplete labels are never stored or filled.
+- Episodes are collapsed; scheduled controls give baselines; test-minus-reference intervals use a
+  day-block bootstrap; outcomes are thinned to non-overlapping windows. Designs are frozen by hash
+  and registered on first sight; only episodes after registration can move a design toward
+  "supported". Statuses: exploratory, under prospective evaluation, supported, retired.
+- Eight modules (A flow absorption, B account behaviour, C liquidation exposure, D TWAP lifecycle,
+  E liquidity recovery, F options/perp disagreement, G cross-asset, H exchange deleveraging), each
+  reporting available / insufficient_data / unavailable with the reason.
+- `reports/research.md` and `reports/skill_proposals.md`; a change to the skill files is proposed
+  only for a supported design. `lab/skill_eval.py` compares a current and a revised skill offline
+  (case checks and an evidence audit that flags overclaims); live comparison is optional, needs
+  an API key, and writes only outside the repository.
+
+**Streaming service (`stream/`, `stream-1.0`)** - implemented, tested and live-smoke-tested, not
+deployed: Deribit, Bybit and Hyperliquid books, trades and forced-flow messages with sequence
+checks, gap log, heartbeat, rolling pre/post capture buffer, hourly controls, gzip partitions and
+an optional S3-compatible durable copy. Needs an always-on host (see `stream/README.md`).
+
+**Report** `report-2.4`: section 3c covers the new datasets and the lab's last run.
+
+**Fixes found while testing this revision.** Module H could judge a 5-minute liquidation bucket
+before the bucket had closed; it is now judged at max(first observation, bucket close). Module D
+could value a TWAP with a later price; it now uses only bars available at first observation.
+
+**Tests**: 76 new (`test_rev27.py` 20, `test_lab.py` 30, `test_stream.py` 26); the full suite is
+200 tests plus 25 numerical fixtures, offline, about 20 s.
+
 # Collection cadence revision 2.6.1 — 2026-09-23
 
 From the review of 2.6 (commit `62e51cc`), two failure cases found by simulated faults; neither

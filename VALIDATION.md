@@ -1,8 +1,27 @@
-# Validation record — collection cadence revision 2.6.1
+# Validation record — research-data revision 2.7
 
 Validated 2026-09-23 with Python 3.11 (container) against live sources; GitHub workflows select
-Python 3.12. Runtime uses the standard library only. Rows below the 2.6 block are the record of
+Python 3.12. Runtime uses the standard library only. Tables below the 2.7 block are the record of
 earlier revisions and are kept as they were.
+
+| Check (2.7) | Result |
+|---|---|
+| Offline regression tests (`regression/`) | 200 passed (124 from 2.6.1; new: 20 `test_rev27.py`, 30 `test_lab.py`, 26 `test_stream.py`), about 20 s; numerical fixtures 25 passed |
+| Schema compatibility | Option schema-1 fields and the v1 BTC position record still written; `OPTIONS_SCHEMA=1` and `HL_SAMPLING_POLICY=v1` restore the 2.6 code paths (tested) |
+| Live collector run under the final 2.7 code, scratch copy (20:13Z) | 17/17 books; options complete (851 with OI, 123 zero-OI listed, panel 12/12, metadata refreshed); Hyperliquid 190 accounts (29 ok_btc, 138 ok_flat, 23 ok_other, 0 failed), fixed cohort of 100 selected, enrichment: 1 ledger + 9 TWAP checks; 1,500 bars per price series on first run, 0 missing minutes; 1 insurance row; 298 requests, 0 rate-limited, 0 failed; 170 s (series 41, liquidations 11, snapshot 18, forward 94, enrichment 7) of the 600 s budget. An earlier 2.7 build (19:23Z) gave the same counts in 173 s |
+| Report and watchdog on that copy | Report 2.4 section 3c lists all new datasets; watchdog exit 0 (healthy), warning that the newest run was local |
+| Record sizes per run (live) | options 36 KB (8 KB gz), HL accounts 36 KB (13 KB gz), v1 BTC map 5 KB, enrichment 2 KB, price batch ~1.4 KB per series; hourly quote record 68 KB (22 KB gz) |
+| API behaviour verified live | Hyperliquid `twapHistory` answers (empty list for sampled accounts), fills carry `twapId`; OKX insurance fund `type=regular_update` is rejected (HTTP 400), `limit=1` used instead; Bybit REST 403 from the container but WebSocket reachable; Deribit summaries return null bid/ask with no resting order |
+| Research lab on the live copy, prospective | All 8 designs ran in 1 s; states: A, B, C, D, F, G, H insufficient_data with the reason named; E unavailable (no streaming data) |
+| Research lab, 60-day reconstruction (Binance 1-minute history, 4 series) | Fetch 170 s, compute ~65 s; A1: 6 weak vs 93 strong independent episodes over 41 days (exploratory only); G1: 44 test vs 1,437 control-time references; both flagged with contradictory evidence (chronological halves disagree in a variant) |
+| Streaming service, live smoke tests (90 s, 2 x 45 s, 120 s) | 3 venues connected, 0 reconnects; Bybit 3,073 consecutive deltas with no sequence gap; restart gaps written; heartbeat check ok; 120 s: 2.3 s CPU, 29 MB max RSS, 373 KB written (351 KB raw, 21 KB derived) |
+| S3 SigV4 signer | Matches botocore 1.35.0 on 4 fixed vectors (PUT/HEAD, two endpoints) |
+| Skill evaluation on synthetic fixtures | Detects the dropped decision-status line and one overclaim; negated wording ("not yet supported") not flagged; refuses an output path inside the repository; live mode without a key reports "not run" |
+| Deployment (GitHub, 2026-09-23, via the web upload page; no local git credentials) | Collector code `43b28c7` (20:20Z), fixtures `240a27f`, lab `631cfa1`, modules `e9e3928`, designs `7105a5d`, skill-eval fixtures `07c8139` `a0622f8` `ccd0d08`, stream `a9b76aa`, stream deploy files `fa3bb59`, tests `53f0381`, research workflow `d155cba`. Every file verified byte-for-byte against the local tree after fetch. Regression and numerical fixtures green on every push, including `53f0381` (the 200-test suite on GitHub's Python 3.12) |
+| First scheduled 2.7 collection on GitHub (run 35916223074, 20:22 slot, started 20:28:50Z) | `collector-2.7`, `trigger: schedule`; 17/17 books; options complete (851 with OI, 123 zero-OI, panel 12/12); Hyperliquid 190 accounts (29 ok_btc, 138 ok_flat, 23 ok_other, 0 failed), fixed cohort of 100 selected and frozen (`state/hl_cohort_fixed_v2.json`, members sha256 `4e8dd2cf...`), 10 enrichment requests; 1,500 bars per price series; 1 insurance row; 297 requests, 0 rate-limited, 0 errors; 96.5 s (series 35, liquidations 6, snapshot 8, forward 44, enrichment 4); committed as `e5fd091` with every new dataset present |
+| Second scheduled 2.7 collection (20:37 slot, committed as `e1de0f6`) | 17/17 books; fixed cohort file byte-identical (not re-selected); a different rotating block (17 ok_btc, 154 ok_flat, 19 ok_other, 0 failed); 13 new bars per price series from the checkpoint, 0 minutes behind; option metadata served from the daily cache; 294 requests, 0 rate-limited; 100 s |
+| First research-lab run on GitHub (run 35915877912, dispatch with 60-day reconstruction) | Success in 3 min 6 s end to end; committed as `dbda592` (8 cards, 8 experiment rows, 27 ledger rows, registration stamps). Reconstruction figures identical to the container run (A1: 6 vs 93 episodes, same interval), so the pipeline reproduces across environments |
+| Watchdog and report after deployment (on the fetched repository) | Watchdog exit 0: "last scheduled run 20:28Z, collector-2.7"; report 2.4 section 3c lists all new datasets with 0 missing minutes and the lab's first run |
 
 | Check (2.6.1) | Result |
 |---|---|
@@ -68,6 +87,13 @@ earlier revisions and are kept as they were.
 - Hyperliquid leaderboard: 46,876 rows, 39 MB; `clearinghouseState` ~0.33 s per call.
 
 ## Scope limits
+
+2.7: no module has an evaluation episode yet; every status is exploratory, and the
+reconstruction figures are not evidence of an advantage. The cost model's fee and slippage values
+are assumptions (the Binance fee page could not be retrieved automatically). The streaming service
+has run only as local smoke tests. Sustained collection of the new datasets is measured by the
+weekly report from deployment on.
+
 
 At the time of writing one scheduled 15-minute run has been observed; sustained scheduled
 execution at this cadence (delays, dropped slots, queueing behind intake and report) is measured

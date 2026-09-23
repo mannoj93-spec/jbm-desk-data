@@ -1,4 +1,4 @@
-# JBM desk data — collection cadence revision 2.6.1
+# JBM desk data — research-data revision 2.7
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -10,6 +10,10 @@ snapshot series, adds the forward-only books the desk's requirement 50 names (De
 option OI and the Hyperliquid position map), adds range and interval scores, retires two dead
 books, and adds a watchdog. Revision 2.6 moves the collector from hourly to every 15 minutes
 and reworks its time budget, queueing, health figures and watchdog around that cadence.
+Revision 2.7 adds research data (option quotes and listings, a versioned Hyperliquid account
+sample with a frozen cohort, 1-minute prices, the OKX insurance fund, ETH/SOL context), a research
+lab that turns it into versioned events, outcomes, experiments and evidence cards, a skill
+evaluation harness, and a separate streaming service (built, not deployed).
 See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md](VALIDATION.md).
 
 **Deployed** on GitHub Actions since 2026-09-22 23:24Z (first run `runner: github`); hourly until
@@ -51,6 +55,7 @@ The GitHub workflows use the repository's scoped `GITHUB_TOKEN` for commits and 
 | Forecast intake | Owner's forecast issues opened/edited/reopened; hourly :37 recovery; manual | Validate, freeze, persist, then acknowledge a forecast |
 | Weekly report | Monday 00:30 UTC; manual | Coverage, errors, forecast scores, research summaries, review candidates |
 | Collector watchdog | Every 30 minutes at :17 and :47 UTC; manual | Fails (so GitHub emails the owner) when the collector is stale or missing, or running but failing |
+| Research lab (`research.yml`) | Every 6 hours at :41 (00:41 UTC also runs a 60-day reconstruction); manual | Events, outcomes, experiments, evidence cards, `reports/research.md`, `reports/skill_proposals.md`; computes without the write lock, commits through `repo-write` |
 | Regression and numerical fixtures | Code/workflow pushes and pull requests; manual | Arithmetic fixtures and offline failure-path regression tests |
 
 **Queueing.** Every writing job (collector, backfill, forecast intake, weekly report) holds
@@ -215,6 +220,15 @@ map 5 KB, snapshot 5 KB, run record 3 KB; about 12 KB gzipped), roughly 4 MB a d
 month before git compression, on top of history series and liquidations, which do not grow with
 the cadence. Watch repository size; see the limitations in CHANGELOG 2.6.
 
+**2.7 storage.** One routine run now stores about 97 KB of text: options 36 KB (schema 2),
+Hyperliquid account sample 36 KB, v1 BTC position map 5 KB, snapshot 6 KB, 1-minute price batches
+7 KB (five series, 15 bars each), run record 3.5 KB, enrichment 2 KB; plus the hourly option
+quote record (68 KB). That is roughly 11 MB a day and 330 MB a month before git compression -
+about 2.7 times the 2.6 rate. Reversible reductions: `OPTIONS_SCHEMA=1` (drops the panel, the
+quote records and the listing log) and `HL_SAMPLING_POLICY=v1` (drops the account sample and
+enrichment). The research lab adds well under 1 MB a day. Move closed months to dedicated storage
+before the repository approaches 1 GB.
+
 Monthly JSONL files retain first observations. Source revisions do not overwrite them.
 This release does not implement general revision history for every exchange series.
 Liquidation retention and later appearance of orders are tracked separately.
@@ -240,6 +254,49 @@ those dependencies restart its registration clock. Custom imports, custom data a
 statistical independence, and the test's actual logic still require review. Arbitrary
 repository Python is trusted code, not a sandbox. Counts and descriptive intervals do not
 establish an edge or authorize a skill change.
+
+## Research lab (2.7)
+
+```sh
+python -m lab.run update                         # prospective pass over stored data
+python -m lab.run update --reconstruct-days 60   # plus an exploratory historical reconstruction
+python -m lab.run update --no-write              # compute and print only
+```
+
+Designs live in `lab/designs/*.json` (one per module A-H), frozen by SHA-256 and registered the
+first time the lab sees them (`state/lab_registered.json`); editing a design registers a new
+version and restarts its prospective clock. Each design names its question, variants, primary
+variant and horizon, test and reference groups, hypothesised sign, baseline predictors, episode
+collapse window and minimum independent episodes (100, a house threshold, not a statistical test).
+Outputs: `research/events/<design>/` (primary-variant detector firings with their features),
+`research/outcomes/<design>/` (complete labels only), `research/experiments/` (one row per
+design per run), `research/ledger/` (every variant tried, null results included),
+`research/evidence/cards/<design>.json`, `reports/research.md`, `reports/skill_proposals.md`.
+
+What each status means is in `lab/experiments.py` (`STATUS_RULES`). Historical reconstructions
+are exploratory by construction: the data were fetched later and their availability is assumed.
+Only prospective episodes after registration count toward "supported", and a skill change is
+proposed only for a supported design. Intervals are descriptive; the number of variants tried in
+the family is printed beside every result.
+
+**Module inputs and current limits.** A flow absorption and G cross-asset need 7 and 14 days of
+stored 1-minute bars (collected from 2.7 on; reconstruction runs meanwhile). B account behaviour,
+C liquidation exposure and D TWAP lifecycle use the Hyperliquid v2 sample; C is sampled exposure,
+never market inventory. E liquidity recovery needs the streaming service and reports
+"unavailable" without it. F options/perp disagreement needs about two weeks of option records for
+its z-scores. H deleveraging uses OKX liquidations (bankruptcy prices) and the OKX insurance fund;
+Bybit, Deribit and Binance deleveraging data are not available to the collector.
+
+**Skill evaluation.** `python -m lab.skill_eval --current DIR --revision DIR` compares two skill
+directories: file hashes and diff, the case checks in `lab/skill_eval_cases.json`, and an
+evidence audit that flags any sentence calling a design supported, validated or an edge when its
+card says otherwise. Add `--live --model MODEL` with `ANTHROPIC_API_KEY` set to also compare
+replies to the cases' prompts; without a key it says so and does nothing else. Output goes to
+`~/.jbm-skill-eval` (or `--out`), never inside the repository, and neither skill directory is
+modified.
+
+**Streaming service.** See [stream/README.md](stream/README.md): what it records, how to run and
+deploy it, measured resource use, and the infrastructure decision it is waiting for.
 
 `skillcheck.py` is a mechanical checker for an external four-file skill package. It does not
 install or edit skills. Review weekly report candidates against the package before adopting
