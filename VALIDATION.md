@@ -1,7 +1,20 @@
-# Validation record — research-integrity revision 2.8 (lab-2.0)
+# Validation record — research-integrity revision 2.9 (lab-2.1)
 
 Validated 2026-09-23 with Python 3.11 (container); GitHub workflows select Python 3.12. Tables
-below the 2.8 block are the record of earlier revisions and are kept as they were.
+below the 2.9 block are the record of earlier revisions and are kept as they were.
+
+| Check (2.9) | Result |
+|---|---|
+| Default branch before the work | `af73759` (and `4b49827` at deployment prep); since the reviewed `c9fff86` only automated data commits; code identical to the review |
+| Reproductions on `c9fff86` (`scripts/repro_integrity_29.py old-tree`) | #1 n=100 look `retired` with the first 100 observations, `supported` after 100 later ones were appended (and `supported` in a single run with all 200); #2 the 09:45 option event (inputs 09:47) present with small, absent with large funding first observed at 10:00, in both the quote-qualified and mark-only variants; #3 mean test residuals at 30 / 60 / 240 min +47.7 / 0.0 / +33.4 bp with horizon-specific outcomes (60-minute model everywhere), and the 480-minute baseline 100% "identifiable" with no complete 480-minute control label |
+| Same reproductions on 2.9 | #1 `retired` / `retired` / `retired`, checkpoint 1 recorded (n 100, p_long 0.0, cutoff before the later observations); #2 identical event (group, direction, features, t_inputs 09:47) for both funding values and both policies; #3 0.0 / 0.0 / 0.0 bp, 480-minute share 0.0 and comparison withheld |
+| New tests against `c9fff86` (`test_rev29.py` copied into the old tree) | 15 of 28 fail or error there (10 failures, 5 errors: missing interfaces such as `collapse_as_known` or the `design` argument), 9 skip (new checkpoint/per-horizon interfaces absent), 4 pass on both (options guards: delayed current snapshot, later arrivals, missing funding, later use of a value). Every test passes on 2.9 |
+| Offline regression suite | 266 passed (238 kept; 28 new in `test_rev29.py`), about 30 s; 19 local full-suite runs: 17 clean, 2 failed once each in the unchanged collector timing test `test_rev26 ... test_one_hung_venue_cannot_cost_every_venue_its_snapshot` (series stage 243.6 s against a 241 s bound); that test passed 12/12 alone on 2.8 and on 41 hash seeds, the reviewed tree passed 8/8 full-suite runs, and collector.py and test_rev26.py are byte-identical to 2.8, so the lab change is not implicated but the intermittency is recorded rather than dismissed. Numerical fixtures 25 passed |
+| Adversarial review of the first draft (separate agent, read-only, scripts under a scratch directory) | 7 findings, all fixed with regressions (CHANGELOG 2.9, "Hardening"): episode collapse across freeze times, options controls moved by late snapshots, frozen-decision merge order, funding and spread availability in labels, record-level verification, registration-bounded multiplicity, concurrent checkpoint writes. Checked and found sound: the binary search for the cutoff (greedy thinning of equal-length intervals keeps the maximum, fuzzed on 3000 random sets), JSON float round trip and bootstrap determinism, supported-status gating, per-horizon cache keys and training rows |
+| Byte preservation and idempotency (scratch copy of the repository at `4b49827`, lab run with `--now` and writes, then a second run at the same cutoff) | First run: no file under `data/`, `registry/`, `research/evidence/cards`, `research/experiments`, `research/ledger`, `research/evidence/v2/*@<lab-2.0 version>.json` or `state/lab_registered.json` changed; `research/v2/experiments` and `research/v2/ledger` append-only; 8 new cards; `state/lab_registrations.json` kept all 8 lab-2.0 entries unchanged and added 8. Second run: only the run counter in `state/lab_run_state.json` changed. Checkpoint files are appended once per look (tested: repeat runs leave every `.jsonl` byte-identical; a later look only appends) |
+| Version migration | Every design gets a new `ev-...` version under lab-2.1 (scratch run: A1 `ev-807f3c751b86`, B1 `ev-7e4d0eed56aa`, C1 `ev-d9cbcefb4a31`, D1 `ev-dbc5dbdb0de9`, E1 `ev-839d57e8ed3e`, F1 `ev-7b9b890aebaf`, G1 `ev-0a974aa122b5`, H1 `ev-8120dafd44e3`; ids depend only on design + semantic code); the lab-2.0 versions are indexed `retired (superseded)` with `superseded_by`; no lab-2.0 version had frozen evaluation decisions or checkpoints to carry over |
+| Research lab on current data | 8 designs in 2.5 s (writes, scratch copy); with a 5-day reconstruction, 21 s (read-only) |
+| Checksums | `SHA256SUMS` regenerated from its own file list plus the two new files: 104 entries (was 102), all match |
 
 | Check (2.8) | Result |
 |---|---|
@@ -104,6 +117,17 @@ below the 2.8 block are the record of earlier revisions and are kept as they wer
 - Hyperliquid leaderboard: 46,876 rows, 39 MB; `clearinghouseState` ~0.33 s per call.
 
 ## Scope limits
+
+2.9: still no design has evaluation observations, so no checkpoint has completed and every status is
+exploratory; no skill change is warranted. The checkpoint machinery is exercised on synthetic data
+only until the first look completes. The 2.8 dependence-block rule is unchanged: if retained
+test and reference intervals overlap continuously across midnight (e.g. hourly test firings with a
+60-minute horizon), consecutive days chain into one block, which is conservative and can keep such
+a design below its block minimum; at the designs' actual horizons with sparse firings the blocks
+are one per day (measured on synthetic 60-day tapes). Funding used in cost attribution of a label is settled funding within the
+label window; its availability is now in label_available, but a settlement missing from the
+stored series (after the series has moved past it) still contributes zero rather than making the
+label incomplete.
 
 2.8: no design has evaluation observations yet; every status is exploratory and no skill change is
 warranted. Decisions are as-of replays computed every 6 hours, not live executions. The

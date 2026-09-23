@@ -1,4 +1,4 @@
-# JBM desk data — research-integrity revision 2.8
+# JBM desk data — research-integrity revision 2.9
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -17,8 +17,10 @@ evaluation harness, and a separate streaming service (built, not deployed). Revi
 hardens the research lab against misleading results: sample counts on actual label intervals with
 dependence blocks, point-in-time inputs with frozen decisions, out-of-sample baselines, evaluation
 versions bound to the semantic code, per-transaction evidence attribution, second-slot stream
-timing, quote-qualified option signals, and reports that state their own freshness. The collector
-itself is unchanged.
+timing, quote-qualified option signals, and reports that state their own freshness. Revision 2.9
+(lab-2.1) makes every verdict a recorded checkpoint computed from data known by its cutoff, gives
+each option history feature its own availability, and fits one baseline per outcome horizon. The
+collector itself is unchanged.
 See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md](VALIDATION.md).
 
 **Deployed** on GitHub Actions since 2026-09-22 23:24Z (first run `runner: github`); hourly until
@@ -260,7 +262,7 @@ statistical independence, and the test's actual logic still require review. Arbi
 repository Python is trusted code, not a sandbox. Counts and descriptive intervals do not
 establish an edge or authorize a skill change.
 
-## Research lab (lab-2.0, revision 2.8)
+## Research lab (lab-2.1, revisions 2.8-2.9)
 
 ```sh
 python -m lab.run update                         # as-of replay over stored data
@@ -268,6 +270,7 @@ python -m lab.run update --reconstruct-days 60   # plus an exploratory historica
 python -m lab.run update --no-write              # compute and print only
 python -m lab.run update --now MS                # reproduce a past cutoff (read-only)
 python scripts/repro_integrity.py [CODE_ROOT]    # the 2.7 review's reproductions, before/after
+python scripts/repro_integrity_29.py [CODE_ROOT] # the 2.8 review's reproductions, before/after
 ```
 
 **Evaluation versions.** A design (`lab/designs/*.json`) is evaluated under a version id that
@@ -283,7 +286,9 @@ input delays the decision and more than 60 minutes of delay excludes it; optiona
 input + 60 s ASSUMED processing - an assumption, not a measurement: the lab runs every 6 hours.
 The first lab run that computes a decision freezes it (`t_persisted`); later data never changes a
 frozen decision, and a decision that appears only after its time was already covered is a late
-replay, excluded from evaluation. Time fields are defined in `lab/asof.py`.
+replay, excluded from evaluation. Episodes of frozen decisions are formed in the order the
+decisions became known, so a decision learned later can join an episode but never displace its
+head. Time fields are defined in `lab/asof.py`.
 
 **Phases.** `reanalysis` (decisions before registration, re-read under the current logic),
 `evaluation` (frozen decisions after registration) and `exploratory` (history fetched later).
@@ -294,17 +299,33 @@ retained observations (deterministic thinning on actual label intervals `[entry_
 two decisions entering at the same bar count once) and dependence blocks (overlapping intervals
 or the same UTC day, across groups). Intervals resample blocks. Nothing is called independent.
 
-**Promotion ("supported")** needs, at a scheduled look (1, 1.5, 2, 3 x the minimum), all of: data
-state available and at most 10% incomplete labels; >= 100 retained test observations in >= 20
-blocks; a multiplicity-adjusted interval (alpha 0.10 / (variants tried in the family x 4 looks))
-excluding zero in the declared direction; an out-of-sample baseline (OLS on prior 60-minute
-return, volatility and aligned funding, fitted on controls whose labels matured before each UTC
-day) identifiable for >= 80% and its residual difference excluding zero the same way; comparable
-event severity for event-group references; and the same sign in both halves. Missing baseline
-inputs or quality block promotion. "Supported" is not a claim of profitability, and it is the
-only status that produces a skill-change proposal.
+**Checkpoints.** A verdict is only ever produced at a scheduled look (1, 1.5, 2, 3 x the
+minimum), from a precisely bounded dataset: cutoff C = the earliest time at which the look's n
+retained test observations were known (outcome available per `label_available`, and decision
+frozen). The reference or controls, the test group's direction mix, severity, dependence blocks,
+baseline training rows and predictions, data quality and the family's variant count are all as of
+C, so later observations cannot enter. The look's manifest (every input row and prediction, the
+criteria, cutoff and version), its sha256, the checks and the verdict are appended once to
+`research/v2/<design>/<version>/checkpoints.jsonl` and never recomputed; each run re-checks the
+record against current data and reports drift (what differs) without changing it. A look whose n
+observations are not yet known is pending. Correcting a completed checkpoint takes a new
+evaluation version, which keeps the old records.
+
+**Promotion ("supported")** needs, at a recorded checkpoint, all of: at most 10% incomplete labels
+among the test labels that ended by the cutoff; >= 100 retained test observations in >= 20 blocks;
+a multiplicity-adjusted interval (alpha 0.10 / (variants tried in the family by the cutoff x 4
+looks)) excluding zero in the declared direction; an out-of-sample baseline for the primary horizon
+(OLS on prior 60-minute return, volatility and aligned funding, fitted on same-horizon controls
+whose labels were available before each UTC day and before the cutoff) identifiable for >= 80% and
+its residual difference excluding zero the same way; comparable event severity for event-group
+references; and the same sign in both halves. A missing baseline or quality blocks promotion; a
+wrong-side interval retires the version. Every horizon has its own baseline in the summaries, and
+a horizon without enough same-horizon controls shows no baseline comparison. "Supported" is not a
+claim of profitability, and a skill-change proposal is written only from a supported checkpoint
+whose manifest re-verifies, quoting that checkpoint.
 
 **Outputs** (all under the version namespace): `research/v2/<design>/<version>/events|outcomes/`,
+`research/v2/<design>/<version>/checkpoints.jsonl`,
 `research/v2/experiments/`, `research/v2/ledger/`, `research/evidence/v2/<design>@<version>.json`,
 `research/evidence/index.json` (current, superseded and legacy cards), `reports/research.md`,
 `reports/skill_proposals.md`. The lab-1.0 outputs from 2.7 (`research/evidence/cards`,
@@ -324,7 +345,8 @@ never market inventory. Transfers and liquidations are attributed transaction by
 the transition interval (t0, t1], matched to account, coin and side, with explicit
 partial/failed/unchecked coverage states (`lab/hlevidence.py`). E liquidity recovery needs the streaming service and reports
 "unavailable" without it. F options/perp disagreement needs about two weeks of option records for
-its z-scores; its test group counts only quote-qualified events (the 25-delta legs of the ~7-day
+its z-scores (each history value is used only from its own availability: skew from the option
+record, funding from its snapshot; a value not yet available is missing, never filled); its test group counts only quote-qualified events (the 25-delta legs of the ~7-day
 expiry passed freshness, two-sided, spread, expiry and mark-inside-quotes checks), and a separately
 labelled mark-only variant is descriptive and never promotable. H deleveraging uses OKX liquidations (bankruptcy prices) and the OKX insurance fund;
 Bybit, Deribit and Binance deleveraging data are not available to the collector.

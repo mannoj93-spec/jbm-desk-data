@@ -1,4 +1,4 @@
-"""Research lab entry point (lab-2.0).
+"""Research lab entry point (lab-2.1).
 
   python -m lab.run update                       as-of replay over the collector's stored data
   python -m lab.run update --reconstruct-days 60 also an exploratory historical reconstruction
@@ -11,6 +11,7 @@
 Writes (unless --no-write), all under the evaluation-version namespace so older versions and the
 legacy lab-1.0 outputs are never touched:
   research/v2/<design>/<version>/events|outcomes/YYYY-MM.jsonl  frozen decisions and labels
+  research/v2/<design>/<version>/checkpoints.jsonl              completed checkpoint records (append-only)
   research/v2/experiments/YYYY-MM.jsonl, research/v2/ledger/YYYY-MM.jsonl
   research/evidence/v2/<design>@<version>.json, research/evidence/index.json
   reports/research.md, reports/skill_proposals.md
@@ -96,6 +97,27 @@ def family_variants(base, designs):
     return {k: len(v) for k, v in fam.items()}
 
 
+def family_variants_at(base, designs, registrations=None):
+    """{family: f(t)} - the variant count of a family as of time t: (version or legacy design hash,
+    variant) pairs recorded in either ledger at or before t, plus the variants of current design
+    versions registered at or before t (a design's own current version is always registered before
+    its checkpoint cutoffs). Ledgers and registrations are append-only, so the count at a past cutoff
+    is reproducible."""
+    rows = {}
+    for r in read_dir(base, "research/ledger"):
+        rows.setdefault(r.get("family"), []).append((r.get("t") or 0, (r.get("design_sha256"), r.get("variant"))))
+    for r in read_dir(base, "research/v2/ledger"):
+        rows.setdefault(r.get("family"), []).append((r.get("t") or 0, (r.get("version"), r.get("variant"))))
+    for d in designs:
+        reg = ((registrations or {}).get(d["id"]) or {}).get("registered") or 0
+        rows.setdefault(d["family"], []).extend((reg, (d["_version"], v["name"])) for v in d["variants"])
+
+    def at(fam):
+        return lambda t: len({k for tt, k in rows.get(fam, []) if tt <= t})
+    fams = set(rows)
+    return {f: at(f) for f in fams}
+
+
 def compact(result):
     rows = []
     for v in result.get("variants", []):
@@ -139,6 +161,7 @@ def main(argv=None):
     cutoff = data_cutoff(a.base, now) or now
     hashes = input_hashes(a.base, f"cutoff {iso(now)}; records with observed_at after the cutoff are ignored")
     n_fam = family_variants(a.base, designs)
+    n_fam_at = family_variants_at(a.base, designs, registrations)
     results, ledger = [], []
     for d in designs:
         key = f"{d['id']}@{d['_version']}"
@@ -151,7 +174,7 @@ def main(argv=None):
         try:
             mod = importlib.import_module(MODULES[d["module"]])
             res, led = experiments.run_design(lab, d, mod, registrations.get(d["id"]), n_fam.get(d["family"], 1),
-                                              run_state=run_state.get(key))
+                                              run_state=run_state.get(key), variants_at=n_fam_at.get(d["family"]))
             if write:
                 run_state[key] = {"last_cutoff": now, "runs": run_state.get(key, {}).get("runs", 0) + 1}
         except Exception as exc:

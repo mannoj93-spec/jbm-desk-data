@@ -1,3 +1,64 @@
+# Research-integrity revision 2.9 (lab-2.1) — 2026-09-23
+
+Response to the review of 2.8 (commit `c9fff86`). The default branch was inspected first: from
+`c9fff86` to the start of this work only automated data commits had landed, so all three issues
+applied to the running code. Each was reproduced on `c9fff86` with `scripts/repro_integrity_29.py`
+(runs against any code tree) before it was fixed. The collector is unchanged (`collector-2.7`):
+schedule, budgets, source isolation, serialized writes, watchdog and request limits are untouched,
+and no stored observation, cohort, frozen decision or earlier evidence file is rewritten.
+
+| # | Issue (reproduced on c9fff86) | Fix | Tests (`regression/test_rev29.py`) |
+|---|---|---|---|
+| 1 | The first 100 test observations gave `retired`; appending 100 later ones gave `supported` at the same n=100 look (the look reused the first 100 outcomes but took the long share, reference, severity and controls from the whole sample) | A verdict exists only as a recorded checkpoint. Cutoff C = the earliest time the look's n retained test observations were known (outcome available and decision frozen); test, reference or controls, direction mix, severity, blocks, baseline training rows and predictions, data quality and the family's variant count are all bounded by C. The manifest (every input row and prediction, criteria, cutoff, version), its sha256, the checks and the verdict are appended to `research/v2/<design>/<version>/checkpoints.jsonl` once and never recomputed; later data is audited against it (drift, with what differs) but cannot change it. Pending = n not yet known. A correction is a new evaluation version (automatic on any semantic change), which leaves the old records in place | `CheckpointTests`: n=100 verdict unchanged after appending (also via a single run with all 200); later direction flips, severities, outcomes, controls and appended controls leave the manifest hash identical; delayed outcomes move the cutoff and stay out; exact boundaries; freeze time; pending; quality window; later looks use their own additional observations and cutoffs; idempotent repeat runs; multiplicity as of the cutoff; drift reported not rewritten; new version keeps the old record; tampered manifests fail verification; skill proposals quote a verified checkpoint only. `CheckpointMergeTests` |
+| 2 | Funding first observed at 10:00 changed whether a 09:45 option event (inputs complete 09:47) existed: the z-score history stamped every feature with the option record's time | Each history feature carries its own availability (rr25: the option record's `observed_at`; funding: its snapshot's `observed_at`). The window is the last `z_window` earlier records already observed at the decision; within it a funding value counts only if its snapshot was observed by then, otherwise it is missing (never filled) and the 70% coverage rule applies; funding with no snapshot time is unknown | `OptionsAvailabilityTests`: 10:00 funding cannot change the 09:47 event (existence, direction, features, eligibility; quote-qualified and mark-only); it is used by the 10:00 decision; exact cutoff (equal counts, +1 ms does not); missing funding stays missing and can fail coverage; a delayed current snapshot delays the decision; late records and later records do not revise the event |
+| 3 | A baseline trained on 60-minute control outcomes predicted the 30, 240 and 480-minute outcomes | One OLS model per horizon, trained only on same-horizon control labels whose `label_available` (new on every label: the latest availability of the bars it read) was no later than the prediction's UTC day and, at a checkpoint, its cutoff; cache keyed by (horizon, day, cutoff). Each outcome is routed to its horizon's model; each summary reports the model's training target, training rows, identifiable share and unidentified reasons; a horizon without enough labels is unidentifiable and its comparison withheld (never borrowed from another horizon). A single model for a multi-horizon design is refused | `HorizonBaselineTests`: horizon-specific outcomes give ~0 residuals at 30/60/240 (2.8: +47.7 and +33.4 bp); training rows same-horizon and known by the bound; a control that ended before the day but was available after it is excluded; missing 480-minute labels stay unidentifiable; the primary-horizon checkpoint uses its own model and is blocked, not rescued, when that model is unidentifiable |
+
+**Before / after** (`python scripts/repro_integrity_29.py [tree]`): #1 `retired` -> `supported` on
+c9fff86 after appending, `retired` / `retired` on 2.9 with the n=100 checkpoint recorded (p_long 0.0);
+#2 the 09:45 event present with small future funding and absent with large future funding on c9fff86,
+identical on 2.9 for both policies; #3 mean 30/240-minute test residuals +47.7 / +33.4 bp and the
+480-minute baseline "identifiable" with no 480-minute controls on c9fff86, 0.0 / 0.0 bp and
+unidentifiable on 2.9.
+
+**Other changes.** `summarize` takes a baseline per horizon; `status` reads recorded checkpoints
+only (a terminal record that fails re-verification yields `blocked`, never a verdict) (the pass's data state no longer gates promotion; the in-window quality check does, and the
+pass state stays on the card); a checkpoint verdict of `blocked` shows as status `blocked`.
+`scripts/merge_research.py` never adds a second record for a look already in the checkout.
+Evidence cards carry `checkpoints` (records without the per-row manifest, `verified`, pending,
+drift); the index records `superseded_by` for superseded versions; `reports/skill_proposals.md`
+proposes only from a supported checkpoint whose manifest re-verifies and quotes that checkpoint.
+
+**Hardening from an adversarial review of the first 2.9 draft** (each with a regression in
+`test_rev29.py`): (a) episodes of the primary prospective pass are built in the order decisions
+became known (`events.collapse_as_known`), so a decision frozen after a cutoff can join an episode
+but never displaces a known head or removes a known observation (`KnowledgeOrderTests`); (b) an
+option control's only required input is its option record, so a late or missing funding snapshot
+no longer moves, delays or drops a control; (c) the first stored freeze of a decision wins when
+frozen decisions are loaded, and `merge_research.py` keys frozen-decision lines by
+`decision_key`; (d) `label_available` also covers the settled funding a label attributes (as
+`(t, rate, avail)`), a label whose window contains a settlement time the funding series has not
+reached is immature rather than completed without it, and the spread snapshot used for costs must
+have been observed by the decision; (e) `verify_checkpoint` also checks record/manifest
+consistency (n rows, cutoff, every row known by the cutoff, adjusted alpha, look schedule, and
+against the design: n per look, version, horizon, sign); the sha256 is tamper-evident, not a
+signature; (f) the family's variant count at a cutoff includes current versions only if
+registered by then; (g) a checkpoint already stored by another writer is re-read and used.
+
+**Migration.** `lab-2.1` changes the semantic code, so the first lab-2.1 run registers a new
+evaluation version for every design; the lab-2.0 versions are marked `retired (superseded)` with
+`superseded_by`, and their registrations, cards, experiment and ledger rows stay byte-for-byte. No
+lab-2.0 version had a frozen evaluation decision or a completed look (no `research/v2/<design>/`
+directory existed), so no verdict needed re-deriving. Recomputations of data collected before the
+new registration are labelled `reanalysis`.
+
+**Versions.** `lab-2.1-2026-09-23`; collector and report unchanged. Tests: 266 regression tests
+(238 kept; 28 in `test_rev29.py`; four 2.8 promotion tests in `test_lab.py` and the summaries in
+`test_integrity.py` were ported to the checkpoint and per-horizon interfaces with the same intent,
+none removed; the one assertion that an `insufficient_data` pass cannot promote became an
+assertion that incomplete labels inside the checkpoint window block it; the synthetic funding
+series of `test_costs_direction_and_funding` gained a zero settlement at 08:00 so it reaches the
+end of its 8-hour window) plus 25 numerical fixtures.
+
 # Research-integrity revision 2.8 (lab-2.0) — 2026-09-23
 
 Response to the review of 2.7 (commit `900d0b1`). The default branch was inspected first: from
