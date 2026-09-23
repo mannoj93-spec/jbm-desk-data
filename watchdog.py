@@ -9,7 +9,7 @@ check reads the stored run records and distinguishes three states:
   exit 1  stale or missing: no run that the schedule could have started (manual and local runs
           excluded) within WATCHDOG_STALE_MIN minutes (default 90, six 15-minute slots).
   exit 2  running but failing: the latest scheduled run lost critical data (the Binance share
-          series, the snapshot, or a run-level error).
+          series, or the whole snapshot: the stage failed or no open-interest book succeeded).
   exit 0  healthy; source-level failures and degraded books in recent runs are printed as
           warnings (GitHub annotations) without failing the check.
 

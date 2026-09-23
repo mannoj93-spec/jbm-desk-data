@@ -1,4 +1,4 @@
-# JBM desk data — collection cadence revision 2.6
+# JBM desk data — collection cadence revision 2.6.1
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -69,7 +69,9 @@ phone intake can be used: the default accepts only an individual repository owne
 (`COLLECTOR_BUDGET_S=600`), on `time.monotonic()`. Inside it, history series may use 40%,
 liquidations 15% and the snapshot 20%; the forward books get the rest, and the Hyperliquid map at
 most 5 minutes of it. History and liquidations are checkpointed and recover on the next run;
-snapshots cannot be taken later, so one stalled venue can no longer cost every venue its snapshot.
+snapshots cannot be taken later. Inside the snapshot stage each source has its own 15-second cap,
+and a venue whose request times out or cannot connect is skipped for the rest of that stage, so one
+stalled venue costs only its own books (2.6.1).
 The limit covers each whole request: DNS lookup, connection, headers and body. A request still
 unfinished at the deadline is abandoned and counted as failed, never accepted late; unreached
 work is recorded as such. The collection step is limited to 11 minutes, persistence (commit and
@@ -103,7 +105,8 @@ fails with exit 1 when no run that the schedule could have started is younger th
 `WATCHDOG_STALE_MIN` minutes (default 90, six slots; set the repository variable
 `WATCHDOG_STALE_MIN` or pass it to a manual run). A recent manual run does not reset this, so a dead
 schedule is not hidden by a manual check. It fails with exit 2 when runs are arriving but the
-latest scheduled run lost critical data (the Binance share series or the snapshot), and passes
+latest scheduled run lost critical data (the Binance share series, or the whole snapshot: no
+open-interest book collected), and passes
 with warnings when sources failed, books were degraded or requests were rate limited. Ninety
 minutes tolerates ordinary scheduling delays and the odd dropped run; a collector that stops is
 reported about 90–120 minutes after its last run, plus any delay in starting the watchdog. The

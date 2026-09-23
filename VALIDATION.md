@@ -1,8 +1,17 @@
-# Validation record — collection cadence revision 2.6
+# Validation record — collection cadence revision 2.6.1
 
 Validated 2026-09-23 with Python 3.11 (container) against live sources; GitHub workflows select
 Python 3.12. Runtime uses the standard library only. Rows below the 2.6 block are the record of
 earlier revisions and are kept as they were.
+
+| Check (2.6.1) | Result |
+|---|---|
+| Offline regression tests (`regression/`) | 124 passed; numerical fixtures 25 passed; 3 consecutive full runs, no flakes |
+| Stalled Binance, snapshot stage only, fake clock (the review's case) | 2.6: 5 Binance attempts, 0 other requests, 0/17 books in 120 s. 2.6.1: 1 Binance attempt, 27 other requests, 14/17 books (all non-Binance) in 20 s; 7 requests skipped by the open circuit |
+| Same stall inside a full run (`main()`) | 14/17 books; history stopped at its stage limit; forward books attempted |
+| New and strengthened tests run against 2.6 (`62e51cc`) | 6 fail or error, as intended |
+| Watchdog, 0/17 books with history intact | 2.6: exit 0 "healthy". 2.6.1: exit 2 "no open-interest book collected (0/17)"; 1/17 stays exit 0 with warnings |
+| Live routine run under 2.6.1, scratch copy (16:49Z) | 17/17 books, no circuit opened; options and HL complete (7 Hyperliquid 429s on the container IP, retried and recorded); 169 s |
 
 | Check (2.6) | Result |
 |---|---|

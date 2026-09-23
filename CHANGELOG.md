@@ -1,3 +1,34 @@
+# Collection cadence revision 2.6.1 — 2026-09-23
+
+From the review of 2.6 (commit `62e51cc`), two failure cases found by simulated faults; neither
+occurred in a deployed run.
+
+**One stalled venue could still cost every venue its snapshot.** The 2.6 stage limit kept time
+for the snapshot stage but did not isolate venues inside it. Binance is requested first; with every
+Binance request stalled, the 120 s stage made 5 Binance attempts, 0 requests to any other venue,
+and stored 0/17 books (reproduced). Two controls now apply to snapshot sources:
+
+- Each source has its own time cap (`SNAP_SOURCE_S` = 15 s; a normal source answers in under 2 s).
+- A host whose request failed at the transport level on every attempt (timeout, reset, DNS) is
+  skipped for the rest of the snapshot stage ("circuit open"), so its other sources fail at once.
+  HTTP error statuses and malformed bodies are fast and do not open the circuit. The circuit is
+  limited to the snapshot stage, so one Hyperliquid account timing out still cannot reject the
+  200-account map, and it resets each run.
+
+Same simulation under 2.6.1: 1 Binance attempt, 27 requests to other venues, 14/17 books
+collected (every non-Binance book), stage done in 20 s. Run records add `circuit_open` (hosts) and
+`http.circuit_skipped`.
+
+**A total snapshot loss was reported healthy.** With history intact and 0/17 books, the watchdog
+exited 0 with warnings. `cadence.failure_summary` now treats a run with no open-interest book as
+critical (watchdog exit 2, "no open-interest book collected (0/17)"; counted in the report's
+critical line). A partly degraded snapshot stays a warning. The collector's own exit code is
+unchanged: it still fails the workflow only when the critical Binance share series fails.
+
+**Tests**: 5 new, 1 strengthened (`regression/test_rev26.py`). The stalled-venue tests now supply
+valid answers for every other venue and require all 14 unaffected books to be collected, not
+merely attempted. 6 of the new or strengthened tests fail or error on 2.6.
+
 # Collection cadence revision 2.6 — 2026-09-23
 
 The collector runs every 15 minutes (`7,22,37,52 * * * *`) instead of hourly. This revision is

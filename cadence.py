@@ -113,7 +113,9 @@ def schedule_evidence(run):
 
 def failure_summary(run):
     """(critical, problems): critical when the run lost the critical Binance share series or the
-    snapshot; problems lists every visible failure, degradation or rate limit, by source."""
+    whole snapshot (the snapshot stage raised, or not one open-interest book succeeded - 2.6
+    called a 0/17 snapshot healthy); problems lists every visible failure, degradation or rate
+    limit, by source. A partly degraded snapshot stays a warning."""
     problems = []
     for key, error in (run.get("errors") or {}).items():
         problems.append((f"run {key}", str(error)))
@@ -131,8 +133,11 @@ def failure_summary(run):
     rate = (run.get("http") or {}).get("rate_limited_by_host") or {}
     for host, count in rate.items():
         problems.append((f"rate limit {host}", f"{count} rate-limited response(s)"))
+    snapshot_lost = bool(snap.get("books")) and not snap.get("books_ok")
+    if snapshot_lost:
+        problems.insert(0, ("snapshot", f"no open-interest book collected (0/{snap.get('books')})"))
     critical = run.get("critical_ok") is False or "snap" in (run.get("errors") or {}) \
-        or "series" in (run.get("errors") or {})
+        or "series" in (run.get("errors") or {}) or snapshot_lost
     return critical, problems
 
 

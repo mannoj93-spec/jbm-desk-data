@@ -31,7 +31,7 @@ from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
 from schema import SERIES_KIND
 
-CODE_VERSION = "collector-2.6-2026-09-23"
+CODE_VERSION = "collector-2.6.1-2026-09-23"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -58,6 +58,20 @@ DEADLINE = time.monotonic() + RUN_BUDGET_S
 # 17-book snapshot). Backfill has no snapshot, so its series stage keeps the whole budget.
 STAGE_SHARE = {"series": 0.40, "liq": 0.15, "snap": 0.20}
 STAGE_DEADLINE = None       # set by main() around each stage; None outside a stage
+# Venue isolation inside the snapshot stage (2.6.1). The stage limit alone did not isolate venues:
+# Binance is requested first, and one stalled Binance request (25 s timeout, four tries) spent the
+# whole 120 s snapshot stage, so every other venue got "deadline reached" and 0/17 books were
+# stored (reproduced in the review of 2.6). Two controls now apply to snapshot sources only:
+#   * each source has its own time cap (SNAP_SOURCE_S), however many requests it makes;
+#   * a host whose request failed at the transport level on every attempt (timeout, reset, DNS)
+#     is skipped for the rest of the stage ("circuit open"), so its other sources fail at once.
+# HTTP error statuses and malformed bodies are fast and do not open the circuit. The circuit is
+# per stage: history and the forward books keep their own retry rules (one Hyperliquid account
+# timing out must not reject the 200-account map).
+SNAP_SOURCE_S = 15          # a normal source answers in under 2 s (measured: all 20 in ~11 s)
+SOURCE_DEADLINE = None      # set by snap_source() around one source
+BREAKER_ACTIVE = False      # set by main() for the snapshot stage
+TRIPPED = {}                # host -> transport failure that opened its circuit in this stage
 # Provenance of the run itself. `trigger` separates scheduled runs from manual ones so manual
 # checks never count as scheduled execution; records before 2.6 lack it (and say mode "hourly").
 # `schedule` is the cron entry GitHub fired, not a slot time: GitHub starts scheduled jobs late
@@ -70,7 +84,8 @@ RUN = {"code_version": CODE_VERSION, "t_ret": NOW, "mode": "backfill" if BACKFIL
        "run_id": os.environ.get("GITHUB_RUN_ID") or None,
        "run_attempt": os.environ.get("GITHUB_RUN_ATTEMPT") or None,
        "budget_s": RUN_BUDGET_S,
-       "http": {"requests": 0, "failed": 0, "rate_limited": 0, "rate_limited_by_host": {}, "deadline_skipped": 0},
+       "http": {"requests": 0, "failed": 0, "rate_limited": 0, "rate_limited_by_host": {}, "deadline_skipped": 0,
+                "circuit_skipped": 0},
        "series": {}, "liq": {}, "snap": {}, "errors": {}}
 RATE_LIMIT_CODES = (418, 429)          # Binance answers 418 once a 429 is ignored
 RATE_LIMIT_BODY = re.compile(r"code 50011\b|too many requests|rate limit", re.I)   # OKX 50011, others
@@ -195,14 +210,21 @@ def get(url, body=None, tries=4, pause=0.0, timeout=25, deadline=None):
     time.monotonic()), and no request - connection, headers and body included - or retry pause
     runs past it (see fetch)."""
     last = None
-    stop = min(x for x in (DEADLINE, STAGE_DEADLINE, deadline) if x is not None)
+    stop = min(x for x in (DEADLINE, STAGE_DEADLINE, SOURCE_DEADLINE, deadline) if x is not None)
+    host = urllib.parse.urlparse(url).hostname or "?"
+    if BREAKER_ACTIVE and host in TRIPPED:
+        RUN["http"]["circuit_skipped"] = RUN["http"].get("circuit_skipped", 0) + 1
+        return None, f"circuit open: {host} failed earlier in this stage ({TRIPPED[host][:60]})"
+    attempts = transport_failures = 0
     for i in range(tries):
         if pause:
             time.sleep(min(pause, max(0.0, stop - time.monotonic())))
         remaining = stop - time.monotonic()
         if remaining < 1:
             RUN["http"]["deadline_skipped"] += 1
+            trip(host, attempts, transport_failures, last)
             return None, (last + "; " if last else "") + "deadline reached"
+        attempts += 1
         try:
             data = json.dumps(body).encode() if body is not None else None
             hdr = dict(UA)
@@ -228,9 +250,19 @@ def get(url, body=None, tries=4, pause=0.0, timeout=25, deadline=None):
         except Exception as e:
             last = type(e).__name__ + ": " + str(e)[:80]
             note_http(url, last)
+            transport_failures += isinstance(e, OSError)     # timeouts, resets, DNS, deadline cut
         if i + 1 < tries:
             time.sleep(min(2 + 3 * i, max(0.0, stop - time.monotonic())))
+    trip(host, attempts, transport_failures, last)
     return None, last or "failed"
+
+
+def trip(host, attempts, transport_failures, last):
+    """Open a host's circuit for the rest of the snapshot stage when every attempt this call made
+    failed at the transport level (a slow or dead venue, not an error status)."""
+    if BREAKER_ACTIVE and attempts and transport_failures == attempts and host not in TRIPPED:
+        TRIPPED[host] = last or "transport failure"
+        RUN.setdefault("circuit_open", []).append(host)
 
 
 def body_error(js):
@@ -615,6 +647,10 @@ def collect_liq(st):
 
 # ------------------------------------------------------------------ 3. snapshot
 def snap_source(name, fn):
+    """One snapshot source under its own time cap (SNAP_SOURCE_S); its failure never stops the
+    next source."""
+    global SOURCE_DEADLINE
+    SOURCE_DEADLINE = time.monotonic() + SNAP_SOURCE_S
     try:
         v = fn()
         if isinstance(v, tuple):          # (None, err)
@@ -626,6 +662,8 @@ def snap_source(name, fn):
         return v
     except Exception as e:
         return {"st": "error", "err": type(e).__name__ + ": " + str(e)[:80]}
+    finally:
+        SOURCE_DEADLINE = None
 
 
 def need(js_err):
@@ -1047,17 +1085,19 @@ def main():
     RUN["stage_limited"] = []
     mark = time.monotonic()
     def begin(name):
-        global STAGE_DEADLINE
+        global STAGE_DEADLINE, BREAKER_ACTIVE
         share = None if BACKFILL else STAGE_SHARE.get(name)
         STAGE_DEADLINE = None if share is None else min(DEADLINE, time.monotonic() + share * RUN_BUDGET_S)
+        BREAKER_ACTIVE = name == "snap"
+        TRIPPED.clear()
     def lap(name):
         nonlocal mark
-        global STAGE_DEADLINE
+        global STAGE_DEADLINE, BREAKER_ACTIVE
         now = time.monotonic()
         stages[name] = round(now - mark, 1)
         if STAGE_DEADLINE is not None and now >= STAGE_DEADLINE - 1 and now < DEADLINE - 1:
             RUN["stage_limited"].append(name)        # cut by its stage limit, not the run budget
-        STAGE_DEADLINE = None
+        STAGE_DEADLINE, BREAKER_ACTIVE = None, False
         mark = now
     begin("series")
     try:
