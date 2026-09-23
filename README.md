@@ -1,4 +1,4 @@
-# JBM desk data — research-data revision 2.7
+# JBM desk data — research-integrity revision 2.8
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -13,7 +13,12 @@ and reworks its time budget, queueing, health figures and watchdog around that c
 Revision 2.7 adds research data (option quotes and listings, a versioned Hyperliquid account
 sample with a frozen cohort, 1-minute prices, the OKX insurance fund, ETH/SOL context), a research
 lab that turns it into versioned events, outcomes, experiments and evidence cards, a skill
-evaluation harness, and a separate streaming service (built, not deployed).
+evaluation harness, and a separate streaming service (built, not deployed). Revision 2.8 (lab-2.0)
+hardens the research lab against misleading results: sample counts on actual label intervals with
+dependence blocks, point-in-time inputs with frozen decisions, out-of-sample baselines, evaluation
+versions bound to the semantic code, per-transaction evidence attribution, second-slot stream
+timing, quote-qualified option signals, and reports that state their own freshness. The collector
+itself is unchanged.
 See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md](VALIDATION.md).
 
 **Deployed** on GitHub Actions since 2026-09-22 23:24Z (first run `runner: github`); hourly until
@@ -55,7 +60,7 @@ The GitHub workflows use the repository's scoped `GITHUB_TOKEN` for commits and 
 | Forecast intake | Owner's forecast issues opened/edited/reopened; hourly :37 recovery; manual | Validate, freeze, persist, then acknowledge a forecast |
 | Weekly report | Monday 00:30 UTC; manual | Coverage, errors, forecast scores, research summaries, review candidates |
 | Collector watchdog | Every 30 minutes at :17 and :47 UTC; manual | Fails (so GitHub emails the owner) when the collector is stale or missing, or running but failing |
-| Research lab (`research.yml`) | Every 6 hours at :41 (00:41 UTC also runs a 60-day reconstruction); manual | Events, outcomes, experiments, evidence cards, `reports/research.md`, `reports/skill_proposals.md`; computes without the write lock, commits through `repo-write` |
+| Research lab (`research.yml`) | Every 6 hours at :41 (00:41 UTC also runs a 60-day reconstruction); manual | Versioned events, outcomes, experiments and evidence cards, `reports/research.md`, `reports/skill_proposals.md`, and the coverage refresh of `reports/latest.md`; computes without the write lock, merges into a fresh checkout and commits through `repo-write` |
 | Regression and numerical fixtures | Code/workflow pushes and pull requests; manual | Arithmetic fixtures and offline failure-path regression tests |
 
 **Queueing.** Every writing job (collector, backfill, forecast intake, weekly report) holds
@@ -255,36 +260,73 @@ statistical independence, and the test's actual logic still require review. Arbi
 repository Python is trusted code, not a sandbox. Counts and descriptive intervals do not
 establish an edge or authorize a skill change.
 
-## Research lab (2.7)
+## Research lab (lab-2.0, revision 2.8)
 
 ```sh
-python -m lab.run update                         # prospective pass over stored data
+python -m lab.run update                         # as-of replay over stored data
 python -m lab.run update --reconstruct-days 60   # plus an exploratory historical reconstruction
 python -m lab.run update --no-write              # compute and print only
+python -m lab.run update --now MS                # reproduce a past cutoff (read-only)
+python scripts/repro_integrity.py [CODE_ROOT]    # the 2.7 review's reproductions, before/after
 ```
 
-Designs live in `lab/designs/*.json` (one per module A-H), frozen by SHA-256 and registered the
-first time the lab sees them (`state/lab_registered.json`); editing a design registers a new
-version and restarts its prospective clock. Each design names its question, variants, primary
-variant and horizon, test and reference groups, hypothesised sign, baseline predictors, episode
-collapse window and minimum independent episodes (100, a house threshold, not a statistical test).
-Outputs: `research/events/<design>/` (primary-variant detector firings with their features),
-`research/outcomes/<design>/` (complete labels only), `research/experiments/` (one row per
-design per run), `research/ledger/` (every variant tried, null results included),
-`research/evidence/cards/<design>.json`, `reports/research.md`, `reports/skill_proposals.md`.
+**Evaluation versions.** A design (`lab/designs/*.json`) is evaluated under a version id that
+binds the design file to the semantic implementation: detector module, labels and costs,
+baseline, evaluation rules, evidence attribution and the collector constants the inputs depend on
+(`lab/versioning.py`; docstring-free AST hashes, so comment and documentation edits and data
+commits never start a new version, while any logic change does). The first run that sees a
+version stamps its clock in `state/lab_registrations.json`, never rewritten.
 
-What each status means is in `lab/experiments.py` (`STATUS_RULES`). Historical reconstructions
-are exploratory by construction: the data were fetched later and their availability is assumed.
-Only prospective episodes after registration count toward "supported", and a skill change is
-proposed only for a supported design. Intervals are descriptive; the number of variants tried in
-the family is printed beside every result.
+**Decisions are as-of replays.** Every input is used only from its availability; a late required
+input delays the decision and more than 60 minutes of delay excludes it; optional inputs
+(funding, spot flow, spreads) are used only if already available. Decision time = latest required
+input + 60 s ASSUMED processing - an assumption, not a measurement: the lab runs every 6 hours.
+The first lab run that computes a decision freezes it (`t_persisted`); later data never changes a
+frozen decision, and a decision that appears only after its time was already covered is a late
+replay, excluded from evaluation. Time fields are defined in `lab/asof.py`.
+
+**Phases.** `reanalysis` (decisions before registration, re-read under the current logic),
+`evaluation` (frozen decisions after registration) and `exploratory` (history fetched later).
+Only evaluation can promote.
+
+**Sample accounting.** Per group and horizon: raw firings, collapsed episodes, scorable labels,
+retained observations (deterministic thinning on actual label intervals `[entry_t, exit_t)`, so
+two decisions entering at the same bar count once) and dependence blocks (overlapping intervals
+or the same UTC day, across groups). Intervals resample blocks. Nothing is called independent.
+
+**Promotion ("supported")** needs, at a scheduled look (1, 1.5, 2, 3 x the minimum), all of: data
+state available and at most 10% incomplete labels; >= 100 retained test observations in >= 20
+blocks; a multiplicity-adjusted interval (alpha 0.10 / (variants tried in the family x 4 looks))
+excluding zero in the declared direction; an out-of-sample baseline (OLS on prior 60-minute
+return, volatility and aligned funding, fitted on controls whose labels matured before each UTC
+day) identifiable for >= 80% and its residual difference excluding zero the same way; comparable
+event severity for event-group references; and the same sign in both halves. Missing baseline
+inputs or quality block promotion. "Supported" is not a claim of profitability, and it is the
+only status that produces a skill-change proposal.
+
+**Outputs** (all under the version namespace): `research/v2/<design>/<version>/events|outcomes/`,
+`research/v2/experiments/`, `research/v2/ledger/`, `research/evidence/v2/<design>@<version>.json`,
+`research/evidence/index.json` (current, superseded and legacy cards), `reports/research.md`,
+`reports/skill_proposals.md`. The lab-1.0 outputs from 2.7 (`research/evidence/cards`,
+`research/experiments`, `research/ledger`, `state/lab_registered.json`) are kept as recorded,
+marked legacy in the index, and never written again.
+
+**Reports.** The Research lab workflow also refreshes `reports/latest.md` every 6 hours
+(`report.py --coverage-only`: coverage and dataset freshness, no forecast scoring). Every report
+states its generation time, input cutoff, code versions and per-dataset freshness; the weekly
+report still does the scoring. Outputs computed on an older checkout are merged
+(`scripts/merge_research.py`) so a newer report or row is never overwritten.
 
 **Module inputs and current limits.** A flow absorption and G cross-asset need 7 and 14 days of
 stored 1-minute bars (collected from 2.7 on; reconstruction runs meanwhile). B account behaviour,
 C liquidation exposure and D TWAP lifecycle use the Hyperliquid v2 sample; C is sampled exposure,
-never market inventory. E liquidity recovery needs the streaming service and reports
+never market inventory. Transfers and liquidations are attributed transaction by transaction to
+the transition interval (t0, t1], matched to account, coin and side, with explicit
+partial/failed/unchecked coverage states (`lab/hlevidence.py`). E liquidity recovery needs the streaming service and reports
 "unavailable" without it. F options/perp disagreement needs about two weeks of option records for
-its z-scores. H deleveraging uses OKX liquidations (bankruptcy prices) and the OKX insurance fund;
+its z-scores; its test group counts only quote-qualified events (the 25-delta legs of the ~7-day
+expiry passed freshness, two-sided, spread, expiry and mark-inside-quotes checks), and a separately
+labelled mark-only variant is descriptive and never promotable. H deleveraging uses OKX liquidations (bankruptcy prices) and the OKX insurance fund;
 Bybit, Deribit and Binance deleveraging data are not available to the collector.
 
 **Skill evaluation.** `python -m lab.skill_eval --current DIR --revision DIR` compares two skill

@@ -55,10 +55,19 @@ def sentences(text):
 
 
 def load_cards(base):
+    """Current evidence per design: lab-2.0 versioned cards named current in research/evidence/
+    index.json; designs without one fall back to the legacy lab-1.0 card (research/evidence/cards)."""
     cards = {}
-    for p in sorted((Path(base) / "research/evidence/cards").glob("*.json")):
+    base = Path(base)
+    for p in sorted((base / "research/evidence/cards").glob("*.json")):
         c = json.loads(p.read_text())
         cards[c["design"]] = c
+    index = base / "research/evidence/index.json"
+    if index.exists():
+        for design, entry in json.loads(index.read_text()).get("designs", {}).items():
+            p = base / "research/evidence/v2" / f"{design}@{entry.get('current')}.json"
+            if p.exists():
+                cards[design] = json.loads(p.read_text())
     return cards
 
 

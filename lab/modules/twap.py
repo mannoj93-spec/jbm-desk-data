@@ -13,11 +13,12 @@ Event: a BTC program observed with status activated (not yet finished/terminated
 >= min_notional_usd; direction = its side. Outcome and baseline as elsewhere; conditioned on the
 surrounding flow via the flow_norm feature where 1-minute bars exist.
 """
-from lab.common import BASIS_PROSPECTIVE, PROCESSING_LATENCY_MS, hash_inputs
+from lab.asof import decide
+from lab.common import BASIS_PROSPECTIVE, hash_inputs
 from lab.events import event_record, hourly_controls
 
 ID = "twap_lifecycle"
-VERSION = "D-1"
+VERSION = "D-2"
 SPEC = {"module": "D", "id": ID, "version": VERSION, "title": "TWAP lifecycle",
         "hypothesis": "Price behaves differently while an observed large BTC TWAP is active than at controls, "
                       "conditional on surrounding flow.",
@@ -80,13 +81,16 @@ def run(lab, params):
         if notional is None or notional < params["min_notional_usd"]:
             continue
         direction = 1 if p.get("side") in ("B", "buy", True) else -1
+        avail, excluded = decide(p["first_seen"], p["first_seen_avail"])   # price: bars known by then
+        if excluded:
+            continue
         events.append(event_record(ID, VERSION, p["first_seen"], p["first_seen_avail"],
-                                   p["first_seen_avail"] + PROCESSING_LATENCY_MS, direction, "active_twap",
+                                   avail, direction, "active_twap",
                                    {"notional_usd_est": notional, "minutes": p.get("minutes"),
                                     "reported_start": p.get("reported_start"),
                                     "reported_start_basis": "historical reconstruction from twapHistory"},
                                    hash_inputs([user, tid]), BASIS_PROSPECTIVE, {}, {"observability": "first_seen"},
-                                   lab.code))
+                                   lab.code, t_inputs=p["first_seen_avail"], key=f"{user}:{tid}"))
     checks = sum(1 for rec in lab.store.hl_enrich() for q in rec.get("requests", [])
                  if q.get("kind") == "twap" and q.get("status") == "ok")
     btc = sum(1 for p in progs.values() if p.get("coin") == "BTC")

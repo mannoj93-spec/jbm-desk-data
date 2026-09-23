@@ -1,5 +1,13 @@
 {
- "baseline_predictors": [],
+ "baseline": {
+  "method": "OLS on controls whose labels matured before each UTC day (out-of-sample); added value = test minus reference residuals",
+  "predictors": [
+   "prior_ret_60m_aligned",
+   "prior_rv_60m",
+   "funding_aligned"
+  ],
+  "severity_feature": "features.severity (event-group references: medians must be within 25%)"
+ },
  "collapse_ms": 7200000,
  "comparison": {
   "hypothesised_sign": 1,
@@ -16,7 +24,8 @@
  ],
  "family": "C-liquidation",
  "id": "C1-liquidation-cluster",
- "min_independent_episodes": 100,
+ "min_dependence_blocks": 20,
+ "min_retained_observations": 100,
  "module": "liq_exposure",
  "outcome": {
   "horizons_min": [
@@ -30,7 +39,7 @@
  },
  "primary_variant": "d2_5m",
  "question": "When sampled long liquidation exposure within 2% of mark is large, does BTC fall more than at scheduled times?",
- "status_note": "100 independent evaluation episodes is house governance (operating document), not a statistical test",
+ "status_note": "100 retained non-overlapping observations in >= 20 dependence blocks is house governance (operating document), not a statistical test; promotion rules in lab/experiments.py",
  "variants": [
   {
    "name": "d2_5m",
@@ -54,5 +63,5 @@
    }
   }
  ],
- "version": 1
+ "version": 2
 }

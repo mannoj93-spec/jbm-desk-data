@@ -17,7 +17,9 @@ concurrency:
 jobs:
   compute:
     # Heavy work runs WITHOUT the repository-write lock, so the 15-minute collector is never held
-    # up behind it. It reads the checked-out data and writes only research outputs.
+    # up behind it. It reads the checked-out data and writes only research outputs and the
+    # coverage refresh of reports/latest.md; the persist job merges them into a fresh checkout
+    # (scripts/merge_research.py) so nothing newer is overwritten.
     runs-on: ubuntu-latest
     timeout-minutes: 30
     outputs:
@@ -45,16 +47,25 @@ jobs:
             if [ "$(date -u +%H)" = "00" ]; then days=60; else days=0; fi
           fi
           python -m lab.run update --reconstruct-days "$days" | tee lab-summary.json
+      - name: Refresh the coverage report (no scoring, no other side effects)
+        id: report
+        if: always()
+        continue-on-error: true
+        run: python report.py --coverage-only > /dev/null
       - name: Hand research outputs to the persist job
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: research-${{ github.run_id }}
           path: |
-            research
+            research/v2
+            research/evidence/v2
+            research/evidence/index.json
             reports/research.md
             reports/skill_proposals.md
-            state/lab_registered.json
+            reports/latest.md
+            state/lab_registrations.json
+            state/lab_run_state.json
             lab-summary.json
           if-no-files-found: warn
           retention-days: 7
@@ -78,12 +89,16 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: research-${{ github.run_id }}
-          path: .
+          path: ${{ runner.temp }}/incoming
+      - name: Merge without rewinding newer content (append-only rows; newer reports win)
+        run: |
+          python scripts/merge_research.py "${{ runner.temp }}/incoming" .
+          cp "${{ runner.temp }}/incoming/lab-summary.json" . 2>/dev/null || true
       - name: Persist research outputs
         env:
           COMMIT_MESSAGE: Update research evidence
           PERSIST_BUDGET_S: '240'
-        run: bash scripts/commit_push.sh research reports/research.md reports/skill_proposals.md state/lab_registered.json
+        run: bash scripts/commit_push.sh research/v2 research/evidence reports/research.md reports/skill_proposals.md reports/latest.md state/lab_registrations.json state/lab_run_state.json
       - name: Fail if the lab reported an error
         if: needs.compute.outputs.lab == 'failure'
         run: |

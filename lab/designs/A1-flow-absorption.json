@@ -1,9 +1,13 @@
 {
- "baseline_predictors": [
-  "prior_ret_60m_aligned",
-  "prior_rv_60m",
-  "funding_last"
- ],
+ "baseline": {
+  "method": "OLS on controls whose labels matured before each UTC day (out-of-sample); added value = test minus reference residuals",
+  "predictors": [
+   "prior_ret_60m_aligned",
+   "prior_rv_60m",
+   "funding_aligned"
+  ],
+  "severity_feature": "features.severity (event-group references: medians must be within 25%)"
+ },
  "collapse_ms": 1800000,
  "comparison": {
   "hypothesised_sign": -1,
@@ -18,7 +22,8 @@
  ],
  "family": "A-flow",
  "id": "A1-flow-absorption",
- "min_independent_episodes": 100,
+ "min_dependence_blocks": 20,
+ "min_retained_observations": 100,
  "module": "flow_absorption",
  "outcome": {
   "horizons_min": [
@@ -32,7 +37,8 @@
  },
  "primary_variant": "q99_weak0.5",
  "question": "Do weak-response heavy-flow windows differ from strong-response ones in subsequent flow-direction net return?",
- "status_note": "100 independent evaluation episodes is house governance (operating document), not a statistical test",
+ "severity_balance_max": 0.25,
+ "status_note": "100 retained non-overlapping observations in >= 20 dependence blocks is house governance (operating document), not a statistical test; promotion rules in lab/experiments.py",
  "variants": [
   {
    "name": "q99_weak0.5",
@@ -59,5 +65,5 @@
    }
   }
  ],
- "version": 1
+ "version": 2
 }

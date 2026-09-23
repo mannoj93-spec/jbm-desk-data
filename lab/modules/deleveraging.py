@@ -14,14 +14,17 @@ data (no documented public endpoint used).
 
 Event: 5-minute OKX long (short) liquidation notional >= its trailing 7-day 99th percentile ->
 "burst". Test group: bursts with an insurance-fund bankruptcy-loss or ADL row within +-15 minutes
-("stressed_burst"); reference: other bursts ("plain_burst"). Direction: -1 for long liquidations,
+("stressed_burst"); reference: other bursts ("plain_burst"). The group is decided when that window
+has ended (bucket close + 15 min, or later if the orders were observed later), from insurance rows
+already observed by then; rows observed afterwards never regroup a decision. Direction: -1 for long liquidations,
 +1 for short. This asks what insurance/ADL information adds beyond the liquidations themselves.
 """
-from lab.common import BASIS_PROSPECTIVE, DAY, MINUTE, PROCESSING_LATENCY_MS, hash_inputs
+from lab.asof import decide
+from lab.common import BASIS_PROSPECTIVE, DAY, MINUTE, hash_inputs
 from lab.events import event_record, hourly_controls
 
 ID = "deleveraging"
-VERSION = "H-1"
+VERSION = "H-2"
 BUCKET = 5 * MINUTE
 SPEC = {"module": "H", "id": ID, "version": VERSION, "title": "Exchange deleveraging stress",
         "hypothesis": "Liquidation bursts accompanied by insurance-fund draws or ADL carry information about "
@@ -85,16 +88,21 @@ def run(lab, params):
                 thr_cache[key] = vals[int(0.99 * (len(vals) - 1))]
             thr = thr_cache[key]
             if value >= thr and value > 0:
-                near = [k for ts, k in stress if abs(ts - (t + BUCKET)) <= 15 * MINUTE]
-                ins_avail = [r["observed_at"] for r in ins if abs(r["t"] - (t + BUCKET)) <= 15 * MINUTE
-                             and r["type"] in ("bankruptcy_loss", "adl")]
-                avail = max([T] + ins_avail)
-                events.append(event_record(ID, VERSION, t + BUCKET, T, avail + PROCESSING_LATENCY_MS,
+                # The group needs the +-15 min insurance window, so the decision waits until the window
+                # has ended; only rows OBSERVED by then count (as-of), later rows never regroup it.
+                t_inputs = max(T, t + BUCKET + 15 * MINUTE)
+                near = [r["type"] for r in ins if abs(r["t"] - (t + BUCKET)) <= 15 * MINUTE
+                        and r["type"] in ("bankruptcy_loss", "adl") and r["observed_at"] <= t_inputs]
+                avail, excluded = decide(t + BUCKET, t_inputs)
+                if excluded:
+                    continue
+                events.append(event_record(ID, VERSION, t + BUCKET, T, avail,
                                            direction, "stressed_burst" if near else "plain_burst",
                                            {"side": side, "notional_usd_at_bankruptcy_px": value, "threshold": thr,
+                                            "severity": value / thr if thr else None,
                                             "insurance_rows": near, "late_revision_usd": as_of(t, side, float("inf")) - value},
                                            hash_inputs([t, side, value, near]), BASIS_PROSPECTIVE, {},
-                                           {"price_basis": "bankruptcy price"}, lab.code))
+                                           {"price_basis": "bankruptcy price"}, lab.code, t_inputs=t_inputs, key=side))
     controls = hourly_controls(bars, ID, VERSION, lab.code, BASIS_PROSPECTIVE)
     need = 7
     state = "available" if span >= need and ins else "insufficient_data"

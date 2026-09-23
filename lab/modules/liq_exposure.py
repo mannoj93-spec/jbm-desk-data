@@ -7,21 +7,29 @@ cross-margin and other-asset effects at the time of the check.
 Per snapshot: BTC mark (the same run's Hyperliquid context), and the notional of sampled long
 positions whose liquidation price lies within d% below mark and short positions within d% above,
 for d in DISTANCES. Between consecutive observations of the same account, each BTC position is
-classified: persist, reduce, disappear; disappearances are then classified with evidence:
-  confirmed_liquidation  a ledger "liquidation" delta or a fill carrying a liquidation marker
-                         (or a "Liquidat..." direction) inside the interval
-  voluntary_exit         closing fills inside the interval without a liquidation marker
+classified: persist, reduce, disappear; disappearances are then classified with evidence that is
+filtered transaction by transaction to the interval (t0, t1] and matched to the account, the BTC
+coin and the position's side (lab/hlevidence.py):
+  confirmed_liquidation  a ledger liquidation naming BTC, or a BTC liquidation fill of this account
+                         on this position's side, inside the interval
+  account_liquidation_unattributed  a ledger liquidation inside the interval that names no positions
+  voluntary_exit         a BTC closing fill on this position's side inside the interval
   sample_removal         the account was not sampled in the next run (rotating cohort)
   missing_data           the next check failed or was not attempted
-  unclassified           none of the above could be established (no enrichment check yet)
+  unclassified           fills fully covered the interval and showed none of the above
+  evidence_partial / evidence_failed / evidence_not_attempted / evidence_unchecked
+                         the interval was not adequately covered: unknown, not "no liquidation"
+Each classification carries the evidence's observed_at (later confirmation, not knowledge at t1).
 Event: sampled long (short) notional within `distance_pct` of mark exceeds `min_notional_usd`
 -> direction -1 (+1): price moving toward the cluster. Reference: hourly controls.
 """
-from lab.common import BASIS_PROSPECTIVE, MINUTE, PROCESSING_LATENCY_MS, hash_inputs
+from lab import hlevidence
+from lab.asof import decide
+from lab.common import BASIS_PROSPECTIVE, MINUTE, hash_inputs
 from lab.events import event_record
 
 ID = "liq_exposure"
-VERSION = "C-1"
+VERSION = "C-2"
 DISTANCES = (1.0, 2.0, 5.0)
 SPEC = {"module": "C", "id": ID, "version": VERSION, "title": "Moving liquidation exposure (sampled)",
         "hypothesis": "Large sampled liquidation exposure close to mark predicts moves toward it more often "
@@ -39,7 +47,7 @@ def marks(store):
     for s in store.snaps():
         h = (s.get("oi") or {}).get("hyperliquid") or {}
         if h.get("st") == "ok" and h.get("mark"):
-            out[s["t"]] = h["mark"]
+            out[s["t"]] = (h["mark"], s.get("observed_at"))
     return out
 
 
@@ -56,29 +64,8 @@ def exposure(rec, mark):
     return out, rows
 
 
-def evidence(store):
-    """{address: [(start, end, kind)]} where kind is 'liquidation' or 'close_fill'."""
-    out = {}
-    for rec in store.hl_enrich():
-        for q in rec.get("requests", []):
-            if q.get("status") != "ok":
-                continue
-            u, (a, b) = q["user"], q["window"]
-            if q["kind"] == "ledger" and any(e[1] == "liquidation" for e in q.get("ledger", [])):
-                out.setdefault(u, []).append((a, b, "liquidation"))
-            if q["kind"] == "fills":
-                for f in q.get("fills", []):
-                    if f[1] != "BTC":
-                        continue
-                    if f[12] or (isinstance(f[5], str) and "iquidat" in f[5]):
-                        out.setdefault(u, []).append((a, b, "liquidation"))
-                    elif isinstance(f[5], str) and f[5].startswith("Close"):
-                        out.setdefault(u, []).append((a, b, "close_fill"))
-    return out
-
-
 def transitions(store, recs):
-    ev = evidence(store)
+    cs = hlevidence.checks(store)
     out = []
     for r0, r1 in zip(recs, recs[1:]):
         if r1["t"] - r0["t"] > 30 * MINUTE:
@@ -98,9 +85,10 @@ def transitions(store, recs):
             elif state1[addr] in ("failed", "not_attempted"):
                 kind = "missing_data"
             else:
-                marks_ = [k for a, b, k in ev.get(addr, []) if a <= r0["t"] and b >= r1["t"]]
-                kind = ("confirmed_liquidation" if "liquidation" in marks_ else
-                        "voluntary_exit" if "close_fill" in marks_ else "unclassified")
+                ex = hlevidence.position_exit(cs, addr, r0["t"], r1["t"], p[2])
+                out.append({"address": addr, "t": r1["t"], "kind": ex["kind"], "liq_px": p[4], "szi": p[2],
+                            "evidence_time": ex["evidence_time"], "evidence_observed_at": ex["observed_at"]})
+                continue
             out.append({"address": addr, "t": r1["t"], "kind": kind, "liq_px": p[4], "szi": p[2]})
     return out
 
@@ -112,22 +100,26 @@ def run(lab, params):
     events, controls = [], []
     d, floor = params["distance_pct"], params["min_notional_usd"]
     for rec in recs:
-        mark = mk.get(rec["t"])
-        if not mark:
+        mark, mark_seen = mk.get(rec["t"], (None, None))
+        if not mark or mark_seen is None:
             continue
         feats, rows = exposure(rec, mark)
-        avail = rec["observed_at"]
+        t_inputs = max(rec["observed_at"], mark_seen)          # positions AND the same run's mark
+        avail, excluded = decide(rec["t"], t_inputs)
+        if excluded:
+            continue
         feats["mark"] = mark
         ih = hash_inputs(rows)
         for side, direction in (("long", -1), ("short", 1)):
             if feats[f"{side}_within_{d:g}pct_usd"] >= floor:
-                events.append(event_record(ID, VERSION, rec["t"], avail, avail + PROCESSING_LATENCY_MS, direction,
-                                           f"{side}_cluster", feats, ih, BASIS_PROSPECTIVE,
-                                           {"positions_with_liq_px": len(rows)}, {"sample": rec["policy"]}, lab.code))
+                events.append(event_record(ID, VERSION, rec["t"], rec["observed_at"], avail, direction,
+                                           f"{side}_cluster", dict(feats, severity=feats[f"{side}_within_{d:g}pct_usd"]),
+                                           ih, BASIS_PROSPECTIVE, {"positions_with_liq_px": len(rows)},
+                                           {"sample": rec["policy"]}, lab.code, t_inputs=t_inputs, key=side))
         if rec["t"] % (60 * MINUTE) < 15 * MINUTE:
-            controls.append(event_record(ID + ":control", VERSION, rec["t"], avail, avail + PROCESSING_LATENCY_MS,
+            controls.append(event_record(ID + ":control", VERSION, rec["t"], rec["observed_at"], avail,
                                          -1 if feats[f"long_within_{d:g}pct_usd"] >= feats[f"short_within_{d:g}pct_usd"] else 1,
-                                         "control", feats, ih, BASIS_PROSPECTIVE, {}, {}, lab.code))
+                                         "control", feats, ih, BASIS_PROSPECTIVE, {}, {}, lab.code, t_inputs=t_inputs))
     tr = transitions(lab.store, recs)
     kinds = {}
     for x in tr:

@@ -21,6 +21,7 @@ from lab.common import H, MINUTE, PROCESSING_LATENCY_MS
 from lab.data import Store
 from lab.events import collapse, event_record
 from lab.modules import deleveraging, flow_absorption, liquidity, twap
+from lab.baseline import Baseline
 from lab.run import Lab, main as lab_main
 
 T0 = 1_790_121_600_000                     # 2026-09-23 00:00 UTC
@@ -214,13 +215,18 @@ class ModuleTests(unittest.TestCase):
 class OptionsQualityTests(unittest.TestCase):
     def test_stale_and_missing_quotes_excluded(self):
         from lab.modules import options_disagreement as f
-        fields = ["instrument", "timestamp", "best_bid_price", "best_ask_price", "mark_price"]
+        fields = ["instrument", "timestamp", "best_bid_price", "best_ask_price", "mark_price", "best_bid_amount",
+                  "best_ask_amount"]
         rec = {"t_event": T0, "panel_fields": fields, "panel": [
-            ["A", T0 - 5_000, 0.010, 0.011, 0.0105],       # fresh, tight: kept
-            ["B", T0 - 120_000, 0.010, 0.011, 0.0105],     # stale ticker: excluded
-            ["C", T0, None, 0.011, 0.0105],                # no bid (missing quote, not zero): excluded
-            ["D", T0, 0.005, 0.020, 0.0105]]}              # spread > 10% of mark: excluded
-        self.assertEqual(f.panel_quality(rec), {"panel_ok": 1, "panel_excluded": 3})
+            ["BTC-30SEP26-80000-C", T0 - 5_000, 0.010, 0.011, 0.0105],  # fresh, tight: kept
+            ["BTC-30SEP26-80000-P", T0 - 120_000, 0.010, 0.011, 0.0105],  # stale ticker: excluded
+            ["BTC-30SEP26-70000-P", T0, None, 0.011, 0.0105],       # no bid (missing quote, not zero): excluded
+            ["BTC-30SEP26-90000-C", T0, 0.005, 0.020, 0.0105]]}     # spread > 10% of mid: excluded
+        for row in rec["panel"]:
+            row += [1.0, 1.0]
+        q = f.panel_quality(rec)
+        self.assertEqual((q["panel_ok"], q["panel_excluded"]), (1, 3))
+        self.assertEqual(q["rr25_7d_quotes"], "unknown")               # no greeks: quality unobserved, not failed
 
     def test_delta_convention_and_interpolation(self):
         from lab.modules import options_disagreement as f
@@ -242,7 +248,8 @@ def write_book1s(root, venue, inst, rows):
 
 class LiquidityTests(unittest.TestCase):
     def sample(self, t, bid_d, ask_d):
-        return {"t": t, "bid": 99.99, "ask": 100.01, "mid": 100.0, "bid_depth_10bp": bid_d, "ask_depth_10bp": ask_d}
+        return {"t": t, "bid": 99.99, "ask": 100.01, "mid": 100.0, "bid_depth_10bp": bid_d, "ask_depth_10bp": ask_d,
+                "book_ts": t - 100, "book_age_ms": 100}
 
     def test_unavailable_without_stream(self):
         with patch.dict(os.environ, {"STREAM_DATA_DIR": ""}):
@@ -259,7 +266,7 @@ class LiquidityTests(unittest.TestCase):
         rows = [r for i, r in enumerate(rows) if not (3000 <= i < 3010)]  # missing seconds
         rows[2990 - 0] = self.sample(T0 + 2990 * 1000, 1.0, 1.0)          # shock right before the hole
         params = {"shock_frac": 0.3, "recover_frac": 0.8, "recovery_s": 60}
-        smp = {r["t"]: r for r in rows}
+        smp, _ = liquidity.slot_samples(rows)
         evs, ctl, cov = liquidity.build(smp, [], params, "code")
         by_start = {e["t_first_observed"] // 1000 - T0 // 1000: e for e in evs}
         self.assertEqual(sorted(by_start), [2000, 2061, 2500])
@@ -287,66 +294,139 @@ class LiquidityTests(unittest.TestCase):
             self.assertEqual(p["state"], "insufficient_data")
 
 
-def design(ref="reference", sign=1, preds=()):
-    return {"id": "T1", "version": 1, "module": "m", "family": "F", "question": "q?",
+def design(ref="reference", sign=1, min_n=4, blocks=3):
+    return {"id": "T1", "version": 2, "module": "flow_absorption", "family": "F", "question": "q?",
             "variants": [{"name": "v", "params": {}}], "primary_variant": "v",
             "outcome": {"metric": "ret_net", "horizons_min": [30], "primary_horizon": 30},
             "comparison": {"test_group": "test", "reference_group": ref, "hypothesised_sign": sign},
-            "baseline_predictors": list(preds), "collapse_ms": 30 * MINUTE, "min_independent_episodes": 4,
-            "_sha256": "x" * 64, "_file": "lab/designs/T1.json"}
+            "collapse_ms": 30 * MINUTE, "min_retained_observations": min_n, "min_dependence_blocks": blocks,
+            "_sha256": "x" * 64, "_file": "lab/designs/T1.json", "_version": "ev-test", "_components": {}}
+
+
+def obs(t, group, d, y, k=0, persisted=True, entry=None, severity=1.0):
+    e = ev(t, d, group)
+    e["features"] = {"severity": severity}
+    if persisted:
+        e["t_persisted"] = t
+    entry = entry if entry is not None else t
+    lab = {30: {"status": "complete", "entry_t": entry, "exit_t": entry + 30 * MINUTE, "ret_net": y}}
+    bf = {"prior_ret_60m_aligned": d * 0.001 * ((k % 7) - 3), "prior_rv_60m": 0.002 + 0.0005 * (k % 5),
+          "funding_aligned": d * 0.0001 * ((k % 3) - 1)}
+    return e, lab, bf
+
+
+def dataset(n_days, test_y, ref_y, control_days=3, ref="reference"):
+    rows, k = [], 0
+    for day in range(-control_days, n_days):
+        for hh in range(24):
+            t = T0 + day * DAY_MS + hh * H
+            rows.append(obs(t, "control_long", 1, 0.0001 * ((k % 5) - 2), k))
+            rows.append(obs(t, "control_short", -1, -0.0001 * ((k % 5) - 2) - 0.0014, k))
+            k += 1
+        if day >= 0:
+            t = T0 + day * DAY_MS + 10 * MINUTE
+            rows.append(obs(t, "test", 1, test_y + 0.0001 * (day % 3), day))
+            if ref != "control":
+                rows.append(obs(t + 2 * H + 10 * MINUTE, "reference", 1, ref_y + 0.0001 * (day % 2), day + 1))
+    return rows
+
+
+def summaries(rows, d, reg, phase="evaluation"):
+    ctl = [dict(bf, entry_t=l[30]["entry_t"], exit_t=l[30]["exit_t"], y=l[30]["ret_net"])
+           for e, l, bf in rows if e["group"].startswith("control")]
+    base = Baseline(ctl)
+    return experiments.summarize(rows, d, reg, phase, {}, base, 1), base
+
+
+DAY_MS = 86_400_000
 
 
 class ExperimentTests(unittest.TestCase):
-    def labelled(self, n_days, test_y, ref_y, start=T0):
-        out = []
-        for d in range(n_days):
-            t = start + d * 86_400_000
-            for g, y in (("test", test_y), ("reference", ref_y)):
-                e = ev(t + (0 if g == "test" else H), 1, g)
-                out.append((e, {30: {"status": "complete", "ret_net": y + 0.0001 * (d % 3)}}))
-        return out
-
-    def test_evaluation_excludes_pre_registration_and_vice_versa(self):
-        lab = self.labelled(10, 0.01, 0.0)
-        reg = T0 + 5 * 86_400_000
+    def test_phases_split_by_registration_and_freezing(self):
+        rows = dataset(10, 0.01, 0.0)
         d = design()
-        ex = experiments.summarize(lab, d, reg, "exploratory")["30"]
-        evl = experiments.summarize(lab, d, reg, "evaluation")["30"]
-        self.assertEqual(ex["independent_test_episodes"], 5)
-        self.assertEqual(evl["independent_test_episodes"], 5)
-        self.assertEqual(experiments.summarize(lab, d, None, "evaluation")["30"]["independent_test_episodes"], 0)
+        reg = {"registered": T0 + 5 * DAY_MS}
+        rea, _ = summaries(rows, d, reg, "reanalysis")
+        evl, _ = summaries(rows, d, reg, "evaluation")
+        self.assertEqual(rea["30"]["counts"]["test"]["retained"], 5)
+        self.assertEqual(evl["30"]["counts"]["test"]["retained"], 5)
+        self.assertEqual(summaries(rows, d, None, "evaluation")[0]["30"]["counts"]["test"]["retained"], 0)
+        for e, _, _ in rows:                     # a decision never frozen by a lab run is not evaluation evidence
+            if e["group"] == "test":
+                e.pop("t_persisted")
+        self.assertEqual(summaries(rows, d, reg, "evaluation")[0]["30"]["counts"]["test"]["retained"], 0)
+        for e, _, _ in rows:
+            if e["group"] == "test":
+                e.update(t_persisted=e["t_event"], live_status="late_replay")
+        self.assertEqual(summaries(rows, d, reg, "evaluation")[0]["30"]["counts"]["test"]["retained"], 0)
 
     def test_status_rules(self):
-        d = design()
-        lab = self.labelled(10, 0.01, 0.0)
-        s = experiments.summarize(lab, d, T0, "evaluation")
-        self.assertEqual(experiments.status(d, s)[0], "supported")
-        s = experiments.summarize(self.labelled(10, -0.01, 0.0), d, T0, "evaluation")
-        self.assertEqual(experiments.status(d, s)[0], "retired")
-        s = experiments.summarize(self.labelled(3, 0.01, 0.0), d, T0, "evaluation")
-        self.assertEqual(experiments.status(d, s)[0], "under prospective evaluation")
-        self.assertEqual(experiments.status(d, None)[0], "exploratory")
-        self.assertEqual(experiments.status(d, s, superseded=True)[0], "retired")
+        d, reg = design(), {"registered": T0}
+        q = {"incomplete_share": 0.0}
+        s, base = summaries(dataset(10, 0.01, 0.0), d, reg)
+        st = experiments.status(d, "available", s, q, base, 1)
+        self.assertEqual(st[0], "supported", st[1])
+        s, base = summaries(dataset(10, -0.01, 0.0), d, reg)
+        self.assertEqual(experiments.status(d, "available", s, q, base, 1)[0], "retired")
+        s, base = summaries(dataset(3, 0.01, 0.0), d, reg)
+        self.assertEqual(experiments.status(d, "available", s, q, base, 1)[0], "under prospective evaluation")
+        self.assertEqual(experiments.status(d, "available", None, q, base, 1)[0], "exploratory")
+        self.assertEqual(experiments.status(d, "available", s, q, base, 1, superseded=True)[0], "retired")
+
+    def test_promotion_blocked_without_baseline_or_quality(self):
+        d, reg, q = design(), {"registered": T0}, {"incomplete_share": 0.0}
+        rows = [r for r in dataset(10, 0.01, 0.0) if not r[0]["group"].startswith("control")]
+        s, base = summaries(rows, d, reg)                            # no controls: baseline unidentifiable
+        self.assertEqual(experiments.status(d, "available", s, q, base, 1)[0], "blocked")
+        s, base = summaries(dataset(10, 0.01, 0.0), d, reg)
+        self.assertNotEqual(experiments.status(d, "insufficient_data", s, q, base, 1)[0], "supported")
+        self.assertEqual(experiments.status(d, "available", s, {"incomplete_share": 0.2}, base, 1)[0], "blocked")
+        self.assertEqual(experiments.status(dict(d, descriptive_only=True), "available", s, q, base, 1)[0], "blocked")
+
+    def test_multiplicity_adjustment_can_withhold_promotion(self):
+        d, reg, q = design(min_n=10), {"registered": T0}, {"incomplete_share": 0.0}
+        rows = dataset(12, 0.02, 0.0)
+        for e, lab_, _ in rows:
+            if e["group"] == "test" and e["t_event"] == T0 + 3 * DAY_MS + 10 * MINUTE:
+                lab_[30]["ret_net"] = -0.025                           # one adverse outcome
+        s, base = summaries(rows, d, reg)
+        one = experiments.status(d, "available", s, q, base, 1)
+        many = experiments.status(d, "available", s, q, base, 500)    # 500 variants tried in the family
+        self.assertEqual(one[0], "supported", one[1])
+        self.assertNotEqual(many[0], "supported")
+        self.assertIn("effect_adjusted", many[1])
+
+    def test_severity_mismatch_blocks_promotion(self):
+        d, reg, q = design(), {"registered": T0}, {"incomplete_share": 0.0}
+        rows = dataset(10, 0.01, 0.0)
+        for e, _, _ in rows:
+            if e["group"] == "test":
+                e["features"]["severity"] = 3.0
+        s, base = summaries(rows, d, reg)
+        st = experiments.status(d, "available", s, q, base, 1)
+        self.assertNotEqual(st[0], "supported")
+        self.assertIn("comparability", st[1])
 
     def test_control_reference_uses_test_direction_mix(self):
         d = design(ref="control")
         rows = []
         for k in range(6):
-            t = T0 + k * 86_400_000
-            rows.append((ev(t, -1, "test"), {30: {"status": "complete", "ret_net": 0.002}}))
-            rows.append((ev(t + H, 1, "control_long"), {30: {"status": "complete", "ret_net": 0.005}}))
-            rows.append((ev(t + H, -1, "control_short"), {30: {"status": "complete", "ret_net": -0.007}}))
-        s = experiments.summarize(rows, d, None, "exploratory")["30"]
-        self.assertEqual(s["test_share_long"], 0.0)
-        self.assertAlmostEqual(s["reference"]["mean"], -0.007)          # short-oriented reference for a short test
+            t = T0 + k * DAY_MS
+            rows.append(obs(t, "test", -1, 0.002, k))
+            rows.append(obs(t + H, "control_long", 1, 0.005, k))
+            rows.append(obs(t + H, "control_short", -1, -0.007, k))
+        s, _ = summaries(rows, d, None, "reanalysis")
+        self.assertEqual(s["30"]["test_share_long"], 0.0)
+        self.assertAlmostEqual(s["30"]["reference"]["mean"], -0.007)     # short-oriented reference for a short test
 
     def test_register_never_rewrites(self):
         with tempfile.TemporaryDirectory() as dd:
             d = design()
-            self.assertEqual(experiments.register(dd, [d], T0)["T1"], T0)
-            self.assertEqual(experiments.register(dd, [d], T0 + H)["T1"], T0)
-            d2 = dict(d, _sha256="y" * 64)
-            self.assertEqual(experiments.register(dd, [d2], T0 + H)["T1"], T0 + H)   # a changed design is new
+            self.assertEqual(experiments.register(dd, [d], T0)["T1"]["registered"], T0)
+            self.assertEqual(experiments.register(dd, [d], T0 + H)["T1"]["registered"], T0)
+            d2 = dict(d, _version="ev-other")
+            self.assertEqual(experiments.register(dd, [d2], T0 + H)["T1"]["registered"], T0 + H)
+            self.assertEqual(experiments.superseded_versions(dd, "T1", "ev-other"), ["ev-test"])
 
     def test_run_design_persist_idempotent(self):
         class Mod:
@@ -359,15 +439,18 @@ class ExperimentTests(unittest.TestCase):
                                     "coverage": {}, "state": "available", "reasons": []}]}
         with tempfile.TemporaryDirectory() as dd:
             lab = FakeLab(T0 + 60 * H, FakeStore(), write=True, base=dd)
-            res, led = experiments.run_design(lab, design(), Mod, T0)
+            res, led = experiments.run_design(lab, design(), Mod, {"registered": T0}, 1)
             lines = lambda: sum(len(p.read_text().splitlines()) for p in Path(dd).rglob("*.jsonl"))
             n1 = lines()
-            experiments.run_design(lab, design(), Mod, T0)
+            self.assertGreater(n1, 0)
+            res2, _ = experiments.run_design(lab, design(), Mod, {"registered": T0}, 1,
+                                             run_state={"last_cutoff": T0 + 60 * H})
             self.assertEqual(n1, lines())
-            outs = [json.loads(l) for p in Path(dd, "research/outcomes").rglob("*.jsonl") for l in p.read_text().splitlines()]
+            self.assertEqual(res2["variants"][0]["passes"][0]["freeze_audit"]["frozen_used"], 78)
+            outs = [json.loads(l) for p in Path(dd, "research/v2/T1/ev-test/outcomes").rglob("*.jsonl")
+                    for l in p.read_text().splitlines()]
             self.assertTrue(outs and all(o["label"]["status"] == "complete" for o in outs))
             self.assertEqual(len(led), 1)
-            self.assertIn(res["status"], ("supported", "under prospective evaluation", "retired"))
 
 
 class EvidenceAndSkillEvalTests(unittest.TestCase):
@@ -440,15 +523,17 @@ class EndToEndTests(unittest.TestCase):
             bad.update(id="Z9-broken", module="no_such_module")
             Path(d, "lab/designs/Z9-broken.json").write_text(json.dumps(bad))
             with patch("sys.stdout", io.StringIO()), patch.dict(os.environ, {"STREAM_DATA_DIR": ""}):
-                rc = lab_main(["update", "--base", d, "--now", str(T0)])
+                rc = lab_main(["update", "--base", d, "--now", str(T0), "--write-past"])
             self.assertEqual(rc, 1)                                       # an error is surfaced...
-            cards = {p.stem: json.loads(p.read_text()) for p in Path(d, "research/evidence/cards").glob("*.json")}
-            self.assertEqual(len(cards), 9)                               # ...and every other design still reported
+            cards = {p.stem.split("@")[0]: json.loads(p.read_text()) for p in Path(d, "research/evidence/v2").glob("*.json")}
+            index = json.loads(Path(d, "research/evidence/index.json").read_text())
+            self.assertEqual(len(index["designs"]), 9)                   # ...and every other design still reported
+            self.assertEqual(len(cards), 9)
             self.assertEqual(cards["Z9-broken"]["status"], "error")
             self.assertEqual(cards["E1-liquidity-recovery"]["passes"]["prospective"]["state"], "unavailable")
             self.assertTrue(all(c["status"] in ("exploratory", "error") for c in cards.values()))
             self.assertIn("No change is proposed", Path(d, "reports/skill_proposals.md").read_text())
-            self.assertTrue(Path(d, "state/lab_registered.json").exists())
+            self.assertTrue(Path(d, "state/lab_registrations.json").exists())
 
 
 if __name__ == "__main__":

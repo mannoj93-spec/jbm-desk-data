@@ -1,8 +1,22 @@
-# Validation record — research-data revision 2.7
+# Validation record — research-integrity revision 2.8 (lab-2.0)
 
-Validated 2026-09-23 with Python 3.11 (container) against live sources; GitHub workflows select
-Python 3.12. Runtime uses the standard library only. Tables below the 2.7 block are the record of
-earlier revisions and are kept as they were.
+Validated 2026-09-23 with Python 3.11 (container); GitHub workflows select Python 3.12. Tables
+below the 2.8 block are the record of earlier revisions and are kept as they were.
+
+| Check (2.8) | Result |
+|---|---|
+| Default branch before the work | `9a47d65`; since the reviewed `900d0b1` only automated data commits; code identical to the review |
+| Reproductions on `900d0b1` (`scripts/repro_integrity.py old-tree`) | #2 same-bar entries counted {30m: 2, 60m: 2, 240m: 1, 480m: 1}; #3 module G event 48.0 min before its delayed input; #5 transition labelled `confirmed`; #6 exact 3 events + 1 control, jittered 0 + 0; #7 all quotes stale: event unchanged (`bearish_disagreement`), only counters moved |
+| Same reproductions on 2.8 | #2 {1, 1, 1, 1}; #3 event 1.0 min after the input (input + assumed processing); #5 `none_observed`; #6 exact and jittered both 3 + 1; #7 event regrouped `bearish_disagreement_ineligible` with reason "stale", surface value unchanged |
+| New tests against `900d0b1` | `test_integrity.py` cannot import there (`lab.asof` and the other lab-2.0 modules do not exist); the version-independent script above is the per-finding evidence |
+| Offline regression suite | 238 passed (200 kept; 38 new), about 25 s, 3 consecutive runs, no flakes; numerical fixtures 25 passed |
+| Earlier reliability cases | `test_stalled_venue_leaves_every_other_book_collected`, `test_one_hung_venue_cannot_cost_every_venue_its_snapshot` and `test_complete_snapshot_loss_is_critical_and_partial_loss_is_not` pass unchanged |
+| Byte preservation and idempotency (scratch copy of live data, two runs at one cutoff) | First run creates only `research/v2`, `research/evidence/v2`, `research/evidence/index.json`, `state/lab_registrations.json`, `state/lab_run_state.json` and the two research reports; no data, legacy research or lab-1.0 state byte changed. Second run at the same cutoff adds no rows; only the commit hash in reports/cards and the run counter change |
+| Version migration | Each design registered under a new `ev-...` version; `state/lab_registered.json` and the lab-1.0 cards untouched and indexed as legacy; a docstring/comment edit, a README edit and a data file leave versions unchanged; a detector constant, a cost value, or (for module B) the HL sampling policy start a new version (tested) |
+| Research lab on current data (read-only) | 8 designs run in 2 s; with the 60-day reconstruction of A and G, 2 min 17 s (limit 30 min) |
+| Coverage report refresh | `report.py --coverage-only` writes only `reports/latest.md` (report 2.5 with generation time, input cutoff, versions and 9 dataset freshness rows); no registry or scoring files touched |
+
+## Revision 2.7
 
 | Check (2.7) | Result |
 |---|---|
@@ -87,6 +101,11 @@ earlier revisions and are kept as they were.
 - Hyperliquid leaderboard: 46,876 rows, 39 MB; `clearinghouseState` ~0.33 s per call.
 
 ## Scope limits
+
+2.8: no design has evaluation observations yet; every status is exploratory and no skill change is
+warranted. Decisions are as-of replays computed every 6 hours, not live executions. The
+multiplicity adjustment and look schedule are conservative house rules, not a formal sequential
+test. Streaming (module E) remains inactive.
 
 2.7: no module has an evaluation episode yet; every status is exploratory, and the
 reconstruction figures are not evidence of an advantage. The cost model's fee and slippage values

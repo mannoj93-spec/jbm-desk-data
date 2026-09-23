@@ -1,18 +1,21 @@
 """Shared constants, versions, provenance and storage for the research lab.
 
-Layers and where they live (all compact JSON; no raw ticks):
-  research/events/<design>/YYYY-MM.jsonl    detector firings of the primary variant, each with its
-                                            feature record (the features layer), episode id and
-                                            input hash; scheduled controls are recomputed, not stored
-  research/outcomes/<design>/YYYY-MM.jsonl  mature outcome labels (only complete ones are stored)
-  research/experiments/YYYY-MM.jsonl        one compact result per design run (append-only history)
-  research/ledger/variants.jsonl            every tested variant, including null results
-  research/evidence/cards/<design>.json     machine-readable evidence card (latest)
+Layers and where they live (lab-2.0; all compact JSON, no raw ticks). Everything is namespaced by
+the evaluation version (lab/versioning.py) so a code or design change never mixes with, or
+overwrites, earlier evidence:
+  research/v2/<design>/<version>/events/YYYY-MM.jsonl    frozen decisions (every firing, features
+                                                         included = the features layer), first write wins
+  research/v2/<design>/<version>/outcomes/YYYY-MM.jsonl  complete outcome labels of episode heads
+  research/v2/experiments/YYYY-MM.jsonl                  one compact result per design per run
+  research/v2/ledger/YYYY-MM.jsonl                       every variant tried, null results included
+  research/evidence/v2/<design>@<version>.json           evidence card (schema evidence_card/2)
+  research/evidence/index.json                           current / superseded / legacy card index
+  state/lab_registrations.json, state/lab_run_state.json registration clocks and last cutoffs
   reports/research.md, reports/skill_proposals.md
-Every record carries the lab code hash, a detector/design version, and the three times that must
-never be confused: t_event (what the record describes), t_first_observed (when the first required
-input was written by the collector) and t_available (when every required input had arrived plus
-processing latency). Historical reconstructions say so in `basis`.
+Legacy lab-1.0 outputs (research/evidence/cards, research/experiments, research/ledger,
+state/lab_registered.json) are kept as recorded and never written again.
+Time fields on every record are defined in lab/asof.py. Historical reconstructions say so in
+`basis`.
 """
 import datetime as dt
 import hashlib
@@ -25,13 +28,16 @@ if str(ROOT) not in sys.path:
 
 from storage import append_unique, atomic_json, canonical, digest, read_json, read_rows  # noqa: E402
 
-LAB_VERSION = "lab-1.0-2026-09-23"
+LAB_VERSION = "lab-2.0-2026-09-23"
 MINUTE = 60_000
 H = 60 * MINUTE
 DAY = 24 * H
-PROCESSING_LATENCY_MS = 60_000     # live processing assumed to finish within 1 minute of the last input
+PROCESSING_LATENCY_MS = 60_000     # ASSUMED processing time added to input availability (lab/asof.py);
+                                   # an assumption about a live pipeline, never a measurement
 HORIZONS_MIN = (30, 60, 240, 480)  # 30 minutes, 1 hour, 4 hours, 8 hours
-BASIS_PROSPECTIVE = "prospective: inputs as written by the collector (observed_at); processing latency added"
+BASIS_PROSPECTIVE = ("as-of replay of collected inputs: each input used only from its availability (observed_at, "
+                     "never earlier); decision time = latest required input + 60 s ASSUMED processing; computed "
+                     "by the 6-hourly lab, not live; frozen at the first lab run that computed it (t_persisted)")
 BASIS_RECONSTRUCTION = ("historical reconstruction: public history fetched later; availability assumed at "
                         "t_event + processing latency, which the live pipeline did not achieve")
 

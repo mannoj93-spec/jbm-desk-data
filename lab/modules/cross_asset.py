@@ -15,14 +15,21 @@ prior-60-minute volatility) while BTC's 5-minute return is within +-1 sigma -> "
 direction -1 (propagation hypothesis); mirror image "alt_squeeze", direction +1. Reference: hourly
 controls. Lead-lag diagnostics (correlations of BTC returns with alt returns at lags -3..+3
 minutes) are reported with the result.
+
+Point-in-time contract (lab-2.0, lab/asof.py): the REQUIRED inputs of a decision are all 65 bars
+(5-minute window plus the prior 60 minutes behind each sigma and the prior return) of ALL three
+assets; t_inputs is the latest of their availabilities, so a delayed prior bar of any asset delays
+the decision (and more than 60 minutes of delay excludes it). The settled funding rate is optional
+and used only if it was available by t_inputs.
 """
 import math
 
-from lab.common import BASIS_PROSPECTIVE, BASIS_RECONSTRUCTION, MINUTE, PROCESSING_LATENCY_MS, hash_inputs
+from lab.asof import Known, RangeMax, decide
+from lab.common import BASIS_PROSPECTIVE, BASIS_RECONSTRUCTION, MINUTE, hash_inputs
 from lab.events import event_record
 
 ID = "cross_asset"
-VERSION = "G-1"
+VERSION = "G-2"
 SERIES = {"BTC": "binance_klines_1m_BTCUSDT_perp", "ETH": "binance_klines_1m_ETHUSDT_perp",
           "SOL": "binance_klines_1m_SOLUSDT_perp"}
 SPEC = {"module": "G", "id": ID, "version": VERSION, "title": "Cross-asset stress propagation",
@@ -54,16 +61,18 @@ def lead_lag(rets, lags=range(-3, 4)):
 
 
 def build(bars, basis, params, code, funding=()):
+    """`funding` is a list of (t, rate, avail)."""
     btc = bars["BTC"]
     if not btc:
         return [], [], {"steps": 0}, {}
     start, end = min(btc), max(btc) + MINUTE
     ts = list(range(start, end, MINUTE))
     rets = {a: [math.log(bars[a][t]["c"] / bars[a][t]["o"]) if t in bars[a] else None for t in ts] for a in SERIES}
+    rms = {a: RangeMax([bars[a][t]["avail"] if t in bars[a] else 0 for t in ts]) for a in SERIES}
     k = params["k_sigma"]
     events, controls = [], []
-    cov = {"steps": 0, "skipped_missing": 0}
-    fund = sorted(funding)
+    cov = {"steps": 0, "skipped_missing": 0, "late_inputs": 0}
+    fund = Known(funding)
     for i in range(65, len(ts)):
         t_close = ts[i] + MINUTE
         if t_close % (5 * MINUTE):
@@ -82,25 +91,30 @@ def build(bars, basis, params, code, funding=()):
         if not ok or any(v[0] is None for v in vals.values()):
             cov["skipped_missing"] += 1
             continue
-        avail = max(bars[a][ts[i]]["avail"] for a in SERIES)
+        t_inputs = max(rms[a].query(i - 64, i + 1) for a in SERIES)      # every bar read, every asset
+        t_available, excluded = decide(t_close, t_inputs)
+        if excluded:
+            cov["late_inputs"] += 1
+            continue
+        first_obs = min(bars[a][ts[i]]["avail"] for a in SERIES)
         prior_ret = math.log(bars["BTC"][ts[i - 4]]["o"] / bars["BTC"][ts[i - 64]]["o"])
-        funding_last = next((r for t, r in reversed(fund) if t <= t_close), None)
+        f_ = fund.latest(t_close, t_inputs)
         feats = {f"{a}_z5": round(vals[a][0], 3) for a in SERIES}
-        feats.update(prior_rv_60m=vals["BTC"][1] / math.sqrt(5) * math.sqrt(60), funding_last=funding_last)
+        feats.update(prior_rv_60m=vals["BTC"][1] / math.sqrt(5) * math.sqrt(60), funding_last=f_[1] if f_ else None)
         ih = hash_inputs([[a, ts[i], bars[a][ts[i]]["c"]] for a in SERIES])
         btc_calm = abs(vals["BTC"][0]) <= 1.0
         for alt in ("ETH", "SOL"):
             z = vals[alt][0]
             for group, cond, direction in (("alt_stress", z <= -k, -1), ("alt_squeeze", z >= k, 1)):
                 if cond and btc_calm:
-                    f = dict(feats, alt=alt, prior_ret_60m_aligned=direction * prior_ret)
-                    events.append(event_record(ID, VERSION, t_close, avail, avail + PROCESSING_LATENCY_MS, direction,
+                    f = dict(feats, alt=alt, prior_ret_60m_aligned=direction * prior_ret, severity=abs(z))
+                    events.append(event_record(ID, VERSION, t_close, first_obs, t_available, direction,
                                                group, f, ih, basis, {"assets": 3}, {"clock": "Binance bar open times"},
-                                               code))
+                                               code, t_inputs=t_inputs, key=alt))
         if t_close % 3_600_000 == 0:
             f = dict(feats, prior_ret_60m_aligned=-prior_ret)
-            controls.append(event_record(ID + ":control", VERSION, t_close, avail, avail + PROCESSING_LATENCY_MS, -1,
-                                         "control", f, ih, basis, {}, {}, code))
+            controls.append(event_record(ID + ":control", VERSION, t_close, first_obs, t_available, -1,
+                                         "control", f, ih, basis, {}, {}, code, t_inputs=t_inputs))
     return events, controls, cov, lead_lag(rets)
 
 
@@ -122,7 +136,7 @@ def hl_cross_exposure(store):
 def run(lab, params):
     passes = []
     stored = {a: lab.store.bars(n) for a, n in SERIES.items()}
-    ev, ctl, cov, ll = build(stored, BASIS_PROSPECTIVE, params, lab.code, lab.store.funding_events())
+    ev, ctl, cov, ll = build(stored, BASIS_PROSPECTIVE, params, lab.code, lab.store.funding_known())
     days = (max(stored["BTC"]) - min(stored["BTC"])) / 86_400_000 if stored["BTC"] else 0
     need = params.get("min_days", 14)
     passes.append({"basis": "prospective", "events": ev, "controls": ctl, "coverage": dict(cov, lead_lag=ll,
@@ -131,7 +145,8 @@ def run(lab, params):
                    "reasons": [] if days >= need else [f"{days:.1f} days of stored bars; the design needs {need}"]})
     if all(lab.history.get(n) for n in SERIES.values()):
         hist = {a: lab.history[n] for a, n in SERIES.items()}
-        ev, ctl, cov, ll = build(hist, BASIS_RECONSTRUCTION, params, lab.code, lab.store.funding_events())
+        fund = [(t, r, t) for t, r, _ in lab.store.funding_known()]     # availability ASSUMED at settlement
+        ev, ctl, cov, ll = build(hist, BASIS_RECONSTRUCTION, params, lab.code, fund)
         passes.append({"basis": "reconstruction", "events": ev, "controls": ctl, "coverage": dict(cov, lead_lag=ll),
                        "bars": hist["BTC"], "state": "available", "reasons": [],
                        "data_sha256": {n: lab.history_sha.get(n) for n in SERIES.values()}})

@@ -9,23 +9,45 @@ Surface measures from each 15-minute Deribit record (mark IV, OI; collector opti
                      between the bracketing expiries; RR25 linearly in T; no extrapolation
   units              IV in vol points (percent); RR25 in vol points
   OI concentration   Herfindahl index of OI shares by (expiry, strike); put/call OI ratio
-Quote quality (panel quotes, when present): ticker timestamp within 60 s of the record and bid-ask
-spread <= 10% of mark, otherwise excluded; Deribit's own delta is compared with ours as a check.
+Two different products, never mixed (lab-2.0):
+  DESCRIPTIVE SURFACE  the measures above, from Deribit MARK IV of every instrument with OI. Mark IV
+                       is Deribit's model value; it exists without any resting order, so it is a
+                       description of the venue's surface, not a tradable price. Always reported,
+                       with that limitation named.
+  QUOTE-QUALIFIED SIGNAL  an event counts as quote-qualified only if the executable quotes behind
+                       the measure it uses were checked and passed. rr25_7d uses the 25-delta call
+                       and put of the expiries around 7 days; the collector's 12-ticker panel
+                       samples the expiry nearest 7 days at +-25 delta (and 50 delta). Eligibility:
+                         qualified  that expiry's 25-delta call AND put panel quotes both pass: ticker
+                                    time within 60 s of the record, two-sided (bid and ask > 0 with
+                                    size), not crossed, spread <= 10% of mid, expiry > 1 day away,
+                                    and mark IV inside [bid IV, ask IV]
+                         failed     at least one of them was observed and failed (reason recorded)
+                         unknown    the panel was absent, failed, or did not include them. Quote
+                                    quality that was never observed stays unknown; it is not failed.
+Instruments outside the panel are not invalidated: the panel only QUALIFIES the signal. Zero open
+interest is listed by the collector separately from absent instruments and never read as missing.
 OI does not reveal dealer inventory direction; nothing here assigns a sign to dealer exposure.
 
 Event: rr25_7d z-score (vs the trailing `z_window` records, prior only) <= -z while the Binance
 predicted funding z-score >= +z  ->  "bearish_disagreement", direction -1; mirror image ->
 "bullish_disagreement", direction +1. Reference: hourly controls.
+Params: quote_policy "qualified" (default: events that are not quote-qualified are regrouped as
+<group>_ineligible, visible but outside the test group) or "mark_only" (a separately labelled,
+descriptive variant that evaluates mark-IV events regardless of quotes).
+As-of (lab/asof.py): a record's inputs are the option record and the same run's snapshot; the
+z-score histories use only earlier records already observed by then.
 """
 import datetime as dt
 import math
 import re
 
-from lab.common import BASIS_PROSPECTIVE, DAY, PROCESSING_LATENCY_MS, hash_inputs
+from lab.asof import decide
+from lab.common import BASIS_PROSPECTIVE, DAY, hash_inputs
 from lab.events import event_record
 
 ID = "options_disagreement"
-VERSION = "F-1"
+VERSION = "F-2"
 NAME = re.compile(r"BTC-(\d{1,2})([A-Z]{3})(\d{2})-(\d+(?:\.\d+)?)-([CP])")
 MONTHS = {m: i + 1 for i, m in enumerate("JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split())}
 SPEC = {"module": "F", "id": ID, "version": VERSION, "title": "Options / perpetual disagreement",
@@ -112,15 +134,53 @@ def surface(rec):
             "put_call_oi": puts / calls if calls else None, "total_oi_btc": total_oi}
 
 
+def quote_check(r, t_ref):
+    """None if the quote passes, else the reason. `r` is one panel row as a dict."""
+    bid, ask, mid_mark = r.get("best_bid_price"), r.get("best_ask_price"), r.get("mark_price")
+    if r.get("timestamp") is None or abs(r["timestamp"] - t_ref) > 60_000:
+        return "stale"
+    if not bid or not ask or not r.get("best_bid_amount") or not r.get("best_ask_amount"):
+        return "one_sided_or_missing"
+    if bid >= ask:
+        return "crossed"
+    if (ask - bid) > 0.10 * ((ask + bid) / 2):
+        return "wide"
+    exp = expiry_ms(r["instrument"])
+    if exp is None or exp - t_ref <= DAY:
+        return "expiring"
+    biv, aiv, miv = r.get("bid_iv"), r.get("ask_iv"), r.get("mark_iv")
+    if biv and aiv and miv and not (biv <= miv <= aiv):
+        return "mark_outside_quotes"
+    return None
+
+
 def panel_quality(rec):
-    ok, bad = [], []
-    for row in rec.get("panel") or []:
-        r = dict(zip(rec.get("panel_fields", []), row))
-        fresh = r.get("timestamp") and abs(r["timestamp"] - rec.get("t_event", r["timestamp"])) <= 60_000
-        spread_ok = (r.get("best_bid_price") and r.get("best_ask_price") and r.get("mark_price")
-                     and (r["best_ask_price"] - r["best_bid_price"]) <= 0.10 * r["mark_price"])
-        (ok if fresh and spread_ok else bad).append(r["instrument"])
-    return {"panel_ok": len(ok), "panel_excluded": len(bad)}
+    """Counts by outcome plus the eligibility of the rr25_7d signal (qualified / failed / unknown)."""
+    t_ref = rec.get("t_event") or rec["t"]
+    rows = [dict(zip(rec.get("panel_fields", []), row)) for row in rec.get("panel") or []]
+    reasons = {}
+    for r in rows:
+        why = quote_check(r, t_ref)
+        reasons[why or "ok"] = reasons.get(why or "ok", 0) + 1
+    out = {"panel_ok": reasons.get("ok", 0), "panel_excluded": sum(v for k, v in reasons.items() if k != "ok"),
+           "panel_reasons": reasons}
+    # the rr25_7d instruments: the panel expiry nearest 7 days, its call and put nearest |delta| 0.25
+    cand = [r for r in rows if expiry_ms(r["instrument"]) and r.get("delta") is not None]
+    if not cand:
+        out.update(rr25_7d_quotes="unknown", rr25_7d_quote_reason="panel absent or without greeks")
+        return out
+    exp7 = min({expiry_ms(r["instrument"]) for r in cand}, key=lambda e: abs((e - t_ref) / DAY - 7))
+    legs = []
+    for kind, target in (("C", 0.25), ("P", -0.25)):
+        pool = [r for r in cand if expiry_ms(r["instrument"]) == exp7 and r["instrument"].endswith("-" + kind)
+                and abs(r["delta"] - target) <= 0.12]
+        legs.append(min(pool, key=lambda r: abs(r["delta"] - target)) if pool else None)
+    if any(l is None for l in legs):
+        out.update(rr25_7d_quotes="unknown", rr25_7d_quote_reason="25-delta call/put of the ~7d expiry not in panel")
+        return out
+    fails = [f"{l['instrument']}: {quote_check(l, t_ref)}" for l in legs if quote_check(l, t_ref)]
+    out.update(rr25_7d_quotes="failed" if fails else "qualified", rr25_7d_quote_reason="; ".join(fails) or None)
+    return out
 
 
 def zscore(hist, x, window):
@@ -136,39 +196,51 @@ def run(lab, params):
     recs = lab.store.options()
     snaps = {s["t"]: s for s in lab.store.snaps()}
     bars = lab.store.bars("binance_klines_1m_BTCUSDT_perp")
-    events, controls, rr_hist, f_hist, series = [], [], [], [], []
+    policy = params.get("quote_policy", "qualified")
+    events, controls, series = [], [], []
+    hist = []                                       # (observed_at, rr25_7d, funding) of earlier records
     z, window = params["z"], params["z_window"]
+    elig = {"qualified": 0, "failed": 0, "unknown": 0}
     for rec in recs:
         s = surface(rec)
         snap = snaps.get(rec["t"]) or {}
         prem = snap.get("binance_usdt_prem") or {}
         funding = prem.get("funding_live_predicted_8h") if prem.get("st") == "ok" else None
         s.update(panel_quality(rec), funding_pred_8h=funding)
-        rz, fz = zscore(rr_hist, s["rr25_7d"], window), zscore(f_hist, funding, window)
-        rr_hist.append(s["rr25_7d"])
-        f_hist.append(funding)
-        s.update(rr25_7d_z=rz, funding_z=fz)
+        t_inputs = max(rec["observed_at"], snap.get("observed_at") or rec["observed_at"])
+        known = [h for h in hist if h[0] <= t_inputs]                  # prior records known by then
+        rz = zscore([h[1] for h in known], s["rr25_7d"], window)
+        fz = zscore([h[2] for h in known], funding, window)
+        hist.append((rec["observed_at"], s["rr25_7d"], funding))
+        s.update(rr25_7d_z=rz, funding_z=fz, surface_basis="descriptive: Deribit mark IV")
         series.append((rec["t"], s))
-        avail = max(rec["observed_at"], snap.get("observed_at", rec["observed_at"]))
+        avail, excluded = decide(rec["t"], t_inputs)
+        if excluded:
+            continue
         ih = hash_inputs([rec["t"], s["rr25_7d"], funding])
         if rz is not None and fz is not None:
             for group, cond, direction in (("bearish_disagreement", rz <= -z and fz >= z, -1),
                                            ("bullish_disagreement", rz >= z and fz <= -z, 1)):
                 if cond:
-                    events.append(event_record(ID, VERSION, rec["t"], rec["observed_at"], avail + PROCESSING_LATENCY_MS,
-                                               direction, group, s, ih, BASIS_PROSPECTIVE, {"records_in_z": window},
-                                               {"funding": "same run"}, lab.code))
+                    elig[s["rr25_7d_quotes"]] += 1
+                    g = group if policy == "mark_only" or s["rr25_7d_quotes"] == "qualified" else group + "_ineligible"
+                    events.append(event_record(ID, VERSION, rec["t"], rec["observed_at"], avail,
+                                               direction, g, dict(s, severity=abs(rz)), ih, BASIS_PROSPECTIVE,
+                                               {"records_in_z": window},
+                                               {"funding": "same run", "quote_policy": policy,
+                                                "rr25_7d_quotes": s["rr25_7d_quotes"]}, lab.code, t_inputs=t_inputs))
         if rec["t"] % 3_600_000 < 900_000:
             controls.append(event_record(ID + ":control", VERSION, rec["t"], rec["observed_at"],
-                                         avail + PROCESSING_LATENCY_MS, -1 if (s["rr25_7d"] or 0) < 0 else 1,
-                                         "control", s, ih, BASIS_PROSPECTIVE, {}, {}, lab.code))
+                                         avail, -1 if (s["rr25_7d"] or 0) < 0 else 1,
+                                         "control", s, ih, BASIS_PROSPECTIVE, {}, {}, lab.code, t_inputs=t_inputs))
     have = sum(1 for _, s in series if s["rr25_7d_z"] is not None)
     state = "available" if have >= params.get("min_records", 96 * 14) else "insufficient_data"
     reasons = [] if state == "available" else [f"{len(recs)} option records ({have} with a trailing z-score); "
                                                 f"the design needs {params.get('min_records', 96 * 14)}"]
     latest = series[-1][1] if series else {}
     return {"module": ID, "passes": [{"basis": "prospective", "events": events, "controls": controls,
-                                      "coverage": {"records": len(recs), "with_z": have,
+                                      "coverage": {"records": len(recs), "with_z": have, "quote_policy": policy,
+                                                   "event_quote_eligibility": elig,
                                                    "latest_surface": {k: (round(v, 4) if isinstance(v, float) else v)
                                                                       for k, v in latest.items()}},
                                       "bars": bars, "state": state, "reasons": reasons}]}

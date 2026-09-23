@@ -11,20 +11,24 @@ Per account, consecutive observations at most 30 minutes apart are compared:
   pressure "drawdown" if the BTC unrealised PnL at the earlier observation was <= -2% of account
            value, "gain" if >= +2%, else "neutral"
   buffer   (cross account value - cross maintenance margin) / cross account value, and its change
-  transfer "confirmed" only when a ledger check covering the interval shows a deposit, withdrawal
-           or transfer; "none_observed" when a check covered it and showed none; otherwise
-           "unchecked". Account-value changes are never read as deposits.
+  transfer per lab/hlevidence.py: "confirmed" only when an individual perp-margin transfer is
+           timestamped inside this transition's interval (t0, t1]; "none_observed" only when an ok,
+           untruncated ledger check covers the whole interval; otherwise partial / failed /
+           not_attempted / unchecked. Reported twice: as known at the decision time (transfer_at_
+           decision) and with all later evidence (transfer_final). Account-value changes are never
+           read as deposits.
 Cohort event at snapshot t: at least min_accounts fixed accounts added under drawdown (group
 "underwater_adds") or under gain ("gain_adds"); direction = sign of the net BTC size those
 accounts added. Large account value is a sampling criterion, not evidence of skill.
 """
-from lab.common import BASIS_PROSPECTIVE, MINUTE, PROCESSING_LATENCY_MS, hash_inputs
+from lab import hlevidence
+from lab.asof import decide
+from lab.common import BASIS_PROSPECTIVE, MINUTE, hash_inputs
 from lab.events import event_record
 
 ID = "account_behavior"
-VERSION = "B-1"
-TRANSFER_TYPES = {"deposit", "withdraw", "internalTransfer", "subAccountTransfer", "accountClassTransfer", "send",
-                  "vaultDeposit", "vaultWithdraw", "spotTransfer"}
+VERSION = "B-2"
+TRANSFER_TYPES = hlevidence.PERP_TRANSFER_TYPES          # kept for callers of the 2.7 name
 SPEC = {"module": "B", "id": ID, "version": VERSION, "title": "Account behaviour under pressure",
         "hypothesis": "Fixed-cohort additions to under-water BTC positions predict different subsequent BTC "
                       "returns (in the added direction) than additions made while in profit.",
@@ -63,19 +67,6 @@ def account_series(store):
     return {a: sorted(v, key=lambda x: x[0]) for a, v in series.items() if a}
 
 
-def ledger_windows(store):
-    """[(user, start, end, set_of_types)] from successful ledger checks."""
-    out = []
-    for rec in store.hl_enrich():
-        for q in rec.get("requests", []):
-            if q.get("kind") == "ledger" and q.get("status") == "ok":
-                types = {e[1] for e in q.get("ledger", [])}
-                if q.get("spot_transfers"):
-                    types.add("spotTransfer")
-                out.append((q["user"], q["window"][0], q["window"][1], types))
-    return out
-
-
 def classify(prev, cur):
     a, b = prev["szi"], cur["szi"]
     if a == 0 and b == 0:
@@ -94,7 +85,7 @@ def classify(prev, cur):
 
 
 def transitions(store):
-    ledger = ledger_windows(store)
+    cs = hlevidence.checks(store)
     out = []
     for addr, obs in account_series(store).items():
         for (t0, a), (t1, b) in zip(obs, obs[1:]):
@@ -105,12 +96,13 @@ def transitions(store):
                 r = a["upnl"] / a["value"]
                 pressure = "drawdown" if r <= -0.02 else ("gain" if r >= 0.02 else "neutral")
             buf = lambda o: (o["cross"] - o["maint"]) / o["cross"] if o["cross"] else None
-            covering = [w for w in ledger if w[0] == addr and w[1] <= t0 and w[2] >= t1]
-            transfer = ("confirmed" if any(w[3] & TRANSFER_TYPES for w in covering) else
-                        "none_observed" if covering else "unchecked")
-            out.append({"address": addr, "t0": t0, "t": t1, "avail": b["avail"], "action": classify(a, b),
+            decision = max(a["avail"], b["avail"])
+            at_decision = hlevidence.transfers(cs, addr, t0, t1, known_by=decision)
+            final = hlevidence.transfers(cs, addr, t0, t1)
+            out.append({"address": addr, "t0": t0, "t": t1, "avail": decision, "action": classify(a, b),
                         "pressure": pressure, "d_szi": b["szi"] - a["szi"], "buffer0": buf(a), "buffer1": buf(b),
-                        "transfer": transfer})
+                        "transfer": final["state"], "transfer_at_decision": at_decision["state"],
+                        "transfer_evidence_observed_at": final["observed_at"]})
     return out
 
 
@@ -122,21 +114,27 @@ def run(lab, params):
     for x in tr:
         by_t.setdefault(x["t"], []).append(x)
     for t, xs in sorted(by_t.items()):
-        avail = max(x["avail"] for x in xs)
+        t_inputs = max(x["avail"] for x in xs)
+        avail, excluded = decide(t, t_inputs)
+        if excluded:
+            continue
         for group, pressure in (("underwater_adds", "drawdown"), ("gain_adds", "gain")):
             adds = [x for x in xs if x["action"] in ("add", "open") and x["pressure"] == pressure]
             if len(adds) >= params["min_accounts"]:
                 net = sum(x["d_szi"] for x in adds)
-                feats = {"accounts": len(adds), "net_btc_added": net,
-                         "transfers": {k: sum(1 for x in adds if x["transfer"] == k)
-                                       for k in ("confirmed", "none_observed", "unchecked")}}
-                events.append(event_record(ID, VERSION, t, avail, avail + PROCESSING_LATENCY_MS, 1 if net >= 0 else -1,
+                states = ("confirmed", "none_observed", "partial", "failed", "not_attempted", "unchecked")
+                feats = {"accounts": len(adds), "net_btc_added": net, "severity": len(adds),
+                         "transfers_at_decision": {k: sum(1 for x in adds if x["transfer_at_decision"] == k)
+                                                   for k in states},
+                         "transfers_final": {k: sum(1 for x in adds if x["transfer"] == k) for k in states}}
+                events.append(event_record(ID, VERSION, t, min(x["avail"] for x in xs), avail, 1 if net >= 0 else -1,
                                            group, feats, hash_inputs(adds), BASIS_PROSPECTIVE,
-                                           {"accounts_compared": len(xs)}, {"cohort": "fixed"}, lab.code))
+                                           {"accounts_compared": len(xs)}, {"cohort": "fixed"}, lab.code,
+                                           t_inputs=t_inputs))
         if t % (60 * MINUTE) < 15 * MINUTE:
-            controls.append(event_record(ID + ":control", VERSION, t, avail, avail + PROCESSING_LATENCY_MS, 1,
+            controls.append(event_record(ID + ":control", VERSION, t, min(x["avail"] for x in xs), avail, 1,
                                          "control", {"accounts": len(xs)}, hash_inputs([t]), BASIS_PROSPECTIVE,
-                                         {}, {}, lab.code))
+                                         {}, {}, lab.code, t_inputs=t_inputs))
     counts = {}
     for x in tr:
         k = f"{x['pressure']}:{x['action']}"
@@ -150,5 +148,6 @@ def run(lab, params):
                                       "coverage": {"transitions": len(tr), "snapshots": snapshots,
                                                    "behaviour_counts": counts,
                                                    "transfer_evidence": {k: sum(1 for x in tr if x["transfer"] == k)
-                                                                         for k in ("confirmed", "none_observed", "unchecked")}},
+                                                                         for k in ("confirmed", "none_observed", "partial",
+                                                                                   "failed", "not_attempted", "unchecked")}},
                                       "bars": bars, "state": state, "reasons": reasons}]}
