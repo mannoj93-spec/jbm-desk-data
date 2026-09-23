@@ -25,12 +25,12 @@ Usage:
 Exit code 0 always, unless the critical Binance share series failed (then 2) --
 the workflow commits first and fails afterwards so GitHub emails the owner.
 """
-import gzip, json, math, os, sys, time, urllib.request, urllib.error, datetime as dt
+import gzip, json, math, os, re, sys, time, urllib.request, urllib.error, datetime as dt
 from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
 from schema import SERIES_KIND
 
-CODE_VERSION = "collector-2.2.1-2026-09-23"
+CODE_VERSION = "collector-2.3-2026-09-23"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -689,36 +689,58 @@ HL_TOP_N = 200
 HL_TOP_REFRESH = 6 * H
 
 
+OPTION_NAME = re.compile(r"BTC-\d{1,2}[A-Z]{3}\d{2}-\d+(\.\d+)?-[CP]")
+FORWARD_MAX_INVALID = 0.05          # more than 5% invalid option rows: the snapshot is not stored
+
+
+def positive(x):
+    v = f(x)
+    return v if v is not None and v > 0 else None
+
+
 def collect_deribit_options():
     """Per-strike BTC option open interest and mark IV (runbook F requirement 50; with mark IV
     it also preserves the published surface requirement 49 would otherwise reconstruct).
-    One compact row per run in a daily file; instruments with zero OI are omitted and counted."""
+    One compact row per run in a daily file; instruments with zero OI are omitted and counted.
+    An option with OI but a malformed name, missing mark IV or missing underlying is never stored
+    as valid: it is excluded, named in `excluded`, and the snapshot is marked degraded."""
     js = need(get(f"{DERIBIT}/get_book_summary_by_currency?currency=BTC&kind=option", pause=0.2))
     res = js.get("result") if isinstance(js, dict) else None
-    if not isinstance(res, list) or not res:
-        raise ValueError("empty Deribit option summary")
-    rows, underlying, zero = [], {}, 0
+    if not isinstance(res, list) or not res or not all(isinstance(x, dict) for x in res):
+        raise ValueError("empty or malformed Deribit option summary")
+    rows, underlying, zero, excluded = [], {}, 0, []
     for x in res:
-        oi, iv = f(x.get("open_interest")), f(x.get("mark_iv"))
-        name = x.get("instrument_name")
-        if not isinstance(name, str) or oi is None or oi < 0:
-            raise ValueError("invalid Deribit option row")
+        name, oi = x.get("instrument_name"), f(x.get("open_interest"))
+        if not isinstance(name, str) or not OPTION_NAME.fullmatch(name):
+            excluded.append([str(name)[:40], "instrument name"])
+            continue
+        if oi is None or oi < 0:
+            excluded.append([name, "open_interest"])
+            continue
         if oi == 0:
             zero += 1
             continue
+        iv, u = positive(x.get("mark_iv")), positive(x.get("underlying_price"))
+        if iv is None or u is None:
+            excluded.append([name, "mark_iv" if iv is None else "underlying_price"])
+            continue
         rows.append([name, oi, iv])
-        expiry = name.split("-")[1]
-        u = f(x.get("underlying_price"))
-        if u:
-            underlying.setdefault(expiry, u)
+        underlying.setdefault(name.split("-")[1], u)
+    with_oi = len(rows) + len(excluded)
+    if not rows or len(excluded) > FORWARD_MAX_INVALID * max(with_oi, 1):
+        raise ValueError(f"{len(excluded)} of {with_oi} option rows invalid; snapshot not stored "
+                         f"(first: {excluded[:3]})")
     rows.sort()
-    t_event = max(int(x.get("creation_timestamp") or 0) for x in res)
-    out = {"t": NOW, "t_event": t_event, "unit": "open_interest in BTC (contracts of 1 BTC); mark_iv in % vol",
+    status = "degraded" if excluded else "complete"
+    t_event = max(int(f(x.get("creation_timestamp")) or 0) for x in res)
+    out = {"t": NOW, "t_event": t_event, "status": status,
+           "unit": "open_interest in BTC (contracts of 1 BTC); mark_iv in % vol",
            "fields": ["instrument", "open_interest_btc", "mark_iv"], "rows": rows,
-           "underlying": underlying, "instruments": len(res), "zero_oi_omitted": zero}
+           "underlying": underlying, "instruments": len(res), "zero_oi_omitted": zero, "excluded": excluded}
     added = append_rows("options/deribit_btc", [out], partition=day)
-    return {"added": added, "instruments": len(res), "with_oi": len(rows),
-            "total_oi_btc": round(sum(r[1] for r in rows), 1), "err": None}
+    return {"added": added, "status": status, "instruments": len(res), "with_oi": len(rows),
+            "excluded": len(excluded), "total_oi_btc": round(sum(r[1] for r in rows), 1),
+            "err": f"degraded: {len(excluded)} option rows excluded" if excluded else None}
 
 
 def hl_top_accounts(st):
@@ -738,34 +760,70 @@ def hl_top_accounts(st):
     return cache
 
 
+HL_LEVERAGE_TYPES = ("cross", "isolated")
+
+
+def hl_account(js):
+    """Validate one clearinghouseState response. Returns (account_value, btc_positions) or raises.
+    `{}` or any response without the documented structure is a failed account, never an empty one."""
+    if not isinstance(js, dict):
+        raise ValueError("not an object")
+    summary, assets = js.get("marginSummary"), js.get("assetPositions")
+    if not isinstance(summary, dict) or not isinstance(assets, list):
+        raise ValueError("missing marginSummary/assetPositions")
+    acct = f(summary.get("accountValue"))
+    if acct is None or acct < 0:
+        raise ValueError("invalid accountValue")
+    positions = []
+    for ap in assets:
+        pos = ap.get("position") if isinstance(ap, dict) else None
+        if not isinstance(pos, dict) or not isinstance(pos.get("coin"), str):
+            raise ValueError("malformed asset position")
+        if pos["coin"] != "BTC":
+            continue
+        lev = pos.get("leverage") if isinstance(pos.get("leverage"), dict) else {}
+        szi, entry, value = f(pos.get("szi")), positive(pos.get("entryPx")), f(pos.get("positionValue"))
+        liq = pos.get("liquidationPx")
+        liq_px = None if liq is None else positive(liq)     # null is documented: no liquidation price
+        if (not szi or entry is None or value is None or lev.get("type") not in HL_LEVERAGE_TYPES
+                or positive(lev.get("value")) is None or (liq is not None and liq_px is None)):
+            raise ValueError("malformed BTC position")
+        positions.append([acct, szi, entry, liq_px, lev["type"], f(lev["value"]), value,
+                          f(pos.get("unrealizedPnl")), f(pos.get("marginUsed"))])
+    return acct, positions
+
+
 def collect_hl_positions(st):
     """Hyperliquid position map: BTC positions of the top accounts with liquidation price and
-    leverage type (runbook F requirement 50). Current-only at the source; forward-only here."""
+    leverage type (runbook F requirement 50). Current-only at the source; forward-only here.
+    Any failed or malformed account marks the snapshot degraded and names the address; half or
+    more failing means the map is not stored."""
     top = hl_top_accounts(st)
-    positions, failed = [], 0
-    for addr in top["addresses"]:
+    addresses = top["addresses"]
+    positions, failed = [], []
+    for addr in addresses:
         js, err = get(HL_INFO, body={"type": "clearinghouseState", "user": addr}, tries=2, pause=0.05)
-        if err or not isinstance(js, dict):
-            failed += 1
+        try:
+            if err:
+                raise ValueError(err)
+            _, found = hl_account(js)
+        except (ValueError, TypeError) as exc:
+            failed.append([addr, str(exc)[:60]])
             continue
-        acct = f((js.get("marginSummary") or {}).get("accountValue"))
-        for ap in js.get("assetPositions") or []:
-            pos = ap.get("position") or {}
-            if pos.get("coin") != "BTC":
-                continue
-            lev = pos.get("leverage") or {}
-            positions.append([addr, acct, f(pos.get("szi")), f(pos.get("entryPx")), f(pos.get("liquidationPx")),
-                              lev.get("type"), f(lev.get("value")), f(pos.get("positionValue")),
-                              f(pos.get("unrealizedPnl")), f(pos.get("marginUsed"))])
-    if failed > len(top["addresses"]) // 2:
-        raise RuntimeError(f"{failed}/{len(top['addresses'])} clearinghouseState calls failed")
-    out = {"t": NOW, "accounts_ranked": len(top["addresses"]), "accounts_failed": failed,
-           "ranked_at": top["t"], "min_account_value": top["min_account_value"], "rank_basis": top["rank_basis"],
+        positions.extend([addr] + p for p in found)
+    if 2 * len(failed) >= len(addresses):
+        raise RuntimeError(f"{len(failed)}/{len(addresses)} accounts failed or malformed; map not stored "
+                           f"(first: {failed[:2]})")
+    status = "degraded" if failed else "complete"
+    out = {"t": NOW, "status": status, "accounts_ranked": len(addresses), "accounts_failed": len(failed),
+           "failed": failed, "ranked_at": top["t"], "min_account_value": top["min_account_value"],
+           "rank_basis": top["rank_basis"],
            "fields": ["address", "account_value", "szi_btc", "entry_px", "liquidation_px", "leverage_type",
                       "leverage", "position_value", "unrealized_pnl", "margin_used"],
            "positions": positions}
     added = append_rows("hl_positions/btc", [out], partition=day)
-    return {"added": added, "positions": len(positions), "accounts_failed": failed, "err": None}
+    return {"added": added, "status": status, "positions": len(positions), "accounts_failed": len(failed),
+            "err": f"degraded: {len(failed)}/{len(addresses)} accounts failed or malformed" if failed else None}
 
 
 def collect_forward(st):
@@ -774,7 +832,7 @@ def collect_forward(st):
         try:
             RUN["forward"][name] = fn()
         except Exception as e:
-            RUN["forward"][name] = {"added": 0, "err": f"{type(e).__name__}: {str(e)[:120]}"}
+            RUN["forward"][name] = {"added": 0, "status": "failed", "err": f"{type(e).__name__}: {str(e)[:160]}"}
 
 
 # ------------------------------------------------------------------ 5. registration clock

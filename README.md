@@ -1,4 +1,4 @@
-# JBM desk data — reliability revision 2.2
+# JBM desk data — reliability revision 2.3
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -100,9 +100,11 @@ only for development; GitHub records label the registering commit.
   05:00 for an hourly series. `by_utc` requires every expected observation after start through
   the deadline. (2.1 read every series at its close, so a snapshot predicate was scored one
   interval late — an hour for the `_1h` series; no forecast had been registered.)
-- `range` events forecast ln(max high ÷ min low) over `[start, horizon)` as quantiles q10/q50/q90
-  (runbook E2's target). Scores: realized ln range, 80% coverage, pinball loss per quantile, and
-  the absolute error of ln(q50) against ln(realized) — E2's primary loss.
+- `range` events forecast lr = ln(max high ÷ min low) over `[start, horizon)` as quantiles
+  q10/q50/q90 (runbook E2's target). Scores: realized lr; whether it fell inside q10–q90; pinball
+  loss per quantile; `abs_error_lr` = |q50 − realized| in lr units; `abs_error_log_lr` =
+  |ln q50 − ln realized|, E2's primary loss (its baselines are fitted on ln lr); and QLIKE on
+  range², E2's secondary loss. The report prints each by name.
 - `interval` events also carry the interval (Winkler) score: width plus 2/α times any miss.
 - Only the fixed-cadence series and fields listed in `schema.SERIES` are machine-scored.
   Variable-cadence settled funding is collected but is not a supported predicate input.
@@ -149,7 +151,11 @@ Forward-only books use daily files so each hourly commit rewrites a small file:
 BTC, mark IV; underlying price per expiry; about 30 KB per run) and
 `data/hl_positions/btc/YYYY-MM-DD.jsonl` (BTC positions of the top 200 Hyperliquid accounts by
 account value, with liquidation price and cross/isolated leverage; the ranking is refreshed every
-six hours from the ~40 MB leaderboard and cached in `state/checkpoints.json`). The option book
+six hours from the ~40 MB leaderboard and cached in `state/checkpoints.json`). Every snapshot
+carries `status`: `complete`, or `degraded` with the failing accounts (`failed`) or excluded
+option rows (`excluded`) named. A response without the documented structure counts as failed —
+`{}` is never an empty account. Half or more accounts failing, or over 5% of option rows
+invalid, stores nothing and records the run as failed. The option book
 adds roughly 22 MB of text a month before git compression; watch repository size.
 
 Monthly JSONL files retain first observations. Source revisions do not overwrite them.

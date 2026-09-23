@@ -13,11 +13,41 @@ from storage import atomic_bytes, read_rows, read_json, loads
 from scoring import score_registry
 from research import run_tests
 
-REPORT_VERSION = "report-2.1-2026-09-23"
+REPORT_VERSION = "report-2.2-2026-09-23"
 
 
 def iso(ms):
     return dt.datetime.fromtimestamp(ms / 1000, dt.timezone.utc).strftime("%Y-%m-%d %H:%MZ")
+
+
+def _num(x, digits=4):
+    return "n/a" if x is None else (f"{x:.{digits}f}" if isinstance(x, float) else str(x))
+
+
+def format_event(event):
+    """One line per scored event, naming every score the event type carries."""
+    kind, label = event.get("type"), event.get("name") or event.get("type")
+    if kind == "range":
+        pin = event.get("pinball") or {}
+        return (f"{label}: realized ln(H/L) {_num(event.get('realized_ln_range'), 5)}; "
+                f"inside q10-q90: {event.get('covered_80')}; "
+                f"pinball q10/q50/q90 {_num(pin.get('q10'), 5)}/{_num(pin.get('q50'), 5)}/{_num(pin.get('q90'), 5)}; "
+                f"|q50 - realized| {_num(event.get('abs_error_lr'), 5)}; "
+                f"|ln q50 - ln realized| {_num(event.get('abs_error_log_lr'), 4)} (E2 primary); "
+                f"QLIKE {_num(event.get('qlike'), 4)}.")
+    if kind == "interval":
+        return (f"{label}: realized {_num(event.get('realized'), 2)}; inside {event.get('inside')} "
+                f"(nominal {event.get('nominal')}); interval score {_num(event.get('interval_score'), 2)}.")
+    if kind in ("touch", "terminal", "race"):
+        return (f"{label}: outcome {event.get('outcome')}; p {event.get('p')} ({event.get('p_class')}); "
+                f"log score {event.get('log_score')}; Brier {event.get('brier')}.")
+    if kind == "lean":
+        return (f"{label}: {event.get('direction')} -> outcome {event.get('outcome')}; "
+                f"return {_num(event.get('return_pts'), 2)} pts; invalidated at {event.get('invalidated_at')}.")
+    if kind == "predicate":
+        value = f"; value {event.get('value')}" if "value" in event else ""
+        return f"{label}: outcome {event.get('outcome')}{value}."
+    return f"{label}: {event}"
 
 
 def run_coverage(runs, start, end):
@@ -164,7 +194,9 @@ def build(base, now, days=7):
             lines.append(f"- {label}: no stored runs in window.")
             continue
         hours = len({r["t"] // H for r in window})
-        lines.append(f"- {label}: {hours} hourly runs from {iso(window[0]['t'])} to {iso(window[-1]['t'])}; latest {count(window[-1])}.")
+        degraded = sum(r.get("status") == "degraded" for r in window)
+        lines.append(f"- {label}: {hours} hourly runs from {iso(window[0]['t'])} to {iso(window[-1]['t'])}; "
+                     f"latest {count(window[-1])}; {degraded} degraded snapshot(s).")
         if now - window[-1]["t"] > 3 * H:
             alerts.append(f"{label}: stale; last stored run {iso(window[-1]['t'])}")
     lines.extend(["", "## 4. Forecast registry"])
@@ -181,7 +213,7 @@ def build(base, now, days=7):
     for rec in new:
         lines.append(f"- {rec['id']}: {rec['status']}; forecast SHA-256 {rec['forecast_sha256']}.")
         for event in rec.get('events',[]):
-            lines.append(f"  - {event.get('name') or event['type']}: {event.get('outcome',event.get('inside'))}.")
+            lines.append(f"  - {format_event(event)}")
     if new:
         fold.append("Review newly scored forecasts and retained evidence. A small sample is not calibration.")
     lines.extend(["", "## 5. Pre-registered research tests",

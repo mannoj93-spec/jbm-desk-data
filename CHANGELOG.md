@@ -1,3 +1,30 @@
+# Reliability revision 2.3 — 2026-09-23
+
+From the external review of `ed45dd2`. Each item has a regression test that fails on `ed45dd2`
+(9 of 23 tests in `test_rev22.py` fail or error there; all 73 tests pass here).
+
+- **Range median error, named for its scale.** The review read `abs_log_error` (|ln q50 − ln
+  realized|) as a mistake for |q50 − realized|. Both are legitimate on different scales: runbook
+  E2 fits its baselines on ln lr ("B1 HAR-range — OLS on logs") and names "mean absolute error of
+  ln range" as the primary loss, which is the log-scale figure; the lr-scale figure is what a
+  reader of q50 in ln(H/L) units expects. The old field name let either reading pass. Now:
+  `abs_error_lr` (|q50 − realized|), `abs_error_log_lr` (E2 primary), and `qlike` (E2 secondary).
+  No range forecast had been scored. `scoring-2.2`.
+- **Report formatting.** Scored events print per type: range events show realized ln(H/L),
+  q10–q90 coverage, pinball losses, both median errors and QLIKE (2.2 printed `None`); interval
+  events show the interval score. `report-2.2`.
+- **Forward-book validation.** A Hyperliquid response without `marginSummary.accountValue` and an
+  `assetPositions` list is a failed account (`{}` was stored as an account with no positions);
+  a malformed BTC position fails its account; any failure marks the snapshot `degraded`, names
+  the addresses, and reports an error; half or more failing (100 of 200 had passed with
+  `err: null`) stores nothing. A Deribit option with OI but no positive mark IV or underlying, or a
+  malformed name, is excluded and named, and the snapshot is `degraded`; over 5% invalid stores
+  nothing. `collector-2.3`. The live run under 2.3 was complete: 850 of 850 option rows and 200 of
+  200 accounts valid.
+- **End-to-end scoring exercised** on live prices in a scratch copy: a synthetic forecast with all
+  seven event types was registered before its start, frozen, scored on 180 Binance 1m bars,
+  evidence hash-verified, and not rescored on a second pass. Not committed to the public registry.
+
 # Reliability revision 2.2.1 — 2026-09-23
 
 - The first GitHub backfill under 2.2 failed `binance_openInterestHist_5m` with

@@ -8,7 +8,7 @@ import urllib.request
 from schema import H, MINUTE, SERIES, ms, num, observed_time, predicate_step, validate
 from storage import atomic_json, digest, loads, read_json, read_rows
 
-VERSION = "scoring-2.1"
+VERSION = "scoring-2.2"
 
 
 class Unscorable(ValueError):
@@ -140,9 +140,19 @@ def score(fc, bars, reader):
             q = {0.1: ev["q10"], 0.5: ev["q50"], 0.9: ev["q90"]}
             pinball = {f"q{int(k * 100)}": round(max(k * (realized - v), (k - 1) * (realized - v)), 10) for k, v in q.items()}
             result = dict(common, realized_ln_range=round(realized, 10), covered_80=ev["q10"] <= realized <= ev["q90"],
-                          pinball=pinball)
-            # runbook E2 primary loss: absolute error of ln(range), point forecast = median.
-            result["abs_log_error"] = round(abs(math.log(ev["q50"]) - math.log(realized)), 10) if realized > 0 else None
+                          pinball=pinball,
+                          # Median error in the forecast's own units, ln(high/low).
+                          abs_error_lr=round(abs(ev["q50"] - realized), 10))
+            # runbook E2 fits and compares its baselines on ln(lr) ("B1 HAR-range - OLS on logs:
+            # ln lr(t+1) = ..."; "Primary: mean absolute error of ln range"), so its primary loss is
+            # the error of the log of lr, not of lr. Both are kept, each named for its scale.
+            # QLIKE on range^2 is E2's secondary loss, with the median as the forecast.
+            if realized > 0:
+                x = (realized / ev["q50"]) ** 2
+                result.update(abs_error_log_lr=round(abs(math.log(ev["q50"]) - math.log(realized)), 10),
+                              qlike=round(x - math.log(x) - 1, 10))
+            else:
+                result.update(abs_error_log_lr=None, qlike=None)
             results.append(result)
             continue
         if kind == "lean":

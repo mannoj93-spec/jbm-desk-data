@@ -1,4 +1,4 @@
-# Validation record — reliability revision 2.2
+# Validation record — reliability revision 2.3
 
 Validated 2026-09-23 with Python 3.11 (container) against live sources; GitHub workflows select
 Python 3.12. Runtime uses the standard library only.
@@ -7,12 +7,15 @@ Python 3.12. Runtime uses the standard library only.
 |---|---|
 | Numerical fixture checks (`test_fixtures.py`) | 25 passed |
 | `SHA256SUMS` | Now covers code, docs, workflows and templates only; data, state and reports change every hour |
-| Offline regression tests (`regression/`) | 65 passed (50 from 2.1, 15 new in `test_rev22.py`) |
+| Offline regression tests (`regression/`) | 73 passed (50 from 2.1, 23 in `test_rev22.py`) |
+| 2.3 tests run against `ed45dd2` | 9 of 23 in `test_rev22.py` fail or error, as intended |
 | The 13 collector, scoring and schema tests run against the 2.1 code | 11 fail or error, as intended; the 2 that pass pin behaviour 2.1 already had |
 | Live hourly run, updated collector, scratch copy of the repo | 17/17 books, 849 option strikes with OI, 29 HL BTC positions in top 200, no errors, 147 s |
 | Live taker backfill with the pagination fix | 5m: 17 missing rows recovered, 0 gaps; 1h: 1 recovered, 0 gaps |
 | Report generation on the live copy | Passed; retired books labelled, not alerted |
 | Watchdog against the deployed repository data | "collector healthy" |
+| Live hourly run under 2.3, scratch copy (00:45Z) | 17/17 books; options complete, 850/850 rows valid; HL complete, 200/200 accounts, 29 BTC positions; 160 s |
+| End-to-end forecast, scratch copy | Registered before start, frozen, scored on 180 live 1m bars, evidence hash verified, idempotent; all seven event types formatted |
 | First GitHub backfill under 2.2 (00:01Z, 434 s) | Taker 5m and 1h: 0 gaps in the repository. Found the 4xx-boundary regression fixed in 2.2.1 |
 
 ## Measurements behind the changes (live, 2026-09-22 23:30Z)
