@@ -1,4 +1,4 @@
-"""Evidence cards, the research report and skill-change proposals (lab-2.1).
+"""Evidence cards, the research report and skill-change proposals (lab-2.2, revision 2.10).
 
 Cards are versioned: research/evidence/v2/<design>@<evaluation version>.json (schema
 evidence_card/2), one per evaluation version, never overwritten by another version.
@@ -86,7 +86,48 @@ def checkpoint_view(design, result):
             "rule": "a checkpoint is computed once, from data known by its cutoff, and never recomputed"}
 
 
-def card(design, result, commit, input_hashes, registration, superseded):
+BAR_BASED = ("hourly controls at each whole-hour bar close whose bar is stored (bar-based; not affected by the "
+             "collection-time policy)")
+HORIZON_RULE = ("Only the primary horizon, fixed in the design before any data, decides checkpoints, status and "
+                "skill proposals; secondary horizons are descriptive and cannot override a failed primary or "
+                "trigger a proposal on their own.")
+
+
+def control_accounting(design, registration, labelled, now):
+    """Per-horizon accounting of the comparison observations (controls) of the primary prospective
+    pass, per phase, from the labels the lab actually computed (read-only): selected, mature
+    (horizon elapsed and bars in), scorable (complete label), retained (non-overlapping label
+    intervals), baseline-usable (complete label with every baseline feature). An immature label or
+    overlap thinning is counted here, never reported as a collection gap. Plus decision timing of
+    the frozen events: source time, assumed decision time, actual lab persistence time."""
+    from lab import experiments, stats
+    ctl = [(e, labs, bf) for e, labs, bf in labelled if e["group"] == "control_long"]
+    out = {}
+    for h in design["outcome"]["horizons_min"]:
+        row = {}
+        for phase in ("reanalysis", "evaluation"):
+            rows = [(e, labs.get(h) or labs.get(str(h)) or {}, bf) for e, labs, bf in ctl
+                    if experiments._in_phase(e, phase, registration)]
+            done = [v for _, v, _ in rows if v.get("status") == "complete"]
+            kept, _ = stats.nonoverlap_intervals([dict(entry_t=v["entry_t"], exit_t=v["exit_t"]) for v in done])
+            row[phase] = {"selected": len(rows), "mature": sum(1 for _, v, _ in rows if v.get("status") != "immature"),
+                          "incomplete": sum(1 for _, v, _ in rows if v.get("status") == "incomplete"),
+                          "scorable": len(done), "retained": len(kept),
+                          "baseline_usable": sum(1 for _, v, bf in rows if v.get("status") == "complete" and bf)}
+        out[str(h)] = row
+    frozen = [e for e, _, _ in labelled if not e["group"].startswith("control") and e.get("t_persisted") is not None]
+    lags = sorted((e["t_persisted"] - e["t_available"]) / 60_000 for e in frozen)
+    timing = {"definitions": {"t_event": "source time the record describes",
+                              "t_inputs": "required-input availability (latest observed_at of the inputs)",
+                              "t_available": "ASSUMED decision time = t_inputs + 60 s processing (not measured)",
+                              "t_persisted": "actual time a lab run first computed and froze the decision"},
+              "frozen_events": len(frozen),
+              "decision_lag_min": ({"median": round(lags[len(lags) // 2], 1), "max": round(lags[-1], 1)} if lags else None),
+              "basis": "as-of replay by a 6-hourly lab; decisions were not executed live"}
+    return {"by_horizon": out, "decision_timing": timing}
+
+
+def card(design, result, commit, input_hashes, registration, superseded, accounting=None):
     primary = next(v for v in result["variants"] if v["name"] == design["primary_variant"])
     passes = {}
     for p in primary["passes"]:
@@ -100,7 +141,14 @@ def card(design, result, commit, input_hashes, registration, superseded):
         "superseded_versions": superseded, "module": design["module"], "family": design["family"],
         "condition": design["question"], "comparison": design["comparison"],
         "horizons_min": design["outcome"]["horizons_min"], "primary_horizon_min": design["outcome"]["primary_horizon"],
-        "outcome_metric": design["outcome"]["metric"], "status": result["status"],
+        "outcome_metric": design["outcome"]["metric"],
+        "horizons": {"primary_min": design["outcome"]["primary_horizon"],
+                     "secondary_min": [h for h in design["outcome"]["horizons_min"]
+                                       if h != design["outcome"]["primary_horizon"]], "rule": HORIZON_RULE},
+        "comparison_coverage": {"policy": ((passes.get("prospective") or {}).get("coverage") or {}).get("comparison")
+                                or {"policy": BAR_BASED},
+                                **(accounting or {"by_horizon": None, "decision_timing": None})},
+        "status": result["status"],
         "status_reason": result["status_reason"], "checkpoints": checkpoint_view(design, result),
         "promotion_rules": "lab/experiments.py (module docstring)",
         "min_retained_observations": design["min_retained_observations"],
@@ -158,6 +206,49 @@ def write_cards(base, cards, now):
     atomic_json(base / "research/evidence/index.json", index)
 
 
+def _hm(ms):
+    return iso(ms)[11:16] if ms else "n/a"
+
+
+def coverage_lines(c):
+    """Compact comparison-coverage lines for the research report."""
+    cc = c.get("comparison_coverage") or {}
+    pol = cc.get("policy") or {}
+    L = []
+    if pol.get("window"):
+        miss = pol.get("missing_closed_hours") or []
+        dl = pol.get("delay_from_hour_to_availability_min") or {}
+        L.append(f"- comparison coverage ({pol['policy']}): {iso(pol['window'][0])} to {iso(pol['window'][1])}; "
+                 f"{pol['closed_hours']} closed hours + {'1 partial' if pol.get('partial_hour') else '0 partial'}; "
+                 f"{pol['hours_with_eligible_candidates']} hours with eligible candidates; {pol['selected']} selected "
+                 f"({pol['frozen_selected']} frozen earlier); {len(miss)} closed hours without a control"
+                 + (f" (e.g. {_hm(miss[0][0])}: {miss[0][1]})" if miss else "")
+                 + (f"; availability {dl['median']} min after the hour (median, range {dl['min']}-{dl['max']})" if dl else ""))
+        if pol.get("closed_hours_with_candidates_but_no_control"):
+            L.append(f"- WARNING: closed hours with eligible candidates but no selected control: "
+                     f"{', '.join(_hm(h) for h in pol['closed_hours_with_candidates_but_no_control'])}")
+    elif pol.get("policy"):
+        L.append(f"- comparison coverage: {pol['policy']}")
+    bh = cc.get("by_horizon") or {}
+    if bh:
+        prim = str((c.get("horizons") or {}).get("primary_min") or c.get("primary_horizon_min"))
+        cells = []
+        for h in sorted(bh, key=int):
+            e = bh[h]["evaluation"]
+            r = bh[h]["reanalysis"]
+            cells.append(f"{h}m{'*' if h == prim else ''} eval {e['selected']}/{e['mature']}/{e['scorable']}/"
+                         f"{e['retained']}/{e['baseline_usable']}, reanalysis {r['selected']}/{r['mature']}/"
+                         f"{r['scorable']}/{r['retained']}/{r['baseline_usable']}")
+        L.append("- controls selected/mature/scorable/retained/baseline-usable (* primary): " + "; ".join(cells))
+    dt_ = cc.get("decision_timing") or {}
+    if dt_.get("frozen_events"):
+        lag = dt_.get("decision_lag_min") or {}
+        L.append(f"- decision timing: {dt_['frozen_events']} frozen events; lab persisted them {lag.get('median')} min "
+                 f"(median, max {lag.get('max')}) after the assumed decision time (inputs + 60 s); as-of replay, "
+                 "not live execution")
+    return L
+
+
 def report(cards, now, meta):
     L = [f"# Research evidence", "",
          f"Generated {iso(now)} (input cutoff {iso(meta['cutoff'])}); {LAB_VERSION}; code {meta['code_sha256'][:12]}; "
@@ -190,6 +281,11 @@ def report(cards, now, meta):
             L.append(f"- checkpoint {q['look']} pending: {q['retained']}/{q['need']} retained test observations known")
         for d in cp.get("drift") or []:
             L.append(f"- drift at checkpoint {d['look']}: {d['note']}")
+        hz = c.get("horizons") or {}
+        if hz:
+            L.append(f"- horizons: primary {hz['primary_min']} min (decides status and proposals); secondary "
+                     f"{', '.join(str(x) for x in hz['secondary_min']) or 'none'} min (descriptive only)")
+        L += coverage_lines(c)
         if c.get("error"):
             L.append(f"- error: {c['status_reason']}")
         for basis, p in (c.get("passes") or {}).items():
@@ -217,9 +313,9 @@ def report(cards, now, meta):
 def skill_proposals(cards, now):
     L = ["# Proposed skill changes", "", f"Generated {iso(now)}. For human review; nothing here edits a skill file.",
          "A change is proposed only for a design whose CURRENT evaluation version is **supported** under the "
-         "lab-2.1 promotion rules (data quality, retained observations and dependence blocks, multiplicity-adjusted "
+         "lab-2.1+ promotion rules (data quality, retained observations and dependence blocks, multiplicity-adjusted "
          "effect, out-of-sample baseline added value, comparability, stability) at a RECORDED checkpoint whose manifest "
-         "re-verifies; the wording quotes that checkpoint, not later data.", ""]
+         "re-verifies; the wording quotes that checkpoint, not later data. " + HORIZON_RULE, ""]
 
     def evidence_cp(c):
         return next((r for r in (c.get("checkpoints") or {}).get("records") or []

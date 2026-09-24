@@ -8,6 +8,8 @@ a hash over everything that decides what an event, a label or a verdict means:
                   lab/baseline.py (baseline methodology), lab/experiments.py (evaluation rules),
                   lab/hlevidence.py (evidence attribution)
   module          the design's detector/feature module
+  helpers         shared helper modules outside COMMON that the module calls (MODULE_HELPERS, e.g.
+                  lab/controls.py for the hourly control policy), hashed in full
   data            the collector constants the module's inputs depend on (sampling policy, schema
                   and field lists), named per module in DATA_DEPENDENCIES
 Code is hashed SEMANTICALLY: the Python AST with docstrings removed (comments are not in the AST),
@@ -31,6 +33,10 @@ MODULE_FILES = {"flow_absorption": "lab/modules/flow_absorption.py", "account_be
 _PRICES = [("schema.py", "PRICE_SERIES"), ("schema.py", "KLINE_FIELDS"), ("enrich.py", None)]
 _HL = [("hlsample.py", "POLICY_DOC"), ("hlsample.py", "ACCOUNT_FIELDS"), ("hlsample.py", "POSITION_FIELDS"),
        ("hlsample.py", "FILL_FIELDS"), ("hlsample.py", "FIXED_N"), ("hlsample.py", "ROTATING_N")]
+# Shared lab helpers a module calls that are not in COMMON: hashed whole (not just the import line)
+# into the versions of the modules that use them, and only those.
+MODULE_HELPERS = {"account_behavior": ("lab/controls.py",), "liq_exposure": ("lab/controls.py",),
+                  "options_disagreement": ("lab/controls.py",)}
 DATA_DEPENDENCIES = {
     "flow_absorption": _PRICES,
     "cross_asset": _PRICES,
@@ -77,6 +83,8 @@ def components(base, design):
         comp[rel] = semantic_hash(base / rel)
     mod = MODULE_FILES.get(design["module"])
     comp[mod or f"unknown module {design['module']}"] = semantic_hash(base / mod) if mod else None
+    for rel in MODULE_HELPERS.get(design["module"], ()):
+        comp[rel] = semantic_hash(base / rel)
     for rel, name in DATA_DEPENDENCIES.get(design["module"], []):
         comp[f"{rel}:{name or '*'}"] = semantic_hash(base / rel, name)
     return comp
