@@ -1,6 +1,6 @@
 # Research evidence
 
-Generated 2026-09-24T00:00Z (input cutoff 2026-09-23T23:54Z); lab-2.1-2026-09-23; code 9c248ae1aece; commit 4bd180f695a87b59170e41abfbe3325bc7e23047; cost model costs-1 (assumed fees). Refreshed by the Research lab workflow every 6 hours; anything older is stale.
+Generated 2026-09-24T00:50Z (input cutoff 2026-09-24T00:40Z); lab-2.1-2026-09-23; code 9c248ae1aece; commit 5cebff29e7412100732a6b3289fcb74520e944a5; cost model costs-1 (assumed fees). Refreshed by the Research lab workflow every 6 hours; anything older is stale.
 
 Descriptive intervals only. Decisions are as-of replays by a 6-hourly lab, not live executions.
 
@@ -34,7 +34,7 @@ Do fixed-cohort BTC additions under drawdown differ from additions in profit in 
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 14 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)
+- prospective data: 16 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)
 - variants tried in family B-accounts: 9
 
 ### C1-liquidation-cluster @ ev-448e00c8b90b - exploratory
@@ -43,16 +43,16 @@ When sampled long liquidation exposure within 2% of mark is large, does BTC fall
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 15 sampled snapshots; the design needs 1344
+- prospective data: 17 sampled snapshots; the design needs 1344
 - variants tried in family C-liquidation: 9
 
 ### D1-active-twap @ ev-bf8bdf308173 - exploratory
 After an active BTC TWAP of a fixed-cohort account is first observed, do returns in its direction exceed scheduled entries with the same direction mix? Status: no evaluation observations yet.
 - checkpoint 1 pending: 0/100 retained test observations known
-- prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
+- prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean n/a vs reference -12.0 bp; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 129 twapHistory checks, 265 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs
+- prospective data: 147 twapHistory checks, 265 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs
 - variants tried in family D-twap: 6
 
 ### E1-liquidity-recovery @ ev-48bc92730cd7 - exploratory
@@ -67,10 +67,10 @@ After a displayed-depth shock, do slow refills precede larger moves in the deple
 ### F1-options-perp-disagreement @ ev-f1dbc341200d - exploratory
 When 7-day risk reversal and perp funding disagree at extremes, does BTC follow the options side more than scheduled entries do? Status: no evaluation observations yet.
 - checkpoint 1 pending: 0/100 retained test observations known
-- prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean n/a vs reference -12.0 bp; 90% n/a.
+- prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 2; test mean n/a vs reference -12.0 bp; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 52 option records (0 with a trailing z-score); the design needs 1344
+- prospective data: 54 option records (0 with a trailing z-score); the design needs 1344
 - variants tried in family F-options: 11
 
 ### G1-alt-stress-propagation @ ev-77d34ac5d863 - exploratory
