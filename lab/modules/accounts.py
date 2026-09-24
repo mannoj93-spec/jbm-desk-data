@@ -20,14 +20,18 @@ Per account, consecutive observations at most 30 minutes apart are compared:
 Cohort event at snapshot t: at least min_accounts fixed accounts added under drawdown (group
 "underwater_adds") or under gain ("gain_adds"); direction = sign of the net BTC size those
 accounts added. Large account value is a sampling criterion, not evidence of skill.
+Controls: one per UTC hour of required-input availability (both account observations of a
+transition), selected and frozen by lab/controls.py (B-3); before B-3 only snapshots whose run
+started before minute 15 of the hour qualified.
 """
+from lab import controls as controls_mod
 from lab import hlevidence
 from lab.asof import decide
 from lab.common import BASIS_PROSPECTIVE, MINUTE, hash_inputs
 from lab.events import event_record
 
 ID = "account_behavior"
-VERSION = "B-2"
+VERSION = "B-3"
 TRANSFER_TYPES = hlevidence.PERP_TRANSFER_TYPES          # kept for callers of the 2.7 name
 SPEC = {"module": "B", "id": ID, "version": VERSION, "title": "Account behaviour under pressure",
         "hypothesis": "Fixed-cohort additions to under-water BTC positions predict different subsequent BTC "
@@ -109,12 +113,18 @@ def transitions(store):
 def run(lab, params):
     tr = transitions(lab.store)
     bars = lab.store.bars("binance_klines_1m_BTCUSDT_perp")
-    events, controls = [], []
+    events, cands = [], []
     by_t = {}
     for x in tr:
         by_t.setdefault(x["t"], []).append(x)
     for t, xs in sorted(by_t.items()):
         t_inputs = max(x["avail"] for x in xs)
+
+        def build(avail, t=t, xs=xs, t_inputs=t_inputs):
+            return event_record(ID + ":control", VERSION, t, min(x["avail"] for x in xs), avail, 1,
+                                "control", {"accounts": len(xs)}, hash_inputs([t]), BASIS_PROSPECTIVE,
+                                {}, {}, lab.code, t_inputs=t_inputs)
+        cands.append(controls_mod.candidate(t, t, min(x["avail"] for x in xs), t_inputs, build))
         avail, excluded = decide(t, t_inputs)
         if excluded:
             continue
@@ -131,10 +141,7 @@ def run(lab, params):
                                            group, feats, hash_inputs(adds), BASIS_PROSPECTIVE,
                                            {"accounts_compared": len(xs)}, {"cohort": "fixed"}, lab.code,
                                            t_inputs=t_inputs))
-        if t % (60 * MINUTE) < 15 * MINUTE:
-            controls.append(event_record(ID + ":control", VERSION, t, min(x["avail"] for x in xs), avail, 1,
-                                         "control", {"accounts": len(xs)}, hash_inputs([t]), BASIS_PROSPECTIVE,
-                                         {}, {}, lab.code, t_inputs=t_inputs))
+    controls, comparison = controls_mod.apply(lab, cands, min((x["avail"] for x in tr), default=None))
     counts = {}
     for x in tr:
         k = f"{x['pressure']}:{x['action']}"
@@ -145,7 +152,7 @@ def run(lab, params):
     reasons = [] if state == "available" else [f"{snapshots} snapshot transitions for the fixed cohort; "
                                                 f"the design needs {need} (about two weeks at 15-minute cadence)"]
     return {"module": ID, "passes": [{"basis": "prospective", "events": events, "controls": controls,
-                                      "coverage": {"transitions": len(tr), "snapshots": snapshots,
+                                      "coverage": {"transitions": len(tr), "snapshots": snapshots, "comparison": comparison,
                                                    "behaviour_counts": counts,
                                                    "transfer_evidence": {k: sum(1 for x in tr if x["transfer"] == k)
                                                                          for k in ("confirmed", "none_observed", "partial",

@@ -14,7 +14,7 @@ from scoring import score_registry
 from research import run_tests
 import cadence
 
-REPORT_VERSION = "report-2.5-2026-09-23"
+REPORT_VERSION = "report-2.6-2026-09-24"
 
 
 def iso(ms):
@@ -234,7 +234,7 @@ FRESHNESS = [("collector runs", "data/runs/*.jsonl"), ("snapshots", "data/snap/*
              ("Hyperliquid account sample", "data/hl_accounts/*.jsonl"),
              ("Hyperliquid enrichment", "data/hl_enrich/*.jsonl"), ("OKX insurance fund", "data/okx_insurance/*.jsonl"),
              ("OKX liquidation orders", "data/liq/orders/*.jsonl"),
-             ("research lab (lab-2.0)", "research/v2/experiments/*.jsonl")]
+             ("research lab", "research/v2/experiments/*.jsonl")]
 
 
 def provenance(base, now, kind):
@@ -254,12 +254,14 @@ def provenance(base, now, kind):
     lab = latest("research/v2/experiments/*.jsonl")
     lines = [f"Generated {iso(now)} by {REPORT_VERSION} ({kind}). Input cutoff: "
              + (f"{iso(run[0])} (latest collector run written, {run[1].get('code_version')})" if run else "no runs")
-             + ". Research lab: " + (f"last run {iso(lab[0])}, {lab[1].get('lab_version')}" if lab else "no lab-2.0 run yet")
+             + ". Research lab: " + (f"last run {iso(lab[0])}, {lab[1].get('lab_version')}" if lab else "no research lab run yet")
              + ". This file is refreshed every 6 hours by the Research lab workflow; if the generation time is "
                "older than that, the refresh has stopped.", "",
              "| Dataset | Latest observation written | Age |", "|---|---|---:|"]
     for label, pattern in FRESHNESS:
         got = latest(pattern)
+        if pattern.startswith("research/") and got:
+            label = f"{label} ({got[1].get('lab_version') or 'version not recorded'})"   # the recorded version
         lines.append(f"| {label} | {iso(got[0]) if got else 'none'} | "
                      f"{f'{(now - got[0]) / 60_000:.0f} min' if got else 'n/a'} |")
     return lines + [""]

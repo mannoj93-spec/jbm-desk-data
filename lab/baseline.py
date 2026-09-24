@@ -13,7 +13,9 @@ Model: ordinary least squares y ~ 1 + features, one model PER OUTCOME HORIZON, f
 observations (both directions) labelled at that same horizon whose labels were AVAILABLE
 (label_available: the latest availability of the bars the label read) no later than the start of
 the UTC day of the observation being predicted, and no later than an optional cutoff (a
-checkpoint's). Every prediction is therefore out-of-sample in time, never sees an outcome that was
+checkpoint's). A control frozen by a lab run (t_persisted; the hourly controls of modules B, C and
+F, revision 2.10) is known only from that run on, like the checkpoint's reference rows, so a
+selection made after a cutoff never trains that cutoff's baseline. Every prediction is therefore out-of-sample in time, never sees an outcome that was
 not yet known, and never borrows a model trained on another horizon. The fit is cached per
 (horizon, UTC day, cutoff). A prediction needs >= MIN_TRAIN training rows, otherwise the baseline
 is "unidentifiable" for that observation and the comparison at that horizon is withheld. Added
@@ -56,7 +58,8 @@ class Baseline:
         for c in controls:
             if all(c.get(k) is not None for k in features) and c.get("y") is not None:
                 known = c.get("label_available")
-                rows.append(dict(c, _known=known if known is not None else c["exit_t"] + MINUTE))
+                known = known if known is not None else c["exit_t"] + MINUTE
+                rows.append(dict(c, _known=max(known, c.get("t_persisted") or 0)))   # frozen controls: once selected
         self.rows = sorted(rows, key=lambda c: c["_known"])
 
     def training(self, day, cutoff=None):
@@ -100,6 +103,6 @@ def build(labelled, horizons):
             v = labs.get(h) or labs.get(str(h))
             if v and v["status"] == "complete":
                 rows.append(dict(bf, entry_t=v["entry_t"], exit_t=v["exit_t"], y=v["ret_net"],
-                                 label_available=v.get("label_available")))
+                                 label_available=v.get("label_available"), t_persisted=e.get("t_persisted")))
         out[h] = Baseline(rows, horizon=h)
     return out

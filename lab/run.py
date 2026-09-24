@@ -12,6 +12,7 @@ Writes (unless --no-write), all under the evaluation-version namespace so older 
 legacy lab-1.0 outputs are never touched:
   research/v2/<design>/<version>/events|outcomes/YYYY-MM.jsonl  frozen decisions and labels
   research/v2/<design>/<version>/checkpoints.jsonl              completed checkpoint records (append-only)
+  research/v2/<design>/<version>/controls/YYYY-MM.jsonl         frozen hourly control selections (B, C, F)
   research/v2/experiments/YYYY-MM.jsonl, research/v2/ledger/YYYY-MM.jsonl
   research/evidence/v2/<design>@<version>.json, research/evidence/index.json
   reports/research.md, reports/skill_proposals.md
@@ -31,7 +32,7 @@ import sys
 import time
 import traceback
 
-from lab import evidence, experiments
+from lab import controls, evidence, experiments
 from lab.common import LAB_VERSION, ROOT, append, atomic_json, code_hash, iso, read_dir, read_json
 from lab.data import Store, fetch_history, history_window
 
@@ -52,6 +53,7 @@ class Lab:
         self.store = Store(base, cutoff=now)
         self.code = code_hash()
         self.history, self.history_sha = {}, {}
+        self.control_context = None
 
 
 def input_hashes(base, cutoff_note):
@@ -162,7 +164,7 @@ def main(argv=None):
     hashes = input_hashes(a.base, f"cutoff {iso(now)}; records with observed_at after the cutoff are ignored")
     n_fam = family_variants(a.base, designs)
     n_fam_at = family_variants_at(a.base, designs, registrations)
-    results, ledger = [], []
+    results, ledger, accounting = [], [], {}
     for d in designs:
         key = f"{d['id']}@{d['_version']}"
         if time.monotonic() - t0 > budget:
@@ -173,8 +175,31 @@ def main(argv=None):
         s0 = time.monotonic()
         try:
             mod = importlib.import_module(MODULES[d["module"]])
-            res, led = experiments.run_design(lab, d, mod, registrations.get(d["id"]), n_fam.get(d["family"], 1),
-                                              run_state=run_state.get(key), variants_at=n_fam_at.get(d["family"]))
+            # hourly control policy (lab/controls.py): frozen selections of this version, the previous
+            # run's cutoff, and a list the module fills with this run's new selections
+            lab.control_context = {"frozen": controls.load_selections(a.base, d), "design": d,
+                                   "last_cutoff": (run_state.get(key) or {}).get("last_cutoff"), "new": []}
+            captured = []                        # read-only view of the labels run_design computes
+            orig_label_all = experiments.label_all
+
+            def recording(*args, **kw):
+                out = orig_label_all(*args, **kw)
+                captured.append(out[0])
+                return out
+            experiments.label_all = recording
+            try:
+                res, led = experiments.run_design(lab, d, mod, registrations.get(d["id"]), n_fam.get(d["family"], 1),
+                                                  run_state=run_state.get(key), variants_at=n_fam_at.get(d["family"]))
+            finally:
+                experiments.label_all = orig_label_all
+                lab.control_context = None
+            try:                                  # diagnostics only: a failure here never fails the design
+                flat = [(v["name"], p["basis"]) for v in res["variants"] for p in v["passes"]]
+                idx = flat.index((d["primary_variant"], "prospective"))
+                accounting[key] = evidence.control_accounting(d, registrations.get(d["id"]), captured[idx], now)
+            except Exception as exc:
+                accounting[key] = {"by_horizon": None, "decision_timing": None,
+                                   "error": f"{type(exc).__name__}: {exc}"}
             if write:
                 run_state[key] = {"last_cutoff": now, "runs": run_state.get(key, {}).get("runs", 0) + 1}
         except Exception as exc:
@@ -190,7 +215,8 @@ def main(argv=None):
         if not res.get("variants"):
             cards.append(dict(evidence.error_card(d, res, now), superseded_versions=sup))
         else:
-            cards.append(evidence.card(d, res, commit, hashes, registrations.get(d["id"]), sup))
+            cards.append(evidence.card(d, res, commit, hashes, registrations.get(d["id"]), sup,
+                                       accounting.get(f"{d['id']}@{d['_version']}")))
     meta = {"code_sha256": lab.code, "commit": commit, "cutoff": cutoff, "seconds": round(time.monotonic() - t0, 1)}
     if write:
         append(a.base, "research/v2/experiments", [dict(compact(r), t_event=r["t"]) for r in results],

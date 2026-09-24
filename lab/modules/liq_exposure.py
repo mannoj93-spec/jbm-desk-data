@@ -21,15 +21,18 @@ coin and the position's side (lab/hlevidence.py):
                          the interval was not adequately covered: unknown, not "no liquidation"
 Each classification carries the evidence's observed_at (later confirmation, not knowledge at t1).
 Event: sampled long (short) notional within `distance_pct` of mark exceeds `min_notional_usd`
--> direction -1 (+1): price moving toward the cluster. Reference: hourly controls.
+-> direction -1 (+1): price moving toward the cluster. Reference: hourly controls, one per UTC hour of
+required-input availability (lab/controls.py; C-3). A control needs the account observation and
+the same run's Hyperliquid mark.
 """
+from lab import controls as controls_mod
 from lab import hlevidence
 from lab.asof import decide
 from lab.common import BASIS_PROSPECTIVE, MINUTE, hash_inputs
 from lab.events import event_record
 
 ID = "liq_exposure"
-VERSION = "C-2"
+VERSION = "C-3"
 DISTANCES = (1.0, 2.0, 5.0)
 SPEC = {"module": "C", "id": ID, "version": VERSION, "title": "Moving liquidation exposure (sampled)",
         "hypothesis": "Large sampled liquidation exposure close to mark predicts moves toward it more often "
@@ -97,29 +100,34 @@ def run(lab, params):
     recs = lab.store.hl_accounts()
     mk = marks(lab.store)
     bars = lab.store.bars("binance_klines_1m_BTCUSDT_perp")
-    events, controls = [], []
+    events, cands = [], []
     d, floor = params["distance_pct"], params["min_notional_usd"]
     for rec in recs:
         mark, mark_seen = mk.get(rec["t"], (None, None))
         if not mark or mark_seen is None:
+            # not a candidate: a control requires the account observation AND the same run's mark
+            cands.append(controls_mod.candidate(rec["t"], rec["t"], rec["observed_at"], rec["observed_at"], None,
+                                                missing="same-run Hyperliquid mark"))
             continue
         feats, rows = exposure(rec, mark)
         t_inputs = max(rec["observed_at"], mark_seen)          # positions AND the same run's mark
+        feats["mark"] = mark
+        ih = hash_inputs(rows)
+
+        def build(avail, rec=rec, feats=feats, ih=ih, t_inputs=t_inputs):
+            return event_record(ID + ":control", VERSION, rec["t"], rec["observed_at"], avail, 1, "control",
+                                dict(feats), ih, BASIS_PROSPECTIVE, {}, {}, lab.code, t_inputs=t_inputs)
+        cands.append(controls_mod.candidate(rec["t"], rec["t"], rec["observed_at"], t_inputs, build))
         avail, excluded = decide(rec["t"], t_inputs)
         if excluded:
             continue
-        feats["mark"] = mark
-        ih = hash_inputs(rows)
         for side, direction in (("long", -1), ("short", 1)):
             if feats[f"{side}_within_{d:g}pct_usd"] >= floor:
                 events.append(event_record(ID, VERSION, rec["t"], rec["observed_at"], avail, direction,
                                            f"{side}_cluster", dict(feats, severity=feats[f"{side}_within_{d:g}pct_usd"]),
                                            ih, BASIS_PROSPECTIVE, {"positions_with_liq_px": len(rows)},
                                            {"sample": rec["policy"]}, lab.code, t_inputs=t_inputs, key=side))
-        if rec["t"] % (60 * MINUTE) < 15 * MINUTE:
-            controls.append(event_record(ID + ":control", VERSION, rec["t"], rec["observed_at"], avail,
-                                         -1 if feats[f"long_within_{d:g}pct_usd"] >= feats[f"short_within_{d:g}pct_usd"] else 1,
-                                         "control", feats, ih, BASIS_PROSPECTIVE, {}, {}, lab.code, t_inputs=t_inputs))
+    controls, comparison = controls_mod.apply(lab, cands, min((r["observed_at"] for r in recs), default=None))
     tr = transitions(lab.store, recs)
     kinds = {}
     for x in tr:
@@ -129,5 +137,5 @@ def run(lab, params):
     reasons = [] if state == "available" else [f"{len(recs)} sampled snapshots; the design needs {need}"]
     return {"module": ID, "passes": [{"basis": "prospective", "events": events, "controls": controls,
                                       "coverage": {"snapshots": len(recs), "with_mark": sum(1 for r in recs if r["t"] in mk),
-                                                   "position_transitions": kinds},
+                                                   "position_transitions": kinds, "comparison": comparison},
                                       "bars": bars, "state": state, "reasons": reasons}]}

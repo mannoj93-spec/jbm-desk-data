@@ -638,7 +638,7 @@ class PersistenceTests(unittest.TestCase):
             shutil.copy(ROOT / "cadence.json", Path(d, "cadence.json"))
             text = report.build(Path(d), T0 + H, 7, coverage_only=True)
             self.assertIn("Input cutoff: 2026-09-23 00:01Z", text)
-            self.assertIn("report-2.5", text)
+            self.assertIn(report.REPORT_VERSION, text)                    # the running report version
             self.assertIn("Not run in the coverage refresh", text)
             self.assertFalse(Path(d, "registry").exists())
 
