@@ -6,6 +6,9 @@ checkout may hold newer commits. This merge never loses or rewinds newer content
   *.jsonl under research/            line union: existing lines kept in order, new lines appended
   research/v2/**/checkpoints.jsonl   the same, except that a look already recorded in the checkout
                                      is never recorded again (the first completed record stands)
+  research/v2/<design>/<version>/controls/*.jsonl
+                                     the same, keyed by (control_policy, control_hour): the first
+                                     stored hourly control selection stands
   research/v2/<design>/<version>/events/*.jsonl
                                      the same, keyed by decision_key: a frozen decision already in
                                      the checkout is never recorded a second time
@@ -74,6 +77,9 @@ def main(incoming, repo):
         r = rel.as_posix()
         if r.startswith("research/") and src.name == "checkpoints.jsonl":
             log.append(f"{r}: +{merge_jsonl(src, dst, key=lambda x: x.get('look'))} checkpoint records")
+        elif r.startswith("research/v2/") and src.parent.name == "controls" and src.suffix == ".jsonl":
+            log.append(f"{r}: +{merge_jsonl(src, dst, key=lambda x: (x.get('control_policy'), x.get('control_hour')))}"
+                       " control selections")
         elif r.startswith("research/v2/") and src.parent.name == "events" and src.suffix == ".jsonl":
             log.append(f"{r}: +{merge_jsonl(src, dst, key=lambda x: x.get('decision_key'))} frozen decisions")
         elif r.startswith("research/") and src.suffix == ".jsonl":
