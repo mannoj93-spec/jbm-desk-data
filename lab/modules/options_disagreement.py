@@ -31,7 +31,8 @@ OI does not reveal dealer inventory direction; nothing here assigns a sign to de
 
 Event: rr25_7d z-score (vs the trailing `z_window` records, prior only) <= -z while the Binance
 predicted funding z-score >= +z  ->  "bearish_disagreement", direction -1; mirror image ->
-"bullish_disagreement", direction +1. Reference: hourly controls.
+"bullish_disagreement", direction +1. Reference: hourly controls, one per UTC hour of option-record
+availability (lab/controls.py; F-3); funding is never required for a control.
 Params: quote_policy "qualified" (default: events that are not quote-qualified are regrouped as
 <group>_ineligible, visible but outside the test group) or "mark_only" (a separately labelled,
 descriptive variant that evaluates mark-IV events regardless of quotes).
@@ -47,12 +48,13 @@ import datetime as dt
 import math
 import re
 
+from lab import controls as controls_mod
 from lab.asof import decide
 from lab.common import BASIS_PROSPECTIVE, DAY, hash_inputs
 from lab.events import event_record
 
 ID = "options_disagreement"
-VERSION = "F-2"
+VERSION = "F-3"
 NAME = re.compile(r"BTC-(\d{1,2})([A-Z]{3})(\d{2})-(\d+(?:\.\d+)?)-([CP])")
 MONTHS = {m: i + 1 for i, m in enumerate("JAN FEB MAR APR MAY JUN JUL AUG SEP OCT NOV DEC".split())}
 SPEC = {"module": "F", "id": ID, "version": VERSION, "title": "Options / perpetual disagreement",
@@ -203,7 +205,7 @@ def run(lab, params):
     snaps = {s["t"]: s for s in lab.store.snaps()}
     bars = lab.store.bars("binance_klines_1m_BTCUSDT_perp")
     policy = params.get("quote_policy", "qualified")
-    events, controls, series = [], [], []
+    events, cands, series = [], [], []
     hist = []           # earlier records: (t, rr25_7d, rr available at, funding, funding available at)
     z, window = params["z"], params["z_window"]
     elig = {"qualified": 0, "failed": 0, "unknown": 0}
@@ -243,20 +245,22 @@ def run(lab, params):
                                                {"records_in_z": window},
                                                {"funding": "same run", "quote_policy": policy,
                                                 "rr25_7d_quotes": s["rr25_7d_quotes"]}, lab.code, t_inputs=t_inputs))
-        if rec["t"] % 3_600_000 < 900_000:
-            # A control's only required input is the option record: a funding snapshot arriving later
-            # (or never) cannot move, delay or exclude it. Its descriptive features are as of then.
-            t_ctl = rec["observed_at"]
-            f_ctl = funding if funding is not None and f_avail <= t_ctl else None
-            crz, cfz = zs(t_ctl, s["rr25_7d"], f_ctl)
-            c_avail, c_excl = decide(rec["t"], t_ctl)
-            if not c_excl:
-                controls.append(event_record(ID + ":control", VERSION, rec["t"], rec["observed_at"],
-                                             c_avail, -1 if (s["rr25_7d"] or 0) < 0 else 1, "control",
-                                             dict(s, funding_pred_8h=f_ctl, rr25_7d_z=crz, funding_z=cfz),
-                                             hash_inputs([rec["t"], s["rr25_7d"]]), BASIS_PROSPECTIVE, {}, {},
-                                             lab.code, t_inputs=t_ctl))
+        # Control candidate: its only required input is the option record, so a funding snapshot
+        # arriving later (or never) cannot move, delay or exclude it, and no signal is needed.
+        # Its descriptive features are as of its own availability. One per hour: lab/controls.py.
+        t_ctl = rec["observed_at"]
+        f_ctl = funding if funding is not None and f_avail <= t_ctl else None
+        crz, cfz = zs(t_ctl, s["rr25_7d"], f_ctl)
+
+        def build(avail, rec=rec, s=dict(s), f_ctl=f_ctl, crz=crz, cfz=cfz, t_ctl=t_ctl):
+            return event_record(ID + ":control", VERSION, rec["t"], rec["observed_at"], avail,
+                                -1 if (s["rr25_7d"] or 0) < 0 else 1, "control",
+                                dict(s, funding_pred_8h=f_ctl, rr25_7d_z=crz, funding_z=cfz),
+                                hash_inputs([rec["t"], s["rr25_7d"]]), BASIS_PROSPECTIVE, {}, {}, lab.code,
+                                t_inputs=t_ctl)
+        cands.append(controls_mod.candidate(rec["t"], rec["t"], rec["observed_at"], t_ctl, build))
         hist.append((rec["t"], s["rr25_7d"], rec["observed_at"], funding, f_avail if funding is not None else None))
+    controls, comparison = controls_mod.apply(lab, cands, min((r["observed_at"] for r in recs), default=None))
     have = sum(1 for _, s in series if s["rr25_7d_z"] is not None)
     state = "available" if have >= params.get("min_records", 96 * 14) else "insufficient_data"
     reasons = [] if state == "available" else [f"{len(recs)} option records ({have} with a trailing z-score); "
@@ -264,7 +268,7 @@ def run(lab, params):
     latest = series[-1][1] if series else {}
     return {"module": ID, "passes": [{"basis": "prospective", "events": events, "controls": controls,
                                       "coverage": {"records": len(recs), "with_z": have, "quote_policy": policy,
-                                                   "event_quote_eligibility": elig,
+                                                   "event_quote_eligibility": elig, "comparison": comparison,
                                                    "latest_surface": {k: (round(v, 4) if isinstance(v, float) else v)
                                                                       for k, v in latest.items()}},
                                       "bars": bars, "state": state, "reasons": reasons}]}
