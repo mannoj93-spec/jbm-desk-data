@@ -1,7 +1,21 @@
-# Validation record — research-integrity revision 2.9 (lab-2.1)
+# Validation record — research-integrity revision 2.10 (lab-2.2)
 
-Validated 2026-09-23 with Python 3.11 (container); GitHub workflows select Python 3.12. Tables
-below the 2.9 block are the record of earlier revisions and are kept as they were.
+Validated 2026-09-24 with Python 3.11 and 3.12 (container); GitHub workflows select Python 3.12,
+whose AST the evaluation-version ids are computed from. Tables below the 2.10 block are the record
+of earlier revisions and are kept as they were.
+
+| Check (2.10) | Result |
+|---|---|
+| Default branch before the work | `388bbc3`, later `35a329b`; since the reviewed `934bb25` only automated data commits; code identical to the review |
+| Reproduction on the pinned data (`934bb25` code and data, cutoff 2026-09-24 15:31:56Z) | 59 successful scheduled collector runs on 2026-09-24; only 01:14 and 05:14 started before :15. B1, C1 and F1: 2 controls each; 16 of 16 hours had eligible records; 13 of 15 closed hours with eligible records had no control. Module B had the same gate (found by the search); bar-based controls (A, D, G, H) and E's stream controls do not |
+| Same replay with 2.10 code, same data and cutoff (`scripts/replay_controls_210.py`) | B1, C1, F1: 16 controls each (15 closed hours + the partial 15:00 hour), 0 closed eligible hours without a control, 0 missing reasons. Every control's decision = required-input availability + 60 s (e.g. C1 10:16:01 source, 10:17:52 inputs, 10:18:52 decision); the 12:58:19 record whose inputs arrived 13:00:06 is the 13:00 control for B1/C1 |
+| New tests against `934bb25` (`test_rev210.py` copied into the old tree) | 7 `*_common_api` tests (module paths only) fail there; 12 tests of the new interfaces skip (they do not exist). All pass on 2.10 |
+| Offline regression suite | 285 passed (266 kept; 19 new), about 27 s; 3 consecutive runs on Python 3.11 and 3 on 3.12, no failures; numerical fixtures 25 passed. 2.9 checkpoint, funding-availability and per-horizon-baseline tests unchanged and passing |
+| Adversarial review of the first draft (separate agent, read-only) | 4 findings, all fixed with regressions: frozen controls selected after a cutoff still trained that cutoff's baseline (baseline now uses selection time, like the reference); selections were persisted after the run's checkpoints and a diagnostics error could fail a design (now persisted at selection time; diagnostics isolated); a diagnostic flag was wrong on backfill (replaced by `hour_closed_at_selection`); a stored selection without a time was usable at every cutoff (now never). Checked sound: outcome-independence, availability buckets, no carry-over, missing-input fallthrough, F without funding, late-input exclusion, first-wins storage and merge, variant de-duplication, `label_all` wrapper restored and read-only |
+| Byte preservation and idempotency (disposable copy of `35a329b`, lab run with `--now` and writes, then a second run at the same cutoff) | No file under `data/` changed; old registrations (16) kept unchanged, 8 added; `research/v2/C1-liquidation-cluster/ev-448e00c8b90b/` (the lab-2.1 C1 decision and outcomes) byte-identical; legacy and earlier-version cards untouched; experiments/ledger append-only; new `controls/` files for B1, C1, F1 (26 frozen C1 selections). Second run: controls, events and outcomes byte-identical; only cards/report (now counting the selections as frozen) and the run counter changed |
+| Versions (Python 3.12, scratch run) | A1 `ev-c35cdb2bc9bc`, B1 `ev-9cffe8818c14`, C1 `ev-1e8cf9f4e69a`, D1 `ev-ffa18ae355ef`, E1 `ev-79ea1d99704b`, F1 `ev-48a0f80de862`, G1 `ev-44a97c2d5259`, H1 `ev-e76cbdabf3f9`. Changed components: B1/C1/F1 their module + `lab/controls.py` + `lab/baseline.py` + `lab/common.py`; the other five `lab/baseline.py` + `lab/common.py`. Editing `lab/controls.py` alone changes B1, C1, F1 only (tested) |
+| Report freshness label | `reports/latest.md` row reads "research lab (lab-2.2-2026-09-24)" from the recorded experiment row (was the literal "research lab (lab-2.0)") |
+| Checksums | `SHA256SUMS` regenerated from its own list plus `lab/controls.py`, `regression/test_rev210.py`, `scripts/replay_controls_210.py`: 107 entries, all match |
 
 | Check (2.9) | Result |
 |---|---|
@@ -121,6 +135,14 @@ below the 2.9 block are the record of earlier revisions and are kept as they wer
 - Hyperliquid leaderboard: 46,876 rows, 39 MB; `clearinghouseState` ~0.33 s per call.
 
 ## Scope limits
+
+2.10: more comparison observations improve the reference and the baselines; they do not establish
+any edge, and every design is still exploratory with no evaluation observations under the new
+versions. Hours are still skipped when no record had its inputs available in time (the collector
+runs 3-4 times an hour, so that needs an outage). A control's hour is the hour its inputs became
+available, not the nominal schedule slot. The per-horizon accounting reads the labels by wrapping
+`experiments.label_all` in `lab/run.py`, a presentation-only hook. The version ids still depend on
+the Python minor version (2.9 limitation).
 
 2.9: still no design has evaluation observations, so no checkpoint has completed and every status is
 exploratory; no skill change is warranted. The checkpoint machinery is exercised on synthetic data

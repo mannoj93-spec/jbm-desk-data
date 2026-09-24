@@ -1,3 +1,84 @@
+# Research-integrity revision 2.10 (lab-2.2) — 2026-09-24
+
+Response to the review of 2.9 (commit `934bb25`, lab-2.1). Current main was inspected first: since
+`934bb25` only automated data commits had landed, so the defect applied to the running code. The
+collector, its schedule, request budgets, serialized writes and watchdog are unchanged; no API
+request was added.
+
+**Defect (reproduced on the pinned data).** Modules C (`liq_exposure`), F (`options_disagreement`)
+and - found by the search for the same assumption - B (`accounts`) kept a collection record as a
+comparison observation (control) only if its run's source time fell before minute 15 of the UTC
+hour. GitHub starts the nominal :07 run later than that most hours. On 2026-09-24 00:00-15:31 UTC
+the pinned snapshot holds 59 successful scheduled runs and every one of the 16 hours had at least
+one record with the required inputs available in time, yet each of B1, C1 and F1 had two controls
+(01:14 and 05:14): 13 of 15 closed hours had eligible records and no control. Bar-based hourly
+controls (A flow absorption, D TWAP, G cross-asset, H deleveraging: one per whole-hour bar close)
+and E's second-slot stream controls do not have the defect and are unchanged.
+
+**Policy `hourly-first-available-1` (new `lab/controls.py`, modules B-3, C-3, F-3).**
+- Candidates carry their REQUIRED inputs only: C the account observation and the same run's
+  Hyperliquid mark; F the option record (never funding, never a signal); B both account
+  observations of the transition. Required-input availability a = the latest observed_at of those.
+- One control per UTC hour of a: the eligible candidate with the smallest a; ties by source time,
+  then by the candidate's input key. The existing >60-minute late-input exclusion still applies; a
+  candidate missing an input is skipped and the next one considered; an hour with none has no
+  control and a recorded reason; nothing is carried between hours.
+- Decision time = a + the existing 60 s assumed processing, never re-dated to the hour: inputs at
+  10:18 give a decision at 10:19. Source 23:58:30 with inputs at 00:00:30 belongs to the new day's
+  00:00 hour; inputs at 09:59:30 decide at 10:00:30 and stay in the 09:00 hour.
+- Selection reads no outcome, label status, baseline fit or profitability.
+- The first lab run that selects an hour's control freezes it (append-only
+  `research/v2/<design>/<version>/controls/YYYY-MM.jsonl`, keyed by policy and hour, written at
+  selection time before any checkpoint of that run; first record wins, also in
+  `scripts/merge_research.py`). Later runs use the stored record, so a late-committed record with
+  an older source time or earlier availability, a later price, funding or label change, a rerun or
+  a concurrent merge cannot displace it. A stored selection is used only at cutoffs at or after its
+  `t_persisted`; a record without one is never used.
+- Frozen controls count as known from their selection time: checkpoint reference rows already used
+  max(label_available, t_persisted), and the shared baseline (`lab/baseline.py`) now does the same
+  for its training rows, so a control selected after a cutoff never trains that cutoff's baseline
+  (found by the adversarial review of the first draft; for designs whose controls are not frozen the
+  rule changes nothing).
+- `lab/controls.py` is hashed in full into the versions of the modules that call it
+  (`versioning.MODULE_HELPERS`), not only through their import line.
+
+**Diagnostics and reports.** Evidence cards gain `horizons` (primary and secondary, with the rule
+that only the primary decides status and proposals) and `comparison_coverage`: the policy, window,
+hours covered, closed hours and the partial hour, hours with eligible candidates, selected times
+(availability and decision), missing hours with reasons, delay from the hour to availability, an
+explicit flag for a closed hour with eligible candidates but no control (must stay empty), and per
+horizon and phase the controls selected / mature / incomplete / scorable / retained / baseline-usable
+(so an immature label or overlap thinning is never read as a collection gap), plus decision timing
+(source, assumed decision and actual persistence times; decision-lag summary). The per-horizon
+accounting reads the labels the lab actually computed (`lab/run.py` wraps `experiments.label_all`
+read-only; a failure there cannot fail a design). `reports/research.md` shows all of it per design;
+`reports/skill_proposals.md` states the primary-horizon rule. `report.py` (report-2.6) labels the
+research-lab freshness row with the recorded lab version instead of a hard-coded "lab-2.0".
+Promotion thresholds are unchanged.
+
+**Before / after** (`scripts/replay_controls_210.py CODE DATA 1790263916213`, pinned data and cutoff
+2026-09-24 15:31:56Z, window from 00:00Z: 16 hours, 15 closed). Eligibility is derived from the raw
+records, independent of either policy: 16 hours with eligible candidates for each module.
+
+| Design | 2.9 controls | 2.9 closed eligible hours without control | 2.10 controls | 2.10 closed eligible hours without control |
+|---|---|---|---|---|
+| B1 | 2 (01:14, 05:14) | 13 | 16 (one per hour) | 0 |
+| C1 | 2 (01:14, 05:14) | 13 | 16 | 0 |
+| F1 | 2 (01:14, 05:14) | 13 | 16 | 0 |
+
+**Versions and clocks.** `lab-2.2-2026-09-24`. Every design gets a new evaluation version: B1, C1
+and F1 because their control selection changed; all eight because the shared baseline gained the
+selection-time rule and the lab version changed. A1, D1, E1, G1 and H1 had no evaluation
+observations; the lab-2.1 C1 version (`ev-448e00c8b90b`) had one frozen evaluation decision
+(2026-09-24 01:27Z, long_cluster) with its outcomes - it stays byte-for-byte under that version and
+is recomputed under the new C1 version as reanalysis, never rewritten. Old registrations, cards,
+events, outcomes and legacy files are untouched; superseded versions are indexed as such.
+
+**Tests.** 285 regression tests (266 kept; 19 in `regression/test_rev210.py`; one assertion in
+`test_integrity.py` now checks the running report version instead of the literal "report-2.5")
+plus 25 numerical fixtures. Seven `*_common_api` tests drive only `module.run` and fail on
+`934bb25`; the rest pin the new interfaces.
+
 # Research-integrity revision 2.9 (lab-2.1) — 2026-09-23
 
 Response to the review of 2.8 (commit `c9fff86`). The default branch was inspected first: from

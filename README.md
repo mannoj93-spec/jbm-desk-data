@@ -1,4 +1,4 @@
-# JBM desk data — research-integrity revision 2.9
+# JBM desk data — research-integrity revision 2.10
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -19,8 +19,10 @@ dependence blocks, point-in-time inputs with frozen decisions, out-of-sample bas
 versions bound to the semantic code, per-transaction evidence attribution, second-slot stream
 timing, quote-qualified option signals, and reports that state their own freshness. Revision 2.9
 (lab-2.1) makes every verdict a recorded checkpoint computed from data known by its cutoff, gives
-each option history feature its own availability, and fits one baseline per outcome horizon. The
-collector itself is unchanged.
+each option history feature its own availability, and fits one baseline per outcome horizon.
+Revision 2.10 (lab-2.2) gives the collection-based modules one causal, frozen comparison
+observation per UTC hour instead of only when a run happened to start before :15, and reports
+comparison coverage. The collector itself is unchanged.
 See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md](VALIDATION.md).
 
 **Deployed** on GitHub Actions since 2026-09-22 23:24Z (first run `runner: github`); hourly until
@@ -262,7 +264,7 @@ statistical independence, and the test's actual logic still require review. Arbi
 repository Python is trusted code, not a sandbox. Counts and descriptive intervals do not
 establish an edge or authorize a skill change.
 
-## Research lab (lab-2.1, revisions 2.8-2.9)
+## Research lab (lab-2.2, revisions 2.8-2.10)
 
 ```sh
 python -m lab.run update                         # as-of replay over stored data
@@ -271,6 +273,7 @@ python -m lab.run update --no-write              # compute and print only
 python -m lab.run update --now MS                # reproduce a past cutoff (read-only)
 python scripts/repro_integrity.py [CODE_ROOT]    # the 2.7 review's reproductions, before/after
 python scripts/repro_integrity_29.py [CODE_ROOT] # the 2.8 review's reproductions, before/after
+python scripts/replay_controls_210.py CODE DATA CUTOFF_MS   # hourly controls, before/after (read-only)
 ```
 
 **Evaluation versions.** A design (`lab/designs/*.json`) is evaluated under a version id that
@@ -299,6 +302,22 @@ retained observations (deterministic thinning on actual label intervals `[entry_
 two decisions entering at the same bar count once) and dependence blocks (overlapping intervals
 or the same UTC day, across groups). Intervals resample blocks. Nothing is called independent.
 
+**Comparison observations (controls).** Bar-based modules (A, D, G, H) take one control per
+whole-hour bar close. The collection-based modules (B accounts, C liquidation exposure, F options)
+take one per UTC hour of required-input availability (`lab/controls.py`, policy
+`hourly-first-available-1`): the candidate whose required inputs (C: account observation and the
+same run's mark; F: the option record only, never funding; B: both account observations) became
+available earliest, ties by source time then input key; decision time = that availability + 60 s
+assumed processing, never re-dated to the hour; the existing late-input exclusion applies; an hour
+without an eligible candidate has no control and a recorded reason. The first lab run freezes each
+hour's control (`research/v2/<design>/<version>/controls/`, first record wins); later data,
+reruns and merges never replace it, a stored selection is used only at cutoffs after it was made,
+and a frozen control counts as known (for checkpoints and baseline training) only from then.
+Cards and `reports/research.md` show comparison coverage: hours covered, eligible and selected,
+missing hours with reasons, delay after the hour, closed versus partial hours, and per horizon the
+controls selected / mature / scorable / retained / baseline-usable. Only the design's primary
+horizon decides status and proposals; secondary horizons are descriptive.
+
 **Checkpoints.** A verdict is only ever produced at a scheduled look (1, 1.5, 2, 3 x the
 minimum), from a precisely bounded dataset: cutoff C = the earliest time at which the look's n
 retained test observations were known (outcome available per `label_available`, and decision
@@ -325,7 +344,7 @@ claim of profitability, and a skill-change proposal is written only from a suppo
 whose manifest re-verifies, quoting that checkpoint.
 
 **Outputs** (all under the version namespace): `research/v2/<design>/<version>/events|outcomes/`,
-`research/v2/<design>/<version>/checkpoints.jsonl`,
+`research/v2/<design>/<version>/checkpoints.jsonl`, `research/v2/<design>/<version>/controls/` (B, C, F),
 `research/v2/experiments/`, `research/v2/ledger/`, `research/evidence/v2/<design>@<version>.json`,
 `research/evidence/index.json` (current, superseded and legacy cards), `reports/research.md`,
 `reports/skill_proposals.md`. The lab-1.0 outputs from 2.7 (`research/evidence/cards`,
