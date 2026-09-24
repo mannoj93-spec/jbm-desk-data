@@ -1,6 +1,6 @@
 # Research evidence
 
-Generated 2026-09-24T00:50Z (input cutoff 2026-09-24T00:40Z); lab-2.1-2026-09-23; code 9c248ae1aece; commit 5cebff29e7412100732a6b3289fcb74520e944a5; cost model costs-1 (assumed fees). Refreshed by the Research lab workflow every 6 hours; anything older is stale.
+Generated 2026-09-24T06:50Z (input cutoff 2026-09-24T06:39Z); lab-2.1-2026-09-23; code 9c248ae1aece; commit 2995bd02b638655a09783f5be6bef3bde659e0e9; cost model costs-1 (assumed fees). Refreshed by the Research lab workflow every 6 hours; anything older is stale.
 
 Descriptive intervals only. Decisions are as-of replays by a 6-hourly lab, not live executions.
 
@@ -8,7 +8,7 @@ Descriptive intervals only. Decisions are as-of replays by a 6-hourly lab, not l
 |---|---|---|---|---|---|---|
 | flow_absorption | A1-flow-absorption @ ev-13f30d25ede6 | exploratory | 0/100 ; 0 | n/a | n/a | insufficient_data |
 | account_behavior | B1-underwater-adds @ ev-36f3bab7e834 | exploratory | 0/100 ; 0 | n/a | n/a | insufficient_data |
-| liq_exposure | C1-liquidation-cluster @ ev-448e00c8b90b | exploratory | 0/100 ; 0 | n/a | n/a | insufficient_data |
+| liq_exposure | C1-liquidation-cluster @ ev-448e00c8b90b | under prospective evaluation | 1/100 ; 1 | n/a | n/a | insufficient_data |
 | twap_lifecycle | D1-active-twap @ ev-bf8bdf308173 | exploratory | 0/100 ; 0 | n/a | n/a | insufficient_data |
 | liquidity_recovery | E1-liquidity-recovery @ ev-48bc92730cd7 | exploratory | 0/100 ; 0 | n/a | n/a | unavailable |
 | options_disagreement | F1-options-perp-disagreement @ ev-f1dbc341200d | exploratory | 0/100 ; 0 | n/a | n/a | insufficient_data |
@@ -23,9 +23,7 @@ Do weak-response heavy-flow windows differ from strong-response ones in subseque
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 1.2 days of stored 1-minute bars; the event threshold needs 7 days of prior windows
-- reconstruction/exploratory: test firings 12, episodes 7, scorable 7, retained 6 in 6 blocks; reference retained 93; test mean -35.3 bp vs reference -7.8 bp; 90% [-56.2 bp, -4.8 bp].
-- contradictory evidence (1): q95_weak0.5 / reconstruction / exploratory / 60m: chronological halves disagree (+8.2 bp vs -9.6 bp)
+- prospective data: 1.5 days of stored 1-minute bars; the event threshold needs 7 days of prior windows
 - variants tried in family A-flow: 9
 
 ### B1-underwater-adds @ ev-36f3bab7e834 - exploratory
@@ -34,25 +32,25 @@ Do fixed-cohort BTC additions under drawdown differ from additions in profit in 
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 16 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)
+- prospective data: 39 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)
 - variants tried in family B-accounts: 9
 
-### C1-liquidation-cluster @ ev-448e00c8b90b - exploratory
-When sampled long liquidation exposure within 2% of mark is large, does BTC fall more than at scheduled times? Status: no evaluation observations yet.
-- checkpoint 1 pending: 0/100 retained test observations known
-- prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
-- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
-- frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 17 sampled snapshots; the design needs 1344
+### C1-liquidation-cluster @ ev-448e00c8b90b - under prospective evaluation
+When sampled long liquidation exposure within 2% of mark is large, does BTC fall more than at scheduled times? Status: 1/100 retained test observations before checkpoint 1.
+- checkpoint 1 pending: 1/100 retained test observations known
+- prospective/reanalysis: test firings 1, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean n/a vs reference -12.0 bp; 90% n/a.
+- prospective/evaluation: test firings 1, episodes 1, scorable 1, retained 1 in 1 blocks; reference retained 1; test mean -4.0 bp vs reference -12.5 bp; 90% n/a.
+- frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 1}
+- prospective data: 40 sampled snapshots; the design needs 1344
 - variants tried in family C-liquidation: 9
 
 ### D1-active-twap @ ev-bf8bdf308173 - exploratory
 After an active BTC TWAP of a fixed-cohort account is first observed, do returns in its direction exceed scheduled entries with the same direction mix? Status: no evaluation observations yet.
 - checkpoint 1 pending: 0/100 retained test observations known
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean n/a vs reference -12.0 bp; 90% n/a.
-- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
+- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean n/a vs reference -12.0 bp; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 147 twapHistory checks, 265 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs
+- prospective data: 340 twapHistory checks, 265 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs
 - variants tried in family D-twap: 6
 
 ### E1-liquidity-recovery @ ev-48bc92730cd7 - exploratory
@@ -70,18 +68,16 @@ When 7-day risk reversal and perp funding disagree at extremes, does BTC follow 
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 2; test mean n/a vs reference -12.0 bp; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 54 option records (0 with a trailing z-score); the design needs 1344
+- prospective data: 77 option records (0 with a trailing z-score); the design needs 1344
 - variants tried in family F-options: 11
 
 ### G1-alt-stress-propagation @ ev-77d34ac5d863 - exploratory
 After an ETH/SOL 5-minute shock with BTC calm, does BTC follow the alt more than scheduled entries do? Status: no evaluation observations yet.
 - checkpoint 1 pending: 0/100 retained test observations known
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 2; test mean n/a vs reference -12.0 bp; 90% n/a.
-- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
+- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 4; test mean n/a vs reference -12.0 bp; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 1.2 days of stored bars; the design needs 14
-- reconstruction/exploratory: test firings 52, episodes 49, scorable 49, retained 45 in 34 blocks; reference retained 1437; test mean -18.2 bp vs reference -12.4 bp; 90% [-20.4 bp, +6.9 bp].
-- contradictory evidence (2): k2.5 / reconstruction / exploratory / 60m: chronological halves disagree (-7.9 bp vs +0.1 bp)
+- prospective data: 1.5 days of stored bars; the design needs 14
 - variants tried in family G-cross: 9
 
 ### H1-deleveraging-stress @ ev-1b9297bc66cb - exploratory
@@ -90,6 +86,6 @@ Do OKX liquidation bursts accompanied by insurance-fund loss or ADL rows continu
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 1.9 days of collected OKX liquidation history; the p99 threshold needs 7
+- prospective data: 2.2 days of collected OKX liquidation history; the p99 threshold needs 7
 - variants tried in family H-deleveraging: 3
 
