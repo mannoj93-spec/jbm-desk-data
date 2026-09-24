@@ -385,7 +385,12 @@ class ConnectionTests(unittest.TestCase):
         self.assertEqual(sum(1 for m in sent if m.get("op") == "subscribe" and m["args"] == vcfg["topics"]), 2)
         self.assertEqual(rec.counters["duplicates:bybit"], 1)
         self.assertEqual(rec.counters["out_of_order:bybit"], 1)
-        gaps = store.read(f"derived/gaps/{storage.hour_key(int(time.time() * 1000))[0]}.jsonl")
+        # A gap is filed under the UTC day of its own time: the update-id jump carries the message
+        # time (T0's day), the disconnect the wall clock. Read both days, so the test does not depend
+        # on the date it runs (it only passed on 2026-09-23 before 2.9).
+        days = {storage.hour_key(T0)[0], storage.hour_key(int(time.time() * 1000))[0]}
+        gaps = [g for day in sorted(days) if store.path(f"derived/gaps/{day}.jsonl").exists()
+                for g in store.read(f"derived/gaps/{day}.jsonl")]
         reasons = [g["reason"] for g in gaps]
         self.assertTrue(any("update id jump 11 -> 13" in r for r in reasons))
         self.assertIn("disconnected", reasons)

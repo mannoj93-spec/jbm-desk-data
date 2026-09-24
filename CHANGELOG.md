@@ -44,6 +44,14 @@ against the design: n per look, version, horizon, sign); the sha256 is tamper-ev
 signature; (f) the family's variant count at a cutoff includes current versions only if
 registered by then; (g) a checkpoint already stored by another writer is re-read and used.
 
+**Test-suite date dependency found at deployment.** The first regression run on main after the
+merge (00:02Z on 2026-09-24) failed in the unchanged 2.7 test
+`test_stream.ConnectionTests.test_bybit_gap_resubscribes_and_disconnect_recorded`: the service
+files each gap under the UTC day of its own time (the update-id jump under its message time,
+2026-09-23; the disconnect under the wall clock), while the test read only today's partition, so
+it could pass only on 2026-09-23. It fails identically on `c9fff86` after midnight. The test now
+reads both days; `stream/` is unchanged.
+
 **Migration.** `lab-2.1` changes the semantic code, so the first lab-2.1 run registers a new
 evaluation version for every design; the lab-2.0 versions are marked `retired (superseded)` with
 `superseded_by`, and their registrations, cards, experiment and ledger rows stay byte-for-byte. No
