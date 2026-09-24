@@ -1,6 +1,6 @@
 # Research evidence
 
-Generated 2026-09-24T12:51Z (input cutoff 2026-09-24T12:40Z); lab-2.1-2026-09-23; code 9c248ae1aece; commit 83123fe23be20f582ab4bce294d80a519a43a853; cost model costs-1 (assumed fees). Refreshed by the Research lab workflow every 6 hours; anything older is stale.
+Generated 2026-09-24T18:48Z (input cutoff 2026-09-24T18:35Z); lab-2.1-2026-09-23; code 9c248ae1aece; commit 6a20c486dbda6ec3a1b565034221e0cedccfb3e1; cost model costs-1 (assumed fees). Refreshed by the Research lab workflow every 6 hours; anything older is stale.
 
 Descriptive intervals only. Decisions are as-of replays by a 6-hourly lab, not live executions.
 
@@ -23,7 +23,7 @@ Do weak-response heavy-flow windows differ from strong-response ones in subseque
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 1.7 days of stored 1-minute bars; the event threshold needs 7 days of prior windows
+- prospective data: 2.0 days of stored 1-minute bars; the event threshold needs 7 days of prior windows
 - variants tried in family A-flow: 9
 
 ### B1-underwater-adds @ ev-36f3bab7e834 - exploratory
@@ -32,7 +32,7 @@ Do fixed-cohort BTC additions under drawdown differ from additions in profit in 
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 62 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)
+- prospective data: 85 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)
 - variants tried in family B-accounts: 9
 
 ### C1-liquidation-cluster @ ev-448e00c8b90b - under prospective evaluation
@@ -41,16 +41,16 @@ When sampled long liquidation exposure within 2% of mark is large, does BTC fall
 - prospective/reanalysis: test firings 1, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean n/a vs reference -12.0 bp; 90% n/a.
 - prospective/evaluation: test firings 1, episodes 1, scorable 1, retained 1 in 1 blocks; reference retained 2; test mean -4.0 bp vs reference +34.3 bp; 90% n/a.
 - frozen decisions: {'frozen_used': 1, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 63 sampled snapshots; the design needs 1344
+- prospective data: 86 sampled snapshots; the design needs 1344
 - variants tried in family C-liquidation: 9
 
 ### D1-active-twap @ ev-bf8bdf308173 - exploratory
 After an active BTC TWAP of a fixed-cohort account is first observed, do returns in its direction exceed scheduled entries with the same direction mix? Status: no evaluation observations yet.
 - checkpoint 1 pending: 0/100 retained test observations known
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean n/a vs reference -12.0 bp; 90% n/a.
-- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 2; test mean n/a vs reference -12.0 bp; 90% n/a.
+- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 4; test mean n/a vs reference -12.0 bp; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 523 twapHistory checks, 265 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs
+- prospective data: 714 twapHistory checks, 265 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs
 - variants tried in family D-twap: 6
 
 ### E1-liquidity-recovery @ ev-48bc92730cd7 - exploratory
@@ -68,16 +68,16 @@ When 7-day risk reversal and perp funding disagree at extremes, does BTC follow 
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 2; test mean n/a vs reference -12.0 bp; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean n/a vs reference -12.0 bp; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 100 option records (0 with a trailing z-score); the design needs 1344
+- prospective data: 123 option records (0 with a trailing z-score); the design needs 1344
 - variants tried in family F-options: 11
 
 ### G1-alt-stress-propagation @ ev-77d34ac5d863 - exploratory
 After an ETH/SOL 5-minute shock with BTC calm, does BTC follow the alt more than scheduled entries do? Status: no evaluation observations yet.
 - checkpoint 1 pending: 0/100 retained test observations known
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 2; test mean n/a vs reference -12.0 bp; 90% n/a.
-- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 7; test mean n/a vs reference -12.0 bp; 90% n/a.
+- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 11; test mean n/a vs reference -12.0 bp; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 1.7 days of stored bars; the design needs 14
+- prospective data: 2.0 days of stored bars; the design needs 14
 - variants tried in family G-cross: 9
 
 ### H1-deleveraging-stress @ ev-1b9297bc66cb - exploratory
@@ -86,6 +86,6 @@ Do OKX liquidation bursts accompanied by insurance-fund loss or ADL rows continu
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean n/a vs reference n/a; 90% n/a.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 2.5 days of collected OKX liquidation history; the p99 threshold needs 7
+- prospective data: 2.7 days of collected OKX liquidation history; the p99 threshold needs 7
 - variants tried in family H-deleveraging: 3
 
