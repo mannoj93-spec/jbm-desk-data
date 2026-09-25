@@ -1,3 +1,37 @@
+# Research-integrity revision 2.13 (lab-2.2, evidence completeness; GitHub presentation) — 2026-09-25
+
+Response to the review of 2.12 (`16cb49f`); main since then had only collector data commits.
+Collection cadence, API budgets, hypotheses, costs, thresholds, horizons, minimums and skills are
+unchanged. **No evaluation version changes**: no hashed file (`lab/versioning.py`) was edited - the
+fix lives in the publication path (`lab/evidence.py`, `lab/run.py`, `scripts/merge_research.py`),
+which does not change what any evaluation computes - so every research clock continues.
+
+| # | Finding (reproduced on 16cb49f) | Fix | Tests (`regression/test_rev213.py`) |
+|---|---|---|---|
+| 1 | From a valid supported 100/20 run, removing the incoming checkpoint file still merged (exit 0) and published a `supported` card and a proposal citing a checkpoint that did not exist; removing the incoming control files still merged although the stored controls no longer had the fingerprint the evaluation reported. The merge only checked files that arrived | The lab records, per design, an **evidence inventory** read back from its own writes (`evidence.inventory`): the checkpoints its card references (look, verdict, manifest sha256, canonical record sha256), the control hours used at the cutoff and the fingerprint of their first-stored winners (`controls.fingerprint`, the one the control policy reports), and the count/set-sha256 of frozen decisions persisted by the cutoff and of their outcomes. It travels in the card and in `lab-summary.json` (schema `lab_summary/3`). Before any write the merge builds the **proposed resulting repository** for each design version (checkout records + incoming records, merged by the same rules) in a temporary directory, recomputes the inventory there with the same function and loaders, and rejects (exit 4) any difference; every checkpoint a card or proposal references must exist with the declared design, version, look and hashes and re-verify (`experiments.verify_checkpoint`) when it supports a status or proposal; the proposal's checkpoint must be such a record; the control fingerprint must equal the evaluation's. Dependencies already present and identical in the checkout satisfy this | complete handoff publishes; missing checkpoint file; missing control files; dropped control rows, a checkpoint cut mid-line, missing decisions; altered checkpoint or control content; wrong declared record hash or control fingerprint; missing inventory; dependencies already present (accepted, destination byte-identical); a conflicting stored winner (exit 3). Every rejection leaves the destination byte-identical |
+
+**GitHub presentation.** The README is now a short entry page: title, workflow badges, a
+two-sentence purpose, "Start here" links (coverage, research results, proposals, weekly reports,
+validation, changelog, setup), the four separate signals (workflow success, data freshness,
+research integrity, evidence maturity - a green badge is not evidence of an edge), a short "how it
+works", a collapsible repository map and a quick start. The previous README body moved unchanged to
+`docs/OPERATIONS.md`; release history stays here. `reports/research.md` opens with an "At a glance"
+table keeping those signals apart, states that all times are UTC, uses consistent `##` sections and
+labels values that cannot be computed yet as `—` with a legend; `reports/skill_proposals.md` gains
+`## Result` / `## Why each design has no proposal` sections. Counts and statuses stay in the
+generated reports only.
+
+**Before / after** (`python scripts/repro_completeness_213.py [tree]`): 16cb49f - checkpoint file
+removed: merge exit 0, card `supported` referencing look 1, no checkpoint published, proposal
+published; control files removed: merge exit 0, card `supported`, stored control fingerprint differs
+from the card's. 2.13 - both exit 4 ("PUBLICATION BLOCKED"), destination unchanged, the previous
+valid card stays current, no proposal.
+
+**Tests.** 332 regression tests (324 + 8) on Python 3.11 and 3.12; 25 numerical fixtures. On
+16cb49f the new file gives 3 failures (the reproductions), 2 skips (new interfaces) and 3 passes
+(complete handoff, dependencies already present, conflicting winner - behaviour kept). The merge-only
+test fixture now carries the (empty) inventory of `lab_summary/3`.
+
 # Research-integrity revision 2.12 (lab-2.2, publication gate) — 2026-09-25
 
 Response to the review of 2.11 (commit `b4db7d0`). Current main was inspected first: since
