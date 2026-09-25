@@ -1,10 +1,21 @@
-"""A consistent lab_summary/2 (the lab's publication metadata) for merge-only regression tests."""
+"""A consistent lab_summary/3 (the lab's publication metadata) for merge-only regression tests."""
+from lab import controls, evidence
 from lab.common import iso
+
+
+def empty_inventory(name, version, cut, required):
+    """The evidence inventory of a design version with no referenced checkpoint, no used control and
+    no stored decision or outcome (2.13)."""
+    return {"schema": evidence.INVENTORY_SCHEMA, "design": name, "evaluation_version": version, "cutoff_ms": cut,
+            "checkpoints": [], "controls": ({"hours": [], "missing": [], "fingerprint": controls.fingerprint([]),
+                                             "unusable_at_cutoff": []} if required else None),
+            "events": {"count": 0, "sha256": evidence._set_sha([])},
+            "outcomes": {"count": 0, "sha256": evidence._set_sha([])}}
 
 
 def valid_summary(cut, designs, status="exploratory", integrity="passed"):
     """Every named design valid at cutoff `cut`, no proposal. designs: {design id: evaluation version}."""
-    out = {"schema": "lab_summary/2", "t": iso(cut), "cutoff_ms": cut, "designs": {}}
+    out = {"schema": evidence.SUMMARY_SCHEMA, "t": iso(cut), "cutoff_ms": cut, "designs": {}}
     for name, version in designs.items():
         integ = {"required": integrity != "not_required", "status": integrity, "ok": True, "reasons": []}
         out["designs"][name] = {
@@ -13,7 +24,8 @@ def valid_summary(cut, designs, status="exploratory", integrity="passed"):
             "publication": {"schema": "publication/1", "design": name, "evaluation_version": version, "cutoff_ms": cut,
                             "status": status, "validation": {"required": integ["required"], "status": integrity},
                             "evaluation_valid": True, "proposal_eligible": False, "proposal_checkpoint": None,
-                            "reasons": []}}
+                            "reasons": []},
+            "inventory": empty_inventory(name, version, cut, integ["required"])}
     return out
 
 
@@ -29,7 +41,8 @@ def batch_metadata(inc, cut, designs, **kw):
     index = {"designs": {}}
     for name, e in s["designs"].items():
         card = {"design": name, "evaluation_version": e["version"], "cutoff_ms": cut, "generated_at": s["t"],
-                "status": e["status"], "publication": e["publication"], "research_integrity": e["integrity"]}
+                "status": e["status"], "publication": e["publication"], "research_integrity": e["integrity"],
+                "evidence_inventory": e["inventory"]}
         (inc / f"research/evidence/v2/{name}@{e['version']}.json").write_text(json.dumps(card))
         index["designs"][name] = {"current": e["version"], "versions": {e["version"]: {
             "status": e["status"], "evaluation_valid": e["publication"]["evaluation_valid"]}}}
