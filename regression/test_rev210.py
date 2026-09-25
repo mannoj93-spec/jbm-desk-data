@@ -191,10 +191,15 @@ class FreezeAndCutoffTests(unittest.TestCase):
         late = runs + [run_(t + 10 * MINUTE, 60 * S)]
         again, _ = module_controls("liq_exposure", late, t + 2 * H, {"frozen": frozen, "last_cutoff": t + 45 * MINUTE})
         self.assertEqual([c["event_id"] for c in again], [c["event_id"] for c in first])
-        # a cutoff before the freeze does not see the later decision; it recomputes from its own data
-        past, _ = module_controls("liq_exposure", late, t + 25 * MINUTE, {"frozen": frozen, "last_cutoff": None})
-        self.assertEqual([c["t_event"] for c in past], [t + 10 * MINUTE])
-        self.assertEqual(past[0]["t_persisted"], t + 25 * MINUTE)
+        # a cutoff before the freeze does not see the later decision; since 2.11 the provisional
+        # candidate it would compute (t+10) differs from what was stored later, so the slot is
+        # withheld rather than evaluated with the losing record
+        past, diag = module_controls("liq_exposure", late, t + 25 * MINUTE, {"frozen": frozen, "last_cutoff": None})
+        self.assertEqual(past, [])
+        self.assertIn("differs", dict(diag["withheld_stored"])[t])
+        same, diag = module_controls("liq_exposure", runs, t + 40 * MINUTE, {"frozen": frozen, "last_cutoff": None})
+        self.assertEqual([c["t_event"] for c in same], [t + 30 * MINUTE])      # same identity: provisional
+        self.assertEqual(diag["selection_states"], {"provisional": 1})
 
     def test_future_prices_funding_and_labels_leave_selections_unchanged_common_api(self):
         runs = hourly_runs(4, (18, 33))
@@ -233,7 +238,7 @@ class FreezeAndCutoffTests(unittest.TestCase):
                 q = Path(inc) / p.relative_to(base)
                 q.parent.mkdir(parents=True)
                 q.write_text(json.dumps(other, sort_keys=True) + "\n")
-                with patch("sys.stdout", io.StringIO()):
+                with patch("sys.stdout", io.StringIO()), patch("sys.stderr", io.StringIO()):
                     merge_research.main(inc, base)
             self.assertEqual(p.read_bytes(), b1)
 
@@ -292,8 +297,10 @@ class ReviewHardeningTests(unittest.TestCase):
         runs = [run_(T0 + 30 * MINUTE)]
         bogus = {T0: {"control_policy": controls.POLICY, "control_hour": T0, "t_event": 1, "t_available": 2,
                       "t_inputs": 1, "event_id": "x"}}
-        ctl, _ = module_controls("liq_exposure", runs, T0 + H, {"frozen": bogus, "last_cutoff": None})
-        self.assertEqual([c["t_event"] for c in ctl], [T0 + 30 * MINUTE])
+        ctl, diag = module_controls("liq_exposure", runs, T0 + H, {"frozen": bogus, "last_cutoff": None})
+        self.assertEqual(ctl, [])                                   # 2.11: withheld, never silently replaced
+        self.assertIn("malformed", dict(diag["withheld_stored"])[T0])
+        ctl, _ = module_controls("liq_exposure", runs, T0 + H)
         self.assertTrue(ctl[0]["hour_closed_at_selection"])
 
 
@@ -334,7 +341,9 @@ class DiagnosticsAndVersionTests(unittest.TestCase):
                            for p in experiments.design_files(tmp)}
             v0 = ver()
             p = Path(tmp, "lab/controls.py")
-            p.write_text(p.read_text().replace('POLICY = "hourly-first-available-1"', 'POLICY = "hourly-x"'))
+            src = p.read_text()
+            p.write_text(src.replace(f'POLICY = "{controls.POLICY}"', 'POLICY = "hourly-x"'))
+            self.assertNotEqual(p.read_text(), src)
             v1 = ver()
             changed = sorted(k for k in v0 if v0[k] != v1[k])
             self.assertEqual(changed, ["B1-underwater-adds", "C1-liquidation-cluster", "F1-options-perp-disagreement"])

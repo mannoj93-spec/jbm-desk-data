@@ -466,8 +466,15 @@ class CheckpointMergeTests(unittest.TestCase):
             Path(repo, rel).write_text('{"look":1,"verdict":"not_met","completed_at":1}\n')
             Path(inc, rel).write_text('{"look":1,"verdict":"supported","completed_at":2}\n'
                                       '{"look":2,"verdict":"not_met","completed_at":3}\n')
+            with patch("sys.stdout", io.StringIO()), patch("sys.stderr", io.StringIO()):
+                rc = merge_research.main(inc, repo)
+            # 2.11: an incoming batch computed against a different look-1 record is rejected whole
+            self.assertEqual(rc, 3)
+            self.assertEqual(Path(repo, rel).read_text(), '{"look":1,"verdict":"not_met","completed_at":1}\n')
+            Path(inc, rel).write_text('{"look":1,"verdict":"not_met","completed_at":1}\n'
+                                      '{"look":2,"verdict":"not_met","completed_at":3}\n')
             with patch("sys.stdout", io.StringIO()):
-                merge_research.main(inc, repo)
+                self.assertEqual(merge_research.main(inc, repo), 0)
             self.assertEqual(Path(repo, rel).read_text(), '{"look":1,"verdict":"not_met","completed_at":1}\n'
                                                           '{"look":2,"verdict":"not_met","completed_at":3}\n')
 

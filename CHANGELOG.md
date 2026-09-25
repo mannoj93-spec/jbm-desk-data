@@ -1,3 +1,61 @@
+# Research-integrity revision 2.11 (lab-2.2, control policy 2) — 2026-09-25
+
+Response to the review of 2.10 (commit `8432df0`). Current main was inspected first: since
+`8432df0` only automated data commits had landed, so both findings applied to the running code.
+Both were reproduced on `8432df0` with `scripts/repro_controls_211.py` (runs against any code tree).
+Collector, schedules, request budgets, hypotheses, thresholds, fees, horizons and skills are
+unchanged.
+
+| # | Finding (reproduced on 8432df0) | Fix | Tests (`regression/test_rev211.py`) |
+|---|---|---|---|
+| 1 | Inputs at 09:59:30, cutoff 10:00:00: the C and F modules returned the control although its decision is 10:00:30 (also at 10:00:29.999); stored selections had no decision-time check. The live B1 lab-2.2 namespace holds one such record, frozen at 00:49:05 for a decision at 00:49:07 | A control is usable at cutoff N only if its inputs AND decision are <= N; stored records also need their persistence time <= N and well-formed times (persisted before its own decision, a missing or non-integer time, or an hour that is not the inputs' hour -> withheld). A pending earliest candidate makes the hour `pending_processing` (never a later candidate instead, never frozen); the hour bucket stays the inputs' hour (09:00 in the example); nothing is back-dated and the 60 s assumption is unchanged. A stored record not usable at the cutoff is withheld, never rewritten or replaced | 1 ms before, exactly at and after the decision; inputs exactly at the cutoff; UTC midnight; pending then selected on a later run with no duplicate and the same hour; stored records with later persistence (read-only: provisional when identical), persisted before their decision, missing or string times; a writing run with a winner persisted after its cutoff (withheld, unresolved conflict) |
+| 2 | Worker B (empty context) proposed the :10 observation after writer A had stored :20 for the hour; storage kept A but B returned its :10 proposal, whose 60-minute label differed (+4.75% vs -0.13% in the reproduction) | In a writing run proposals are appended under a scoped `fcntl` lock and read back; the returned controls are the stored records in full (identity, times, features, input hash, t_persisted), the context is refreshed for later calls and variants, and proposals are reported as `accepted` or `superseded` (only accepted ones enter `ctx["new"]`). A lost write raises `ControlIntegrityError`. Read-only runs never write and mark selections they compute as `provisional`; one that differs from a later stored winner is withheld | the competing-write interleaving through `module.run` and through `experiments.run_design` (labels, baseline rows and reference rows all use the :20 winner); repeated calls with a refreshed and with a stale context; multiple proposals; unchanged winner bytes; persistence failure and silently lost write; the lock around read-and-replace; read-only non-mutation |
+
+**Safeguards.** Before any control leaves `lab/controls.py` (so before labelling and before the
+long/short expansion) `validate` checks every control's times against the cutoff, decision >=
+inputs + 60 s, one per hour, and - in a writing run - byte equality with the stored record;
+violations raise `ControlIntegrityError` and fail the design. `lab/run.py` also compares the
+labelled control rows of the primary pass with the stored selections field by field
+(`evidence_agreement`) and records sha256 fingerprints of the controls used and of the stored
+records. Diagnostics add pending processing, accepted and superseded proposals, withheld stored
+records, unresolved conflicts, ready-but-unselected hours and the fingerprints. Any unresolved
+conflict, ready-but-unselected hour or evidence mismatch is a RESEARCH INTEGRITY FAILURE: printed
+in `reports/research.md` and on the card (`research_integrity`), and the lab exits 1 so the research
+workflow fails visibly even when collection is healthy. `scripts/merge_research.py` refuses an
+incoming batch whose control selections or checkpoints conflict with a different record already
+in the checkout (the batch's evidence, checkpoints and reports were computed from the loser):
+nothing is merged, the conflict is printed, and it exits 3; committed evidence stands.
+
+**Adversarial review of the first 2.11 draft** (separate agent, read-only): no high or medium
+findings; four low ones fixed with regressions - stored hours not yet reached at a cutoff were
+reported as withheld; a closed hour with no record at a replay cutoff was reported as withheld
+instead of missing; a stored record's source time was not checked (decision must be >= source +
+60 s); a legacy duplicate key already in a checkout made every later merge a conflict.
+
+**Behaviour changes in existing tests.** Two 2.10 tests expected a read-only replay to recompute a
+slot whose later stored winner differs, and a timeless stored record to be silently replaced;
+both now expect the slot to be withheld. The 2.9 checkpoint-merge test now expects a conflicting
+batch to be rejected whole (a non-conflicting batch still merges). Two helpers without an explicit
+cutoff now use the latest decision the data allow (inputs + 60 s).
+
+**Before / after** (`python scripts/repro_controls_211.py [tree]`): cutoff at 10:00:00 and
+10:00:29.999 - 8432df0 returns the control (decision after the cutoff) for both modules, 2.11
+returns nothing and reports the 09:00 hour pending; at 10:00:30 both return it in the 09:00 hour.
+Competing writes - 8432df0 returns the :10 proposal (t_persisted 10:40) while storage holds the :20
+winner (t_persisted 10:25); 2.11 returns the stored :20 record byte-for-byte, reports it
+superseded, and its context names the winner. The 2.10 hourly replay on the pinned 934bb25 data is
+preserved: B1, C1, F1 16 controls each (2 before 2.10), 0 closed eligible hours without a control.
+
+**Versions.** `lab/controls.py` changed (policy `hourly-first-available-2`), so B1, C1 and F1 get
+new evaluation versions and clocks; A1, D1, E1, G1 and H1 are unchanged (their versions and clocks
+continue). The lab-2.2 B1/C1/F1 namespaces - including the B1 record frozen before its decision
+and the recomputed C1 decision - stay byte-for-byte; their data are recomputed under the new
+versions as reanalysis.
+
+**Tests.** 303 regression tests (285 kept, 18 new; three existing tests adapted as described)
+plus 25 numerical fixtures. Five `*_common_api` tests fail on `8432df0`; the other 13 new tests
+exercise interfaces the reviewed code does not have.
+
 # Research-integrity revision 2.10 (lab-2.2) — 2026-09-24
 
 Response to the review of 2.9 (commit `934bb25`, lab-2.1). Current main was inspected first: since
