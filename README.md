@@ -1,4 +1,4 @@
-# JBM desk data — research-integrity revision 2.10
+# JBM desk data — research-integrity revision 2.11
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -22,7 +22,9 @@ timing, quote-qualified option signals, and reports that state their own freshne
 each option history feature its own availability, and fits one baseline per outcome horizon.
 Revision 2.10 (lab-2.2) gives the collection-based modules one causal, frozen comparison
 observation per UTC hour instead of only when a run happened to start before :15, and reports
-comparison coverage. The collector itself is unchanged.
+comparison coverage. Revision 2.11 makes a control usable only once its decision time is within
+the cutoff and makes every calculation use the stored selection, with integrity checks that fail
+the lab run visibly. The collector itself is unchanged.
 See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md](VALIDATION.md).
 
 **Deployed** on GitHub Actions since 2026-09-22 23:24Z (first run `runner: github`); hourly until
@@ -274,6 +276,7 @@ python -m lab.run update --now MS                # reproduce a past cutoff (read
 python scripts/repro_integrity.py [CODE_ROOT]    # the 2.7 review's reproductions, before/after
 python scripts/repro_integrity_29.py [CODE_ROOT] # the 2.8 review's reproductions, before/after
 python scripts/replay_controls_210.py CODE DATA CUTOFF_MS   # hourly controls, before/after (read-only)
+python scripts/repro_controls_211.py [CODE_ROOT]            # 2.10 review: cutoff and authority, before/after
 ```
 
 **Evaluation versions.** A design (`lab/designs/*.json`) is evaluated under a version id that
@@ -313,6 +316,15 @@ without an eligible candidate has no control and a recorded reason. The first la
 hour's control (`research/v2/<design>/<version>/controls/`, first record wins); later data,
 reruns and merges never replace it, a stored selection is used only at cutoffs after it was made,
 and a frozen control counts as known (for checkpoints and baseline training) only from then.
+Since 2.11 a candidate or stored control is usable only when its inputs and its decision (inputs
++ 60 s) - and for a stored one its persistence - are within the cutoff; otherwise the hour is
+`pending_processing` or the record is withheld (never rewritten or replaced). A writing run appends
+its proposals under a lock, reads the stored records back and uses those (a proposal that lost is
+`superseded`); a read-only run writes nothing and marks its own selections `provisional`.
+Controls are validated before labelling, the labelled controls are compared with the stored ones
+(fingerprints), and any unresolved conflict or mismatch is a RESEARCH INTEGRITY FAILURE in the
+report that makes the lab exit 1; `scripts/merge_research.py` rejects an incoming batch computed
+from a losing selection or checkpoint (exit 3, nothing merged).
 Cards and `reports/research.md` show comparison coverage: hours covered, eligible and selected,
 missing hours with reasons, delay after the hour, closed versus partial hours, and per horizon the
 controls selected / mature / scorable / retained / baseline-usable. Only the design's primary

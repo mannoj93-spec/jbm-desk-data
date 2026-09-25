@@ -1,8 +1,22 @@
-# Validation record — research-integrity revision 2.10 (lab-2.2)
+# Validation record — research-integrity revision 2.11 (lab-2.2, control policy 2)
 
-Validated 2026-09-24 with Python 3.11 and 3.12 (container); GitHub workflows select Python 3.12,
-whose AST the evaluation-version ids are computed from. Tables below the 2.10 block are the record
+Validated 2026-09-25 with Python 3.11 and 3.12 (container); GitHub workflows select Python 3.12,
+whose AST the evaluation-version ids are computed from. Tables below the 2.11 block are the record
 of earlier revisions and are kept as they were.
+
+| Check (2.11) | Result |
+|---|---|
+| Default branch before the work | `888ade3`; since the reviewed `8432df0` only automated data commits; code identical to the review |
+| Reproductions on `8432df0` (`scripts/repro_controls_211.py pin`) | Cutoff: inputs 09:59:30, decision 10:00:30 - at 10:00:00 and 10:00:29.999 both C (liq_exposure) and F (options) return the control with its decision after the cutoff. Authority: writer A stores the :20 observation (t_persisted 10:25); worker B with an empty context proposes :10 - storage keeps A, B returns its :10 record (t_persisted 10:40); 60-minute labels differ (+4.749% vs -0.130%); B's context does not name the winner |
+| Same reproductions on 2.11 | Cutoff: nothing returned at 10:00:00 and 10:00:29.999, the 09:00 hour reported `pending_processing`; at 10:00:30 returned in the 09:00 hour. Authority: B returns the stored :20 record byte-for-byte (t_persisted 10:25, label -0.130%), reports hour 10:00 superseded, accepted none, `used_equals_stored` true, context refreshed to the winner |
+| Live evidence of finding 1 | In the lab-2.2 B1 namespace (`ev-9cffe8818c14`) one of 41 stored selections was frozen at 00:49:05 for a decision at 00:49:07 (2026-09-25). It is preserved byte-for-byte; the new B1 version recomputes that hour correctly |
+| 2.10 hourly replay preserved (`scripts/replay_controls_210.py` with 2.11 code on the pinned `934bb25` data, cutoff 15:31:56Z) | B1, C1, F1: 16 controls each (2 on the reviewed 2.9 code), 0 closed eligible hours without a control; last decisions 15:19:32 / 15:19:32 / 15:18:49, within the cutoff |
+| New tests against `8432df0` (`test_rev211.py` copied into the old tree) | 5 `*_common_api` tests fail (cutoff at 1 ms before / exactly, inputs exactly at the cutoff, UTC midnight, returned control vs stored winner, labels/baseline/reference rows through `experiments.run_design`); 13 skip (new interfaces). All pass on 2.11 |
+| Offline regression suite | 303 passed (285 kept; 18 new; three adapted: two 2.10 replay expectations now withhold instead of recomputing or replacing, the 2.9 checkpoint-merge test expects a conflicting batch to be rejected), about 30 s; 2 runs on 3.11 and 2 on 3.12, no failures; numerical fixtures 25 passed |
+| Adversarial review of the first draft (separate agent, read-only) | No high or medium findings; 4 low ones fixed with regressions (future hours reported withheld, missing hour reported withheld on replay, stored source time unchecked, merge false positive with a legacy duplicate). Checked sound: every return path passes `validate`; pending earliest never replaced; provisional path sound; write-read-back and lost-write error; lock released on exception; run.py integrity path including errored designs; merge has no key-order/whitespace false positives |
+| Byte preservation and idempotency (disposable copy of main, lab run with `--now` and writes, then a second run at the same cutoff) | Exit 0 both times. No file under `data/` changed; 24 registrations kept, 3 added (B1, C1, F1); lab-2.2 namespaces `ev-9cffe8818c14` (2 files), `ev-1e8cf9f4e69a` (4), `ev-48a0f80de862` (2) and lab-2.1 `ev-448e00c8b90b` (3) byte-identical; A1, D1, E1, G1, H1 cards regenerated under unchanged versions. Integrity: labelled controls = stored selections for B1 (44 checked), C1 (44), F1 (64), 0 mismatches. Second run: controls, events and outcomes byte-identical |
+| Versions (Python 3.12) | B1 `ev-5db159f025fd`, C1 `ev-2ace4c5a6647`, F1 `ev-33998e4f9082` (component changed: `lab/controls.py`); A1 `ev-c35cdb2bc9bc`, D1 `ev-ffa18ae355ef`, E1 `ev-79ea1d99704b`, G1 `ev-44a97c2d5259`, H1 `ev-e76cbdabf3f9` unchanged, clocks continue |
+| Checksums | `SHA256SUMS` regenerated from its own list plus `regression/test_rev211.py` and `scripts/repro_controls_211.py`: 109 entries, all match |
 
 | Check (2.10) | Result |
 |---|---|
@@ -138,6 +152,12 @@ of earlier revisions and are kept as they were.
 - Hyperliquid leaderboard: 46,876 rows, 39 MB; `clearinghouseState` ~0.33 s per call.
 
 ## Scope limits
+
+2.11: the lock is advisory and local (fcntl); GitHub runs stay serialized by the workflow's
+concurrency group, and the merge rejects conflicting batches. A read-only replay withholds a slot
+whose later stored winner differs from what it computes, using post-cutoff knowledge of that
+winner only to decline, never to evaluate. Every design remains exploratory with no evaluation
+observations; no skill change is warranted.
 
 2.10: more comparison observations improve the reference and the baselines; they do not establish
 any edge, and every design is still exploratory with no evaluation observations under the new
