@@ -1,9 +1,14 @@
 # Proposed skill changes
 
-Generated 2026-09-25T18:47Z. For human review; nothing here edits a skill file.
+Generated 2026-09-25T18:53Z (UTC). For human review; nothing here edits a skill file. A proposal is a conditional base rate for a person to consider, not evidence of a trading edge.
+
 A change is proposed only for a design whose CURRENT evaluation version is **supported** under the lab-2.1+ promotion rules (data quality, retained observations and dependence blocks, multiplicity-adjusted effect, out-of-sample baseline added value, comparability, stability) at a RECORDED checkpoint whose manifest re-verifies; the wording quotes that checkpoint, not later data. Only the primary horizon, fixed in the design before any data, decides checkpoints, status and skill proposals; secondary horizons are descriptive and cannot override a failed primary or trigger a proposal on their own.
 
+## Result
+
 **No change is proposed.** No design's current version is supported by a verified checkpoint.
+
+## Why each design has no proposal
 
 | Design @ version | Status | Why no proposal |
 |---|---|---|

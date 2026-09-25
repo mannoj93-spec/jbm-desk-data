@@ -1,20 +1,20 @@
-# JBM desk report — 2026-09-25 18:47Z
-Window 2026-09-18 18:47Z → 2026-09-25 18:47Z. report-2.6-2026-09-24.
+# JBM desk report — 2026-09-25 18:54Z
+Window 2026-09-18 18:54Z → 2026-09-25 18:54Z. report-2.6-2026-09-24.
 Stored observations are research inputs. Missing observations never count as a failed forecast.
 
-Generated 2026-09-25 18:47Z by report-2.6-2026-09-24 (coverage refresh; forecast scoring and research tests are in the weekly report). Input cutoff: 2026-09-25 18:46Z (latest collector run written, collector-2.7-2026-09-23). Research lab: last run 2026-09-25 18:47Z, lab-2.2-2026-09-24. This file is refreshed every 6 hours by the Research lab workflow; if the generation time is older than that, the refresh has stopped.
+Generated 2026-09-25 18:54Z by report-2.6-2026-09-24 (coverage refresh; forecast scoring and research tests are in the weekly report). Input cutoff: 2026-09-25 18:46Z (latest collector run written, collector-2.7-2026-09-23). Research lab: last run 2026-09-25 18:53Z, lab-2.2-2026-09-24. This file is refreshed every 6 hours by the Research lab workflow; if the generation time is older than that, the refresh has stopped.
 
 | Dataset | Latest observation written | Age |
 |---|---|---:|
-| collector runs | 2026-09-25 18:46Z | 1 min |
-| snapshots | 2026-09-25 18:45Z | 2 min |
-| 1-minute prices (BTC perp) | 2026-09-25 18:46Z | 1 min |
-| Deribit options | 2026-09-25 18:45Z | 2 min |
-| Hyperliquid account sample | 2026-09-25 18:46Z | 1 min |
-| Hyperliquid enrichment | 2026-09-25 18:46Z | 1 min |
-| OKX insurance fund | 2026-09-25 18:46Z | 1 min |
-| OKX liquidation orders | 2026-09-25 18:31Z | 16 min |
-| research lab (lab-2.2-2026-09-24) | 2026-09-25 18:47Z | 0 min |
+| collector runs | 2026-09-25 18:46Z | 8 min |
+| snapshots | 2026-09-25 18:45Z | 9 min |
+| 1-minute prices (BTC perp) | 2026-09-25 18:46Z | 8 min |
+| Deribit options | 2026-09-25 18:45Z | 8 min |
+| Hyperliquid account sample | 2026-09-25 18:46Z | 8 min |
+| Hyperliquid enrichment | 2026-09-25 18:46Z | 8 min |
+| OKX insurance fund | 2026-09-25 18:46Z | 8 min |
+| OKX liquidation orders | 2026-09-25 18:31Z | 22 min |
+| research lab (lab-2.2-2026-09-24) | 2026-09-25 18:53Z | 0 min |
 
 ## 1. Collection health
 221 routine runs in window, by trigger: not recorded (container) 2, not recorded (github) 21, not recorded (local) 1, schedule 196, workflow_dispatch 1.
@@ -22,7 +22,7 @@ Generated 2026-09-25 18:47Z by report-2.6-2026-09-24 (coverage refresh; forecast
 | Cadence period (UTC) | Schedule | Nominal slots | Scheduled starts | Snapshot coverage | Degraded snapshots |
 |---|---|---:|---|---|---:|
 | 2026-09-22 23:19Z → 2026-09-23 16:06Z | `7 * * * *` | 16 | 21 GitHub runs, trigger not recorded (pre-2.6); slots with a run: 16/16, an upper bound (manual runs indistinguishable) | 15/15 slot intervals | 1/21 |
-| 2026-09-23 16:06Z → 2026-09-25 18:47Z | `7,22,37,52 * * * *` | 202 | 196 (97%) | 196/202 slot intervals | 0/197 |
+| 2026-09-23 16:06Z → 2026-09-25 18:54Z | `7,22,37,52 * * * *` | 202 | 196 (97%) | 197/203 slot intervals | 0/197 |
 Starts are counted, never matched to slots: GitHub starts scheduled runs late by an unrecorded amount and can drop them, so a start time does not identify its slot (edges can shift a count by one). Slots in the last 20 minutes are not yet due. Manual runs never count as scheduled starts; they do count toward snapshot coverage, which measures data held rather than scheduler behaviour.
 Actual interval between scheduled starts under the current 15-minute cadence (min): median 13.8, p90 21.0, max 30.1; includes pre-2.6 GitHub runs, whose trigger is unrecorded.
 Actual interval between stored snapshots, all triggers (min): median 14.0, p90 25.5, max 256.0.
@@ -112,7 +112,7 @@ Coverage of stored inputs only. These are samples and summaries, not trading res
 - Hyperliquid sample v2: 180 snapshots; account checks by state ok_btc 3935, ok_flat 26549, ok_other 3716; fixed cohort F-hl-sample-v2-1790195337162 (100), rotating 90 per run.
 - Hyperliquid enrichment requests: fills ok 66, ledger ok 246, twap not_attempted 2, twap ok 1486.
 - OKX insurance fund rows: regular_update 180.
-- Research lab: 13 runs in window; latest 2026-09-25 18:47Z: exploratory 8 (statuses per design; see reports/research.md).
+- Research lab: 14 runs in window; latest 2026-09-25 18:53Z: exploratory 8 (statuses per design; see reports/research.md).
 
 ## 4. Forecast registry
 Not run in the coverage refresh (scoring writes evidence); see the weekly report reports/2026-09-23.md.
