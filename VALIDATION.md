@@ -1,3 +1,23 @@
+# Validation record — research-integrity revision 2.13 (lab-2.2, evidence completeness)
+
+Validated 2026-09-25 with Python 3.11 and 3.12 (container). Earlier blocks below are kept as recorded.
+
+| Check (2.13) | Result |
+|---|---|
+| Default branch before the work | `f402459`; since the reviewed `16cb49f` only collector data commits; code identical to the review |
+| Reproduction on `16cb49f` (`scripts/repro_completeness_213.py`) | Supported 100/20 run; checkpoint file removed from the handoff: merge exit 0, published card `supported` citing look 1, no checkpoint, proposal published. Control files removed: merge exit 0, card `supported`, stored control fingerprint != the card's |
+| Same on 2.13 | Both: merge exit 4, destination byte-identical, previous valid card current, no proposal |
+| Regressions | `test_rev213.py` 8: on `16cb49f` 3 fail, 2 skip, 3 pass; on 2.13 8 pass. Full suite 332 on 3.11 and 3.12; fixtures 25 |
+| Evaluation versions | Unchanged (no hashed file edited; all 8 ids identical to 2.12), so no clock resets |
+| No-write lab run (disposable copy of main) | Exit 0, no file changed |
+| Idempotency and preservation (disposable copy, two writing runs at one cutoff) | Exit 0 both. No file under `data/`, `registry/` or `state/hl_cohort_*` changed; registrations unchanged (current versions already registered); stored controls append-only (B1 46->47, C1 46->47, F1 66->67 lines, earlier bytes kept); no stored checkpoint, event or outcome rewritten. Second run: only the B1/C1/F1 cards, the report (selection states) and the run counter changed; inventories identical |
+| Real-data handoff (disposable copies) | Complete batch: merge 0. C1 control files removed: merge 4 ("stored control fingerprint differs from the one the evaluation used"), destination unchanged |
+| 2.10 hourly replay (pinned `934bb25` data, cutoff 15:31:56Z) | B1, C1, F1: 16 controls each, 0 closed eligible hours without a control |
+| Checksums | 115 entries (112 + `regression/test_rev213.py`, `scripts/repro_completeness_213.py`, `docs/OPERATIONS.md`), all match |
+
+Scope: the gate proves the published outputs are complete and consistent with what the lab recorded
+and re-verifies promoted checkpoints; it does not re-run the evaluation itself.
+
 # Validation record — research-integrity revision 2.12 (lab-2.2, publication gate)
 
 Validated 2026-09-25 with Python 3.11 and 3.12 (container); GitHub workflows select Python 3.12,

@@ -50,12 +50,15 @@ LIMITATIONS = [
 ]
 
 
+MISSING = "—"                    # not yet computable: not enough data (legend in the report)
+
+
 def _fmt(x):
-    return "n/a" if x is None else f"{x * 1e4:+.1f} bp"
+    return MISSING if x is None else f"{x * 1e4:+.1f} bp"
 
 
 def _ci(ci):
-    return "n/a" if not ci else f"[{_fmt(ci[0])}, {_fmt(ci[1])}]"
+    return MISSING if not ci else f"[{_fmt(ci[0])}, {_fmt(ci[1])}]"
 
 
 def _public(summary):
@@ -202,7 +205,8 @@ def error_card(design, res, now):
 
 # ---- publication (2.12) ----------------------------------------------------------------------------
 PUBLICATION_SCHEMA = "publication/1"
-SUMMARY_SCHEMA = "lab_summary/2"
+SUMMARY_SCHEMA = "lab_summary/3"
+INVENTORY_SCHEMA = "evidence_inventory/1"
 
 
 def verified_supported(card):
@@ -233,6 +237,69 @@ def publication(card):
             "evaluation_valid": valid, "proposal_eligible": proposal,
             "proposal_checkpoint": ({"look": cp["look"], "manifest_sha256": cp["manifest_sha256"]} if proposal else None),
             "reasons": reasons}
+
+
+def canon_sha(obj):
+    """sha256 of the canonical JSON of one record (keys sorted at every depth, no whitespace) - the
+    same canonical form scripts/merge_research.py compares records by."""
+    import hashlib
+    import json
+    return hashlib.sha256(json.dumps(obj, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode()).hexdigest()
+
+
+def _set_sha(records):
+    return canon_sha(sorted(canon_sha(r) for r in records))
+
+
+def inventory(base, design, cutoff, looks, hours):
+    """Evidence inventory (2.13): the stored evaluation outputs one design version's card depends on,
+    READ BACK from `base` - the lab's repository after its writes, or the merge's proposed resulting
+    repository. `looks`: checkpoint looks the card references; `hours`: the control hours the
+    evaluation used (None for designs without hourly controls). First stored record per key wins,
+    as in every loader; records persisted after `cutoff` are excluded.
+      checkpoints  per look: present, verdict, manifest sha256 and the record's canonical sha256
+      controls     the used hours, any missing, the fingerprint of the stored winners
+                   (controls.fingerprint - the same one the control policy reports) and any winner
+                   not usable at the cutoff
+      events       frozen decisions persisted by the cutoff: count and set sha256
+      outcomes     stored labels of those decisions: count and set sha256"""
+    from lab import controls as ctl
+    from lab.common import read_dir
+    stored = experiments.load_checkpoints(base, design)
+    cks = []
+    for k in looks:
+        r = stored.get(k)
+        cks.append({"look": k, "present": r is not None, "verdict": (r or {}).get("verdict"),
+                    "manifest_sha256": (r or {}).get("manifest_sha256"), "record_sha256": canon_sha(r) if r else None})
+    controls = None
+    if hours is not None:
+        sel = ctl.load_selections(base, design)
+        used = [sel[h] for h in hours if h in sel]
+        controls = {"hours": list(hours), "missing": [h for h in hours if h not in sel],
+                    "fingerprint": ctl.fingerprint(used),
+                    "unusable_at_cutoff": [r["control_hour"] for r in used if ctl.stored_problem(r, cutoff)]}
+    events = {k: e for k, e in experiments.load_frozen(base, design).items()
+              if isinstance(e.get("t_persisted"), int) and e["t_persisted"] <= cutoff}
+    outs = {}
+    for r in read_dir(base, f"{experiments.ns(design)}/outcomes"):
+        if r.get("decision_key") in events:
+            outs.setdefault((r["decision_key"], r.get("horizon_min"), r.get("cost_model")), r)
+    return {"schema": INVENTORY_SCHEMA, "design": design["id"], "evaluation_version": design["_version"],
+            "cutoff_ms": cutoff, "checkpoints": cks, "controls": controls,
+            "events": {"count": len(events), "sha256": _set_sha(events.values())},
+            "outcomes": {"count": len(outs), "sha256": _set_sha(outs.values())}}
+
+
+def inventory_request(result):
+    """(looks, hours) a result's card depends on: the recorded checkpoints it shows and, for a design
+    with hourly controls, the hours of the controls its primary prospective pass used."""
+    looks = [r["look"] for r in (result.get("checkpoints") or {}).get("records") or []]
+    hours = None
+    if (result.get("integrity") or {}).get("required"):
+        comp = next((p.get("coverage", {}).get("comparison") for v in result.get("variants") or []
+                     for p in v["passes"] if p["basis"] == "prospective" and p.get("integrity") is not None), None) or {}
+        hours = [row[0] for row in comp.get("selected_times") or []]
+    return looks, hours
 
 
 def previous_card(base, card):
@@ -282,7 +349,8 @@ def run_summary(results, cards, now, commit, write, meta):
             "passes": [(p["basis"], p["state"], p["episodes"]) for v in r.get("variants", [])[:1] for p in v["passes"]],
             "validation": {"required": (integ or {}).get("required"), "status": (integ or {}).get("status", "missing"),
                            "reasons": (integ or {}).get("reasons") or []},
-            "integrity": integ, "publication": pub, "last_valid_result": c.get("last_valid_result")}
+            "integrity": integ, "publication": pub, "last_valid_result": c.get("last_valid_result"),
+            "inventory": c.get("evidence_inventory")}
     return {"schema": SUMMARY_SCHEMA, "t": iso(now), "cutoff_ms": now, "seconds": meta["seconds"], "commit": commit,
             "code_sha256": meta.get("code_sha256"), "wrote": write, "designs": designs}
 
@@ -390,19 +458,48 @@ def _pub_cell(c):
     return "valid; proposal eligible" if pub["proposal_eligible"] else "valid"
 
 
+def _glance(cards, now, meta):
+    """The report's "At a glance" rows: the four signals kept apart."""
+    def tally(values):
+        out = {}
+        for v in values:
+            out[v] = out.get(v, 0) + 1
+        return " · ".join(f"{n} {k}" for k, n in sorted(out.items())) or "none"
+    integ = tally(_integ_cell(c) for c in cards)
+    pubs = [c.get("publication") or publication(c) for c in cards]
+    status = tally(c["status"] for c in cards)
+    supported = [c["design"] for c in cards if c["status"] == "supported"]
+    age = round((now - meta["cutoff"]) / 60_000) if meta.get("cutoff") else None
+    return ["## At a glance", "", "| Signal | State |", "|---|---|",
+            f"| Workflow | this report was written by the research-lab run at {iso(now)}; whether that run and the "
+            "collector succeeded is on the repository's Actions tab |",
+            f"| Data freshness | input cutoff {iso(meta['cutoff'])} ({age if age is not None else MISSING} min before "
+            "this report); collection health and data age per dataset: [latest.md](latest.md) |",
+            f"| Research integrity (latest attempt) | {integ} |",
+            f"| Evidence maturity | {status}; "
+            + (f"supported: {', '.join(supported)}" if supported else "no design is supported") + " |",
+            f"| Publication | {sum(1 for p in pubs if p['evaluation_valid'])} valid · "
+            f"{sum(1 for p in pubs if not p['evaluation_valid'])} BLOCKED · "
+            f"{sum(1 for p in pubs if p['proposal_eligible'])} proposal-eligible "
+            "([skill_proposals.md](skill_proposals.md)) |", "",
+            "> Workflow success, fresh data and passed integrity checks are not evidence of a trading edge. "
+            "Intervals are descriptive; decisions are as-of replays by a 6-hourly lab, not live executions.", ""]
+
+
 def report(cards, now, meta):
     L = [f"# Research evidence", "",
-         f"Generated {iso(now)} (input cutoff {iso(meta['cutoff'])}); {LAB_VERSION}; code {meta['code_sha256'][:12]}; "
-         f"commit {meta.get('commit') or 'n/a'}; cost model {outcomes.COST_MODEL['version']} (assumed fees). "
-         "Refreshed by the Research lab workflow every 6 hours; anything older is stale.", "",
-         "Descriptive intervals only. Decisions are as-of replays by a 6-hourly lab, not live executions.", "",
-         "Three separate signals: **collection health** is the collector's (reports/latest.md; the Data column is "
-         "the state of this design's inputs); **research integrity** is whether the design's required inputs "
-         "(hourly controls: policy conflicts, stored = labelled) validated in this attempt; **publication** is "
-         "whether this attempt's evaluation may stand as the current result and, if supported, feed a proposal. A "
-         "blocked attempt names the last valid result instead of presenting it as current.", "",
-         "| Module | Design @ version | Status | Evaluation retained / blocks (primary h) | Adjusted diff | "
-         "Baseline residual diff (adj.) | Data | Integrity | Publication |", "|---|---|---|---|---|---|---|---|---|"]
+         f"Generated {iso(now)} (input cutoff {iso(meta['cutoff'])}). All times are UTC. {LAB_VERSION}; code "
+         f"{meta['code_sha256'][:12]}; commit {meta.get('commit') or MISSING}; cost model "
+         f"{outcomes.COST_MODEL['version']} (assumed fees). Refreshed by the Research lab workflow every 6 hours; "
+         "anything older is stale.", ""]
+    L += _glance(cards, now, meta)
+    L += ["## Designs", "",
+          "Signals are kept apart: **Data** is the state of this design's inputs (collection health is in "
+          "[latest.md](latest.md)); **Integrity** is whether the required inputs of this attempt validated (hourly "
+          "controls: policy conflicts, stored = labelled); **Publication** is whether this attempt may stand as the "
+          f"current result and, if supported, feed a proposal. `{MISSING}` = not yet computable (not enough data).", "",
+          "| Module | Design @ version | Status | Evaluation retained / blocks (primary h) | Adjusted diff | "
+          "Baseline residual diff (adj.) | Data | Integrity | Publication |", "|---|---|---|---|---|---|---|---|---|"]
     for c in cards:
         ph = str(c["primary_horizon_min"])
         pro = (c.get("passes") or {}).get("prospective") or {}
@@ -466,7 +563,8 @@ def report(cards, now, meta):
 
 
 def skill_proposals(cards, now):
-    L = ["# Proposed skill changes", "", f"Generated {iso(now)}. For human review; nothing here edits a skill file.",
+    L = ["# Proposed skill changes", "", f"Generated {iso(now)} (UTC). For human review; nothing here edits a skill file. "
+         "A proposal is a conditional base rate for a person to consider, not evidence of a trading edge.", "",
          "A change is proposed only for a design whose CURRENT evaluation version is **supported** under the "
          "lab-2.1+ promotion rules (data quality, retained observations and dependence blocks, multiplicity-adjusted "
          "effect, out-of-sample baseline added value, comparability, stability) at a RECORDED checkpoint whose manifest "
@@ -475,7 +573,8 @@ def skill_proposals(cards, now):
     evidence_cp = verified_supported
     supported = [c for c in cards if publication(c)["proposal_eligible"]]
     if not supported:
-        L += ["**No change is proposed.** No design's current version is supported by a verified checkpoint.", "",
+        L += ["## Result", "", "**No change is proposed.** No design's current version is supported by a verified checkpoint.", "",
+              "## Why each design has no proposal", "",
               "| Design @ version | Status | Why no proposal |", "|---|---|---|"]
         for c in cards:
             why = c["status_reason"]

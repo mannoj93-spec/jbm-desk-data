@@ -19,7 +19,7 @@ legacy lab-1.0 outputs are never touched:
   state/lab_registrations.json (registration clocks, never rewritten), state/lab_run_state.json
 Budget: LAB_BUDGET seconds (default 900); a design not reached is reported as not run. A module
 that raises is reported as an error; the others still run and are written.
-Summary (stdout, and --summary PATH): schema lab_summary/2 - per design the evaluation version, the
+Summary (stdout, and --summary PATH): schema lab_summary/3 - per design the evaluation version, the
 cutoff, status, research-integrity validation (required / status / reasons) and the publication
 decision (evidence.publication). scripts/merge_research.py refuses to publish outputs that do not
 match it. A design whose required input integrity fails is blocked: nothing of its evaluation is
@@ -230,6 +230,10 @@ def main(argv=None):
         else:
             c = evidence.card(d, res, commit, hashes, registrations.get(d["id"]), sup,
                               accounting.get(f"{d['id']}@{d['_version']}"))
+        # 2.13: the stored outputs this card depends on, read back after the writes; the persist job
+        # recomputes the same inventory on the repository it would produce and refuses a mismatch
+        if write and d.get("_version"):
+            c["evidence_inventory"] = evidence.inventory(a.base, d, now, *evidence.inventory_request(res))
         # the one publication decision (evidence.publication) and the last valid result, so a
         # failed attempt is never presented as the current passing evaluation
         cards.append(evidence.with_attempt(c, evidence.previous_card(a.base, c)))

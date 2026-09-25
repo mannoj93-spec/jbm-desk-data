@@ -33,7 +33,7 @@ Two checks run BEFORE anything is written; if either fails NOTHING is merged:
     legacy duplicate already in the checkout, repeated verbatim, is no conflict, but a new record
     can never be matched against it.
   Publication gate (2.12), exit 4: research outputs are published only with the lab's
-    machine-readable summary (INCOMING/lab-summary.json, schema lab_summary/2) and only where they
+    machine-readable summary (INCOMING/lab-summary.json, schema lab_summary/3) and only where they
     agree with it: every design entry internally consistent (validation status, publication
     decision, status, the single cutoff); a design whose evaluation is not valid (failed, incomplete
     or missing required integrity, error, not run) contributes no new checkpoint, frozen decision or
@@ -41,7 +41,18 @@ Two checks run BEFORE anything is written; if either fails NOTHING is merged:
     the skill proposals match the summary's design, evaluation version, cutoff and publication
     decision (a proposal only for a proposal-eligible design); every design of the summary brings its
     card, and the index and both reports are present, so no older promotion output stays current;
-    every research row parses. Missing, stale or contradictory metadata blocks the batch. The failed attempt's own diagnostics (its blocked card, report and
+    every research row parses. Missing, stale or contradictory metadata blocks the batch.
+  Evidence completeness (2.13), exit 4: the summary carries, per design, the inventory of stored
+    outputs its card depends on (lab/evidence.inventory: referenced checkpoints with manifest and
+    record sha256, the controls used at the cutoff and their fingerprint, frozen decisions and
+    outcomes). The merge builds the PROPOSED RESULTING repository for each design version in a
+    temporary directory (the checkout's records plus the incoming ones, merged by the rules above),
+    recomputes the inventory there with the lab's own loaders and requires it to equal the declared
+    one; every checkpoint a card or proposal references must exist there with the declared design,
+    version, look and hashes and re-verify (experiments.verify_checkpoint) when it supports a status
+    or proposal; the control fingerprint must equal the one the evaluation reported. Dependencies
+    already present and identical in the checkout satisfy this; missing, truncated, mismatched or
+    conflicting ones reject the batch before any write. The failed attempt's own diagnostics (its blocked card, report and
     the control selections it stored) are published, so the latest failure stays visible.
 Usage: merge_research.py INCOMING_DIR REPO_DIR
 """
@@ -50,12 +61,15 @@ from pathlib import Path
 import re
 import shutil
 import sys
+import tempfile
 
 STAMP = re.compile(r"Generated (\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}Z)")
 CUTOFF = re.compile(r"Input cutoff: (\d{4}-\d{2}-\d{2} \d{2}:\d{2}Z)")
 PROPOSAL = re.compile(r"^## (\S+) @ (\S+)\s*$", re.M)
 SUMMARY = "lab-summary.json"
-SUMMARY_SCHEMA = "lab_summary/2"
+SUMMARY_SCHEMA = "lab_summary/3"
+CODE_ROOT = Path(__file__).resolve().parents[1]      # the lab code the loaders come from
+SHA = re.compile(r"manifest sha256 ([0-9a-f]{64})")
 VALID_INTEGRITY = ("passed", "not_required")
 KEYED = {"controls": lambda x: (x.get("control_policy"), x.get("control_hour")),
          "checkpoints.jsonl": lambda x: x.get("look")}
@@ -176,6 +190,128 @@ def conflicts(incoming, repo):
     return out
 
 
+def _row_key(rel):
+    """The first-record-wins key merge_jsonl applies to a research row file, or None (line union)."""
+    name, parent = Path(rel).name, Path(rel).parent.name
+    if rel.startswith("research/") and name == "checkpoints.jsonl":
+        return lambda x: x.get("look")
+    if rel.startswith("research/v2/") and parent == "controls" and rel.endswith(".jsonl"):
+        return lambda x: (x.get("control_policy"), x.get("control_hour"))
+    if rel.startswith("research/v2/") and parent == "events" and rel.endswith(".jsonl"):
+        return lambda x: x.get("decision_key")
+    return None
+
+
+def _lab():
+    if str(CODE_ROOT) not in sys.path:
+        sys.path.insert(0, str(CODE_ROOT))
+    from lab import evidence, experiments
+    return evidence, experiments
+
+
+def _design(experiments, name, version):
+    """The design as the running code defines it when its version matches, else only its identity
+    (checkpoints then re-verify from their own manifest)."""
+    for path in experiments.design_files(CODE_ROOT):
+        d = experiments.load_design(path)
+        if d.get("id") == name:
+            d = experiments.attach_version(CODE_ROOT, d)
+            if d["_version"] == version:
+                return d, True
+    return {"id": name, "_version": version}, False
+
+
+def _resulting(incoming, repo, name, version, tmp):
+    """The design version's research rows as they would be after this merge, in `tmp`."""
+    rel = f"research/v2/{name}/{version}"
+    dst = Path(tmp) / rel
+    if (repo / rel).exists():
+        shutil.copytree(repo / rel, dst)
+    for src in sorted((incoming / rel).rglob("*.jsonl")) if (incoming / rel).exists() else []:
+        r = src.relative_to(incoming).as_posix()
+        merge_jsonl(src, Path(tmp) / r, key=_row_key(r))
+    return Path(tmp)
+
+
+def _diff(a, b):
+    return sorted(k for k in set(a) | set(b) if json.dumps(a.get(k), sort_keys=True) != json.dumps(b.get(k), sort_keys=True))
+
+
+def completeness_problems(incoming, repo, summ):
+    """Evidence completeness of the proposed resulting repository (see the module docstring)."""
+    evidence, experiments = _lab()
+    cut, probs = summ["cutoff_ms"], []
+    cards_text = (incoming / "reports/skill_proposals.md").read_text() if (incoming / "reports/skill_proposals.md").exists() else ""
+    proposed = set(SHA.findall(cards_text))
+    allowed = set()
+    for name, e in sorted(summ["designs"].items()):
+        inv = e.get("inventory")
+        if not isinstance(inv, dict) or inv.get("schema") != evidence.INVENTORY_SCHEMA:
+            probs.append(f"{name}: evidence inventory missing from the publication metadata")
+            continue
+        if (inv.get("design"), inv.get("evaluation_version"), inv.get("cutoff_ms")) != (name, e["version"], cut):
+            probs.append(f"{name}: evidence inventory is for another design, version or cutoff (stale)")
+            continue
+        ctl = inv.get("controls")
+        if e["validation"].get("required") and not isinstance(ctl, dict):
+            probs.append(f"{name}: hourly-control design without a control inventory")
+            continue
+        design, full = _design(experiments, name, e["version"])
+        with tempfile.TemporaryDirectory() as tmp:
+            base = _resulting(incoming, repo, name, e["version"], tmp)
+            try:
+                got = evidence.inventory(base, design, cut, [c.get("look") for c in inv.get("checkpoints") or []],
+                                         ctl.get("hours") if isinstance(ctl, dict) else None)
+            except (ValueError, KeyError, TypeError, AttributeError) as exc:
+                probs.append(f"{name}: resulting records unreadable ({type(exc).__name__}: {exc})")
+                continue
+            for part in _diff(got, inv):
+                probs.append(f"{name}: {part} of the resulting repository differ from the declared inventory "
+                             "(missing, truncated or mismatched records)")
+            for c in got["checkpoints"]:
+                if not c["present"]:
+                    probs.append(f"{name}: checkpoint look {c['look']} is referenced but does not exist")
+            if isinstance(ctl, dict) and (got["controls"]["missing"] or got["controls"]["unusable_at_cutoff"]):
+                probs.append(f"{name}: controls used at the cutoff are missing or unusable in the resulting repository")
+            fp = (e.get("integrity") or {}).get("controls_fingerprint")
+            if isinstance(ctl, dict) and fp is not None and got["controls"]["fingerprint"] != fp:
+                probs.append(f"{name}: stored control fingerprint differs from the one the evaluation used")
+            stored = experiments.load_checkpoints(base, design)
+            card = {}
+            cp = incoming / f"research/evidence/v2/{name}@{e['version']}.json"
+            if cp.exists():
+                try:
+                    card = json.loads(cp.read_text())
+                except ValueError:
+                    card = {}
+            declared = {c["look"]: c for c in inv.get("checkpoints") or []}
+            for r in (card.get("checkpoints") or {}).get("records") or []:
+                d_ = declared.get(r.get("look"))
+                if d_ is None or d_.get("manifest_sha256") != r.get("manifest_sha256"):
+                    probs.append(f"{name}: card references checkpoint look {r.get('look')} outside the declared inventory")
+                    continue
+                rec = stored.get(r["look"])
+                if rec is None:
+                    continue
+                if (rec.get("design"), rec.get("version"), rec.get("look")) != (name, e["version"], r["look"]):
+                    probs.append(f"{name}: checkpoint look {r['look']} belongs to another design, version or look")
+                    continue
+                ok = experiments.verify_checkpoint(rec, design if full else None)
+                promotes = card.get("status") == "supported" and rec.get("verdict") == "supported"
+                if promotes and not ok:
+                    probs.append(f"{name}: supported checkpoint look {r['look']} fails re-verification")
+                elif bool(ok) != bool(r.get("verified")):
+                    probs.append(f"{name}: checkpoint look {r['look']} verification differs from the card's")
+                elif ok and rec.get("verdict") == "supported" and e["publication"]["proposal_eligible"]:
+                    allowed.add(rec["manifest_sha256"])
+            pc = e["publication"].get("proposal_checkpoint")
+            if pc and pc.get("manifest_sha256") not in allowed:
+                probs.append(f"{name}: the proposal's checkpoint is not a verified supported record of the resulting repository")
+    for sha in sorted(proposed - allowed):
+        probs.append(f"reports/skill_proposals.md: cites checkpoint {sha[:12]}, not a verified supported record")
+    return probs
+
+
 def _load_summary(incoming):
     p = incoming / SUMMARY
     if not p.exists():
@@ -289,6 +425,8 @@ def publication_problems(incoming, repo):
             probs.append(f"{rel}: card publication decision contradicts the summary")
         if json.dumps(c.get("research_integrity"), sort_keys=True) != json.dumps(e.get("integrity"), sort_keys=True):
             probs.append(f"{rel}: card research integrity contradicts the summary")
+        if json.dumps(c.get("evidence_inventory"), sort_keys=True) != json.dumps(e.get("inventory"), sort_keys=True):
+            probs.append(f"{rel}: card evidence inventory contradicts the summary")
     idx = incoming / "research/evidence/index.json"
     for rel in ("research/evidence/index.json", "reports/research.md", "reports/skill_proposals.md"):
         if D and not (incoming / rel).exists():
@@ -333,7 +471,7 @@ def publication_problems(incoming, repo):
                     probs.append(f"state/lab_run_state.json: watermark advanced for blocked {key}")
         except (ValueError, AttributeError, TypeError):
             probs.append("state/lab_run_state.json: unreadable")
-    return probs
+    return probs or completeness_problems(incoming, repo, summ)
 
 
 def main(incoming, repo):
