@@ -245,7 +245,11 @@ class ReviewFindingTests(unittest.TestCase):
             for b_ in (inc, repo):
                 Path(b_, rel).parent.mkdir(parents=True)
             Path(repo, rel).write_text('{"look":1,"v":"a"}\n{"look":1,"v":"b"}\n')
-            Path(inc, rel).write_text('{"look":1,"v":"a"}\n{"look":1,"v":"b"}\n{"look":2,"v":"c"}\n')
+            look2 = json.dumps({"look": 2, "v": "c", "design": "C1", "version": DESIGN["_version"], "completed_at": TEN})
+            Path(inc, rel).write_text('{"look":1,"v":"a"}\n{"look":1,"v":"b"}\n' + look2 + "\n")
+            if hasattr(merge_research, "publication_problems"):          # 2.12: publication metadata required
+                from publication_fixture import batch_metadata
+                batch_metadata(inc, TEN, {"C1": DESIGN["_version"]})
             with patch("sys.stdout", io.StringIO()):
                 self.assertEqual(merge_research.main(inc, repo), 0)
 
@@ -328,6 +332,17 @@ class MergeTests(unittest.TestCase):
             self.assertIn("RECONCILIATION CONFLICT", err.getvalue())
             self.assertEqual({p: p.read_bytes() for p in Path(repo).rglob("*") if p.is_file()}, snap)
             Path(inc, rel, "controls", "2026-09.jsonl").write_text(json.dumps(win, sort_keys=True) + "\n")  # agrees
+            # 2.12: an agreeing batch still needs matching publication metadata; without it nothing merges
+            with patch("sys.stdout", io.StringIO()), patch("sys.stderr", io.StringIO()):
+                self.assertEqual(merge_research.main(inc, repo), 4)
+            self.assertEqual({p: p.read_bytes() for p in Path(repo).rglob("*") if p.is_file()}, snap)
+            from publication_fixture import batch_metadata
+            cut = TEN + 9 * H
+            Path(inc, "research/evidence/v2/C1@x.json").unlink()
+            Path(inc, "reports/research.md").unlink()
+            Path(inc, rel, "checkpoints.jsonl").write_text(json.dumps(
+                {"look": 1, "verdict": "not_met", "design": "C1", "version": DESIGN["_version"], "completed_at": cut}) + "\n")
+            batch_metadata(inc, cut, {"C1": DESIGN["_version"]})
             with patch("sys.stdout", io.StringIO()):
                 self.assertEqual(merge_research.main(inc, repo), 0)
             self.assertTrue(Path(repo, rel, "checkpoints.jsonl").exists())

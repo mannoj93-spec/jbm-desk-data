@@ -622,8 +622,14 @@ class PersistenceTests(unittest.TestCase):
             Path(repo, "state/lab_registrations.json").write_text(json.dumps({"T@ev-1": {"registered": 1}}))
             Path(inc, "state/lab_registrations.json").write_text(json.dumps({"T@ev-1": {"registered": 999},
                                                                              "T@ev-2": {"registered": 5}}))
+            with patch("sys.stdout", io.StringIO()), patch("sys.stderr", io.StringIO()):
+                self.assertEqual(merge_research.main(inc, repo), 4)       # 2.12: no publication metadata
+            self.assertEqual(Path(repo, "research/v2/ledger/2026-09.jsonl").read_text(), '{"a":1}\n')
+            sys.path.insert(0, str(ROOT / "regression"))
+            from publication_fixture import valid_summary
+            Path(inc, "lab-summary.json").write_text(json.dumps(valid_summary(5, {})))
             with patch("sys.stdout", io.StringIO()):
-                merge_research.main(inc, repo)
+                self.assertEqual(merge_research.main(inc, repo), 0)
             self.assertIn("Input cutoff: 2026-09-23 11:00Z", Path(repo, "reports/latest.md").read_text())
             self.assertEqual(Path(repo, "research/v2/ledger/2026-09.jsonl").read_text(), '{"a":1}\n{"b":2}\n')
             reg = json.loads(Path(repo, "state/lab_registrations.json").read_text())
