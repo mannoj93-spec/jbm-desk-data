@@ -1,4 +1,4 @@
-# JBM desk data — research-integrity revision 2.11
+# JBM desk data — research-integrity revision 2.12
 
 A small, standard-library Python project that preserves public crypto-market history,
 registers forecasts before their start, and produces reviewable research reports.
@@ -24,7 +24,10 @@ Revision 2.10 (lab-2.2) gives the collection-based modules one causal, frozen co
 observation per UTC hour instead of only when a run happened to start before :15, and reports
 comparison coverage. Revision 2.11 makes a control usable only once its decision time is within
 the cutoff and makes every calculation use the stored selection, with integrity checks that fail
-the lab run visibly. The collector itself is unchanged.
+the lab run visibly. Revision 2.12 stops an evaluation whose required input integrity fails from
+recording a checkpoint, a verdict, frozen decisions, a watermark advance or a skill proposal, and
+the persist job refuses outputs that do not match the lab's publication metadata; merge
+equality is canonical JSON. The collector itself is unchanged.
 See [CHANGELOG.md](CHANGELOG.md) and [VALIDATION.md](VALIDATION.md).
 
 **Deployed** on GitHub Actions since 2026-09-22 23:24Z (first run `runner: github`); hourly until
@@ -277,6 +280,7 @@ python scripts/repro_integrity.py [CODE_ROOT]    # the 2.7 review's reproduction
 python scripts/repro_integrity_29.py [CODE_ROOT] # the 2.8 review's reproductions, before/after
 python scripts/replay_controls_210.py CODE DATA CUTOFF_MS   # hourly controls, before/after (read-only)
 python scripts/repro_controls_211.py [CODE_ROOT]            # 2.10 review: cutoff and authority, before/after
+python scripts/repro_publication_212.py [CODE_ROOT]         # 2.11 review: publication gate and canonical merge, before/after
 ```
 
 **Evaluation versions.** A design (`lab/designs/*.json`) is evaluated under a version id that
@@ -325,6 +329,20 @@ Controls are validated before labelling, the labelled controls are compared with
 (fingerprints), and any unresolved conflict or mismatch is a RESEARCH INTEGRITY FAILURE in the
 report that makes the lab exit 1; `scripts/merge_research.py` rejects an incoming batch computed
 from a losing selection or checkpoint (exit 3, nothing merged).
+Since 2.12 that integrity check is a precondition of evaluation (`experiments.input_integrity`,
+run after labelling and before anything is written): a design using hourly controls whose check
+fails or is incomplete is **blocked** - no frozen decision, outcome or checkpoint is written (a
+recorded "supported" checkpoint is shown as history and cannot override it), its watermark is not
+advanced so a later valid run evaluates the same decisions as new, no proposal is made, and its
+card names the reasons and the last valid result. Bar-based designs report `not_required`. All
+evaluation writes of a design happen only after every variant has run without error.
+`evidence.publication` is the one publication decision (card, report, proposals, summary); the lab
+writes it per design in `--summary lab-summary.json` (schema `lab_summary/2`: design, evaluation
+version, cutoff, validation status and reasons, publication decision), and the persist job's merge
+refuses (exit 4, nothing merged) a batch whose rows, cards, index, reports or watermarks are
+missing, stale or contradict it. Merge equality is canonical JSON (key order and whitespace
+ignored; values, array order and types significant), so reformatted copies of stored records
+neither conflict nor duplicate.
 Cards and `reports/research.md` show comparison coverage: hours covered, eligible and selected,
 missing hours with reasons, delay after the hour, closed versus partial hours, and per horizon the
 controls selected / mature / scorable / retained / baseline-usable. Only the design's primary

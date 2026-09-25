@@ -46,7 +46,9 @@ jobs:
           if [ -z "$days" ]; then
             if [ "$(date -u +%H)" = "00" ]; then days=60; else days=0; fi
           fi
-          python -m lab.run update --reconstruct-days "$days" | tee lab-summary.json
+          # lab-summary.json is the publication metadata (schema lab_summary/2) the persist job checks
+          # every output against; the lab writes it itself so stray output cannot corrupt it
+          python -m lab.run update --reconstruct-days "$days" --summary lab-summary.json
       - name: Refresh the coverage report (no scoring, no other side effects)
         id: report
         if: always()
@@ -90,6 +92,10 @@ jobs:
         with:
           name: research-${{ github.run_id }}
           path: ${{ runner.temp }}/incoming
+      # Publication gate (2.12): the merge exits non-zero BEFORE writing anything when the batch
+      # conflicts with stored records (3) or does not match the lab's publication metadata (4) -
+      # missing/stale summary, a checkpoint, decision, watermark or proposal from an evaluation whose
+      # research integrity failed. This step then fails and the commit step never runs.
       - name: Merge without rewinding newer content (append-only rows; newer reports win)
         run: |
           python scripts/merge_research.py "${{ runner.temp }}/incoming" .

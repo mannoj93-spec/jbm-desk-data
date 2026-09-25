@@ -1,4 +1,4 @@
-"""Evidence cards, the research report and skill-change proposals (lab-2.2, revisions 2.10-2.11).
+"""Evidence cards, the research report and skill-change proposals (lab-2.2, revisions 2.10-2.12).
 
 Cards are versioned: research/evidence/v2/<design>@<evaluation version>.json (schema
 evidence_card/2), one per evaluation version, never overwritten by another version.
@@ -19,6 +19,17 @@ reports/skill_proposals.md proposes a change ONLY for a design whose current ver
 "supported" by a recorded checkpoint whose manifest re-verifies, and quotes that checkpoint's
 numbers (never the growing live summary); otherwise it says why not. Nothing here edits a skill file. No card or report calls a
 result significant, profitable or an edge.
+
+PUBLICATION (2.12). publication(card) is the single decision used by the card, the run summary
+(run_summary, read by scripts/merge_research.py), the report and skill_proposals: an attempt is
+evaluation_valid only when its required research integrity passed or is not required
+(experiments.evaluation_allowed) and it did not error; a proposal additionally needs status
+"supported" from a re-verifying recorded checkpoint. A failed or incomplete integrity check
+suppresses proposals even when an earlier recorded checkpoint says "supported". The card of a
+failed attempt carries attempt (this cutoff, not valid) and last_valid_result (the last valid
+card of this version, or none) so the last valid evidence is kept without being presented as a
+current passing evaluation. Collection health (reports/latest.md), research integrity and
+publication eligibility are reported separately.
 """
 from pathlib import Path
 
@@ -133,10 +144,15 @@ def card(design, result, commit, input_hashes, registration, superseded, account
     for p in primary["passes"]:
         passes[p["basis"]] = {k: p[k] for k in ("state", "reasons", "coverage", "window", "firings", "episodes",
                                                 "controls", "quality", "freeze_audit", "data_sha256")}
-        passes[p["basis"]]["phases"] = {ph: _public(s) for ph, s in p["phases"].items()}
+        if result.get("evaluation_blocked"):
+            passes[p["basis"]]["phases"] = {}
+            passes[p["basis"]]["phases_withheld"] = ("research integrity did not pass: descriptive summaries "
+                                                     "computed from unvalidated inputs are not published")
+        else:
+            passes[p["basis"]]["phases"] = {ph: _public(s) for ph, s in p["phases"].items()}
     return {
         "schema": CARD_SCHEMA, "design": design["id"], "evaluation_version": design["_version"],
-        "design_version": design.get("version"), "design_sha256": design["_sha256"],
+        "cutoff_ms": result["t"], "design_version": design.get("version"), "design_sha256": design["_sha256"],
         "version_components": design["_components"], "registered_at": iso(registration["registered"]) if registration else None,
         "superseded_versions": superseded, "module": design["module"], "family": design["family"],
         "condition": design["question"], "comparison": design["comparison"],
@@ -160,7 +176,7 @@ def card(design, result, commit, input_hashes, registration, superseded, account
                                "before each UTC day (and before a checkpoint's cutoff); residual difference"},
         "costs": outcomes.COST_MODEL, "exclusions": design.get("exclusions", []),
         "failures": [f"{p['basis']}: {r}" for p in primary["passes"] for r in p["reasons"]],
-        "contradictory_evidence": contradictions(design, result),
+        "contradictory_evidence": [] if result.get("evaluation_blocked") else contradictions(design, result),
         "tested_variants": [{"name": v["name"], "params": v["params"], "descriptive": v["descriptive"],
                              "by_basis": {p["basis"]: {"episodes": p["episodes"], "state": p["state"]}
                                           for p in v["passes"]}} for v in result["variants"]],
@@ -177,11 +193,98 @@ def card(design, result, commit, input_hashes, registration, superseded, account
 
 def error_card(design, res, now):
     return {"schema": CARD_SCHEMA, "design": design["id"], "evaluation_version": design.get("_version"),
-            "module": design["module"], "family": design["family"], "condition": design["question"],
+            "cutoff_ms": now, "research_integrity": res.get("integrity"), "module": design["module"], "family": design["family"], "condition": design["question"],
             "status": res["status"], "status_reason": res["status_reason"], "error": res.get("error"),
             "primary_horizon_min": design["outcome"]["primary_horizon"], "passes": {},
             "min_retained_observations": design.get("min_retained_observations"),
             "contradictory_evidence": [], "limitations": LIMITATIONS, "generated_at": iso(now)}
+
+
+# ---- publication (2.12) ----------------------------------------------------------------------------
+PUBLICATION_SCHEMA = "publication/1"
+SUMMARY_SCHEMA = "lab_summary/2"
+
+
+def verified_supported(card):
+    """The recorded checkpoint a proposal would quote: supported and re-verified, else None."""
+    return next((r for r in (card.get("checkpoints") or {}).get("records") or []
+                 if r.get("verdict") == "supported" and r.get("verified")), None)
+
+
+def publication(card):
+    """The single publication decision for one attempt (see the module docstring)."""
+    integ = card.get("research_integrity")
+    st = card.get("status")
+    valid = experiments.evaluation_allowed(integ) and st not in ("error", "not run")
+    reasons = []
+    if not integ:
+        reasons.append("research integrity result missing")
+    elif not experiments.evaluation_allowed(integ):
+        reasons.append(f"research integrity {integ.get('status')}: " + ("; ".join(integ.get("reasons") or []) or "no reason"))
+    if st in ("error", "not run"):
+        reasons.append(f"evaluation {st}: {card.get('status_reason')}")
+    cp = verified_supported(card)
+    proposal = bool(valid and st == "supported" and cp is not None)
+    if valid and st == "supported" and cp is None:
+        reasons.append("status supported but no recorded checkpoint re-verifies")
+    return {"schema": PUBLICATION_SCHEMA, "design": card.get("design"), "evaluation_version": card.get("evaluation_version"),
+            "cutoff_ms": card.get("cutoff_ms"), "status": st,
+            "validation": {"required": (integ or {}).get("required"), "status": (integ or {}).get("status", "missing")},
+            "evaluation_valid": valid, "proposal_eligible": proposal,
+            "proposal_checkpoint": ({"look": cp["look"], "manifest_sha256": cp["manifest_sha256"]} if proposal else None),
+            "reasons": reasons}
+
+
+def previous_card(base, card):
+    """The card currently stored for this design version (None if none or unreadable)."""
+    if not card.get("evaluation_version"):
+        return None
+    return read_json(Path(base) / "research/evidence/v2" / f"{card['design']}@{card['evaluation_version']}.json", None)
+
+
+def _valid_view(c):
+    return {"cutoff": iso(c.get("cutoff_ms")) if c.get("cutoff_ms") else c.get("generated_at"),
+            "cutoff_ms": c.get("cutoff_ms"), "status": c.get("status"), "status_reason": c.get("status_reason"),
+            "checkpoints": [{k: r.get(k) for k in ("look", "n", "cutoff", "verdict", "manifest_sha256", "verified")}
+                            for r in (c.get("checkpoints") or {}).get("records") or []]}
+
+
+def with_attempt(card, previous=None):
+    """Attach the publication decision, this attempt, and the last valid result of this version."""
+    card = dict(card, publication=publication(card))
+    valid = card["publication"]["evaluation_valid"]
+    card["attempt"] = {"cutoff": iso(card.get("cutoff_ms")), "cutoff_ms": card.get("cutoff_ms"),
+                       "status": card.get("status"), "evaluation_valid": valid}
+    if valid:
+        card["last_valid_result"] = {"this_attempt": True, "cutoff_ms": card.get("cutoff_ms")}
+    else:
+        prev = previous or {}
+        if (prev.get("publication") or {}).get("evaluation_valid") is True:
+            card["last_valid_result"] = dict(_valid_view(prev), this_attempt=False)
+        else:
+            lv = prev.get("last_valid_result")
+            card["last_valid_result"] = lv if isinstance(lv, dict) and not lv.get("this_attempt") else None
+    return card
+
+
+def run_summary(results, cards, now, commit, write, meta):
+    """Machine-readable summary of a lab run (stdout / --summary): the publication metadata the
+    persist job verifies before publishing anything."""
+    by = {c["design"]: c for c in cards}
+    designs = {}
+    for r in results:
+        c = by.get(r["design"]) or {}
+        pub = c.get("publication") or publication(dict(c, design=r["design"], status=r["status"]))
+        integ = r.get("integrity")
+        designs[r["design"]] = {
+            "design": r["design"], "version": r.get("version"), "cutoff_ms": now, "cutoff": iso(now),
+            "status": r["status"], "reason": r["status_reason"], "seconds": r.get("seconds"),
+            "passes": [(p["basis"], p["state"], p["episodes"]) for v in r.get("variants", [])[:1] for p in v["passes"]],
+            "validation": {"required": (integ or {}).get("required"), "status": (integ or {}).get("status", "missing"),
+                           "reasons": (integ or {}).get("reasons") or []},
+            "integrity": integ, "publication": pub, "last_valid_result": c.get("last_valid_result")}
+    return {"schema": SUMMARY_SCHEMA, "t": iso(now), "cutoff_ms": now, "seconds": meta["seconds"], "commit": commit,
+            "code_sha256": meta.get("code_sha256"), "wrote": write, "designs": designs}
 
 
 def write_cards(base, cards, now):
@@ -193,7 +296,12 @@ def write_cards(base, cards, now):
         entry = index["designs"].setdefault(c["design"], {"versions": {}})
         entry["current"] = c.get("evaluation_version")
         entry["versions"].setdefault(c.get("evaluation_version") or "none", {})
-        entry["versions"][c.get("evaluation_version") or "none"].update(status=c["status"], updated=iso(now))
+        pub = c.get("publication") or publication(c)
+        lv = c.get("last_valid_result") or {}
+        entry["versions"][c.get("evaluation_version") or "none"].update(
+            status=c["status"], updated=iso(now), evaluation_valid=pub["evaluation_valid"],
+            validation=pub["validation"]["status"], proposal_eligible=pub["proposal_eligible"],
+            last_valid=(iso(lv.get("cutoff_ms")) if lv.get("cutoff_ms") else None))
         for old in c.get("superseded_versions") or []:
             v = entry["versions"].setdefault(old, {})
             v.update(status="retired (superseded)")
@@ -267,14 +375,34 @@ def coverage_lines(c):
     return L
 
 
+def _integ_cell(c):
+    i = c.get("research_integrity")
+    if not i:
+        return "MISSING"
+    return {"not_required": "not required (bar-based)", "passed": "passed", "failed": "FAILED",
+            "incomplete": "INCOMPLETE"}.get(i.get("status"), str(i.get("status")))
+
+
+def _pub_cell(c):
+    pub = c.get("publication") or publication(c)
+    if not pub["evaluation_valid"]:
+        return "BLOCKED"
+    return "valid; proposal eligible" if pub["proposal_eligible"] else "valid"
+
+
 def report(cards, now, meta):
     L = [f"# Research evidence", "",
          f"Generated {iso(now)} (input cutoff {iso(meta['cutoff'])}); {LAB_VERSION}; code {meta['code_sha256'][:12]}; "
          f"commit {meta.get('commit') or 'n/a'}; cost model {outcomes.COST_MODEL['version']} (assumed fees). "
          "Refreshed by the Research lab workflow every 6 hours; anything older is stale.", "",
          "Descriptive intervals only. Decisions are as-of replays by a 6-hourly lab, not live executions.", "",
+         "Three separate signals: **collection health** is the collector's (reports/latest.md; the Data column is "
+         "the state of this design's inputs); **research integrity** is whether the design's required inputs "
+         "(hourly controls: policy conflicts, stored = labelled) validated in this attempt; **publication** is "
+         "whether this attempt's evaluation may stand as the current result and, if supported, feed a proposal. A "
+         "blocked attempt names the last valid result instead of presenting it as current.", "",
          "| Module | Design @ version | Status | Evaluation retained / blocks (primary h) | Adjusted diff | "
-         "Baseline residual diff (adj.) | Data |", "|---|---|---|---|---|---|---|"]
+         "Baseline residual diff (adj.) | Data | Integrity | Publication |", "|---|---|---|---|---|---|---|---|---|"]
     for c in cards:
         ph = str(c["primary_horizon_min"])
         pro = (c.get("passes") or {}).get("prospective") or {}
@@ -284,16 +412,25 @@ def report(cards, now, meta):
                  f"{cnt.get('retained', 0)}/{c.get('min_retained_observations')} ; {cnt.get('blocks', 0)} | "
                  f"{_ci((ev.get('diff_test_minus_reference') or {}).get('adjusted'))} | "
                  f"{_ci(((ev.get('baseline') or {}).get('residual_diff') or {}).get('adjusted'))} | "
-                 f"{pro.get('state', 'n/a')} |")
+                 f"{pro.get('state', 'n/a')} | {_integ_cell(c)} | {_pub_cell(c)} |")
     L += ["", "## Per design", ""]
     for c in cards:
         ph = str(c["primary_horizon_min"])
         L.append(f"### {c['design']} @ {c.get('evaluation_version')} - {c['status']}")
         L.append(f"{c['condition']} Status: {c['status_reason']}.")
+        pub = c.get("publication") or publication(c)
+        L.append(f"- research integrity: {_integ_cell(c)}; publication: {_pub_cell(c)}"
+                 + (f" ({'; '.join(pub['reasons'])})" if pub["reasons"] else ""))
+        if not pub["evaluation_valid"]:
+            lv = c.get("last_valid_result")
+            L.append("- LATEST ATTEMPT BLOCKED at " + str(iso(c.get("cutoff_ms"))) + "; last valid result of this version: "
+                     + (f"{lv['status']} as of {lv['cutoff']} (history, not a current passing evaluation)" if lv
+                        else "none recorded"))
         cp = c.get("checkpoints") or {}
+        hist = "" if pub["evaluation_valid"] else " [recorded earlier; history]"
         for r in cp.get("records") or []:
             L.append(f"- checkpoint {r['look']}: n={r['n']}, cutoff {r['cutoff']}, verdict {r['verdict']}, manifest "
-                     f"{r['manifest_sha256'][:12]} ({'re-verified' if r['verified'] else 'FAILED re-verification'})")
+                     f"{r['manifest_sha256'][:12]} ({'re-verified' if r['verified'] else 'FAILED re-verification'}){hist}")
         if cp.get("pending"):
             q = cp["pending"]
             L.append(f"- checkpoint {q['look']} pending: {q['retained']}/{q['need']} retained test observations known")
@@ -335,16 +472,19 @@ def skill_proposals(cards, now):
          "effect, out-of-sample baseline added value, comparability, stability) at a RECORDED checkpoint whose manifest "
          "re-verifies; the wording quotes that checkpoint, not later data. " + HORIZON_RULE, ""]
 
-    def evidence_cp(c):
-        return next((r for r in (c.get("checkpoints") or {}).get("records") or []
-                     if r["verdict"] == "supported" and r["verified"]), None)
-    supported = [c for c in cards if c["status"] == "supported" and evidence_cp(c)]
+    evidence_cp = verified_supported
+    supported = [c for c in cards if publication(c)["proposal_eligible"]]
     if not supported:
         L += ["**No change is proposed.** No design's current version is supported by a verified checkpoint.", "",
               "| Design @ version | Status | Why no proposal |", "|---|---|---|"]
         for c in cards:
             why = c["status_reason"]
-            if c["status"] == "supported":
+            pub = publication(c)
+            if not pub["evaluation_valid"]:
+                why = "proposal suppressed - " + "; ".join(pub["reasons"])
+                if any(r.get("verdict") == "supported" for r in (c.get("checkpoints") or {}).get("records") or []):
+                    why += " (an earlier recorded checkpoint says supported; it cannot override failed input integrity)"
+            elif c["status"] == "supported":
                 why = "status supported but no recorded checkpoint re-verifies; proposal withheld"
             pro = (c.get("passes") or {}).get("prospective") or {}
             if pro.get("reasons"):
@@ -367,7 +507,12 @@ def skill_proposals(cards, now):
               f"Contradictory evidence: {c['contradictory_evidence'] or 'none recorded'}.",
               f"Card: research/evidence/v2/{c['design']}@{c['evaluation_version']}.json", ""]
     for c in cards:
-        if c["status"] == "supported" and not evidence_cp(c):
+        pub = publication(c)
+        if c in supported:
+            continue
+        if not pub["evaluation_valid"]:
+            L.append(f"- {c['design']} @ {c.get('evaluation_version')}: proposal suppressed - {'; '.join(pub['reasons'])}.")
+        elif c["status"] == "supported":
             L.append(f"- {c['design']} @ {c.get('evaluation_version')}: status supported but no recorded checkpoint "
                      "re-verifies; proposal withheld.")
     return "\n".join(L) + "\n"

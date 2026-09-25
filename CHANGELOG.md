@@ -1,3 +1,69 @@
+# Research-integrity revision 2.12 (lab-2.2, publication gate) — 2026-09-25
+
+Response to the review of 2.11 (commit `b4db7d0`). Current main was inspected first: since
+`b4db7d0` only automated data commits had landed, so both findings applied to the running code.
+Both were reproduced on `b4db7d0` with `scripts/repro_publication_212.py` and with
+`regression/test_rev212.py` (runs against any code tree). Collection cadence, API budgets,
+hypotheses, thresholds, costs, horizons, sample/block minimums and skills are unchanged.
+
+| # | Finding (reproduced on b4db7d0) | Fix | Tests (`regression/test_rev212.py`) |
+|---|---|---|---|
+| 1 | A stored control persisted 1 ms before its own decision was withheld and reported as an unresolved conflict, yet at the checkpoint boundary (normal 100 retained / 20 blocks) the same run recorded a verified **supported** checkpoint, wrote a card with `status: supported` and `research_integrity.ok: false`, generated a skill proposal and advanced the watermark; the lab exited 1 but `merge_research.py` published all of it. Cause: the integrity check ran in `lab/run.py` after `run_design` had persisted decisions and appended checkpoints; proposals ignored it; the persist job merged before the red step | `experiments.input_integrity` runs on the primary prospective pass after labelling and BEFORE anything is written: control-policy conflicts (unresolved, malformed in either mode, ready-but-unselected), writing-run controls = stored selections, every labelled control = the selection it came from (`controls.evidence_agreement`), and a missing policy report or window = `incomplete`. Failed or incomplete -> the evaluation is **blocked**: no decision, outcome or checkpoint written, no look consumed, status `blocked` with the reasons; earlier records shown as history only. `experiments.next_run_state` (hashed) holds the watermark of a blocked design. All of a design's evaluation writes are deferred until every variant has run without error. `evidence.publication` is the single publication decision used by card, index, report, proposals and the summary; proposals require a valid evaluation, so an earlier recorded "supported" checkpoint cannot produce one while integrity fails. The lab writes `--summary lab-summary.json` (`lab_summary/2`); the merge refuses (exit 4, nothing merged) a batch whose checkpoints, decisions, outcomes, watermarks, cards, index, reports or proposals are missing, stale or contradict it | boundary reproduction through `lab.run.main` + merge; recovery (look 2 completed by a later valid run, look 1 bytes identical, the decisions of the blocked run evaluated as new, not late replays); malformed timing (missing / string / impossible source time); future-persisted winner; stored-versus-labelled mismatch; missing diagnostics; missing window; an error in a later variant; read-only replay; tampered handoff (2.11 outputs injected); missing / unreadable / old-schema / stale / contradictory summary; partial artifact; bar-based designs `not_required` |
+| 2 | `conflicts()` compared raw lines: the same record with other whitespace or key order was a `RECONCILIATION CONFLICT` (exit 3). A batch whose first record for a key was a legacy loser was accepted | Equality is `canon()`: parsed JSON, keys sorted at every depth, no whitespace; values, array order, types (1 / 1.0 / "1" / true, -0.0) and all fields significant, no tolerance; non-objects, duplicate keys and out-of-range numbers are unreadable. Same rule for controls, checkpoints and unkeyed logs; a reformatted copy is neither appended nor rewritten (stored bytes kept). A new record for an existing key must equal the stored FIRST record; the batch's first record per key must be that record; one batch may not carry two records for a key; a legacy duplicate repeated verbatim is tolerated | whitespace, nested key order, padded lines; checkpoints and ledger rows; value / array order / string-vs-number / int-vs-float / extra or missing field conflicts with no partial mutation; legacy duplicate files verbatim and reformatted (merge) vs legacy loser first, reversed order, a third record (conflict); two records in one batch; unreadable rows |
+
+**How an integrity-failed evaluation is kept from publishing a supported result or proposal.**
+(1) In the lab, `run_design` computes `input_integrity` from the labels it just built; unless it
+passes (or is not required) the checkpoint walk is never run, `persist` is never called and the
+status is `blocked`, so no new checkpoint, verdict or frozen decision exists to publish.
+(2) `lab/run.py` keeps the watermark and exits 1. (3) `evidence.publication` marks the attempt not
+valid, so the card, index and report say BLOCKED, the proposal list suppresses it even when an
+older recorded checkpoint is supported, and the summary records the same decision. (4) The persist
+job's merge checks the whole batch against that summary before writing: any new checkpoint,
+decision or outcome row, advanced watermark, supported status or proposal for a design that is not
+valid - or any missing, stale or contradictory metadata - rejects the batch (exit 4) and the commit
+step never runs. A correct blocked batch is published, so the failure stays visible, and the
+workflow still ends red (lab exit 1).
+
+**Adversarial review of the first 2.12 draft** (separate agent, read-only; also ran real-data
+compute/merge cycles): no bypass of the gate; one medium and six low findings, all fixed with
+regressions - an error in a later variant left the primary pass's decisions and checkpoint written
+(writes are now deferred); a read-only replay passed a malformed record that a writing run failed;
+a missing comparison window counted as passed; the merge checked only files present (a partial
+artifact could leave an older card or proposal current); unreadable/overflow rows ended in a
+traceback; the watermark rule was outside the version hash; blocked cards still carried descriptive
+intervals from the unvalidated inputs (now withheld, ledger numbers nulled). A second review pass
+could not run (API rate limit); the fixes were verified by the new tests and by real-data runs.
+
+**Behaviour changes in existing tests.** Four merge tests now supply publication metadata
+(`regression/publication_fixture.py`); without it the merge exits 4 (they assert that too). The
+2.9 proposal test's card now carries its (bar-based, `not_required`) integrity result: a card
+without one is refused a proposal.
+
+**Before / after** (`python scripts/repro_publication_212.py [tree]`): b4db7d0 - lab exit 1, lab
+output and published repository both hold checkpoint 1 `supported`, card `supported` with
+`research_integrity.ok: false`, a proposal, watermark advanced, merge exit 0. 2.12 - lab exit 1,
+no checkpoint, card `blocked` ("research integrity failed: unresolved stored control for hour
+2026-10-13T20:00Z: malformed: persisted before its own decision"), no proposal, watermark held,
+last valid result named, merge exit 0 publishing only the blocked diagnostics. Formatting:
+b4db7d0 exit 3 for a reformatted identical control; 2.12 exit 0, one stored line, bytes unchanged;
+a genuinely different record exits 3 on both.
+
+**Versions.** `lab/experiments.py` (COMMON, hashed into every design) changed, so all eight
+evaluation versions and clocks change: A1 `ev-c368833b5ae6`, B1 `ev-125c86066f05`, C1
+`ev-eb20553bce1c`, D1 `ev-2b023a90293f`, E1 `ev-6f279983100b`, F1 `ev-1c53cfe81c9f`, G1
+`ev-5cbc55c34b6d`, H1 `ev-02fcecefd1bf` (from `ev-c35cdb2bc9bc`, `ev-5db159f025fd`,
+`ev-2ace4c5a6647`, `ev-ffa18ae355ef`, `ev-79ea1d99704b`, `ev-33998e4f9082`, `ev-44a97c2d5259`,
+`ev-e76cbdabf3f9`). The dependency scheme hashes whole files, so the bar-based designs' clocks
+cannot be preserved without excluding changed evaluation logic, which is not done. Observations
+before each new registration are reanalysis. Old namespaces, registrations and cards are kept.
+`lab/evidence.py`, `lab/run.py` and the merge are presentation / persistence and unhashed.
+
+**Tests.** 324 regression tests (303 + 21 in `test_rev212.py`) on Python 3.11 and 3.12; 25
+numerical fixtures. On b4db7d0 the new file gives 9 failures (the reproductions), 9 skips (new
+interfaces) and 3 passes (`*_preserved`: a valid run still reaches a supported 100/20 checkpoint;
+a competing writer's stored winner is what labels, baseline and checkpoint reference rows use;
+real differences still conflict).
+
 # Research-integrity revision 2.11 (lab-2.2, control policy 2) — 2026-09-25
 
 Response to the review of 2.10 (commit `8432df0`). Current main was inspected first: since

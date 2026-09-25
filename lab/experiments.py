@@ -60,6 +60,20 @@ PROMOTION ("supported") requires, at a scheduled look, ALL of:
   comparability   for event-group references, median severity within 25% between the groups
   stability       the same sign in both chronological halves of the look sample
 A look whose adjusted effect interval lies wholly on the wrong side retires the version.
+
+INPUT INTEGRITY (revision 2.12). A design whose comparison observations come from the hourly
+collection-time control policy (HOURLY_CONTROL_MODULES, or any pass reporting that policy) is
+evaluated only when input_integrity() passes on the primary prospective pass: the control policy
+reports no unresolved conflict and no ready-but-unselected closed hour, a writing run's controls
+equal the stored selections, and every labelled control equals the selection it came from
+(controls.evidence_agreement), all checked AFTER labelling and BEFORE anything is persisted. A
+failed or incomplete check BLOCKS the evaluation: no frozen decision or outcome is persisted, no
+checkpoint look is computed or recorded (an earlier record is shown as history, never as the
+current result), the status is "blocked" with the reasons, and lab/run.py does not advance the
+design's watermark, so a later valid run evaluates the same observations as new (not as late
+replays) and completes the unconsumed look. A recorded, re-verifying checkpoint cannot override
+failed input integrity. Bar-based designs (controls at stored bar closes) have no such
+requirement and report "not_required".
 "supported" means these descriptive criteria were met on prospective replays; it is not a claim of
 significance or of profitability, and it is the only status that allows a skill-change proposal.
 """
@@ -69,6 +83,7 @@ from pathlib import Path
 
 from storage import append_unique
 
+from lab import controls as controls_mod
 from lab import outcomes, stats, versioning
 from lab.asof import Known
 from lab import baseline as baseline_mod
@@ -579,6 +594,90 @@ def status(design, records, pending, superseded=False):
     return "exploratory", "no evaluation observations yet"
 
 
+# ---- input integrity (2.12) ----------------------------------------------------------------------
+HOURLY_CONTROL_MODULES = ("account_behavior", "liq_exposure", "options_disagreement")
+INTEGRITY_OK = ("passed", "not_required")
+
+
+def evaluation_allowed(integrity):
+    """THE publication rule shared by run_design (persist / checkpoints), lab/run.py (watermark,
+    exit code, summary) and lab/evidence.py (card, report, proposals): an evaluation may be persisted
+    and published only when its required input integrity passed or is not required. Missing ->
+    not allowed."""
+    return bool(integrity) and integrity.get("status") in INTEGRITY_OK
+
+
+def next_run_state(prev, now, result):
+    """The design version's evaluation watermark after a run (state/lab_run_state.json, read back as
+    run_state["last_cutoff"] by freeze(), which marks decisions available by it as late replays).
+    It advances only when the evaluation was allowed; a blocked run leaves it where it was, so the
+    decisions that run saw are evaluated as new by the next valid run."""
+    if not evaluation_allowed((result or {}).get("integrity")):
+        return prev
+    return {"last_cutoff": now, "runs": (prev or {}).get("runs", 0) + 1}
+
+
+def input_integrity(lab, design, p, labelled):
+    """Required-input integrity of a primary prospective pass, from the lab's own objects:
+    the control policy diagnostics (p["coverage"]["comparison"]), the controls the pass used and the
+    labels actually computed. status: not_required | passed | failed | incomplete; reasons name each
+    failure. In a writing run the labelled controls must equal the STORED selections; in a read-only
+    run, the controls the module returned (provisional)."""
+    comp = (p.get("coverage") or {}).get("comparison")
+    uses = design["module"] in HOURLY_CONTROL_MODULES or (comp or {}).get("policy") == controls_mod.POLICY
+    out = {"required": uses, "policy": controls_mod.POLICY if uses else None, "status": "not_required",
+           "reasons": [], "policy_failures": 0, "unresolved_conflicts": [], "ready_but_unselected": [],
+           "evidence_agreement": None, "used_equals_stored": None, "controls_fingerprint": None,
+           "stored_fingerprint": None, "ok": True}
+    if not uses:
+        return out
+    reasons = []
+    if not comp or comp.get("policy") != controls_mod.POLICY:
+        reasons.append("incomplete: the pass reported no hourly control-policy diagnostics")
+        return dict(out, status="incomplete", reasons=reasons, ok=False)
+    windowed = comp.get("window") is not None
+    unresolved = comp.get("unresolved_conflicts") or [] if windowed else []
+    ready = comp.get("closed_hours_with_candidates_but_no_control") or [] if windowed else []
+    # a malformed stored record is a conflict in a read-only replay too (a writing run already lists it
+    # as unresolved); only "persisted after this cutoff" / "later stored selection differs" are
+    # legitimate states of a replay at an earlier cutoff
+    seen = {h for h, _ in unresolved}
+    malformed = [(h, why) for h, why in (comp.get("withheld_stored") or [] if windowed else [])
+                 if str(why).startswith("malformed") and h not in seen]
+    for h, why in unresolved + malformed:
+        reasons.append(f"unresolved stored control for hour {iso(h)}: {why}")
+    for h in ready:
+        reasons.append(f"closed hour {iso(h)} had an eligible candidate but no control")
+    write = bool(getattr(lab, "write", False)) and getattr(lab, "control_context", None) is not None
+    if write:
+        expected = controls_mod.load_selections(lab.base, design)
+        if windowed and comp.get("used_equals_stored") is not True:
+            reasons.append("incomplete: the controls used were not confirmed equal to the stored selections"
+                           if comp.get("used_equals_stored") is None else
+                           "the controls used differ from the stored selections")
+    else:
+        expected = {c.get("control_hour"): c for c in p.get("controls") or []}
+    labelled_controls = [e for e, _, _ in labelled if e.get("group") == "control_long"]
+    if not windowed and (labelled_controls or (write and expected)):
+        reasons.append("incomplete: controls exist but the pass reported no comparison window to validate them in")
+    agree = controls_mod.evidence_agreement(labelled, expected)
+    unpolicied = [e.get("control_hour") for e, _, _ in labelled
+                  if e.get("group") == "control_long" and e.get("control_policy") != controls_mod.POLICY]
+    if unpolicied:
+        reasons.append(f"{len(unpolicied)} labelled controls carry no {controls_mod.POLICY} selection")
+    for h in agree["mismatches"]:
+        reasons.append(f"labelled control for hour {iso(h) if isinstance(h, int) else h} is not the selection it came from")
+    failed = bool(unresolved or malformed or ready or agree["mismatches"] or unpolicied
+                  or (write and windowed and comp.get("used_equals_stored") is False))
+    incomplete = any(r.startswith("incomplete") for r in reasons)
+    status = "failed" if failed else "incomplete" if incomplete else "passed"
+    return dict(out, status=status, reasons=reasons, ok=status == "passed",
+                policy_failures=comp.get("integrity_failures", 0) if windowed else 0,
+                unresolved_conflicts=unresolved, ready_but_unselected=ready, evidence_agreement=agree,
+                used_equals_stored=comp.get("used_equals_stored"),
+                controls_fingerprint=comp.get("controls_fingerprint"), stored_fingerprint=comp.get("stored_fingerprint"))
+
+
 # ---- running a design ---------------------------------------------------------------------------
 def regime_fn(bars):
     """Descriptive regime label at t: trailing-24h realised volatility above/below the window median
@@ -657,6 +756,7 @@ def run_design(lab, design, module, registration, n_variants, superseded=False, 
     snaps = lab.store.snaps()
     last_cutoff = (run_state or {}).get("last_cutoff")
     variants, ledger, audits = [], [], {}
+    deferred = None
     for variant in design["variants"]:
         res = module.run(lab, variant["params"])
         vout = {"name": variant["name"], "params": variant["params"], "descriptive": bool(variant.get("descriptive")),
@@ -695,19 +795,35 @@ def run_design(lab, design, module, registration, n_variants, superseded=False, 
                           "evaluation": summarize(labelled, design, registration, "evaluation", raw, baselines, n_variants, reg)}
             else:
                 phases = {"exploratory": summarize(labelled, design, None, "exploratory", raw, baselines, n_variants, reg)}
-            if primary_pro and lab.write:
-                persist(lab, design, variant, events, labelled)
-            st = cps = None
+            st = cps = integrity = None
             if primary_pro:
-                records, pending, drift = checkpoints(lab, design, labelled, registration, baselines, variants_at,
-                                                      lab.write)
-                st = status(design, records, pending, superseded)
-                cps = {"records": records, "pending": pending, "drift": drift}
+                # 2.12: required input integrity is checked on the labels just computed, BEFORE any
+                # frozen decision, outcome or checkpoint is persisted
+                integrity = input_integrity(lab, design, p, labelled)
+                allowed = evaluation_allowed(integrity)
+                if allowed:
+                    # computed now, WRITTEN only after every variant has run without error (below)
+                    before = load_checkpoints(lab.base, design)
+                    records, pending, drift = checkpoints(lab, design, labelled, registration, baselines,
+                                                          variants_at, False)
+                    st = status(design, records, pending, superseded)
+                    if lab.write:
+                        deferred = {"variant": variant, "events": events, "labelled": labelled, "pending": pending,
+                                    "new": [r for r in records if r["look"] not in before]}
+                else:
+                    records = [r for _, r in sorted(load_checkpoints(lab.base, design).items())]
+                    pending, drift = None, []
+                    st = ("blocked", f"research integrity {integrity['status']}: "
+                                     f"{'; '.join(integrity['reasons'][:3]) or 'no reason recorded'}"
+                                     f"{'; ...' if len(integrity['reasons']) > 3 else ''}; this attempt evaluated and "
+                                     "recorded no checkpoint and persisted no decision"
+                                     + ("; earlier recorded checkpoints are history, not a current result" if records else ""))
+                cps = {"records": records, "pending": pending, "drift": drift, "evaluated": allowed}
             vout["passes"].append({"basis": p["basis"], "state": p["state"], "reasons": p["reasons"],
                                    "coverage": p["coverage"], "firings": sum(v for k, v in raw.items() if k != "control_long"),
                                    "episodes": len(heads), "controls": len(controls) // 2, "quality": quality,
                                    "freeze_audit": audit, "data_sha256": p.get("data_sha256"), "phases": phases,
-                                   "status": st, "checkpoints": cps,
+                                   "status": st, "checkpoints": cps, "integrity": integrity if primary_pro else None,
                                    "window": [iso(min(p["bars"])) if p["bars"] else None,
                                               iso(max(p["bars"])) if p["bars"] else None]})
             prim = phases.get("evaluation", phases.get("exploratory")).get(str(design["outcome"]["primary_horizon"]), {})
@@ -720,12 +836,38 @@ def run_design(lab, design, module, registration, n_variants, superseded=False, 
         variants.append(vout)
     primary = next(v for v in variants if v["name"] == design["primary_variant"])
     pro = next((p for p in primary["passes"] if p["basis"] == "prospective"), None)
+    if deferred is not None:
+        # 2.12: nothing of the evaluation is written until the whole design has run; an exception in
+        # any variant leaves no decision, outcome or checkpoint behind
+        persist(lab, design, deferred["variant"], deferred["events"], deferred["labelled"])
+        path = Path(lab.base) / ns(design) / "checkpoints.jsonl"
+        stored = {}
+        for rec in deferred["new"]:
+            append_unique(path, [rec], key=lambda r: (r["look"],))
+            stored = load_checkpoints(lab.base, design)
+            if stored.get(rec["look"]) != rec:          # a record already stored stands; stop there
+                break
+        if deferred["new"]:
+            kept = []
+            for r in pro["checkpoints"]["records"]:
+                kept.append(stored.get(r["look"], r))
+                if kept[-1] != r:                         # another record stood: the walk ends there
+                    break
+            pending = deferred["pending"] if len(kept) == len(pro["checkpoints"]["records"]) else None
+            pro["checkpoints"].update(records=kept, pending=pending)
+            pro["status"] = status(design, kept, pending, superseded)
+    if pro is not None and not evaluation_allowed(pro.get("integrity")):
+        for row in ledger:                               # descriptive numbers from unvalidated inputs
+            row.update(evaluation_blocked=True, retained_test=None, **{"diff_alpha_0.10": None})
     st, why = pro["status"] if pro and pro["status"] else ("exploratory", "no prospective pass")
     cps = (pro or {}).get("checkpoints") or {"records": [], "pending": None, "drift": []}
+    integrity = (pro or {}).get("integrity") or {"required": None, "status": "incomplete", "ok": False,
+                                                  "reasons": ["incomplete: no primary prospective pass"]}
     return {"t": lab.now, "design": design["id"], "version": design["_version"], "design_sha256": design["_sha256"],
             "registered": registration["registered"] if registration else None, "module": design["module"],
             "status": st, "status_reason": why, "checkpoints": cps, "variants": variants, "lab_version": LAB_VERSION,
-            "code_sha256": lab.code, "cost_model": outcomes.COST_MODEL, "n_variants_family": n_variants}, ledger
+            "code_sha256": lab.code, "cost_model": outcomes.COST_MODEL, "n_variants_family": n_variants,
+            "integrity": integrity, "evaluation_blocked": not evaluation_allowed(integrity)}, ledger
 
 
 def persist(lab, design, variant, firings, labelled):

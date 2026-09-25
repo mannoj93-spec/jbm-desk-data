@@ -327,7 +327,8 @@ class CheckpointTests(unittest.TestCase):
         dd_ = dict(d, _file="lab/designs/T.json")
         card = {"design": "T", "evaluation_version": "ev-t", "status": "supported", "status_reason": "x",
                 "condition": "q?", "registered_at": "2026-09-22", "primary_horizon_min": 60, "passes": {},
-                "contradictory_evidence": [], "checkpoints": evidence.checkpoint_view(dd_, res)}
+                "contradictory_evidence": [], "checkpoints": evidence.checkpoint_view(dd_, res),
+                "research_integrity": res.get("integrity")}          # 2.12: bar-based, "not_required"
         text = evidence.skill_proposals([card], T0)
         self.assertIn(rec["manifest_sha256"], text)
         iv = rec["checks"]["effect_adjusted"]["interval"]
@@ -471,12 +472,15 @@ class CheckpointMergeTests(unittest.TestCase):
             # 2.11: an incoming batch computed against a different look-1 record is rejected whole
             self.assertEqual(rc, 3)
             self.assertEqual(Path(repo, rel).read_text(), '{"look":1,"verdict":"not_met","completed_at":1}\n')
-            Path(inc, rel).write_text('{"look":1,"verdict":"not_met","completed_at":1}\n'
-                                      '{"look":2,"verdict":"not_met","completed_at":3}\n')
+            look2 = '{"look":2,"verdict":"not_met","completed_at":3,"design":"T","version":"ev-t"}'
+            Path(inc, rel).write_text('{"look":1,"verdict":"not_met","completed_at":1}\n' + look2 + "\n")
+            if hasattr(merge_research, "publication_problems"):          # 2.12: publication metadata required
+                from publication_fixture import batch_metadata
+                batch_metadata(inc, 3, {"T": "ev-t"})
             with patch("sys.stdout", io.StringIO()):
                 self.assertEqual(merge_research.main(inc, repo), 0)
             self.assertEqual(Path(repo, rel).read_text(), '{"look":1,"verdict":"not_met","completed_at":1}\n'
-                                                          '{"look":2,"verdict":"not_met","completed_at":3}\n')
+                                                          + look2 + "\n")
 
 
 class LabelAvailabilityTests(unittest.TestCase):
