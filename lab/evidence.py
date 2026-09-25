@@ -1,4 +1,4 @@
-"""Evidence cards, the research report and skill-change proposals (lab-2.2, revision 2.10).
+"""Evidence cards, the research report and skill-change proposals (lab-2.2, revisions 2.10-2.11).
 
 Cards are versioned: research/evidence/v2/<design>@<evaluation version>.json (schema
 evidence_card/2), one per evaluation version, never overwritten by another version.
@@ -148,6 +148,7 @@ def card(design, result, commit, input_hashes, registration, superseded, account
         "comparison_coverage": {"policy": ((passes.get("prospective") or {}).get("coverage") or {}).get("comparison")
                                 or {"policy": BAR_BASED},
                                 **(accounting or {"by_horizon": None, "decision_timing": None})},
+        "research_integrity": result.get("integrity"),
         "status": result["status"],
         "status_reason": result["status_reason"], "checkpoints": checkpoint_view(design, result),
         "promotion_rules": "lab/experiments.py (module docstring)",
@@ -224,6 +225,23 @@ def coverage_lines(c):
                  f"({pol['frozen_selected']} frozen earlier); {len(miss)} closed hours without a control"
                  + (f" (e.g. {_hm(miss[0][0])}: {miss[0][1]})" if miss else "")
                  + (f"; availability {dl['median']} min after the hour (median, range {dl['min']}-{dl['max']})" if dl else ""))
+        pend = pol.get("pending_processing") or []
+        if pend or pol.get("proposals_accepted") or pol.get("proposals_superseded") or pol.get("withheld_stored"):
+            L.append(f"- selections: {len(pol.get('proposals_accepted') or [])} accepted this run, "
+                     f"{len(pol.get('proposals_superseded') or [])} proposals superseded by stored winners, "
+                     f"{len(pend)} hours pending processing (decision after the cutoff), "
+                     f"{len(pol.get('withheld_stored') or [])} stored records withheld at this cutoff")
+        if pol.get("controls_fingerprint"):
+            L.append(f"- controls used: sha256 {pol['controls_fingerprint'][:16]}"
+                     + (f"; equal to the stored selections: {pol['used_equals_stored']}" if pol.get("used_equals_stored") is not None else ""))
+        integ = cc.get("integrity") or {}
+        if integ and not integ.get("ok", True):
+            L.append(f"- RESEARCH INTEGRITY FAILURE: unresolved conflicts {integ.get('unresolved_conflicts')}; "
+                     f"ready-but-unselected hours {integ.get('ready_but_unselected')}; evidence mismatches "
+                     f"{(integ.get('evidence_agreement') or {}).get('mismatches')}")
+        elif integ.get("evidence_agreement"):
+            ea = integ["evidence_agreement"]
+            L.append(f"- labelled controls = stored selections: {ea['checked']} checked, {len(ea['mismatches'])} mismatches")
         if pol.get("closed_hours_with_candidates_but_no_control"):
             L.append(f"- WARNING: closed hours with eligible candidates but no selected control: "
                      f"{', '.join(_hm(h) for h in pol['closed_hours_with_candidates_but_no_control'])}")

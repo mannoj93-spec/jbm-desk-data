@@ -179,7 +179,7 @@ def main(argv=None):
             # run's cutoff, and a list the module fills with this run's new selections
             lab.control_context = {"frozen": controls.load_selections(a.base, d), "design": d,
                                    "last_cutoff": (run_state.get(key) or {}).get("last_cutoff"), "new": []}
-            captured = []                        # read-only view of the labels run_design computes
+            captured, idx = [], None             # read-only view of the labels run_design computes
             orig_label_all = experiments.label_all
 
             def recording(*args, **kw):
@@ -200,6 +200,20 @@ def main(argv=None):
             except Exception as exc:
                 accounting[key] = {"by_horizon": None, "decision_timing": None,
                                    "error": f"{type(exc).__name__}: {exc}"}
+            # research integrity (2.11): the controls labelled in the primary pass must be the stored
+            # selections, and the control policy must report no unresolved conflict
+            comp = next((p.get("coverage", {}).get("comparison") for v in res["variants"]
+                         if v["name"] == d["primary_variant"] for p in v["passes"] if p["basis"] == "prospective"), None)
+            if comp and comp.get("window") is not None:
+                agree = (controls.evidence_agreement(captured[idx], controls.load_selections(a.base, d))
+                         if write and idx is not None and idx < len(captured) else None)
+                res["integrity"] = {"policy_failures": comp.get("integrity_failures", 0),
+                                    "unresolved_conflicts": comp.get("unresolved_conflicts", []),
+                                    "ready_but_unselected": comp.get("closed_hours_with_candidates_but_no_control", []),
+                                    "evidence_agreement": agree}
+                res["integrity"]["ok"] = (res["integrity"]["policy_failures"] == 0
+                                          and not (agree and agree["mismatches"]))
+                accounting[key] = dict(accounting.get(key) or {}, integrity=res["integrity"])
             if write:
                 run_state[key] = {"last_cutoff": now, "runs": run_state.get(key, {}).get("runs", 0) + 1}
         except Exception as exc:
@@ -232,10 +246,14 @@ def main(argv=None):
                "designs": {r["design"]: {"version": r.get("version"), "status": r["status"],
                                          "reason": r["status_reason"], "seconds": r.get("seconds"),
                                          "passes": [(p["basis"], p["state"], p["episodes"])
-                                                    for v in r.get("variants", [])[:1] for p in v["passes"]]}
+                                                    for v in r.get("variants", [])[:1] for p in v["passes"]],
+                                         "integrity": r.get("integrity")}
                            for r in results}}
     print(json.dumps(summary, indent=1))
-    return 1 if any(r["status"] == "error" for r in results) else 0
+    failed = [r["design"] for r in results if r.get("integrity") and not r["integrity"]["ok"]]
+    if failed:
+        print(f"RESEARCH INTEGRITY FAILURE: {', '.join(failed)} (see reports/research.md)", file=sys.stderr)
+    return 1 if failed or any(r["status"] == "error" for r in results) else 0
 
 
 if __name__ == "__main__":
