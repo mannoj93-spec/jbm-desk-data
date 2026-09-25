@@ -6,6 +6,10 @@ checkout may hold newer commits. This merge never loses or rewinds newer content
   *.jsonl under research/            line union: existing lines kept in order, new lines appended
   research/v2/**/checkpoints.jsonl   the same, except that a look already recorded in the checkout
                                      is never recorded again (the first completed record stands)
+  Conflict rule (2.11): if an incoming control selection or checkpoint has a key that already
+  holds a different record in the checkout, the incoming batch was computed from a losing record;
+  NOTHING is merged, the conflict is printed and the script exits 3 (the persist job fails
+  visibly; committed selections, checkpoints and evidence stand).
   research/v2/<design>/<version>/controls/*.jsonl
                                      the same, keyed by (control_policy, control_hour): the first
                                      stored hourly control selection stands
@@ -66,9 +70,41 @@ def merge_jsonl(src, dst, key=None):
     return len(add)
 
 
+def conflicts(incoming, repo):
+    """Keyed records the incoming batch would lose: an incoming control selection or checkpoint whose
+    key already holds a DIFFERENT record in the checkout. The incoming evidence, checkpoints and
+    reports were computed from the losing record, so they must not be published beside the winner."""
+    keyed = {"controls": lambda x: (x.get("control_policy"), x.get("control_hour")),
+             "checkpoints.jsonl": lambda x: x.get("look")}
+    out = []
+    for src in sorted(incoming.rglob("*.jsonl")):
+        r = src.relative_to(incoming).as_posix()
+        kind = "checkpoints.jsonl" if src.name == "checkpoints.jsonl" else src.parent.name
+        dst = repo / r
+        if not r.startswith("research/v2/") or kind not in keyed or not dst.exists():
+            continue
+        have = {}
+        for line in dst.read_text().splitlines():
+            if line.strip():
+                have.setdefault(keyed[kind](json.loads(line)), set()).add(line)
+        for line in src.read_text().splitlines():
+            if line.strip():
+                k = keyed[kind](json.loads(line))
+                if k in have and line not in have[k]:       # a legacy duplicate already present is no conflict
+                    out.append(f"{r} key {k}")
+    return out
+
+
 def main(incoming, repo):
     incoming, repo = Path(incoming), Path(repo)
     log = []
+    bad = conflicts(incoming, repo)
+    if bad:
+        # Nothing from this batch is merged: the committed selections, checkpoints and evidence stand,
+        # and the next (serialized) lab run recomputes from the stored winners.
+        print("RECONCILIATION CONFLICT - incoming research outputs rejected, nothing merged:\n  "
+              + "\n  ".join(bad), file=sys.stderr)
+        return 3
     for src in sorted(incoming.rglob("*")):
         if not src.is_file():
             continue
