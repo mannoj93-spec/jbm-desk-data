@@ -1,4 +1,4 @@
-"""Research lab entry point (lab-2.1).
+"""Research lab entry point (lab-2.1; publication gate 2.12).
 
   python -m lab.run update                       as-of replay over the collector's stored data
   python -m lab.run update --reconstruct-days 60 also an exploratory historical reconstruction
@@ -19,6 +19,11 @@ legacy lab-1.0 outputs are never touched:
   state/lab_registrations.json (registration clocks, never rewritten), state/lab_run_state.json
 Budget: LAB_BUDGET seconds (default 900); a design not reached is reported as not run. A module
 that raises is reported as an error; the others still run and are written.
+Summary (stdout, and --summary PATH): schema lab_summary/2 - per design the evaluation version, the
+cutoff, status, research-integrity validation (required / status / reasons) and the publication
+decision (evidence.publication). scripts/merge_research.py refuses to publish outputs that do not
+match it. A design whose required input integrity fails is blocked: nothing of its evaluation is
+persisted, its watermark (state/lab_run_state.json) is not advanced, and the run exits 1.
 Never places trades, registers forecasts, or edits skill files.
 """
 import argparse
@@ -141,6 +146,7 @@ def main(argv=None):
     ap.add_argument("--designs", default="", help="comma-separated design ids (default: all)")
     ap.add_argument("--now", type=int, default=None, help="data cutoff in ms (default: now)")
     ap.add_argument("--write-past", action="store_true", help="allow writing with --now (tests only)")
+    ap.add_argument("--summary", default=None, help="also write the machine-readable summary to this path")
     a = ap.parse_args(argv)
     t0 = time.monotonic()
     budget = float(os.environ.get("LAB_BUDGET", 900))
@@ -200,22 +206,15 @@ def main(argv=None):
             except Exception as exc:
                 accounting[key] = {"by_horizon": None, "decision_timing": None,
                                    "error": f"{type(exc).__name__}: {exc}"}
-            # research integrity (2.11): the controls labelled in the primary pass must be the stored
-            # selections, and the control policy must report no unresolved conflict
-            comp = next((p.get("coverage", {}).get("comparison") for v in res["variants"]
-                         if v["name"] == d["primary_variant"] for p in v["passes"] if p["basis"] == "prospective"), None)
-            if comp and comp.get("window") is not None:
-                agree = (controls.evidence_agreement(captured[idx], controls.load_selections(a.base, d))
-                         if write and idx is not None and idx < len(captured) else None)
-                res["integrity"] = {"policy_failures": comp.get("integrity_failures", 0),
-                                    "unresolved_conflicts": comp.get("unresolved_conflicts", []),
-                                    "ready_but_unselected": comp.get("closed_hours_with_candidates_but_no_control", []),
-                                    "evidence_agreement": agree}
-                res["integrity"]["ok"] = (res["integrity"]["policy_failures"] == 0
-                                          and not (agree and agree["mismatches"]))
+            # research integrity (2.12): checked inside run_design before anything was persisted
+            # (experiments.input_integrity); a blocked evaluation must not advance the watermark, so a
+            # later valid run treats the same decisions as new rather than as late replays
+            if (res.get("integrity") or {}).get("required"):
                 accounting[key] = dict(accounting.get(key) or {}, integrity=res["integrity"])
             if write:
-                run_state[key] = {"last_cutoff": now, "runs": run_state.get(key, {}).get("runs", 0) + 1}
+                nxt = experiments.next_run_state(run_state.get(key), now, res)
+                if nxt is not None:
+                    run_state[key] = nxt
         except Exception as exc:
             res, led = {"t": now, "design": d["id"], "version": d.get("_version"), "status": "error",
                         "status_reason": f"{type(exc).__name__}: {exc}", "variants": [], "code_sha256": lab.code,
@@ -227,10 +226,13 @@ def main(argv=None):
     for d, res in zip(designs, results):
         sup = experiments.superseded_versions(a.base, d["id"], d["_version"])
         if not res.get("variants"):
-            cards.append(dict(evidence.error_card(d, res, now), superseded_versions=sup))
+            c = dict(evidence.error_card(d, res, now), superseded_versions=sup)
         else:
-            cards.append(evidence.card(d, res, commit, hashes, registrations.get(d["id"]), sup,
-                                       accounting.get(f"{d['id']}@{d['_version']}")))
+            c = evidence.card(d, res, commit, hashes, registrations.get(d["id"]), sup,
+                              accounting.get(f"{d['id']}@{d['_version']}"))
+        # the one publication decision (evidence.publication) and the last valid result, so a
+        # failed attempt is never presented as the current passing evaluation
+        cards.append(evidence.with_attempt(c, evidence.previous_card(a.base, c)))
     meta = {"code_sha256": lab.code, "commit": commit, "cutoff": cutoff, "seconds": round(time.monotonic() - t0, 1)}
     if write:
         append(a.base, "research/v2/experiments", [dict(compact(r), t_event=r["t"]) for r in results],
@@ -242,17 +244,16 @@ def main(argv=None):
         (Path(a.base) / "reports/research.md").write_text(evidence.report(cards, now, meta))
         (Path(a.base) / "reports/skill_proposals.md").write_text(evidence.skill_proposals(cards, now))
         atomic_json(Path(a.base) / RUN_STATE, run_state)
-    summary = {"t": iso(now), "seconds": meta["seconds"], "commit": commit, "wrote": write,
-               "designs": {r["design"]: {"version": r.get("version"), "status": r["status"],
-                                         "reason": r["status_reason"], "seconds": r.get("seconds"),
-                                         "passes": [(p["basis"], p["state"], p["episodes"])
-                                                    for v in r.get("variants", [])[:1] for p in v["passes"]],
-                                         "integrity": r.get("integrity")}
-                           for r in results}}
-    print(json.dumps(summary, indent=1))
-    failed = [r["design"] for r in results if r.get("integrity") and not r["integrity"]["ok"]]
+    summary = evidence.run_summary(results, cards, now, commit, write, meta)
+    text = json.dumps(summary, indent=1)
+    print(text)
+    if a.summary:                       # the persist job's publication metadata (scripts/merge_research.py)
+        Path(a.summary).write_text(text + "\n")
+    failed = [r["design"] for r in results if r.get("integrity") is not None
+              and not experiments.evaluation_allowed(r["integrity"])]
     if failed:
-        print(f"RESEARCH INTEGRITY FAILURE: {', '.join(failed)} (see reports/research.md)", file=sys.stderr)
+        print(f"RESEARCH INTEGRITY FAILURE: {', '.join(failed)} - evaluation blocked, nothing published as "
+              "current evidence for it (see reports/research.md)", file=sys.stderr)
     return 1 if failed or any(r["status"] == "error" for r in results) else 0
 
 
