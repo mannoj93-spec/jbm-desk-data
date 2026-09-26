@@ -33,18 +33,9 @@ UTC = dt.timezone.utc
 
 
 def load_inputs():
-    man = json.loads((O21 / "MANIFEST.json").read_text())
-    out = {}
-    for name in ("klines_4h.json", "dvol_1h.json"):
-        path = O21 / "inputs" / f"{name}.gz"
-        if not path.exists():
-            raise FileNotFoundError(f"retained input {path.name} missing - cannot replay without contacting providers")
-        raw = gzip.decompress(path.read_bytes())
-        want = man["files"][f"inputs/{name}.gz"]["sha256_uncompressed"]
-        if hashlib.sha256(raw).hexdigest() != want:
-            raise ValueError(f"retained input {name} altered: hash mismatch")
-        out[name] = json.loads(raw)
-    return out["klines_4h.json"], out["dvol_1h.json"]
+    """The retained O21 inputs, verified by the same loader the monthly refit chain uses (retained.py)."""
+    import retained
+    return retained.load_o21_inputs(O21)
 
 
 def replay():
@@ -145,9 +136,13 @@ def reanalysis():
         sel = "B1" if v["B1_vs_B0"]["skill"] > 0 and a10 < 0.05 else "B0"
         key = f"{h}:B2_vs_{sel}"
         p2 = adj.get(key)
-        if p2 is None:       # the step test differs from the unadjusted path's; run it within the same family size
+        if p2 is None:       # the Holm path's step comparison is outside the family the unadjusted path built
             step = v["B2_vs_B1"] if sel == "B1" else v["B2_vs_B0"]
             p2 = min(1.0, step["dm_p"] * len(family))
+            out.setdefault("holm_fallback", {})[h] = {
+                "comparison": key, "raw_p": step["dm_p"], "adjusted_p": p2,
+                "method": f"Bonferroni at the family size ({len(family)}): conservative; the comparison was not a "
+                          "family member because the unadjusted path had kept B1"}
         step = v["B2_vs_B1"] if sel == "B1" else v["B2_vs_B0"]
         if step["skill"] > 0 and p2 < 0.05:
             sel = "B2"
@@ -214,5 +209,68 @@ def reanalysis():
     return out
 
 
+def _numeric_diff(a, b, path="", out=None):
+    """(max abs diff, max rel diff, structural mismatches) between two JSON values."""
+    out = out if out is not None else {"abs": 0.0, "rel": 0.0, "where": None, "struct": []}
+    if isinstance(a, dict) and isinstance(b, dict):
+        for k in set(a) | set(b):
+            if k in ("run_seconds", "code") and not path:
+                continue                                   # provenance labels, compared separately
+            if k not in a or k not in b:
+                out["struct"].append(f"{path}.{k}")
+            else:
+                _numeric_diff(a[k], b[k], f"{path}.{k}", out)
+    elif isinstance(a, list) and isinstance(b, list):
+        if len(a) != len(b):
+            out["struct"].append(f"{path} length")
+        for i, (x, y) in enumerate(zip(a, b)):
+            _numeric_diff(x, y, f"{path}[{i}]", out)
+    elif isinstance(a, (int, float)) and isinstance(b, (int, float)) and not isinstance(a, bool):
+        d = abs(a - b)
+        if d > out["abs"]:
+            out["abs"], out["where"] = d, path
+        out["rel"] = max(out["rel"], d / max(abs(a), abs(b), 1e-300) if d else 0.0)
+    elif a != b:
+        out["struct"].append(path)
+    return out
+
+
+TOL = {"abs": 1e-9, "rel": 1e-9}     # declared numerical-replay tolerance (floating-point order effects only)
+
+
+def verify():
+    """Two different checks. Stored-byte integrity: the retained inputs and the stored reanalysis files hash to
+    their recorded values. Numerical reproducibility: re-running the reanalysis in memory reproduces every
+    stored number within TOL (serialized bytes may differ at ~1e-12 from summation order; conclusions cannot)."""
+    t0 = time.time()
+    load_inputs()                                                   # raises on any input byte change
+    stored = json.loads((O21 / "reanalysis_12.0.json").read_text())
+    rows_raw = gzip.decompress((O21 / stored["rows_file"]["path"]).read_bytes())
+    if hashlib.sha256(rows_raw).hexdigest() != stored["rows_file"]["sha256_uncompressed"]:
+        raise SystemExit("stored reanalysis rows altered: hash mismatch")
+    import tempfile
+    saved = O21
+    tmp = Path(tempfile.mkdtemp())
+    for sub in ("inputs", "original"):
+        (tmp / sub).mkdir()
+        for f in (O21 / sub).iterdir():
+            (tmp / sub / f.name).write_bytes(f.read_bytes())
+    (tmp / "MANIFEST.json").write_bytes((O21 / "MANIFEST.json").read_bytes())
+    globals()["O21"] = tmp
+    try:
+        fresh = reanalysis()
+    finally:
+        globals()["O21"] = saved
+    fresh.pop("holm_fallback", None)
+    diff = _numeric_diff(stored, json.loads(json.dumps(fresh)))
+    ok = not diff["struct"] and (diff["abs"] <= TOL["abs"] or diff["rel"] <= TOL["rel"])
+    res = {"stored_bytes": "verified", "numerical": "within tolerance" if ok else "OUT OF TOLERANCE",
+           "max_abs_diff": diff["abs"], "max_rel_diff": diff["rel"], "at": diff["where"],
+           "structural_mismatches": diff["struct"][:5], "tolerance": TOL, "runtime_s": round(time.time() - t0, 1),
+           "code_then": stored.get("code"), "code_now": fresh.get("code")}
+    print(json.dumps(res, indent=1))
+    return res
+
+
 if __name__ == "__main__":
-    {"replay": replay, "reanalysis": reanalysis}[sys.argv[1]]()
+    {"replay": replay, "reanalysis": reanalysis, "verify": verify}[sys.argv[1]]()

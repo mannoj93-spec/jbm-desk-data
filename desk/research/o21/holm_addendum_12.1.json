@@ -1,0 +1,56 @@
+{
+ "holm_fallback_12_0": {
+  "72h": {
+   "adjusted_p": 0.0009651187474823963,
+   "comparison": "72h:B2_vs_B0",
+   "holm_path": "B1 not kept over B0 (Holm-adjusted p 0.0644 > 0.05), so the step test became B2 vs B0",
+   "method": "Bonferroni at the 12.0 family size (10); the comparison was not a member of the 10-test family the unadjusted path built, so Holm could not rank it. Conservative (Holm would give <= this).",
+   "raw_p": 9.651187474823963e-05,
+   "selected": "B2 (adjusted p < 0.05)"
+  }
+ },
+ "predeclared_family_for_future_runs": {
+  "applied_to_the_stored_p_values": {
+   "adjusted": {
+    "24h:B1_vs_B0": 4.440892098500626e-15,
+    "24h:B2_vs_B0": 0.0,
+    "24h:B2_vs_B1": 5.1144706669781215e-06,
+    "4h:B1_vs_B0": 0.0,
+    "4h:B2_vs_B0": 0.0,
+    "4h:B2_vs_B1": 0.00016660180974170657,
+    "72h:B1_vs_B0": 0.06439843949984247,
+    "72h:B2_vs_B0": 0.0006755831232376774,
+    "72h:B2_vs_B1": 0.001526501741030195,
+    "stage1:m10_composite_vs_c2c": 0.001526501741030195,
+    "stage1:sd_implied_vs_c2c": 0.6191482863945192,
+    "stage1:sd_park_42_vs_c2c": 0.20128067891106172,
+    "stage1:sd_park_6_vs_c2c": 0.006625617613224222
+   },
+   "selection": {
+    "24h": "B2",
+    "4h": "B2",
+    "72h": "B2"
+   }
+  },
+  "members": [
+   "24h:B1_vs_B0",
+   "24h:B2_vs_B0",
+   "24h:B2_vs_B1",
+   "4h:B1_vs_B0",
+   "4h:B2_vs_B0",
+   "4h:B2_vs_B1",
+   "72h:B1_vs_B0",
+   "72h:B2_vs_B0",
+   "72h:B2_vs_B1",
+   "stage1:m10_composite_vs_c2c",
+   "stage1:sd_implied_vs_c2c",
+   "stage1:sd_park_42_vs_c2c",
+   "stage1:sd_park_6_vs_c2c"
+  ],
+  "rule": "Holm over all 13 comparisons (the 9 stage-2 pairwise tests at every horizon, whether or not the sequential path uses them, plus the 4 stage-1 tests); the sequential selection then reads the adjusted p of whichever comparison its path reaches. No fallback is needed.",
+  "size": 13
+ },
+ "source_sha256": "e2e206fed65d3581a4e138d19c7bc935320779ba5d50c7e0cdff83f9729add1d",
+ "status": "reanalysis of already inspected data; historical RC1 results are unchanged and remain the record",
+ "what": "12.1 addendum to reanalysis_12.0.json - computed from its stored p-values; no data re-run, the 12.0 file is unchanged"
+}

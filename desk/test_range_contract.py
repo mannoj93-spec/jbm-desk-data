@@ -215,7 +215,9 @@ class TestContractIdentity(unittest.TestCase):
         a, b = C.contract_id("RC1"), C.contract_id("RC1D")
         self.assertNotEqual(a, b)
         self.assertEqual(a, C.contract_id("RC1"))
-        self.assertTrue(b.startswith("RC1D/" + C.VERSION + "/"))
+        self.assertTrue(b.startswith("RC1D/" + C.CONTRACT_VERSION + "/"))
+        # 12.1: the contract id is semantic and unchanged since 12.0, so every registered record stays readable
+        self.assertEqual((a, b), ("RC1/contract-12.0.0/e8f291740f27", "RC1D/contract-12.0.0/175a4dd4c6c0"))
         with self.assertRaises(ValueError):
             C.spec("RC2")
 

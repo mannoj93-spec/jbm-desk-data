@@ -25,6 +25,8 @@ import range_reader as RR                 # noqa: E402
 from test_range_model import synth_bars   # noqa: E402
 
 UTC = dt.timezone.utc
+import os                                  # noqa: E402
+os.environ["RANGE_JOB_QUIET"] = "1"        # injected-failure fixtures must not read like production output
 T = lambda h, m=0, s=0: dt.datetime(2026, 9, 26, h, m, s, tzinfo=UTC)   # noqa: E731
 ms = C.ms
 PROD = {"event": "schedule", "run_id": "42", "code_commit": "abc", "production": True}
@@ -37,6 +39,19 @@ def dvol_rows(bars, level=40.0):
         out.append({"open_utc": R._iso(t), "available_at_utc": R._iso(t + dt.timedelta(hours=1)), "dvol": level})
         t += dt.timedelta(hours=1)
     return out
+
+
+def make_root(base, bars, dvol):
+    """A retained-root directory (inputs + MANIFEST.json) like desk/research/o21."""
+    root = Path(base) / "root"
+    (root / "inputs").mkdir(parents=True)
+    files = {}
+    for name, rows in (("klines_4h.json", bars), ("dvol_1h.json", dvol)):
+        raw = json.dumps({"rows": rows}).encode()
+        (root / "inputs" / f"{name}.gz").write_bytes(gzip.compress(raw))
+        files[f"inputs/{name}.gz"] = {"sha256_uncompressed": hashlib.sha256(raw).hexdigest()}
+    (root / "MANIFEST.json").write_text(json.dumps({"files": files}))
+    return root
 
 
 class Clock:
@@ -372,13 +387,8 @@ class TestChainedRefit(Base):
 
     def test_refit_from_chain_and_delta(self):
         import jbm_archive as A
-        root = self.tmp / "root"
-        root.mkdir()
         cut = "2026-08-20T00:00:00Z"
-        kb = [b for b in self.bars if b["open_utc"] < cut]
-        dv = [r for r in self.dvol if r["open_utc"] < cut]
-        (root / "klines_4h.json.gz").write_bytes(gzip.compress(json.dumps({"rows": kb}).encode()))
-        (root / "dvol_1h.json.gz").write_bytes(gzip.compress(json.dumps({"rows": dv}).encode()))
+        root = make_root(self.tmp, [b for b in self.bars if b["open_utc"] < cut], [r for r in self.dvol if r["open_utc"] < cut])
         later = [b for b in self.bars if cut <= b["open_utc"] < "2026-09-01T00:00:00Z"]
         dlater = [r for r in self.dvol if cut <= r["open_utc"] < "2026-09-01T00:00:00Z"]
         saved = (J.CHAIN_ROOT, A.load_klines_span, A.load_dvol)

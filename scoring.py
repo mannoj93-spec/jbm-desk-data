@@ -8,7 +8,7 @@ import urllib.request
 from schema import H, MINUTE, SERIES, ms, num, observed_time, predicate_step, validate
 from storage import atomic_json, digest, loads, read_json, read_rows
 
-VERSION = "scoring-2.3"
+VERSION = "scoring-2.4"
 DESK = Path(__file__).resolve().parent / "desk"
 
 
@@ -248,6 +248,15 @@ def score_registry(base, now, report_version, fetch=fetch_bars):
         # Desk range stream (2.15): prospective eligibility also needs durable publication confirmed before
         # the window starts. Local freezing time alone never qualifies a forecast.
         pub = publications.get(entry.get("attempt")) if entry.get("attempt") else None
+        rc1d_errors = _contract().validate_rc1d(fc, fc["id"], entry, pub) if fc["id"].startswith("range-rc1d-") else []
+        if rc1d_errors:
+            rec = {"id": fc["id"], "forecast_sha256": entry["sha256"], "registered": rat, "start": start, "horizon": end,
+                   "status": "integrity failure — not scored", "reason": "; ".join(rc1d_errors)[:500], "scored": now}
+            append_unique(base / "registry/scores.jsonl", [rec], lambda r: (r["id"], r.get("forecast_sha256")))
+            records.append(rec)
+            new.append(rec)
+            alerts.append(f"{fc['id']}: RC1D record fails semantic validation: {rec['reason']}")
+            continue
         if rat >= start:
             status = "late registration — not scored"
         elif entry.get("attempt") and pub is None and end <= now - 5 * MINUTE:

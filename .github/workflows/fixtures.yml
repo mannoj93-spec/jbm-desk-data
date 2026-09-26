@@ -1,9 +1,11 @@
 name: Regression and numerical fixtures
 on:
+  # desk/** covers the calendar, release manifest, fits and retained research artifacts (bot pushes made with
+  # GITHUB_TOKEN do not trigger workflows, so the range job's own data commits do not re-run this).
   push:
-    paths: ['**.py', 'scripts/**', '.github/workflows/**']
+    paths: ['**.py', 'scripts/**', '.github/workflows/**', 'desk/**', 'SHA256SUMS']
   pull_request:
-    paths: ['**.py', 'scripts/**', '.github/workflows/**']
+    paths: ['**.py', 'scripts/**', '.github/workflows/**', 'desk/**', 'SHA256SUMS']
   workflow_dispatch:
 permissions:
   contents: read

@@ -44,7 +44,7 @@ class TestResearchRetention(unittest.TestCase):
             with self.assertRaises(ValueError):
                 O.load_inputs()
             p.unlink()
-            with self.assertRaises(FileNotFoundError):
+            with self.assertRaises(ValueError):          # retained.RetainedError: missing input, named
                 O.load_inputs()
         finally:
             O.O21 = saved

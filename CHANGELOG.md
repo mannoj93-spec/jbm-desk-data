@@ -1,3 +1,26 @@
+# Desk hardening, revision 2.16 (crypto-desk package 12.1) — 2026-09-26
+
+Response to the assessment of package 12.0 / repo 2.15 at `cabc40d` (deployment evidence through `fe27eb2`);
+built on `3433ec9`. Collection cadence, API budgets, research designs and skills are unchanged. **No evaluation
+version changes**: all eight lab evaluation ids are identical before and after (computed with `lab/versioning.py`
+on `3433ec9` and on this branch). The three 04:00Z forecasts' frozen bytes, manifest, attempt and publication rows
+are untouched; they read, replay and score under 2.16. Contract ids are unchanged (`contract-12.0.0`); the
+implementation versions move (contract-12.1.0, reader-12.1.0, range-job-12.1.0, scoring-2.4, retained-12.1.0).
+
+| # | Finding (reproduced on 2.15) | Fix | Tests |
+|---|---|---|---|
+| 1 | Cached status carried a 24h forecast as `valid_until` 13:15Z (window end + grace) against 09:15Z by the forecast's own decision; cached and fresh reads disagreed | `expiry = min(window end, decision + 4h + 75 min)`; `valid_until_utc` in every result; `range_reader.revalidate(result, now)` re-derives state, elapsed share and label on the consumer's clock; full-window label kept, `remaining` always None | `TestExpiry` (before / at / after expiry, missed runs, grace) |
+| 2 | Refit raised "klines not admissible: missing" when the last archive day was unpublished, with no live fallback | `archive_with_tail`: only a trailing run of missing days is filled, from closed, validated live bars that must match the archive on an overlap of up to six bars; provenance stored as `live_tail` in the refit delta; interior gap, interior hole, malformed archive, conflicting overlap, unavailable source, unclosed or malformed live bar each stop the refit | `TestRefitTail` (fill equals the direct fit; seven failure cases) |
+| 3 | A mislabelled 4h record (24h window) read `valid-current`; a record missing a B0 point raised `KeyError` in the reader | `range_contract.validate_rc1d` (id/horizon, decision on a 4H close, window span, start delay 5–70 min on the 5-minute grid, made time, reference price, input bundle = snapshot hash, exactly one finite, ordered B2 and B0 event, manifest entry and publication row) — returns problems, never raises; reader and scoring report `integrity-failed` / "integrity failure — not scored"; legacy `range-b2-*` schema unchanged | `TestStrictValidator`, `TestReaderNeverCrashes` |
+| 4 | Replay failed with "calendar changed since the forecast" after any refresh | Calendar versions retained as `desk/calendars/<sha256>.csv` at forecast time (the 04:00Z version back-filled, verified equal to the bundle's `calendar_sha256` and to Git history); `retained.calendar_bytes` resolves current → retained → Git history; altered or missing bytes fail | `TestCalendarReplay` |
+| 5 | The refit chain used the O21 root inputs without checking their manifest hashes (an altered root was accepted) | `retained.load_o21_inputs`, shared by `o21_reanalysis.load_inputs` and `range_job.history_chain`; every refit delta verified (name = hash, structure, no duplicate months) before use | `TestRetainedRoot` (altered root refused; the real root reproduces the September fit within 1e-9 — CI on 3.12 differs from 3.11 in the last digit) |
+| 6 | Deployment state lived in `release.json` and prose | `release.json` is identity only (adds `base_commit`, `audited_snapshot`, `range_stream_start_utc`); `desk/deployments.jsonl` records the 2.14/2.15 merges, the first scheduled 2.15 publication (run 36217120108, frozen 04:13:17.546Z, confirmed 04:13:19.582Z on the runner clock, window 04:20Z, eligible) and the offline replays; `reports/range_status.json` separates `due_decisions` from `current_decision` (in-progress vs outcome) and keeps the runner-clock disclosure | `TestReaderNeverCrashes` (due vs current), `TestReleaseChecker` |
+| 7 | Release check passed with no calendar; fits from any contract accepted; Holm fallback undisclosed; no numerical replay; integrity workflow blind to desk changes | `make_release.check` fails on a missing calendar, verifies retained calendars and the deployment log; `validate_fit` accepts only the 12.0 contract ids, or `job == range-job-11.2.0` for a fit without a contract field (the pre-12.0 rule); `research/o21/holm_addendum_12.1.json` (72h fallback comparison, raw p 9.65e-05, adjusted in the declared family of 10 and the predeclared complete family of 13); `o21_reanalysis.py verify` (byte integrity, then numerical replay within abs/rel 1e-9, runtime reported); `fixtures.yml` triggers on `desk/**` and `SHA256SUMS`; `range.yml` persists `desk/calendars` | `TestFitContract`, `TestReleaseChecker`, `verify` run |
+
+**Tests.** 496 regression tests (332 + desk 164: measure 40, archive 50, range model 18, contract 10, range job 26,
+release 3, hardening 17) on Python 3.11; 25 numerical fixtures unchanged; O21 replay zero differences;
+`o21_reanalysis.py verify` max abs difference 0.0 in ~42 s.
+
 # Desk forecast contract, revision 2.15 (crypto-desk package 12.0) — 2026-09-26
 
 Response to the audit of package 11.2 / repo 2.14 (audited at `0a9ba0e`; built on `09549f8`, main since
