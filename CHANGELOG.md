@@ -1,3 +1,28 @@
+# Desk range forecasts, revision 2.14 (crypto-desk package 11.2) — 2026-09-26
+
+Adds the crypto desk's range model as an automated, registered forecast stream. Collection cadence,
+API budgets, research designs, hypotheses, thresholds and skills are unchanged. **No evaluation
+version changes**: nothing hashed by `lab/versioning.py` was edited, and every new file lives under
+`desk/` (root `*.py` files are untouched, so the registration clock of `tests/` and the scoring
+implementation hash are unchanged).
+
+| Added | What it does |
+|---|---|
+| `desk/range_model.py` (range-11.1.0) | The model tested once in the desk's O21 (frozen spec sha256 `ae6aa254c786…`): B0 persistence and B2 (HAR-range + weekend share + scheduled releases + DVOL), direct per horizon. On the never-fitted year it beat persistence by 18.2% / 16.8% / 10.7% (4h / 24h / 72h, mean absolute log error), 10-90 coverage 81-85%. Status: exploratory, holdout-consistent |
+| `desk/jbm_archive.py`, `desk/jbm_measure.py` | The desk's validated loaders (4H klines with provider checksums, DVOL) and measurement functions |
+| `desk/range_job.py` (range-job-11.2.0) | `refit` (one frozen fit per month in `desk/fits/`), `forecast` (three registry files per 4H close, each with a B2 and a B0 `range` event on the same window, registered through `registration.register` before the window starts), `summary` (`reports/range.md`) |
+| `desk/fits/2026-09.json` | The September fit (targets closed before Sep 1); it reproduces the desk's hand-registered Sep 26 00:00Z forecast exactly |
+| `.github/workflows/range.yml` | Two minutes after each 4H close: desk tests, refit, forecast, summary, persist through `scripts/commit_push.sh` under `repo-write` |
+| `regression/test_desk_range.py` | Runs the desk suites (115 tests) inside the regression workflow |
+
+The registry rule (start strictly after registration) is what makes these forecasts honest: the
+window opens at the next five-minute boundary after registration, a few minutes after the close
+the model was trained on; the offset is recorded in each note, and a run more than an hour late
+does not forecast. Scores come from the unchanged `scoring.py` (`range` events: coverage, pinball,
+`abs_error_log_lr`, QLIKE) in the weekly report.
+
+**Tests.** 447 regression tests (332 + 115) on Python 3.11; 25 numerical fixtures unchanged.
+
 # Research-integrity revision 2.13 (lab-2.2, evidence completeness; GitHub presentation) — 2026-09-25
 
 Response to the review of 2.12 (`16cb49f`); main since then had only collector data commits.

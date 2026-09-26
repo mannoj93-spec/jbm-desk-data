@@ -23,5 +23,9 @@ only fixed-cadence names and fields in `schema.SERIES`. `range` events take q10/
 ln(high/low) over the forecast window. Manual predicates carry only type/name.
 Settled funding predicates are not implemented.
 
+Automated forecasts: `range-b2-*` files are written and registered by `desk/range_job.py`
+(workflow `range.yml`) a few minutes after each 4H close, with `start` at the next five-minute
+boundary after registration. They carry a B2 model event and a B0 baseline event on the same window.
+
 Public issues are public before validation. The schema is not a private-information filter.
 See the root README for limits, score semantics, legacy migration, and operating instructions.
