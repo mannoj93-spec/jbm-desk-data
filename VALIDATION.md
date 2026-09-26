@@ -1,3 +1,23 @@
+# Validation record — desk hardening, revision 2.16
+
+Validated 2026-09-26 with Python 3.11 (container). Earlier blocks below are kept as recorded (the 2.15 block's
+"not merged" deployment row is superseded by `desk/deployments.jsonl`, not edited).
+
+| Check (2.16) | Result |
+|---|---|
+| Assessed snapshot / base | Assessment at `cabc40d` (package 12.0, repo 2.15), deployment evidence to `fe27eb2`; built on `3433ec9` |
+| 2.15 deployment (from the repository's own records; now in `desk/deployments.jsonl`) | PR #16 merged 03:41:53Z (`38135f0`). First scheduled publication: run 36217120108 on code `4ca7ad2`, decision 04:00Z, `range-rc1d-{4h,24h,72h}-20260926T0400Z` frozen 04:13:17.546Z, publication commit `21a3409`, confirmation commit `9264917`, confirmed 04:13:19.582Z (runner clock after `git fetch`), window start 04:20:00Z → eligible |
+| Reproductions on 2.15 code | F1: cached 24h `valid_until` 13:15Z vs 09:15Z by its decision. F2: refit raised "klines not admissible: missing", zero live calls. F3: a 4h id with a 24h window read `valid-current`; a missing B0 point raised `KeyError`. F4: replay after a calendar refresh → "calendar changed since the forecast". F5: an altered O21 root accepted by the chain. F7: release check passed with the calendar removed; a fit with a foreign contract id accepted |
+| Same on 2.16 | Each case fails closed with an explicit reason or succeeds as specified; see CHANGELOG 2.16 table |
+| Live records under 2.16 | The three 04:00Z records: frozen hashes unchanged; `valid-current` at 04:30Z (4h until 08:20Z, 24h and 72h until 09:15Z); all three replay (calendar resolved from the current file, bundle verified); scoring on a copy accepts them |
+| Status reconciliation | At 04:30Z: due 0, current decision 04:00Z registered; at 05:30Z: due 1 |
+| Regression suite | 496 passed (332 + desk 164); fixtures 25 |
+| Evaluation versions | Identical for all eight designs (`lab/versioning.py`, `3433ec9` vs branch) |
+| O21 replay | Zero differences from the original result |
+| O21 numerical replay (`verify`) | Byte integrity OK; rerun within abs/rel 1e-9 (max abs difference 0.0), ~42 s; the only difference is the code label (provenance, reported separately) |
+| Checksums | `SHA256SUMS` regenerated: new code, tests, retained calendar and Holm addendum added; data, fits, bundles, research outputs and `deployments.jsonl` excluded |
+| Not observed | A scheduled 2.16 run (the branch is a pull request); any matured score; the Oct 1 refit's tail path live |
+
 # Validation record — desk forecast contract, revision 2.15
 
 Validated 2026-09-26 with Python 3.11 (container). Earlier blocks below are kept as recorded.
