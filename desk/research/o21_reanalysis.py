@@ -9,7 +9,9 @@
               coherence raise, and the rescheduled-release sensitivity. This is REANALYSIS of data already
               inspected - not a new holdout. Writes research/o21/reanalysis_12.0.json(.gz for rows).
 
-Run: python3 desk/research/o21_reanalysis.py replay|reanalysis
+Run: python3 desk/research/o21_reanalysis.py replay|reanalysis|verify
+  verify      (12.2) integrity of stored artifacts (exact hashes) AND numerical equivalence of a fresh rerun,
+              summary and every row, per value within TOL; exit 0 pass, 1 integrity, 2 numerical.
 """
 import datetime as dt
 import gzip
@@ -209,68 +211,148 @@ def reanalysis():
     return out
 
 
-def _numeric_diff(a, b, path="", out=None):
-    """(max abs diff, max rel diff, structural mismatches) between two JSON values."""
-    out = out if out is not None else {"abs": 0.0, "rel": 0.0, "where": None, "struct": []}
+PROVENANCE = {"run_seconds", "code", "rows_file"}      # rerun labels and serialization hashes: reported, not compared
+TOL = {"abs": 1e-9, "rel": 1e-9}     # declared per-value tolerance: |a-b| <= abs + rel * max(|a|, |b|)
+
+
+def compare_values(a, b, tol=TOL, path="", out=None, skip_top=frozenset()):
+    """Per-value comparison of two JSON values. Numbers: within `tol` value by value. Strings, booleans and None
+    (selections, labels, categorical conclusions): exact. Keys and lengths: exact (structural)."""
+    out = out if out is not None else {"values": 0, "max_abs": 0.0, "max_rel": 0.0, "at": None,
+                                       "violations": [], "structural": [], "categorical": []}
     if isinstance(a, dict) and isinstance(b, dict):
-        for k in set(a) | set(b):
-            if k in ("run_seconds", "code") and not path:
-                continue                                   # provenance labels, compared separately
+        for k in sorted(set(a) | set(b)):
+            if not path and k in skip_top:
+                continue
             if k not in a or k not in b:
-                out["struct"].append(f"{path}.{k}")
+                out["structural"].append(f"{path}.{k} present on one side only")
             else:
-                _numeric_diff(a[k], b[k], f"{path}.{k}", out)
+                compare_values(a[k], b[k], tol, f"{path}.{k}", out)
     elif isinstance(a, list) and isinstance(b, list):
         if len(a) != len(b):
-            out["struct"].append(f"{path} length")
+            out["structural"].append(f"{path}: length {len(a)} vs {len(b)}")
         for i, (x, y) in enumerate(zip(a, b)):
-            _numeric_diff(x, y, f"{path}[{i}]", out)
-    elif isinstance(a, (int, float)) and isinstance(b, (int, float)) and not isinstance(a, bool):
+            compare_values(x, y, tol, f"{path}[{i}]", out)
+    elif isinstance(a, (int, float)) and isinstance(b, (int, float)) and not isinstance(a, bool) and not isinstance(b, bool):
+        out["values"] += 1
+        if not (math.isfinite(a) and math.isfinite(b)):
+            if not (a == b or (math.isnan(a) and math.isnan(b))):
+                out["violations"].append(f"{path}: {a!r} vs {b!r}")
+            return out
         d = abs(a - b)
-        if d > out["abs"]:
-            out["abs"], out["where"] = d, path
-        out["rel"] = max(out["rel"], d / max(abs(a), abs(b), 1e-300) if d else 0.0)
+        rel = d / max(abs(a), abs(b)) if d else 0.0
+        if d > out["max_abs"]:
+            out["max_abs"], out["at"] = d, path
+        out["max_rel"] = max(out["max_rel"], rel)
+        if d > tol["abs"] + tol["rel"] * max(abs(a), abs(b)):
+            out["violations"].append(f"{path}: {a!r} vs {b!r} (|d|={d:.3g})")
+    elif type(a) is not type(b) and not (isinstance(a, (int, float)) and isinstance(b, (int, float))):
+        out["structural"].append(f"{path}: type {type(a).__name__} vs {type(b).__name__}")
     elif a != b:
-        out["struct"].append(path)
+        out["categorical"].append(f"{path}: {a!r} vs {b!r}")
     return out
 
 
-TOL = {"abs": 1e-9, "rel": 1e-9}     # declared numerical-replay tolerance (floating-point order effects only)
+def _sha(b):
+    return hashlib.sha256(b).hexdigest()
 
 
-def verify():
-    """Two different checks. Stored-byte integrity: the retained inputs and the stored reanalysis files hash to
-    their recorded values. Numerical reproducibility: re-running the reanalysis in memory reproduces every
-    stored number within TOL (serialized bytes may differ at ~1e-12 from summation order; conclusions cannot)."""
-    t0 = time.time()
-    load_inputs()                                                   # raises on any input byte change
-    stored = json.loads((O21 / "reanalysis_12.0.json").read_text())
-    rows_raw = gzip.decompress((O21 / stored["rows_file"]["path"]).read_bytes())
-    if hashlib.sha256(rows_raw).hexdigest() != stored["rows_file"]["sha256_uncompressed"]:
-        raise SystemExit("stored reanalysis rows altered: hash mismatch")
+def integrity(o21):
+    """Exact integrity of the stored artifacts against their authoritative recorded hashes: the retained inputs
+    (MANIFEST.json), the stored rows (the summary's rows_file hash) and, when a release manifest is present,
+    the stored summary and rows files (desk/release.json artifacts). Returns a list of failures."""
+    import retained
+    fails = []
+    try:
+        retained.load_o21_inputs(o21)
+    except Exception as exc:                                  # noqa: BLE001 - every failure is reported
+        fails.append(f"inputs: {exc}")
+    try:
+        stored = json.loads((o21 / "reanalysis_12.0.json").read_text())
+        raw = gzip.decompress((o21 / stored["rows_file"]["path"]).read_bytes())
+        if _sha(raw) != stored["rows_file"]["sha256_uncompressed"]:
+            fails.append("stored rows: content does not match the summary's recorded hash")
+    except Exception as exc:                                  # noqa: BLE001
+        fails.append(f"stored summary/rows unreadable: {exc}")
+    rel = DESK / "release.json"
+    if rel.exists() and o21.resolve() == (HERE / "o21").resolve():
+        arts = json.loads(rel.read_text()).get("artifacts") or {}
+        for name in ("reanalysis_12.0.json", "reanalysis_12.0_rows.json.gz", "MANIFEST.json"):
+            want = arts.get(f"research/o21/{name}")
+            if want and _sha((o21 / name).read_bytes()) != want:
+                fails.append(f"{name}: bytes differ from desk/release.json")
+    return fails
+
+
+def _rerun_in(o21):
+    """Run the reanalysis on a disposable copy of `o21`; returns (summary, rows)."""
     import tempfile
-    saved = O21
+    saved = globals()["O21"]
     tmp = Path(tempfile.mkdtemp())
     for sub in ("inputs", "original"):
         (tmp / sub).mkdir()
-        for f in (O21 / sub).iterdir():
+        for f in (o21 / sub).iterdir():
             (tmp / sub / f.name).write_bytes(f.read_bytes())
-    (tmp / "MANIFEST.json").write_bytes((O21 / "MANIFEST.json").read_bytes())
+    (tmp / "MANIFEST.json").write_bytes((o21 / "MANIFEST.json").read_bytes())
     globals()["O21"] = tmp
     try:
         fresh = reanalysis()
     finally:
         globals()["O21"] = saved
-    fresh.pop("holm_fallback", None)
-    diff = _numeric_diff(stored, json.loads(json.dumps(fresh)))
-    ok = not diff["struct"] and (diff["abs"] <= TOL["abs"] or diff["rel"] <= TOL["rel"])
-    res = {"stored_bytes": "verified", "numerical": "within tolerance" if ok else "OUT OF TOLERANCE",
-           "max_abs_diff": diff["abs"], "max_rel_diff": diff["rel"], "at": diff["where"],
-           "structural_mismatches": diff["struct"][:5], "tolerance": TOL, "runtime_s": round(time.time() - t0, 1),
-           "code_then": stored.get("code"), "code_now": fresh.get("code")}
-    print(json.dumps(res, indent=1))
-    return res
+    rows = json.loads(gzip.decompress((tmp / fresh["rows_file"]["path"]).read_bytes()))
+    return json.loads(json.dumps(fresh)), rows
+
+
+def verify(o21=None, rerun=None, tol=TOL):
+    """Two separate gates, both required.
+    1. Integrity: stored artifacts are byte-identical to their authoritative recorded hashes (exact).
+    2. Numerical equivalence: a fresh in-memory rerun reproduces the stored summary AND every stored row value
+       within `tol` per value; structure and categorical values (selections, labels) exactly.
+    Rerun serialization hashes and provenance (code label, runtime) are reported, never required to match.
+    Returns (exit_code, result): 0 pass, 1 integrity failure, 2 numerical/structural/categorical failure."""
+    t0 = time.time()
+    o21 = Path(o21) if o21 else O21
+    res = {"tolerance": dict(tol, rule="|a-b| <= abs + rel*max(|a|,|b|) per value")}
+    fails = integrity(o21)
+    res["integrity"] = {"ok": not fails, "failures": fails}
+    if fails:
+        res["numerical"] = {"ok": None, "note": "not run: integrity failed"}
+        return 1, res
+    stored = json.loads((o21 / "reanalysis_12.0.json").read_text())
+    stored_rows = json.loads(gzip.decompress((o21 / stored["rows_file"]["path"]).read_bytes()))
+    fresh, fresh_rows = (rerun or _rerun_in)(o21)
+    fresh.pop("holm_fallback", None)                         # added by 12.1 runs; recorded in holm_addendum_12.1.json
+    summ = compare_values(stored, fresh, tol, skip_top=PROVENANCE)
+    rows = compare_values(stored_rows, fresh_rows, tol)
+    ok = all(not x[k] for x in (summ, rows) for k in ("violations", "structural", "categorical"))
+    res["numerical"] = {"ok": ok,
+                        "summary": {k: summ[k] if not isinstance(summ[k], list) else summ[k][:5] for k in summ},
+                        "rows": {k: rows[k] if not isinstance(rows[k], list) else rows[k][:5] for k in rows},
+                        "violation_counts": {"summary": len(summ["violations"]), "rows": len(rows["violations"]),
+                                             "structural": len(summ["structural"]) + len(rows["structural"]),
+                                             "categorical": len(summ["categorical"]) + len(rows["categorical"])}}
+    res["provenance"] = {"code_then": stored.get("code"), "code_now": fresh.get("code"),
+                         "rows_sha256_stored": stored["rows_file"]["sha256_uncompressed"],
+                         "rows_sha256_rerun": (fresh.get("rows_file") or {}).get("sha256_uncompressed"),
+                         "rerun_bytes_identical": (fresh.get("rows_file") or {}).get("sha256_uncompressed")
+                                                  == stored["rows_file"]["sha256_uncompressed"],
+                         "python": sys.version.split()[0], "runtime_s": round(time.time() - t0, 1)}
+    return (0 if ok else 2), res
+
+
+def main(argv):
+    cmd = argv[1] if len(argv) > 1 else ""
+    if cmd == "verify":
+        code, res = verify()
+        print(json.dumps(res, indent=1, default=str))
+        print("VERIFY", {0: "PASS", 1: "FAIL (integrity)", 2: "FAIL (numerical)"}[code])
+        return code
+    if cmd in ("replay", "reanalysis"):
+        {"replay": replay, "reanalysis": reanalysis}[cmd]()
+        return 0
+    print(__doc__)
+    return 2
 
 
 if __name__ == "__main__":
-    {"replay": replay, "reanalysis": reanalysis, "verify": verify}[sys.argv[1]]()
+    sys.exit(main(sys.argv))
