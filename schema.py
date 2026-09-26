@@ -8,7 +8,10 @@ MINUTE = 60_000
 H = 60 * MINUTE
 INSTRUMENT = "BTCUSDT perp, Binance last price"
 TOP = {"id", "code_version", "snapshot_hash", "instrument", "reference_price", "start_utc", "horizon_utc",
-       "event_regime", "events", "note", "made_utc", "package"}
+       "event_regime", "events", "note", "made_utc", "package",
+       # 2.15, desk range stream: the forecast contract, the decision the inputs were cut at, and the
+       # content hash of the retained input bundle (desk/inputs/).
+       "contract", "decision_utc", "input_bundle"}
 COMMON = {"name", "type"}
 EVENT_KEYS = {
     "touch": {"level", "dir", "p", "p_class"},
@@ -18,7 +21,9 @@ EVENT_KEYS = {
     "lean": {"direction", "basis", "invalidation"},
     "predicate": {"series", "op", "value", "at_utc", "by_utc"},
     # Desk forecast target (runbook E2): ln(max high / min low) over [start, horizon), quantiles.
-    "range": {"q10", "q50", "q90"},
+    # 2.15: optional `point` (lr units) is the loss-bearing forecast under desk/range_contract.py; without
+    # it (legacy 2.14 records) scoring falls back to q50.
+    "range": {"q10", "q50", "q90", "point"},
 }
 SERIES = {}
 for endpoint, fields in {
@@ -135,8 +140,11 @@ def validate(fc, now=None):
             errors.append("horizon must follow start by at most 31 days")
         if now is not None and start <= now:
             errors.append("start must be strictly after registration time")
-        if fc.get("made_utc"):
-            ms(fc["made_utc"])
+        for key in ("made_utc", "decision_utc"):
+            if fc.get(key):
+                ms(fc[key])
+        if fc.get("decision_utc") and ms(fc["decision_utc"]) > start:
+            errors.append("decision_utc must not follow the window start")
     except (ValueError, TypeError, KeyError, OverflowError):
         return errors + ["start/horizon/made timestamps require explicit ISO-8601 UTC"]
     events = fc.get("events")
@@ -192,6 +200,8 @@ def validate(fc, now=None):
             qs = [ev.get(k) for k in ("q10", "q50", "q90")]
             if not all(num(q) for q in qs) or not 0 < qs[0] <= qs[1] <= qs[2] < 1:
                 fail("range requires 0 < q10 <= q50 <= q90 < 1, in ln(high/low) units")
+            if "point" in ev and (not num(ev["point"]) or not 0 < ev["point"] < 1):
+                fail("range point must be finite and in (0, 1), in ln(high/low) units")
         if kind == "predicate":
             series = ev.get("series")
             if series is None:

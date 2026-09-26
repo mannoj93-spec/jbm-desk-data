@@ -42,7 +42,7 @@ The GitHub workflows use the repository's scoped `GITHUB_TOKEN` for commits and 
 | Collector watchdog | Every 30 minutes at :17 and :47 UTC; manual | Fails (so GitHub emails the owner) when the collector is stale or missing, or running but failing |
 | Research lab (`research.yml`) | Every 6 hours at :41 (00:41 UTC also runs a 60-day reconstruction); manual | Versioned events, outcomes, experiments and evidence cards, `reports/research.md`, `reports/skill_proposals.md`, and the coverage refresh of `reports/latest.md`; computes without the write lock, merges into a fresh checkout and commits through `repo-write` |
 | Regression and numerical fixtures | Code/workflow pushes and pull requests; manual | Arithmetic fixtures and offline failure-path regression tests |
-| Range forecasts (`range.yml`) | 00:02, 04:02, 08:02, 12:02, 16:02, 20:02 UTC; manual | Desk offline tests, monthly refit (`desk/fits/`), three registered range forecasts per 4H close, `reports/range.md`; holds `repo-write` |
+| Range forecasts (`range.yml`) | 00:02, 04:02, 08:02, 12:02, 16:02, 20:02 UTC; manual | Desk tests and release drift check, monthly fit validation/refit, one registration batch per 4H close, publication confirmation, `reports/range_status.json` and `reports/range.md`; holds `repo-write` |
 
 **Queueing.** Every writing job (collector, backfill, forecast intake, weekly report) holds
 `repo-write`, set at job level with `queue: max`: writes are serialized and up to 100 jobs wait
@@ -127,25 +127,24 @@ Directly committed registry files use the same schema and are frozen on the coll
 first sighting. Their registration must precede their start. Run registration locally
 only for development; GitHub records label the registering commit.
 
-## Desk range forecasts (desk/, 2.14)
+## Desk range forecasts (desk/, 2.15)
 
-`desk/range_job.py forecast` pulls the last 400 closed 4H bars (`www.binance.com/fapi/v1/klines`,
-validated by `desk/jbm_archive.inspect_klines`) and 96 hours of DVOL (Deribit), builds the model's
-features from the bar that closed at the latest 4H boundary, and writes `registry/range-b2-<h>-<close>.json`
-for h = 4h, 24h, 72h. Each has two `range` events on one window — the B2 model and the B0
-persistence baseline — as q10/q50/q90 of ln(high/low). It then calls `registration.register` and
-aborts rather than register at or after a window's start. A run more than an hour after the close
-does not forecast: a scheduled run fails (so the lateness is visible), a manual run skips.
+One run is one attempt for the last 4H close, logged in `state/range_attempts.jsonl` whatever happens.
+`refit` validates the month's fit (`range_contract.validate_fit`: month, spec, models, term order,
+coefficient shape and finiteness, residual quantiles, training cutoff, calendar prefix) and builds it
+once when a month begins, from the retained history chain (`desk/research/o21/inputs` plus
+`desk/inputs/refit/`) and the days since. `forecast` pulls the last 400 closed 4H bars and 96 hours of
+DVOL, applies the admissibility policy (bars must be `ok`; DVOL `incomplete` only with the decision
+candle present, `malformed`/conflicting never), writes the input bundle (`desk/inputs/YYYY-MM/`), and
+registers three `range-rc1d-*` forecasts in one transaction (`registration.register_batch`). The
+workflow pushes, then `confirm` verifies the entries on `origin/main` and records the time; a second
+push persists that. A run more than an hour after the close logs `skipped` (a scheduled run then fails
+visibly). A decision whose earlier attempt recorded a window is refused, not retried.
 
-`refit` runs first on every schedule and does nothing unless the month has no `desk/fits/YYYY-MM.json`;
-then it downloads the 4H archive from Jan 2020 and DVOL from Mar 2021, fits on every target that
-closed before the month began, and writes the file once. `range_model.py` must hash to the frozen
-O21 specification or both commands refuse to run. `summary` reads `registry/scores.jsonl` and writes
-`reports/range.md` (skill of B2 over B0 on the same windows, and 10-90 coverage).
-
-The registered window starts a few minutes after the close the model was trained on; the offset is
-in each forecast's note. Scores accrue weekly with every other forecast. Overlapping windows (a
-72h forecast every 4 hours) mean the independent sample is much smaller than the count.
+`status` writes `reports/range_status.json` (per-horizon reader state, expected decisions reconciled
+with outcomes: missing, skipped, failed, abandoned, registered-pending, late/ineligible, scored;
+production vs other runs; orphans; integrity failures; legacy records) and `reports/range.md`.
+`replay <id>` rebuilds a registered forecast offline from its bundle, fit and calendar.
 
 ## Scoring contract
 

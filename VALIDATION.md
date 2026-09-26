@@ -1,3 +1,20 @@
+# Validation record — desk forecast contract, revision 2.15
+
+Validated 2026-09-26 with Python 3.11 (container). Earlier blocks below are kept as recorded.
+
+| Check (2.15) | Result |
+|---|---|
+| Audited snapshot / base | Audit at `0a9ba0e` (package 11.2, repo 2.14); built on `09549f8`; main later moved only by collector data commits |
+| 2.14 deployment (recorded here because 2.14's own row was left open) | PR #15 merged 2026-09-26 02:15:24Z (`e98692e`). Manual run #1 (id 36211132618) completed; forecast skipped (stale bar); it committed only `reports/range.md` (`0a9ba0e`); `state/forecast_manifest.json` was `{}` at `0a9ba0e` and still `{}` at `c6f8211` (Sep 26 ~03:15Z). No scheduled 2.14 run had occurred at that check |
+| Reproductions on 2.14 code | Finding 1: three unregistered files, retry skipped them, no manifest. Finding 5: bogus fit registered three. Finding 3: q50/exp(p) = 0.956 / 0.965 / 0.954. Finding 4: 5 / 17 leaked validation targets. Finding 7: conflicting DVOL `ok` with the last value; decreasing notional `ok` |
+| Same on 2.15 | Each case fails closed or registers completely; see CHANGELOG 2.15 table |
+| Regression suite | 479 passed (332 + desk 147); fixtures 25 |
+| Evaluation versions | Identical for all eight designs (lab loader, before vs after) |
+| O21 replay | From `desk/research/o21/inputs` (hash-verified): zero differences from the original result |
+| September fit | Reproduced exactly (coefficients, residual quantiles, B0 quantiles) from the retained O21 inputs; validates under `validate_fit` |
+| Checksums | `SHA256SUMS` regenerated from its list plus the new code and docs (data, fits, bundles and research outputs excluded) |
+| Deployment of 2.15 | Not merged at this record. Evidence goes here after merge: merge commit, the first scheduled run's attempt and publication rows, and the status file |
+
 # Validation record — desk range forecasts, revision 2.14
 
 Validated 2026-09-26 with Python 3.11 (container). Earlier blocks below are kept as recorded.

@@ -1,0 +1,31 @@
+{
+ "files": {
+  "inputs/dvol_1h.json.gz": {
+   "bytes_uncompressed": 6327690,
+   "sha256_uncompressed": "ecda6fd4c20fa1dec500694f973c1b2f0f2e8499bd5a785bd9123413b2dd4bab"
+  },
+  "inputs/klines_4h.json.gz": {
+   "bytes_uncompressed": 5346730,
+   "sha256_uncompressed": "c7196a171da94cf98bfdd14676219a9504dff1f8376070fe1202acdcf8fdbab7"
+  },
+  "original/diagnostic_validation.json": {
+   "sha256": "2c58b5eaa9dfaca8a729a7668b92eb4e367ac67af0528c1e8d80fd8b59504745"
+  },
+  "original/freeze.json": {
+   "sha256": "02beaeb137af54df48f216e01402af085ff57b21f8adeb77c1f65d9c4c561842"
+  },
+  "original/o21_holdout.json": {
+   "sha256": "e352f145f491ca36c3b969334bade2c89646eb83a9233d60001a8a42362ffa4d"
+  },
+  "original/o21_validation.json": {
+   "sha256": "50dc06ac5d912a7720d4a5b58755c07c7d9c22e39869a95eda92dcf9c8e95629"
+  },
+  "original/o21_validation_run1_leaky_latest_fit.json": {
+   "sha256": "c2435481ddc930f72b9a711a58e51542c1f3ee4a17f131508837c45a7430a57e"
+  },
+  "original/run.py": {
+   "sha256": "dd9a08e29be3bca3d8ab8ef65254e03c57c819a3764c051389ab4e060229ab44"
+  }
+ },
+ "note": "Original O21 inputs exactly as the Sep 26 2026 01:10Z run read them (loader output files, gzip of the original bytes). The raw provider zips were not retained; each monthly file's provider sha256 is in the klines manifest, so a re-download can be checked against them."
+}

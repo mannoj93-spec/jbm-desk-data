@@ -49,9 +49,9 @@ import zipfile
 
 from jbm_measure import share_from_ratio
 
-VERSION = "archive-11.1.0"
+VERSION = "archive-12.0.0"
 BASE = "https://data.binance.vision/data/futures/um/daily"
-UA = {"User-Agent": "jbm-archive/11.1.0"}
+UA = {"User-Agent": "jbm-archive/12.0.0"}
 ALIGN_LAG = dt.timedelta(minutes=5)                   # verified alignment (V1-V2)
 PUBLICATION_ALLOWANCE = dt.timedelta(minutes=5)       # PROVISIONAL policy, not a measurement
 FIRST_DAY = {"metrics": dt.date(2020, 9, 1), "bookDepth": dt.date(2023, 1, 1)}  # paged Sep 22 2026
@@ -338,9 +338,12 @@ def inspect_bookdepth(raw_rows, day: dt.date):
             rep["incomplete_snapshots"] += 1; continue
         layouts[layout] = layouts.get(layout, 0) + 1
         bands = sorted(s)
+        # Cumulative depth AND cumulative notional must both be non-decreasing outward on each side (12.0:
+        # a snapshot with rising BTC depth but falling notional is impossible and no longer passes).
         mono = all(
-            all(s[b2][0] >= s[b1][0] for b1, b2 in zip(side, side[1:]))
-            for side in ([b for b in bands if b > 0], sorted((b for b in bands if b < 0), reverse=True)))
+            all(s[b2][k] >= s[b1][k] for b1, b2 in zip(side, side[1:]))
+            for side in ([b for b in bands if b > 0], sorted((b for b in bands if b < 0), reverse=True))
+            for k in (0, 1))
         if not mono:
             rep["non_monotone_snapshots"] += 1; continue
         rep["complete_snapshots"] += 1
@@ -563,6 +566,7 @@ def load_dvol(start: dt.datetime, end: dt.datetime, currency: str = "BTC", opene
            "code_version": VERSION}
     h = hashlib.sha256()
     got: dict = {}
+    conflicts: set = set()
     t = start
     while t < end:
         t2 = min(end, t + dt.timedelta(hours=window_h))
@@ -587,8 +591,20 @@ def load_dvol(start: dt.datetime, end: dt.datetime, currency: str = "BTC", opene
                 rep["malformed_rows"]["bad_value"] = rep["malformed_rows"].get("bad_value", 0) + 1
                 continue
             if start.timestamp() * 1000 <= ts < end.timestamp() * 1000:
-                got[ts] = c
+                # 12.0: an exact duplicate is deduplicated; a conflicting value for the same hour is never
+                # resolved by row order - the hour is dropped and the result is `malformed`.
+                if ts in got and got[ts] != c:
+                    conflicts.add(ts)
+                elif ts in got:
+                    rep["duplicates"] = rep.get("duplicates", 0) + 1
+                got.setdefault(ts, c)
         t = t2
+    for ts in conflicts:
+        got.pop(ts, None)
+    rep["conflicts"] = len(conflicts)
+    if conflicts:
+        rep["malformed_rows"]["conflicting_hour"] = len(conflicts)
+        rep["flags"].append("conflicting_values:" + ",".join(_iso(_ms_to_dt(ts)) for ts in sorted(conflicts)[:5]))
     rows = [{"open_utc": _iso(_ms_to_dt(ts)), "available_at_utc": _iso(_ms_to_dt(ts + 3_600_000)),
              "dvol": got[ts], "code_version": VERSION} for ts in sorted(got)]
     expected = int((end - start).total_seconds() // 3600)
