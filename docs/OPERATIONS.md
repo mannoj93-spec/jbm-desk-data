@@ -127,7 +127,7 @@ Directly committed registry files use the same schema and are frozen on the coll
 first sighting. Their registration must precede their start. Run registration locally
 only for development; GitHub records label the registering commit.
 
-## Desk range forecasts (desk/, 2.15; hardened 2.16)
+## Desk range forecasts (desk/, 2.15; hardened 2.16, 2.17)
 
 One run is one attempt for the last 4H close, logged in `state/range_attempts.jsonl` whatever happens.
 `refit` validates the month's fit (`range_contract.validate_fit`: month, spec, models, term order,
@@ -149,6 +149,19 @@ hash (current file, `desk/calendars/`, or Git history). 2.16: forecasts expire a
 the window end) whether read fresh or from the cached status file; `status` separates due decisions from the
 current one still inside its run window; the reader and scoring apply the strict RC1D checks and never crash on
 malformed state; `refit` fills only an unpublished trailing archive segment from validated live bars.
+
+2.17: reads are **as of** a time - a forecast is readable only once its decision, preparation, registration and
+publication confirmation have all happened, the newest such record governs, and a cached result applied to an
+earlier time is `unavailable` (the 2.16 reader returned the newest record for any time, which failed the 12:00Z
+preflight on Sep 26). Reader and scorer share `range_contract.eligibility`; the strict checks derive the exact
+window with `range_contract.window` and chronology (prepared <= registered <= confirmed). Every run of
+`range.yml` logs its stages and terminal outcome in `state/range_runs.jsonl` (`desk/range_ops.py`, stdlib
+only), so a failure before forecasting is reported as `failed` with its stage and reason - never as a forecast,
+a window, or a generic `in-progress`. `range-score.yml` scores matured range forecasts hourly
+(`range_job.py score`, idempotent; attempts in `state/range_scoring.jsonl`; per-horizon states in the status);
+`range-monitor.yml` (`desk/range_monitor.py`, read-only, stdlib only) fails on failed or absent runs, a stale
+last eligible publication, a stale status file or a scoring backlog, and cross-checks the Actions run list.
+The weekly report still scores the other streams and remains the review cadence.
 
 ## Scoring contract
 
