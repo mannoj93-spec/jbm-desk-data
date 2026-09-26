@@ -316,8 +316,12 @@ class TestRetainedRoot(Base):
         p = J.refit(self.m0 + dt.timedelta(days=1), base=base, history=(
             [b for b in k["rows"] if R._t(b["open_utc"]) < self.m0], [r for r in d["rows"] if R._t(r["open_utc"]) < self.m0]))
         got, want = json.loads(p.read_text()), json.loads((DESK / "fits/2026-09.json").read_text())
-        for h in C.HOURS:
-            self.assertEqual((got["fits"][h]["beta"], got["fits"][h]["resid_q"]), (want["fits"][h]["beta"], want["fits"][h]["resid_q"]))
+        for h in C.HOURS:                               # numerical reproducibility, not bytes: floating-point
+            for key in ("beta", "resid_q"):             # summation differs across Python/BLAS builds (CI 3.12
+                a, b = got["fits"][h][key], want["fits"][h][key]      # vs 3.11 differ in the last digit)
+                self.assertEqual(len(a), len(b))
+                for x, y in zip(a, b):
+                    self.assertLessEqual(abs(x - y), 1e-9 + 1e-9 * abs(y), (h, key))
         shutil.rmtree(base)
 
 
