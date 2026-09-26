@@ -3,16 +3,17 @@
  "current": {
   "24h": {
    "attempt": "2026-09-26T08:00:00Z#36229141684",
+   "available_from_utc": "2026-09-26T08:15:22Z",
+   "available_ms": 1790410521137,
    "b0_point_lr": 0.028937370018,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-09-26T08:00:00Z",
-   "elapsed_fraction": 0.1607,
+   "elapsed_fraction": 0.2675,
    "end_utc": "2026-09-27T08:25:00Z",
    "frozen_sha256": "78085d5e5872d31aacb82e24cef08cfe88462ec28a471ecf4b0da7b0fb6470e2",
    "horizon": "24h",
    "id": "range-rc1d-24h-20260926T0800Z",
-   "label": "range-rc1d-24h-20260926T0800Z - full-window range forecast for [2026-09-26T08:25:00Z, 2026-09-27T08:25:00Z) (16% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-09-26T12:16:26Z",
+   "now_utc": "2026-09-26T14:50:12Z",
    "point_lr": 0.014252570879,
    "points_at_decision_close": {
     "point": 1206.9,
@@ -25,27 +26,28 @@
     0.013755284386,
     0.02555927972
    ],
-   "reader": "reader-12.1.0",
-   "reason": "eligible and current",
+   "reader": "reader-12.2.0",
+   "reason": "expired at 2026-09-26T13:15:00Z (a newer decision was due; no newer forecast is current)",
    "reference_price": 84075.1,
    "registered_ms": 1790410519365,
    "remaining": null,
    "start_utc": "2026-09-26T08:25:00Z",
-   "state": "valid-current",
+   "state": "stale",
    "valid_until_utc": "2026-09-26T13:15:00Z"
   },
   "4h": {
    "attempt": "2026-09-26T08:00:00Z#36229141684",
+   "available_from_utc": "2026-09-26T08:15:22Z",
+   "available_ms": 1790410521137,
    "b0_point_lr": 0.010067395547,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-09-26T08:00:00Z",
-   "elapsed_fraction": 0.9643,
+   "elapsed_fraction": 1.0,
    "end_utc": "2026-09-26T12:25:00Z",
    "frozen_sha256": "2d50c04a0b22543d2ae158e81fe1a01972394c1ad007cc24285b3053297ad941",
    "horizon": "4h",
    "id": "range-rc1d-4h-20260926T0800Z",
-   "label": "range-rc1d-4h-20260926T0800Z - full-window range forecast for [2026-09-26T08:25:00Z, 2026-09-26T12:25:00Z) (96% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-09-26T12:16:26Z",
+   "now_utc": "2026-09-26T14:50:12Z",
    "point_lr": 0.005011705191,
    "points_at_decision_close": {
     "point": 422.4,
@@ -58,27 +60,28 @@
     0.004789992429,
     0.009661661084
    ],
-   "reader": "reader-12.1.0",
-   "reason": "eligible and current",
+   "reader": "reader-12.2.0",
+   "reason": "window ended",
    "reference_price": 84075.1,
    "registered_ms": 1790410519365,
    "remaining": null,
    "start_utc": "2026-09-26T08:25:00Z",
-   "state": "valid-current",
+   "state": "stale",
    "valid_until_utc": "2026-09-26T12:25:00Z"
   },
   "72h": {
    "attempt": "2026-09-26T08:00:00Z#36229141684",
+   "available_from_utc": "2026-09-26T08:15:22Z",
+   "available_ms": 1790410521137,
    "b0_point_lr": 0.051936983,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-09-26T08:00:00Z",
-   "elapsed_fraction": 0.0536,
+   "elapsed_fraction": 0.0892,
    "end_utc": "2026-09-29T08:25:00Z",
    "frozen_sha256": "3afa931692a342fef953b880c95ab4530e60c45aba1552e44d939c3675c4d7a2",
    "horizon": "72h",
    "id": "range-rc1d-72h-20260926T0800Z",
-   "label": "range-rc1d-72h-20260926T0800Z - full-window range forecast for [2026-09-26T08:25:00Z, 2026-09-29T08:25:00Z) (5% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-09-26T12:16:26Z",
+   "now_utc": "2026-09-26T14:50:12Z",
    "point_lr": 0.040158844689,
    "points_at_decision_close": {
     "point": 3445.1,
@@ -91,35 +94,31 @@
     0.038301446398,
     0.069082726744
    ],
-   "reader": "reader-12.1.0",
-   "reason": "eligible and current",
+   "reader": "reader-12.2.0",
+   "reason": "expired at 2026-09-26T13:15:00Z (a newer decision was due; no newer forecast is current)",
    "reference_price": 84075.1,
    "registered_ms": 1790410519365,
    "remaining": null,
    "start_utc": "2026-09-26T08:25:00Z",
-   "state": "valid-current",
+   "state": "stale",
    "valid_until_utc": "2026-09-26T13:15:00Z"
   }
  },
- "current_decision": {
-  "decision_utc": "2026-09-26T12:00:00Z",
-  "grace_until_utc": "2026-09-26T13:15:00Z",
-  "ids": [],
-  "outcome": "in-progress",
-  "reason": "run window still open; not yet due"
- },
- "due_decisions": 2,
- "expected_decisions": 2,
- "generated_utc": "2026-09-26T12:16:26Z",
+ "current_decision": null,
+ "due_decisions": 3,
+ "expected_decisions": 3,
+ "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
+ "generated_utc": "2026-09-26T14:50:12Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
  "note": "Generated file. Freshness is the reader's rule applied to your own clock: a valid-current entry is current only while now < current[h].valid_until_utc (range_reader.revalidate); recompute elapsed_fraction from start/end. Only valid-current is citable, as a full-window forecast. A green workflow is not a registration. Publication confirmation uses the runner's clock after a remote fetch.",
  "orphans": [],
  "outcomes": {
+  "missing": 1,
   "registered-pending": 2
  },
- "reader": "reader-12.1.0",
+ "reader": "reader-12.2.0",
  "recent": [
   {
    "decision_utc": "2026-09-26T04:00:00Z",
@@ -129,7 +128,7 @@
     "range-rc1d-72h-20260926T0400Z"
    ],
    "outcome": "registered-pending",
-   "reason": "eligible; 0/3 scored"
+   "reason": "eligible; 1/3 scored"
   },
   {
    "decision_utc": "2026-09-26T08:00:00Z",
@@ -139,14 +138,57 @@
     "range-rc1d-72h-20260926T0800Z"
    ],
    "outcome": "registered-pending",
-   "reason": "eligible; 0/3 scored"
+   "reason": "eligible; 1/3 scored"
+  },
+  {
+   "decision_utc": "2026-09-26T12:00:00Z",
+   "ids": [],
+   "outcome": "missing",
+   "reason": "no production attempt or run record (run absent, or it failed before persisting)"
   }
  ],
  "release": {
   "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
-  "package": "crypto-desk 12.1",
-  "release_sha256": "bba1d98f231f07651520d9a8e565bd22178de0f13213e8e9ff1ec3a47180b4a1",
-  "repo_revision": "2.16"
+  "package": "crypto-desk 12.2",
+  "release_sha256": "b84c2e2b1470eb9a6561e406f144a716d9ba2775dc0d957d203d9e8149627aeb",
+  "repo_revision": "2.17"
  },
- "scored": {}
+ "runs_recorded": 0,
+ "scored": {
+  "4h": {
+   "coverage_b0": 0.0,
+   "coverage_b2": 1.0,
+   "mae_b0": 0.91895,
+   "mae_b2": 0.24817,
+   "n": 2,
+   "skill": 0.7299
+  }
+ },
+ "scoring": {
+  "24h": {
+   "backlog": [],
+   "ineligible": 0,
+   "ready": 0,
+   "scored": 0,
+   "waiting-maturity": 2,
+   "waiting-observations": 0
+  },
+  "4h": {
+   "backlog": [],
+   "ineligible": 0,
+   "ready": 0,
+   "scored": 2,
+   "waiting-maturity": 0,
+   "waiting-observations": 0
+  },
+  "72h": {
+   "backlog": [],
+   "ineligible": 0,
+   "ready": 0,
+   "scored": 0,
+   "waiting-maturity": 2,
+   "waiting-observations": 0
+  }
+ },
+ "status_expires_utc": "2026-09-26T17:15:00Z"
 }
