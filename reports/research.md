@@ -1,13 +1,13 @@
 # Research evidence
 
-Generated 2026-09-25T18:53Z (input cutoff 2026-09-25T18:46Z). All times are UTC. lab-2.2-2026-09-24; code 7a59e3575684; commit 64a4be7218d1a0dd64a785b6c671b42e81ebd1f7; cost model costs-1 (assumed fees). Refreshed by the Research lab workflow every 6 hours; anything older is stale.
+Generated 2026-09-26T00:49Z (input cutoff 2026-09-26T00:39Z). All times are UTC. lab-2.2-2026-09-24; code 7a59e3575684; commit 2949d042da7921e5f0297eb012ea80658853e267; cost model costs-1 (assumed fees). Refreshed by the Research lab workflow every 6 hours; anything older is stale.
 
 ## At a glance
 
 | Signal | State |
 |---|---|
-| Workflow | this report was written by the research-lab run at 2026-09-25T18:53Z; whether that run and the collector succeeded is on the repository's Actions tab |
-| Data freshness | input cutoff 2026-09-25T18:46Z (7 min before this report); collection health and data age per dataset: [latest.md](latest.md) |
+| Workflow | this report was written by the research-lab run at 2026-09-26T00:49Z; whether that run and the collector succeeded is on the repository's Actions tab |
+| Data freshness | input cutoff 2026-09-26T00:39Z (10 min before this report); collection health and data age per dataset: [latest.md](latest.md) |
 | Research integrity (latest attempt) | 5 not required (bar-based) · 3 passed |
 | Evidence maturity | 8 exploratory; no design is supported |
 | Publication | 8 valid · 0 BLOCKED · 0 proposal-eligible ([skill_proposals.md](skill_proposals.md)) |
@@ -37,11 +37,13 @@ Do weak-response heavy-flow windows differ from strong-response ones in subseque
 - checkpoint 1 pending: 0/100 retained test observations known
 - horizons: primary 60 min (decides status and proposals); secondary 30, 240, 480 min (descriptive only)
 - comparison coverage: hourly controls at each whole-hour bar close whose bar is stored (bar-based; not affected by the collection-time policy)
-- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 1/0/0/0/0, reanalysis 46/46/46/46/46; 60m* eval 1/0/0/0/0, reanalysis 46/46/46/28/46; 240m eval 1/0/0/0/0, reanalysis 46/43/43/10/43; 480m eval 1/0/0/0/0, reanalysis 46/39/39/5/39
+- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 7/6/6/6/6, reanalysis 46/46/46/46/46; 60m* eval 7/6/6/4/6, reanalysis 46/46/46/28/46; 240m eval 7/3/3/1/3, reanalysis 46/46/46/11/46; 480m eval 7/0/0/0/0, reanalysis 46/45/45/6/45
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 3.0 days of stored 1-minute bars; the event threshold needs 7 days of prior windows
+- prospective data: 3.2 days of stored 1-minute bars; the event threshold needs 7 days of prior windows
+- reconstruction/exploratory: test firings 12, episodes 7, scorable 7, retained 6 in 6 blocks; reference retained 91; test mean -35.3 bp vs reference -8.9 bp; 90% [-54.3 bp, -4.2 bp].
+- contradictory evidence (3): q99_weak0.5 / reconstruction / exploratory / 60m: chronological halves disagree (+2.2 bp vs -38.1 bp)
 - variants tried in family A-flow: 15
 
 ### B1-underwater-adds @ ev-125c86066f05 - exploratory
@@ -49,14 +51,15 @@ Do fixed-cohort BTC additions under drawdown differ from additions in profit in 
 - research integrity: passed; publication: valid
 - checkpoint 1 pending: 0/100 retained test observations known
 - horizons: primary 240 min (decides status and proposals); secondary 30, 60, 480 min (descriptive only)
-- comparison coverage (hourly-first-available-2): 2026-09-23T20:00Z to 2026-09-25T18:53Z; 46 closed hours + 1 partial; 47 hours with eligible candidates; 47 selected (47 frozen earlier); 0 closed hours without a control; availability 17.7 min after the hour (median, range 0.1-48.1)
-- controls used: sha256 6e7dfd88230460ee; equal to the stored selections: True
-- labelled controls = stored selections: 47 checked, 0 mismatches
-- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 1/0/0/0/0, reanalysis 46/46/46/45/46; 60m eval 1/0/0/0/0, reanalysis 46/46/46/28/46; 240m* eval 1/0/0/0/0, reanalysis 46/43/43/10/43; 480m eval 1/0/0/0/0, reanalysis 46/39/39/5/39
+- comparison coverage (hourly-first-available-2): 2026-09-23T20:00Z to 2026-09-26T00:49Z; 52 closed hours + 1 partial; 53 hours with eligible candidates; 53 selected (47 frozen earlier); 0 closed hours without a control; availability 17.5 min after the hour (median, range 0.1-48.1)
+- selections: 6 accepted this run, 0 proposals superseded by stored winners, 0 hours pending processing (decision after the cutoff), 0 stored records withheld at this cutoff
+- controls used: sha256 a31bbd74271f40b1; equal to the stored selections: True
+- labelled controls = stored selections: 53 checked, 0 mismatches
+- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 7/6/6/6/6, reanalysis 46/46/46/45/46; 60m eval 7/6/6/4/6, reanalysis 46/46/46/28/46; 240m* eval 7/3/3/1/3, reanalysis 46/46/46/11/46; 480m eval 7/0/0/0/0, reanalysis 46/45/45/6/45
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 178 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)
+- prospective data: 201 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)
 - variants tried in family B-accounts: 18
 
 ### C1-liquidation-cluster @ ev-eb20553bce1c - exploratory
@@ -64,15 +67,16 @@ When sampled long liquidation exposure within 2% of mark is large, does BTC fall
 - research integrity: passed; publication: valid
 - checkpoint 1 pending: 0/100 retained test observations known
 - horizons: primary 240 min (decides status and proposals); secondary 30, 60, 480 min (descriptive only)
-- comparison coverage (hourly-first-available-2): 2026-09-23T20:00Z to 2026-09-25T18:53Z; 46 closed hours + 1 partial; 47 hours with eligible candidates; 47 selected (47 frozen earlier); 0 closed hours without a control; availability 17.7 min after the hour (median, range 0.1-30.5)
-- controls used: sha256 1e7882dda8237f6a; equal to the stored selections: True
-- labelled controls = stored selections: 47 checked, 0 mismatches
-- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 1/0/0/0/0, reanalysis 46/46/46/46/46; 60m eval 1/0/0/0/0, reanalysis 46/46/46/28/46; 240m* eval 1/0/0/0/0, reanalysis 46/43/43/10/43; 480m eval 1/0/0/0/0, reanalysis 46/39/39/5/39
+- comparison coverage (hourly-first-available-2): 2026-09-23T20:00Z to 2026-09-26T00:49Z; 52 closed hours + 1 partial; 53 hours with eligible candidates; 53 selected (47 frozen earlier); 0 closed hours without a control; availability 17.5 min after the hour (median, range 0.1-30.5)
+- selections: 6 accepted this run, 0 proposals superseded by stored winners, 0 hours pending processing (decision after the cutoff), 0 stored records withheld at this cutoff
+- controls used: sha256 ba6ae19e7e062231; equal to the stored selections: True
+- labelled controls = stored selections: 53 checked, 0 mismatches
+- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 7/6/6/6/6, reanalysis 46/46/46/46/46; 60m eval 7/6/6/4/6, reanalysis 46/46/46/28/46; 240m* eval 7/3/3/1/3, reanalysis 46/46/46/11/46; 480m eval 7/0/0/0/0, reanalysis 46/45/45/6/45
 - decision timing: 1 frozen events; lab persisted them 2402.7 min (median, max 2402.7) after the assumed decision time (inputs + 60 s); as-of replay, not live execution
-- prospective/reanalysis: test firings 1, episodes 1, scorable 1, retained 1 in 1 blocks; reference retained 10; test mean -4.0 bp vs reference +5.6 bp; 90% —.
-- prospective/evaluation: test firings 1, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
+- prospective/reanalysis: test firings 1, episodes 1, scorable 1, retained 1 in 1 blocks; reference retained 11; test mean -4.0 bp vs reference +7.1 bp; 90% —.
+- prospective/evaluation: test firings 1, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean — vs reference -12.0 bp; 90% —.
 - frozen decisions: {'frozen_used': 1, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 180 sampled snapshots; the design needs 1344
+- prospective data: 203 sampled snapshots; the design needs 1344
 - variants tried in family C-liquidation: 18
 
 ### D1-active-twap @ ev-2b023a90293f - exploratory
@@ -81,11 +85,11 @@ After an active BTC TWAP of a fixed-cohort account is first observed, do returns
 - checkpoint 1 pending: 0/100 retained test observations known
 - horizons: primary 240 min (decides status and proposals); secondary 30, 60, 480 min (descriptive only)
 - comparison coverage: hourly controls at each whole-hour bar close whose bar is stored (bar-based; not affected by the collection-time policy)
-- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 1/0/0/0/0, reanalysis 70/70/70/46/70; 60m eval 1/0/0/0/0, reanalysis 70/70/70/28/70; 240m* eval 1/0/0/0/0, reanalysis 70/67/67/10/67; 480m eval 1/0/0/0/0, reanalysis 70/63/63/5/63
-- prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 10; test mean — vs reference -12.0 bp; 90% —.
-- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
+- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 7/6/6/6/6, reanalysis 70/70/70/46/70; 60m eval 7/6/6/4/6, reanalysis 70/70/70/28/70; 240m* eval 7/3/3/1/3, reanalysis 70/70/70/11/70; 480m eval 7/0/0/0/0, reanalysis 70/69/69/6/69
+- prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 11; test mean — vs reference -12.0 bp; 90% —.
+- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 1; test mean — vs reference -12.0 bp; 90% —.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 1486 twapHistory checks, 265 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs
+- prospective data: 1685 twapHistory checks, 265 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs
 - variants tried in family D-twap: 10
 
 ### E1-liquidity-recovery @ ev-6f279983100b - exploratory
@@ -106,14 +110,15 @@ When 7-day risk reversal and perp funding disagree at extremes, does BTC follow 
 - research integrity: passed; publication: valid
 - checkpoint 1 pending: 0/100 retained test observations known
 - horizons: primary 480 min (decides status and proposals); secondary 30, 60, 240 min (descriptive only)
-- comparison coverage (hourly-first-available-2): 2026-09-23T00:00Z to 2026-09-25T18:53Z; 66 closed hours + 1 partial; 67 hours with eligible candidates; 67 selected (67 frozen earlier); 0 closed hours without a control; availability 17.6 min after the hour (median, range 11.7-28.0)
-- controls used: sha256 28043de0321a0875; equal to the stored selections: True
-- labelled controls = stored selections: 67 checked, 0 mismatches
-- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 1/0/0/0/0, reanalysis 66/66/66/66/45; 60m eval 1/0/0/0/0, reanalysis 66/66/66/42/45; 240m eval 1/0/0/0/0, reanalysis 66/63/63/14/42; 480m* eval 1/0/0/0/0, reanalysis 66/59/59/7/38
-- prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 7; test mean — vs reference -12.0 bp; 90% —.
+- comparison coverage (hourly-first-available-2): 2026-09-23T00:00Z to 2026-09-26T00:49Z; 72 closed hours + 1 partial; 73 hours with eligible candidates; 73 selected (67 frozen earlier); 0 closed hours without a control; availability 17.5 min after the hour (median, range 11.7-28.0)
+- selections: 6 accepted this run, 0 proposals superseded by stored winners, 0 hours pending processing (decision after the cutoff), 0 stored records withheld at this cutoff
+- controls used: sha256 5767d89be7e799f8; equal to the stored selections: True
+- labelled controls = stored selections: 73 checked, 0 mismatches
+- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 7/6/6/6/6, reanalysis 66/66/66/66/45; 60m eval 7/6/6/4/6, reanalysis 66/66/66/42/45; 240m eval 7/3/3/1/3, reanalysis 66/66/66/15/45; 480m* eval 7/0/0/0/0, reanalysis 66/65/65/8/44
+- prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 8; test mean — vs reference -12.0 bp; 90% —.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 217 option records (0 with a trailing z-score); the design needs 1344
+- prospective data: 240 option records (0 with a trailing z-score); the design needs 1344
 - variants tried in family F-options: 23
 
 ### G1-alt-stress-propagation @ ev-5cbc55c34b6d - exploratory
@@ -122,11 +127,13 @@ After an ETH/SOL 5-minute shock with BTC calm, does BTC follow the alt more than
 - checkpoint 1 pending: 0/100 retained test observations known
 - horizons: primary 60 min (decides status and proposals); secondary 30, 240, 480 min (descriptive only)
 - comparison coverage: hourly controls at each whole-hour bar close whose bar is stored (bar-based; not affected by the collection-time policy)
-- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 1/0/0/0/0, reanalysis 46/46/46/46/46; 60m* eval 1/0/0/0/0, reanalysis 46/46/46/28/46; 240m eval 1/0/0/0/0, reanalysis 46/43/43/10/43; 480m eval 1/0/0/0/0, reanalysis 46/39/39/5/39
+- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m eval 7/6/6/6/6, reanalysis 46/46/46/46/46; 60m* eval 7/6/6/4/6, reanalysis 46/46/46/28/46; 240m eval 7/3/3/1/3, reanalysis 46/46/46/11/46; 480m eval 7/0/0/0/0, reanalysis 46/45/45/6/45
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 28; test mean — vs reference -12.0 bp; 90% —.
-- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
+- prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 4; test mean — vs reference -12.0 bp; 90% —.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 3.0 days of stored bars; the design needs 14
+- prospective data: 3.2 days of stored bars; the design needs 14
+- reconstruction/exploratory: test firings 50, episodes 47, scorable 47, retained 43 in 33 blocks; reference retained 1437; test mean -20.4 bp vs reference -12.4 bp; 90% [-24.4 bp, +5.4 bp].
+- contradictory evidence (1): k4 / reconstruction / exploratory / 60m: chronological halves disagree (+12.4 bp vs -6.7 bp)
 - variants tried in family G-cross: 15
 
 ### H1-deleveraging-stress @ ev-02fcecefd1bf - exploratory
@@ -135,10 +142,10 @@ Do OKX liquidation bursts accompanied by insurance-fund loss or ADL rows continu
 - checkpoint 1 pending: 0/100 retained test observations known
 - horizons: primary 30 min (decides status and proposals); secondary 60, 240, 480 min (descriptive only)
 - comparison coverage: hourly controls at each whole-hour bar close whose bar is stored (bar-based; not affected by the collection-time policy)
-- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m* eval 1/0/0/0/0, reanalysis 70/70/70/46/70; 60m eval 1/0/0/0/0, reanalysis 70/70/70/28/70; 240m eval 1/0/0/0/0, reanalysis 70/67/67/10/67; 480m eval 1/0/0/0/0, reanalysis 70/63/63/5/63
+- controls selected/mature/scorable/retained/baseline-usable (* primary): 30m* eval 7/6/6/6/6, reanalysis 70/70/70/46/70; 60m eval 7/6/6/4/6, reanalysis 70/70/70/28/70; 240m eval 7/3/3/1/3, reanalysis 70/70/70/11/70; 480m eval 7/0/0/0/0, reanalysis 70/69/69/6/69
 - prospective/reanalysis: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
 - prospective/evaluation: test firings 0, episodes 0, scorable 0, retained 0 in 0 blocks; reference retained 0; test mean — vs reference —; 90% —.
 - frozen decisions: {'frozen_used': 0, 'revised_since_frozen': 0, 'not_reproduced': 0, 'late_replay': 0, 'new': 0}
-- prospective data: 3.7 days of collected OKX liquidation history; the p99 threshold needs 7
+- prospective data: 4.0 days of collected OKX liquidation history; the p99 threshold needs 7
 - variants tried in family H-deleveraging: 5
 
