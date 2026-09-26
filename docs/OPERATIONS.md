@@ -127,7 +127,7 @@ Directly committed registry files use the same schema and are frozen on the coll
 first sighting. Their registration must precede their start. Run registration locally
 only for development; GitHub records label the registering commit.
 
-## Desk range forecasts (desk/, 2.15)
+## Desk range forecasts (desk/, 2.15; hardened 2.16)
 
 One run is one attempt for the last 4H close, logged in `state/range_attempts.jsonl` whatever happens.
 `refit` validates the month's fit (`range_contract.validate_fit`: month, spec, models, term order,
@@ -144,7 +144,11 @@ visibly). A decision whose earlier attempt recorded a window is refused, not ret
 `status` writes `reports/range_status.json` (per-horizon reader state, expected decisions reconciled
 with outcomes: missing, skipped, failed, abandoned, registered-pending, late/ineligible, scored;
 production vs other runs; orphans; integrity failures; legacy records) and `reports/range.md`.
-`replay <id>` rebuilds a registered forecast offline from its bundle, fit and calendar.
+`replay <id>` rebuilds a registered forecast offline from its bundle, fit and calendar, each resolved by content
+hash (current file, `desk/calendars/`, or Git history). 2.16: forecasts expire at decision + 4h + 75 min (capped at
+the window end) whether read fresh or from the cached status file; `status` separates due decisions from the
+current one still inside its run window; the reader and scoring apply the strict RC1D checks and never crash on
+malformed state; `refit` fills only an unpublished trailing archive segment from validated live bars.
 
 ## Scoring contract
 
