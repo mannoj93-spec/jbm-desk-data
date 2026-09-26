@@ -66,6 +66,97 @@ def register(base, now):
     return new, errors
 
 
+class BatchError(ValueError):
+    """A batch could not be registered; nothing it wrote is referenced by the manifest."""
+
+
+def _hook(hooks, name):
+    if hooks and name in hooks:
+        hooks[name]()
+
+
+def register_batch(base, items, frozen_at, meta, hooks=None):
+    """Register several forecasts as one logical transaction (desk range stream, repo 2.15).
+
+    items: [(relative source path, exact bytes)]. frozen_at: the single local freezing time (ms) used for
+    validation and as `registered`; every window must start strictly after it. meta: fields added to each
+    manifest entry (attempt, contract, code_commit). Order: validate all -> frozen bytes -> ONE atomic
+    manifest write (the commit point) -> registration stamps -> source files (derivable from the frozen bytes,
+    restored by `restore_sources`). Before the commit point every failure removes what this call created;
+    after it the registration is complete and sources are rolled forward. Returns ("new"|"existing", entries).
+    Durable publication (the remote commit) is separate and recorded by the caller."""
+    base = Path(base)
+    manifest_path, state_path = base / "state/forecast_manifest.json", base / "state/registered.json"
+    manifest, stamps = read_json(manifest_path, {}), read_json(state_path, {})
+    staged, existing = [], []
+    for rel, raw in items:
+        fc = loads(raw)
+        issues = validate(fc, frozen_at)
+        if issues:
+            raise BatchError(f"{rel}: {'; '.join(issues)}")
+        fid, h = fc["id"], hashlib.sha256(raw).hexdigest()
+        if rel != f"registry/{fid}.json":
+            raise BatchError(f"{rel}: source path must be registry/<id>.json")
+        if fid in manifest:
+            if manifest[fid]["sha256"] != h or manifest[fid]["source"] != rel:
+                raise BatchError(f"{fid}: ID already registered with different content; the original stands")
+            existing.append(fid)
+            continue
+        src = base / rel
+        if src.exists() and src.read_bytes() != raw:
+            raise BatchError(f"{rel}: an unregistered file with different bytes occupies this ID")
+        staged.append((rel, raw, fid, h))
+    if existing and staged:
+        raise BatchError("batch partly registered already; refusing to mix records")
+    if existing:
+        return "existing", {fid: manifest[fid] for fid in existing}
+    created = []
+    try:
+        for rel, raw, fid, h in staged:
+            target = base / f"registry/frozen/{h}.json"
+            if target.exists():
+                if target.read_bytes() != raw:
+                    raise BatchError("frozen content mismatch")
+            else:
+                atomic_bytes(target, raw)
+                created.append(target)
+        _hook(hooks, "after_frozen")
+        new_entries = {}
+        for rel, raw, fid, h in staged:
+            new_entries[fid] = dict(meta, id=fid, source=rel, sha256=h, frozen=f"registry/frozen/{h}.json",
+                                    registered=frozen_at)
+        manifest.update(new_entries)
+        _hook(hooks, "before_manifest")
+        atomic_json(manifest_path, manifest)               # commit point
+    except BaseException:
+        for path in created:
+            path.unlink(missing_ok=True)
+        raise
+    for rel, raw, fid, h in staged:
+        stamps[f"{rel}@{h}"] = frozen_at
+    atomic_json(state_path, stamps)
+    _hook(hooks, "after_manifest")
+    restore_sources(base, list(new_entries))
+    return "new", new_entries
+
+
+def restore_sources(base, ids=None):
+    """Roll forward: rewrite missing or divergent source files of registered forecasts from frozen bytes."""
+    base = Path(base)
+    manifest = read_json(base / "state/forecast_manifest.json", {})
+    fixed = []
+    for fid in (ids if ids is not None else list(manifest)):
+        entry = manifest[fid]
+        raw = (base / entry["frozen"]).read_bytes()
+        if hashlib.sha256(raw).hexdigest() != entry["sha256"]:
+            raise ValueError(f"frozen forecast {fid}: hash mismatch")
+        src = base / entry["source"]
+        if not src.exists() or src.read_bytes() != raw:
+            atomic_bytes(src, raw)
+            fixed.append(fid)
+    return fixed
+
+
 def forecasts(base):
     base = Path(base)
     manifest = read_json(base / "state/forecast_manifest.json", {})

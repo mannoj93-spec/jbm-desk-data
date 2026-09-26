@@ -1,3 +1,26 @@
+# Desk forecast contract, revision 2.15 (crypto-desk package 12.0) — 2026-09-26
+
+Response to the audit of package 11.2 / repo 2.14 (audited at `0a9ba0e`; built on `09549f8`, main since
+then has only collector data commits). Collection cadence, API budgets, research designs and skills are
+unchanged. **No evaluation version changes**: all eight lab evaluation ids are identical before and after
+(computed with the lab's own loader); `schema.py`, `scoring.py` and `registration.py` were edited, but
+nothing hashed by `lab/versioning.py` changed and no `tests/` forecast test is registered, so no research
+clock restarts. The scoring implementation hash changes (scoring-2.3); no score exists yet.
+
+| # | Finding (reproduced on 2.14) | Fix | Tests |
+|---|---|---|---|
+| 1 | `forecast()` wrote three sources before its final time check; a clock sequence of 00:07:05 (validation) then 00:11 (registration) left three unregistered files; a retry skipped them by filename and left the manifest absent | One freeze time for the whole batch; `registration.register_batch`: validate all → frozen bytes → one atomic manifest write (commit point) → sources (rolled forward from frozen bytes); rollback before the commit point. Attempt log `state/range_attempts.jsonl`; a decision whose attempt recorded a window is refused, not retried. Publication confirmed on `origin/main` before the window starts (`confirm`, `state/range_publications.jsonl`); scoring requires it | `desk/test_range_job.py` `TestTransaction`, `TestEligibility` (the audit sequence, injected failures at three points, retry, roll-forward, orphan conflict, late/unconfirmed publication, scoring by publication) |
+| 2 | Threads were told to read raw `registry/` files | `desk/range_reader.py`: manifest → frozen bytes → schema, instrument, contract, decision, window, freshness, eligibility → `valid-current` / `stale` / `missing` / `unregistered` / `ineligible` / `integrity-failed`; full-window label, no remaining-range figure. `reports/range_status.json` reconciles expected decisions with outcomes (production vs other runs, legacy records) | `TestReaderStates`, `TestStatus` |
+| 3 | Evaluation lost on `p`, live scoring on q50 (3.5–4.6% lower, reproduced from the September fit); windows and calendar terms differed; coherence only in `forecast_now` | `desk/range_contract.py`: RC1 (evaluated) and RC1D (live, delayed window, calendar terms for the scored window); registered `point` is the loss-bearing forecast; one `losses` function used by evaluation and `scoring.py`; coherence reported, not applied | `desk/test_range_contract.py` (parity of windows, features, points, quantiles and losses across the three paths within 1e-8; boundary release; coherence case) |
+| 4 | Periods selected by decision time: 5 (24h) and 17 (72h) validation targets matured in the holdout | Maturity-bounded periods; O21 replayed from retained inputs (zero differences), then reanalysed: selection unchanged (B2 everywhere, also under Holm), holdout skill 18.2 / 16.9 / 10.8% | `TestSplits`; `desk/research/o21/reanalysis_12.0.json` |
+| 5 | A fit with zeroed hashes and month 1999-01 registered three forecasts | `range_contract.validate_fit` before any use (month, spec, models, term order, coefficient shape and finiteness, residual quantiles, cutoff, calendar prefix, provenance) | `TestFitValidation` (the reproduced case and ten corruptions; the committed September fit validates) |
+| 6 | Forecast and research inputs not replayable | Per-decision input bundles (`desk/inputs/`), refit history chain, O21 inputs and results retained (`desk/research/o21/`); `range_job.py replay`, `o21_reanalysis.py replay` | `TestReplay`, `TestResearchRetention`, `TestChainedRefit` |
+| 7 | Conflicting DVOL hours kept the last row; decreasing cumulative notional passed; non-`ok` inputs admitted without a policy | archive-12.0.0: conflicts → `malformed`, hour dropped, row order irrelevant; depth and notional both monotone; `range_contract.admit_dvol` overrides named and recorded | `TestAudit12`, `TestAdmissibility` |
+| 8 | Contradictory status and release text | `desk/release.json` (written and checked by `make_release.py`), README, registry README, OPERATIONS updated; skill package synchronized and drift-checked | `desk/test_release.py` |
+
+**Tests.** 479 regression tests (332 + desk 147: measure 40, archive 50, range model 18, contract 10,
+range job 26, release 3) on Python 3.11; 25 numerical fixtures unchanged.
+
 # Desk range forecasts, revision 2.14 (crypto-desk package 11.2) — 2026-09-26
 
 Adds the crypto desk's range model as an automated, registered forecast stream. Collection cadence,

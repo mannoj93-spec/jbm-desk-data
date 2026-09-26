@@ -8,7 +8,17 @@ import urllib.request
 from schema import H, MINUTE, SERIES, ms, num, observed_time, predicate_step, validate
 from storage import atomic_json, digest, loads, read_json, read_rows
 
-VERSION = "scoring-2.2"
+VERSION = "scoring-2.3"
+DESK = Path(__file__).resolve().parent / "desk"
+
+
+def _contract():
+    """desk/range_contract.py: the one loss implementation shared with the desk's evaluation."""
+    import sys
+    if str(DESK) not in sys.path:
+        sys.path.insert(0, str(DESK))
+    import range_contract
+    return range_contract
 
 
 class Unscorable(ValueError):
@@ -135,11 +145,19 @@ def score(fc, bars, reader):
             results.append(dict(common, inside=lo <= y <= hi, nominal=ev["coverage"], realized=y,
                                 interval_score=round(width_penalty, 8)))
             continue
+        if kind == "range" and "point" in ev:
+            # 2.15 desk range contract: losses on the registered point, quantile losses on q10/q50/q90.
+            rc = _contract()
+            realized = rc.realized_lr(bars)
+            results.append(dict(common, loss_basis="point (desk/range_contract.py)",
+                                **rc.losses(ev["point"], [ev["q10"], ev["q50"], ev["q90"]], realized)))
+            continue
         if kind == "range":
+            # Legacy 2.14 records (no point): the median q50 is the loss-bearing forecast.
             realized = math.log(max(b[1] for b in bars) / min(b[2] for b in bars))
             q = {0.1: ev["q10"], 0.5: ev["q50"], 0.9: ev["q90"]}
             pinball = {f"q{int(k * 100)}": round(max(k * (realized - v), (k - 1) * (realized - v)), 10) for k, v in q.items()}
-            result = dict(common, realized_ln_range=round(realized, 10), covered_80=ev["q10"] <= realized <= ev["q90"],
+            result = dict(common, loss_basis="q50 (legacy)", realized_ln_range=round(realized, 10), covered_80=ev["q10"] <= realized <= ev["q90"],
                           pinball=pinball,
                           # Median error in the forecast's own units, ln(high/low).
                           abs_error_lr=round(abs(ev["q50"] - realized), 10))
@@ -212,7 +230,11 @@ def score_registry(base, now, report_version, fetch=fetch_bars):
             alerts.append(f"{rec['id']}: score evidence integrity error: {exc}; original record retained for review")
             records[index] = dict(rec, status="evidence integrity error")
     implementation_hash = digest({p.name: hashlib.sha256(p.read_bytes()).hexdigest()
-                                  for p in sorted(Path(__file__).resolve().parent.glob("*.py"))})
+                                  for p in sorted(Path(__file__).resolve().parent.glob("*.py"))
+                                  + [DESK / "range_contract.py"]})
+    publications = {}
+    for row in read_rows(base / "state/range_publications.jsonl"):
+        publications.setdefault(row["attempt"], row)            # first confirmation wins
     def reader(name):
         return [r for p in sorted((base / "data/series" / name).glob("*.jsonl")) for r in read_rows(p)]
     for fc, entry in forecasts(base):
@@ -223,8 +245,18 @@ def score_registry(base, now, report_version, fetch=fetch_bars):
             alerts.append(f"{fc['id']}: legacy score needs manual migration; not overwritten or rescored")
             continue
         start, end, rat = ms(fc["start_utc"]), ms(fc["horizon_utc"]), entry["registered"]
+        # Desk range stream (2.15): prospective eligibility also needs durable publication confirmed before
+        # the window starts. Local freezing time alone never qualifies a forecast.
+        pub = publications.get(entry.get("attempt")) if entry.get("attempt") else None
         if rat >= start:
             status = "late registration — not scored"
+        elif entry.get("attempt") and pub is None and end <= now - 5 * MINUTE:
+            status = "publication unconfirmed — not scored"
+        elif pub is not None and pub["confirmed"] >= start:
+            status = "late publication — not scored"
+        else:
+            status = None
+        if status:
             rec = {"id": fc["id"], "forecast_sha256": entry["sha256"], "registered": rat,
                    "start": start, "horizon": end, "status": status, "scored": now}
         elif end > now - 5 * MINUTE:
@@ -241,6 +273,7 @@ def score_registry(base, now, report_version, fetch=fetch_bars):
                 atomic_json(base / evidence_path, evidence)
                 rec = {"id": fc["id"], "forecast_sha256": entry["sha256"], "registered": rat,
                        "start": start, "horizon": end, "scored": now, "status": "scored",
+                       "contract": fc.get("contract"), "publication": pub,
                        "code_version": fc.get("code_version"), "snapshot_hash": fc.get("snapshot_hash"),
                        "event_regime": fc.get("event_regime"), "report_version": report_version,
                        "scoring_version": VERSION, "implementation_sha256": implementation_hash,
