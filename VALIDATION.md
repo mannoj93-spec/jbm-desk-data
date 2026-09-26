@@ -1,3 +1,20 @@
+# Validation record — desk range forecasts, revision 2.14
+
+Validated 2026-09-26 with Python 3.11 (container). Earlier blocks below are kept as recorded.
+
+| Check (2.14) | Result |
+|---|---|
+| Default branch before the work | `9a7820f` (collector data commits since 2.13); baseline suite 332 passed, fixtures pass |
+| Full regression suite with `desk/` | 447 passed (332 + 115: `test_jbm_measure` 40, `test_jbm_archive` 47, `test_range_model` 18, `test_range_job` 10) |
+| Evaluation versions | Unchanged: no file hashed by `lab/versioning.py` edited; no root `*.py` added or edited |
+| Frozen model | `desk/range_model.py` sha256 `ae6aa254c786d2dd6045fab098c4237dbe8bcc07d6626d20617366d386ff687d` = the O21 freeze (2026-09-26 01:10:22Z); `range_job.py` refuses to run otherwise (tested) |
+| September fit | `desk/fits/2026-09.json` built from 80 archive files (checksums all matched) and DVOL, 14,610 bars to Aug 31 20:00Z; applied to the Sep 26 00:00Z decision it reproduces the desk's hand-registered forecast to the fifth decimal (4h -5.10356, 24h -4.34643, 72h -3.24601) |
+| End-to-end dry run (disposable copy, live data, 01:41Z) | refit no-op; three forecasts written, schema-valid, registered through `registration.register` at 01:41:36Z with start 01:45Z; frozen bytes and manifest entries created; `reports/range.md` written |
+| Scoring path | `scoring.score` on a registered file with synthetic 1-minute bars returns both `range` events with coverage, pinball, `abs_error_log_lr`, QLIKE |
+| Registration safety (tests) | start at the next 5-minute boundary after registration; an attempt at or after start aborts; a second run is idempotent; a DVOL candle not closed at the decision cannot change the forecast; a stale decision (> 1 h) is refused |
+| Checksums | `SHA256SUMS` regenerated from its own list plus the new code, docs, fixtures, calendar and workflow (fits excluded: they are data) |
+| Deployment | Recorded below after the web upload and merge |
+
 # Validation record — research-integrity revision 2.13 (lab-2.2, evidence completeness)
 
 Validated 2026-09-25 with Python 3.11 and 3.12 (container). Earlier blocks below are kept as recorded.
