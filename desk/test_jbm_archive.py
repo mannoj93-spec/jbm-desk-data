@@ -164,7 +164,7 @@ class TestBookDepthRows(unittest.TestCase):
 
 class TestVersion(unittest.TestCase):
     def test_version_string(self):
-        self.assertEqual(A.VERSION, "archive-11.1.0")
+        self.assertEqual(A.VERSION, "archive-12.0.0")
         self.assertEqual(A.FIRST_DAY["metrics"], dt.date(2020, 9, 1))
         self.assertEqual(A.FIRST_DAY["bookDepth"], dt.date(2023, 1, 1))
 
@@ -280,7 +280,7 @@ class TestProvenanceAndAvailability(unittest.TestCase):
             self.assertTrue(p[k], k)
         self.assertEqual(rows[0]["source_sha256"], p["sha256"])
         m = A.manifest_entry(st, rep)
-        self.assertEqual((m["state"], m["code_version"]), ("ok", "archive-11.1.0"))
+        self.assertEqual((m["state"], m["code_version"]), ("ok", "archive-12.0.0"))
 
     def test_pinned_bytes_detect_revision(self):
         st, _, rep = A.load_metrics(D, opener=serve(day_text()))
@@ -403,6 +403,37 @@ class TestKlinesAndDvol(unittest.TestCase):
         st, rows, rep = A.load_dvol(start, start + dt.timedelta(hours=30), opener=opener, window_h=10)
         self.assertEqual((st, rep["missing_hours"], len(rep["requests"])), ("incomplete", 1, 3))
         self.assertEqual(rows[0]["available_at_utc"], "2026-09-20T01:00:00Z")     # admitted at candle close
+
+
+# ---------------------------------------------------------------- 12.0 audit regressions
+class TestAudit12(unittest.TestCase):
+    start = dt.datetime(2026, 9, 1, tzinfo=UTC)
+
+    def _dvol(self, data):
+        import json as J
+        return A.load_dvol(self.start, self.start + dt.timedelta(hours=2),
+                           opener=lambda url: (J.dumps({"result": {"data": data}}).encode(), {}))
+
+    def test_conflicting_dvol_hour_is_malformed_in_either_order(self):
+        t = int(self.start.timestamp() * 1000)
+        a = self._dvol([[t, 0, 0, 0, 40.0], [t, 0, 0, 0, 90.0], [t + 3_600_000, 0, 0, 0, 41.0]])
+        b = self._dvol([[t, 0, 0, 0, 90.0], [t, 0, 0, 0, 40.0], [t + 3_600_000, 0, 0, 0, 41.0]])
+        for st, rows, rep in (a, b):
+            self.assertEqual(st, "malformed")
+            self.assertEqual(rep["conflicts"], 1)
+            self.assertEqual([r["dvol"] for r in rows], [41.0])      # the conflicted hour is dropped, never chosen
+        self.assertEqual(a[1], b[1])                                  # row order cannot change the output
+
+    def test_exact_duplicate_dvol_is_deduplicated(self):
+        t = int(self.start.timestamp() * 1000)
+        st, rows, rep = self._dvol([[t, 0, 0, 0, 40.0], [t, 0, 0, 0, 40.0], [t + 3_600_000, 0, 0, 0, 41.0]])
+        self.assertEqual((st, [r["dvol"] for r in rows], rep["duplicates"], rep["conflicts"]), ("ok", [40.0, 41.0], 1, 0))
+
+    def test_decreasing_cumulative_notional_is_malformed(self):
+        # depth rises outward on every band, notional falls outward on the bid side at -2%
+        text = depth_text(n=1).replace(",-2.00,1200.000,96000000.00", ",-2.00,1200.000,70000000.00")
+        st, _, rep = A.inspect_bookdepth(rows_from(text), D)
+        self.assertEqual((st, rep["non_monotone_snapshots"]), ("malformed", 1))
 
 
 if __name__ == "__main__":

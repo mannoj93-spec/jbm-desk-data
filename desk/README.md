@@ -1,32 +1,43 @@
 # desk/ — the crypto desk's range forecaster
 
-This folder is the automated half of the crypto-desk skill package (11.2). It forecasts the size of
-the next move in BTC, not its direction, and registers every forecast before its window opens so the
-record cannot be hand-picked.
+The automated half of the crypto-desk skill package. It forecasts the size of the next move in BTC,
+not its direction, and registers every forecast before its window opens. Release identity (package,
+contract, module hashes, calendar, routing, deployment evidence) lives in one file: `release.json`,
+written and checked by `make_release.py`.
 
 | File | What it is |
 |---|---|
-| `range_model.py` | The range model, **range-11.1.0**. Must hash to the frozen O21 specification `ae6aa254c786…`; `range_job.py` refuses to fit or forecast otherwise. |
-| `jbm_archive.py`, `jbm_measure.py` | The desk's validated loaders (Binance archive, 4H klines, DVOL) and measurement functions. |
-| `releases_2020_2026.csv` | Sourced CPI / NFP / PPI / FOMC release times (UTC), through Dec 2026. Refresh before it runs out. |
-| `range_job.py` | `refit` (monthly), `forecast` (every 4H close), `summary` (writes `reports/range.md`). |
-| `fits/YYYY-MM.json` | One frozen fit per month: coefficients fitted on every target that closed before the month began. Never rewritten. |
-| `test_*.py`, `fixtures/` | Offline tests (also run by `regression/test_desk_range.py` and before every forecast). |
+| `range_model.py` | The model, **range-11.1.0**, byte-frozen at the O21 specification `ae6aa254c786…`. Never edited; a new model is a new specification. |
+| `range_contract.py` | **The forecast contract** shared by evaluation, registration, reading and scoring: window rule, calendar terms, point (the OLS value, never the residual median), quantiles, baseline, coherence (reported, not applied), losses, maturity-bounded splits, fit validation, input admissibility. Contracts `RC1` (what O21 evaluated) and `RC1D` (the automated prospective variant). |
+| `range_job.py` | `refit` · `forecast` · `confirm` · `status` · `replay <id>` (below). |
+| `range_reader.py` | The reading contract: resolves the manifest, verifies frozen bytes, returns `valid-current`, `stale`, `missing`, `unregistered`, `ineligible` or `integrity-failed`; writes `reports/range_status.json`. |
+| `jbm_archive.py`, `jbm_measure.py` | The desk's validated loaders and measurement functions (archive-12.0.0, measure-11.1.0). |
+| `releases_2020_2026.csv` | Sourced CPI/NFP/PPI/FOMC release times through Dec 2026 (actual times; schedule vintages not retained). |
+| `fits/YYYY-MM.json` | One fit per month, validated before every use (`range_contract.validate_fit`). Monthly parameters; not the contract. |
+| `inputs/` | Retained, content-addressed input bundles: one per forecast decision (`inputs/YYYY-MM/`), one delta per refit (`inputs/refit/`). |
+| `research/` | O21's retained inputs, original results, and the 12.0 reanalysis (`o21_reanalysis.py replay|reanalysis`). |
+| `test_*.py`, `fixtures/` | Offline tests; also run by `regression/test_desk_range.py` and before every forecast. |
 
-**What gets registered.** For each 4H close, three forecasts — `range-b2-{4h,24h,72h}-<close>` —
-each with two `range` events on the same window: the B2 model and the B0 persistence baseline.
-Both are scored by `scoring.py` in the weekly report, so skill against persistence is measured
-prospectively on identical windows. The window starts at the next five-minute boundary after
-registration (the registry rule), a few minutes after the close the model was trained on; the offset
-is written into each forecast's note, and a run more than an hour after the close does not forecast.
+**Contract RC1D (what gets registered).** At each 4H close D, inputs are cut at D (closed bars; DVOL
+at its candle close). The window starts at S, the first five-minute boundary at least five minutes after
+the forecast was prepared, and runs S→S+h for h = 4h, 24h, 72h; the calendar terms describe that window.
+Three forecasts `range-rc1d-<h>-<D>`, each with a B2 event and a B0 persistence event carrying `point`
+(the loss-bearing forecast, lr units) and `q10/q50/q90`. RC1D has no historical evaluation: O21's result
+belongs to RC1 (window starting at D). The difference is the few minutes of offset and the calendar terms.
 
-**What the model is.** B2: a regression of the log of the log range on recent ranges (last bar, 6,
-42 and 180 bars), the weekend share of the window, the number of scheduled releases inside it, and
-DVOL-implied volatility. In its one frozen test (O21: fit to Sep 2024, select on the next year, then
-one never-fitted year) it beat persistence by 18% at 4h, 17% at 24h and 11% at 72h in mean absolute
-log error, with 10–90 bands covering 81–85%. Its status is *exploratory, holdout-consistent*; these
-registered forecasts are how it can earn more. It is never a direction or a probability of a touch.
+**Registration is one transaction.** `forecast` validates the whole batch against one freeze time, writes
+the frozen bytes, then the manifest in one atomic write (the commit point), then the source files
+(rolled forward from frozen bytes if lost). Any failure before the commit point removes what it wrote.
+Every attempt is logged in `state/range_attempts.jsonl` (`skipped`, `failed`, `abandoned`, `prepared`,
+`frozen`, `published`, `published-late`, `unconfirmed`); a decision whose earlier attempt recorded a window
+is never retried, so no window moves. **Eligibility** needs two things before S: the local freeze and the
+remote confirmation (`confirm`: `git fetch`, the manifest entries and hashes on `origin/main`), recorded in
+`state/range_publications.jsonl`. The workflow's code commit is not the publication commit; both are recorded.
 
-**Changing it.** Any change to `range_model.py` breaks the frozen hash by design: a new model is a
-new specification, tested and frozen again, with a new hash here and a new version in the skill
-package. The skill package's copies of these modules must carry the same versions.
+**Reading.** A thread reads `reports/range_status.json` (or runs `range_reader.py` on a clone). Only
+`valid-current` is citable, as a full-window forecast with its ID and window — never as a forecast of the
+remaining range once the window has started.
+
+**Scoring.** `scoring.py` (scoring-2.3) scores RC1D events with `range_contract.losses` on the point, and
+only if publication was confirmed before the window started. Legacy 2.14 records (`range-b2-*`) are scored
+on q50 as registered and are never cited as current.
