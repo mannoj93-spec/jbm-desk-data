@@ -1,9 +1,12 @@
 name: Range forecasts
-# Crypto-desk range stream (desk/, package 12.1, repo 2.16): contract RC1D (desk/range_contract.py).
+# Crypto-desk range stream (desk/, package 12.2, repo 2.17): contract RC1D (desk/range_contract.py).
 # One run = one attempt for the last 4H close: prepare and freeze a batch of three forecasts in one
 # transaction (range_job.py forecast), push it, confirm the push on the remote BEFORE the window starts
 # (range_job.py confirm), push the confirmation. Every attempt, whatever its outcome, is logged in
-# state/range_attempts.jsonl; reports/range_status.json reconciles expected decisions with outcomes.
+# state/range_attempts.jsonl; every run's stages (preflight, refit, forecast, publish, confirm) and its terminal
+# outcome are logged in state/range_runs.jsonl (desk/range_ops.py, stdlib only - it works when the tests fail),
+# so a run that fails before forecasting leaves a reason, never a forecast or a window.
+# reports/range_status.json reconciles expected decisions with outcomes. Scoring runs hourly (range-score.yml).
 on:
   schedule:
     - cron: '2 0,4,8,12,16,20 * * *'
@@ -29,45 +32,68 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      - name: Record the run start (decision = the 4H close this run is for)
+        run: python desk/range_ops.py start
       - name: Desk offline tests and release drift check (refuse to forecast from untested code)
+        id: preflight
+        continue-on-error: true
         run: |
+          set -o pipefail
           cd desk
-          python make_release.py check
-          for t in test_jbm_measure test_jbm_archive test_range_model test_range_contract test_range_job test_hardening test_release; do
-            PYTHONDONTWRITEBYTECODE=1 python "$t.py"
-          done
+          {
+            python make_release.py check
+            for t in test_jbm_measure test_jbm_archive test_range_model test_range_contract test_range_job test_hardening test_release test_asof test_ops; do
+              PYTHONDONTWRITEBYTECODE=1 python "$t.py"
+            done
+          } 2>&1 | tee "$RUNNER_TEMP/preflight.log"
       - name: Monthly fit (validate the month's fit; build it once when a new month begins)
+        id: refit
+        if: steps.preflight.outcome == 'success'
+        continue-on-error: true
         timeout-minutes: 10
         run: python desk/range_job.py refit
-      - name: Forecast (prepare, validate, freeze, register - one transaction)
+      - name: Forecast (retrieve, prepare, validate, freeze, register - one transaction)
         id: forecast
+        if: steps.refit.outcome == 'success'
         continue-on-error: true
         run: python desk/range_job.py forecast
+      - name: Record preflight, refit and forecast outcomes
+        if: always()
+        run: |
+          python desk/range_ops.py record preflight=${{ steps.preflight.outcome }} --log "$RUNNER_TEMP/preflight.log"
+          python desk/range_ops.py record refit=${{ steps.refit.outcome }} forecast=${{ steps.forecast.outcome }}
       - name: Status before publication
         if: always()
+        continue-on-error: true
         run: python desk/range_job.py status
-      # A failed attempt persists only its attempt record (and any input bundle): registration either
-      # completed or left nothing behind, by construction (registration.register_batch).
+      # A failed attempt persists only its attempt record (and any input bundle) plus the run's lifecycle rows:
+      # registration either completed or left nothing behind, by construction (registration.register_batch).
       - name: Publish the batch (or the failure record)
         id: publish
         if: always()
         env:
           COMMIT_MESSAGE: Range forecasts
           PERSIST_BUDGET_S: '100'
-        run: bash scripts/commit_push.sh registry state/forecast_manifest.json state/registered.json state/range_attempts.jsonl state/range_publications.jsonl desk/fits desk/inputs desk/calendars reports/range.md reports/range_status.json
+        run: bash scripts/commit_push.sh registry state/forecast_manifest.json state/registered.json state/range_attempts.jsonl state/range_publications.jsonl state/range_runs.jsonl desk/fits desk/inputs desk/calendars reports/range.md reports/range_status.json
       - name: Confirm publication on the remote (eligibility needs confirmation before the window starts)
         id: confirm
         if: steps.forecast.outcome == 'success' && steps.publish.outcome == 'success'
         run: python desk/range_job.py confirm
+      - name: Record publication, confirmation and the run's terminal outcome
+        if: always()
+        run: |
+          python desk/range_ops.py record publish=${{ steps.publish.outcome }} confirm=${{ steps.confirm.outcome }}
+          python desk/range_ops.py finish
       - name: Status after confirmation
         if: always()
+        continue-on-error: true
         run: python desk/range_job.py status
-      - name: Persist the confirmation
-        if: steps.confirm.outcome == 'success'
+      - name: Persist the confirmation and the lifecycle record
+        if: always()
         env:
           COMMIT_MESSAGE: Range publication confirmed
           PERSIST_BUDGET_S: '60'
-        run: bash scripts/commit_push.sh state/range_attempts.jsonl state/range_publications.jsonl reports/range.md reports/range_status.json
-      - name: Fail if forecasting, publication or confirmation failed
-        if: steps.forecast.outcome == 'failure' || steps.publish.outcome == 'failure' || steps.confirm.outcome == 'failure'
+        run: bash scripts/commit_push.sh state/range_attempts.jsonl state/range_publications.jsonl state/range_runs.jsonl reports/range.md reports/range_status.json
+      - name: Fail if preflight, refit, forecasting, publication or confirmation failed
+        if: steps.preflight.outcome == 'failure' || steps.refit.outcome == 'failure' || steps.forecast.outcome == 'failure' || steps.publish.outcome == 'failure' || steps.confirm.outcome == 'failure'
         run: exit 1

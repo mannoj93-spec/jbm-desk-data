@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write or check desk/release.json - the one place release identity lives (package 12.1, repo 2.16).
+"""Write or check desk/release.json - the one place release identity lives (package 12.2, repo 2.17).
 
 Identity only: package, commits, contract, module and artifact hashes, calendar, routing, stream start. Verified
 deployment events live in desk/deployments.jsonl (append-only); live operational health in reports/range_status.json.
@@ -14,8 +14,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-SHARED = ("jbm_archive.py", "jbm_measure.py", "range_model.py", "range_contract.py", "range_reader.py")
-REPO_ONLY = ("range_job.py", "retained.py")
+SHARED = ("jbm_archive.py", "jbm_measure.py", "range_model.py", "range_contract.py", "range_reader.py", "range_ops.py")
+REPO_ONLY = ("range_job.py", "retained.py", "range_monitor.py")
 CALENDAR = "releases_2020_2026.csv"
 FIELDS = ("package", "repo_revision", "base_commit", "audited_snapshot", "contract", "evaluated_contract", "model",
           "modules", "calendar", "artifacts", "registry_routing", "range_stream_start_utc", "deployment_log")
@@ -28,11 +28,15 @@ def _sha(path):
 
 
 def _version(path):
-    for line in Path(path).read_text().splitlines():
-        s = line.strip()
-        for key in ("VERSION = ", "JOB_VERSION = "):
-            if s.startswith(key):
-                return s.split("=", 1)[1].strip().strip('"')
+    """The string literal assigned to VERSION (or JOB_VERSION) at module level, parsed with ast: comments,
+    spacing and quoting cannot leak into the recorded version (12.1 recorded an inline comment)."""
+    import ast
+    tree = ast.parse(Path(path).read_text())
+    for key in ("VERSION", "JOB_VERSION"):
+        for node in tree.body:
+            if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == key for t in node.targets) \
+                    and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+                return node.value.value
     return None
 
 
@@ -46,9 +50,9 @@ def body(desk=HERE, previous=None):
     cal = desk / CALENDAR
     last = [x for x in cal.read_text().splitlines() if x and not x.startswith("#")][-1].split(",")[0]
     return {
-        "package": "crypto-desk 12.1", "repo_revision": "2.16",
-        "base_commit": "3433ec94d9d2c12b319efa30ef3026313a5e3fb6",
-        "audited_snapshot": "cabc40d328f883aaa8bdd6f7f65251a7f3828c11 (package 12.0, repo 2.15; deployment evidence to fe27eb2)",
+        "package": "crypto-desk 12.2", "repo_revision": "2.17",
+        "base_commit": "365ff99239733d26fb2609db79a5884c774dd5ef",
+        "audited_snapshot": "03ab59957933e34c1f97dadbf56498fbe393d6c0 (package 12.1, repo 2.16; overnight production evidence)",
         "contract": C.contract_id("RC1D"), "evaluated_contract": C.contract_id("RC1"),
         "model": {"range_model": "range-11.1.0", "spec_sha256": _sha(desk / "range_model.py")},
         "modules": mods,
@@ -62,7 +66,7 @@ def body(desk=HERE, previous=None):
             "in-thread forecasts": "artifact registry https://claude.ai/artifact/8QyreLBMA2aT3BCkT6atkR",
             "legacy": "range-b2-* (repo 2.14, q50 contract, pre-12.0): scored as registered, never cited as current"},
         "range_stream_start_utc": "2026-09-26T04:00:00Z",
-        "deployment_log": "desk/deployments.jsonl (append-only, verified events); live health: reports/range_status.json",
+        "deployment_log": "desk/deployments.jsonl (append-only, verified events); operational health (changes every run, not release identity): reports/range_status.json, state/range_runs.jsonl, state/range_scoring.jsonl, range-monitor.yml",
     }
 
 

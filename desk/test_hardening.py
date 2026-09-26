@@ -349,7 +349,9 @@ class TestCalendarReplay(Base):
 
 @unittest.skipUnless(REPO, "needs the repository")
 class TestLiveRecords(unittest.TestCase):
-    """The three registered 04:00Z forecasts stay authoritative, readable and replayable."""
+    """The three registered 04:00Z forecasts stay authoritative and replayable (ID-specific checks on the
+    production records). Time-dependent reads run on the immutable fixture in test_asof.py (12.2): reading the
+    growing production registry "as of" a time was what broke the 12:00Z preflight on Sep 26."""
     IDS = ["range-rc1d-4h-20260926T0400Z", "range-rc1d-24h-20260926T0400Z", "range-rc1d-72h-20260926T0400Z"]
 
     def test_read_and_replay(self):
@@ -359,8 +361,7 @@ class TestLiveRecords(unittest.TestCase):
             self.skipTest("checkout without the Sep 26 04:00Z registrations")
         for fid, h in zip(self.IDS, ("4h", "24h", "72h")):
             self.assertEqual(hashlib.sha256((base / m[fid]["frozen"]).read_bytes()).hexdigest(), m[fid]["sha256"])
-            r = RR.read_current(base, T(4, 30), h)
-            self.assertEqual((r["state"], r["id"]), ("valid-current", fid))
+            self.assertEqual(C.validate_rc1d(json.loads((base / m[fid]["frozen"]).read_bytes()), fid, m[fid]), [])
             self.assertEqual(J.replay(fid, base=base)["id"], fid)
         # scoring path on a disposable copy (synthetic 1m bars; real scoring needs the matured windows)
         import scoring
