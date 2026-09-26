@@ -8,7 +8,8 @@ import urllib.request
 from schema import H, MINUTE, SERIES, ms, num, observed_time, predicate_step, validate
 from storage import atomic_json, digest, loads, read_json, read_rows
 
-VERSION = "scoring-2.4"
+VERSION = "scoring-2.5"
+MATURITY_BUFFER_MS = 5 * MINUTE    # a window is scored only once its end is this far in the past
 DESK = Path(__file__).resolve().parent / "desk"
 
 
@@ -206,7 +207,10 @@ def score(fc, bars, reader):
                      "price_source": "Binance BTCUSDT perpetual 1m klines", "timestamp_basis": "UTC milliseconds"}
 
 
-def score_registry(base, now, report_version, fetch=fetch_bars):
+def score_registry(base, now, report_version, fetch=fetch_bars, only_prefix=None, attempts=None):
+    """Score every matured, eligible, not-yet-scored registered forecast (idempotent by id and frozen hash).
+    `only_prefix` limits the pass to one stream (the hourly range scorer passes "range-rc1d-"); `attempts`, when
+    a list, receives one {"id", "outcome", "reason"} per forecast acted on (scored, not-scored, unscorable)."""
     from registration import forecasts
     from storage import append_unique
     base = Path(base)
@@ -234,10 +238,14 @@ def score_registry(base, now, report_version, fetch=fetch_bars):
                                   + [DESK / "range_contract.py"]})
     publications = {}
     for row in read_rows(base / "state/range_publications.jsonl"):
-        publications.setdefault(row["attempt"], row)            # first confirmation wins
+        if isinstance(row, dict) and isinstance(row.get("attempt"), str):
+            publications.setdefault(row["attempt"], row)        # first confirmation wins; malformed rows unused
     def reader(name):
         return [r for p in sorted((base / "data/series" / name).glob("*.jsonl")) for r in read_rows(p)]
-    for fc, entry in forecasts(base):
+    integrity = []
+    for fc, entry in forecasts(base, integrity):
+        if only_prefix and not fc["id"].startswith(only_prefix):
+            continue
         key = (fc["id"], entry["sha256"])
         if key in done:
             continue
@@ -247,8 +255,10 @@ def score_registry(base, now, report_version, fetch=fetch_bars):
         start, end, rat = ms(fc["start_utc"]), ms(fc["horizon_utc"]), entry["registered"]
         # Desk range stream (2.15): prospective eligibility also needs durable publication confirmed before
         # the window starts. Local freezing time alone never qualifies a forecast.
-        pub = publications.get(entry.get("attempt")) if entry.get("attempt") else None
-        rc1d_errors = _contract().validate_rc1d(fc, fc["id"], entry, pub) if fc["id"].startswith("range-rc1d-") else []
+        attempt = entry.get("attempt")
+        pub = publications.get(attempt) if isinstance(attempt, str) else None
+        is_rc1d = fc["id"].startswith("range-rc1d-")
+        rc1d_errors = _contract().validate_rc1d(fc, fc["id"], entry, pub) if is_rc1d else []
         if rc1d_errors:
             rec = {"id": fc["id"], "forecast_sha256": entry["sha256"], "registered": rat, "start": start, "horizon": end,
                    "status": "integrity failure — not scored", "reason": "; ".join(rc1d_errors)[:500], "scored": now}
@@ -256,19 +266,25 @@ def score_registry(base, now, report_version, fetch=fetch_bars):
             records.append(rec)
             new.append(rec)
             alerts.append(f"{fc['id']}: RC1D record fails semantic validation: {rec['reason']}")
+            if attempts is not None:
+                attempts.append({"id": fc["id"], "outcome": "not-scored", "reason": rec["status"]})
             continue
-        if rat >= start:
+        if is_rc1d:
+            # One eligibility rule with the reader (desk/range_contract.eligibility).
+            elig, _why = _contract().eligibility(start, entry, pub, now)
+            status = {"late-registration": "late registration — not scored",
+                      "late-publication": "late publication — not scored",
+                      "unconfirmed": "publication unconfirmed — not scored"}.get(elig)
+            if elig == "unconfirmed" and end > now - MATURITY_BUFFER_MS:
+                status = None                           # decided at maturity, as before
+        elif rat >= start:
             status = "late registration — not scored"
-        elif entry.get("attempt") and pub is None and end <= now - 5 * MINUTE:
-            status = "publication unconfirmed — not scored"
-        elif pub is not None and pub["confirmed"] >= start:
-            status = "late publication — not scored"
         else:
             status = None
         if status:
             rec = {"id": fc["id"], "forecast_sha256": entry["sha256"], "registered": rat,
                    "start": start, "horizon": end, "status": status, "scored": now}
-        elif end > now - 5 * MINUTE:
+        elif end > now - MATURITY_BUFFER_MS:
             pending += 1
             continue
         else:
@@ -289,9 +305,16 @@ def score_registry(base, now, report_version, fetch=fetch_bars):
                        "events": events, "evidence_sha256": eh, "evidence": evidence_path}
             except Exception as exc:
                 alerts.append(f"{fc['id']}: unscorable; retry next report: {type(exc).__name__}: {exc}")
+                if attempts is not None:
+                    attempts.append({"id": fc["id"], "outcome": "unscorable", "reason": f"{type(exc).__name__}: {exc}"[:300]})
                 pending += 1
                 continue
         append_unique(base / "registry/scores.jsonl", [rec], lambda r: (r["id"], r.get("forecast_sha256")))
         records.append(rec)
         new.append(rec)
+        if attempts is not None:
+            attempts.append({"id": fc["id"], "outcome": "scored" if rec["status"] == "scored" else "not-scored",
+                             "reason": rec["status"]})
+    alerts.extend(f"{fid}: registry integrity failure — not scored: {why}" for fid, why in integrity
+                  if not only_prefix or str(fid).startswith(only_prefix))
     return records, new, pending, alerts

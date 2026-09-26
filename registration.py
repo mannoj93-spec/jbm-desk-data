@@ -157,18 +157,30 @@ def restore_sources(base, ids=None):
     return fixed
 
 
-def forecasts(base):
+def forecasts(base, errors=None):
+    """Verified (forecast, manifest entry) pairs. Without `errors` any integrity problem raises (fail closed);
+    with a list, each failing record is reported there as (id, reason) and skipped - never yielded."""
     base = Path(base)
     manifest = read_json(base / "state/forecast_manifest.json", {})
+    if not isinstance(manifest, dict):
+        raise ValueError("forecast manifest is not an object")
     for fid, entry in sorted(manifest.items()):
-        path = base / entry["frozen"]
-        if path.resolve().parent != (base / "registry/frozen").resolve():
-            raise ValueError("invalid frozen path")
-        raw = path.read_bytes()
-        if hashlib.sha256(raw).hexdigest() != entry["sha256"]:
-            raise ValueError(f"frozen forecast {fid}: hash mismatch")
-        fc = loads(raw)
-        errors = validate(fc)
-        if fc.get("id") != fid or errors:
-            raise ValueError(f"frozen forecast {fid}: invalid schema {errors}")
+        try:
+            if not isinstance(entry, dict) or not isinstance(entry.get("frozen"), str):
+                raise ValueError(f"frozen forecast {fid}: manifest entry malformed")
+            path = base / entry["frozen"]
+            if path.resolve().parent != (base / "registry/frozen").resolve():
+                raise ValueError("invalid frozen path")
+            raw = path.read_bytes()
+            if hashlib.sha256(raw).hexdigest() != entry.get("sha256"):
+                raise ValueError(f"frozen forecast {fid}: hash mismatch")
+            fc = loads(raw)
+            errs = validate(fc)
+            if not isinstance(fc, dict) or fc.get("id") != fid or errs:
+                raise ValueError(f"frozen forecast {fid}: invalid schema {errs}")
+        except (ValueError, OSError, TypeError) as exc:
+            if errors is None:
+                raise
+            errors.append((fid, str(exc)))
+            continue
         yield fc, entry
