@@ -1,0 +1,56 @@
+name: Range forecasts
+# Crypto-desk range model (desk/, package 11.2): a forecast of the next 4h, 24h and 72h
+# ln(high/low) from each 4H close, registered through registration.py before its window starts
+# and scored by the weekly report like every other registered forecast.
+on:
+  schedule:
+    # Two minutes after each 4H close. GitHub may start scheduled runs late; the forecast's window
+    # starts at the next five-minute boundary after registration, and the offset is recorded.
+    - cron: '2 0,4,8,12,16,20 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  forecast:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # Shares the repository-write queue with the collector, intake and report jobs.
+    concurrency:
+      group: repo-write
+      queue: max
+      cancel-in-progress: false
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Desk offline tests (refuse to forecast from untested code)
+        run: |
+          cd desk
+          for t in test_jbm_measure test_jbm_archive test_range_model test_range_job; do
+            PYTHONDONTWRITEBYTECODE=1 python "$t.py"
+          done
+      - name: Monthly refit (no-op unless a new month has begun)
+        timeout-minutes: 10
+        run: python desk/range_job.py refit
+      - name: Forecast and register
+        id: forecast
+        continue-on-error: true
+        run: python desk/range_job.py forecast
+      - name: Summarize scored range forecasts
+        if: always()
+        run: python desk/range_job.py summary
+      - name: Persist forecasts, registration state, fits and summary
+        if: always()
+        env:
+          COMMIT_MESSAGE: Range forecasts
+          PERSIST_BUDGET_S: '100'
+        run: bash scripts/commit_push.sh registry state/forecast_manifest.json state/registered.json desk/fits reports/range.md
+      - name: Fail if forecasting failed
+        if: steps.forecast.outcome == 'failure'
+        run: exit 1
