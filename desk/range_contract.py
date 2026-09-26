@@ -32,11 +32,14 @@ import datetime as dt
 import hashlib
 import json
 import math
+import re
 from pathlib import Path
 
 import range_model as R
 
-VERSION = "contract-12.0.0"
+VERSION = "contract-12.1.0"            # this module's implementation version
+CONTRACT_VERSION = "contract-12.0.0"   # the contract's semantic version: unchanged since 12.0, so contract ids
+                                       # (and every registered record) stay valid across implementation fixes
 UTC = dt.timezone.utc
 HOURS = {"4h": 4, "24h": 24, "72h": 72}
 SELECTED = {"4h": "B2", "24h": "B2", "72h": "B2"}       # O21 selection, frozen
@@ -67,12 +70,12 @@ _COMMON = {
 def spec(contract: str) -> dict:
     if contract not in CONTRACTS:
         raise ValueError(f"unknown contract {contract!r}")
-    return dict(_COMMON, id=contract, version=VERSION, **CONTRACTS[contract])
+    return dict(_COMMON, id=contract, version=CONTRACT_VERSION, **CONTRACTS[contract])
 
 
 def contract_id(contract: str) -> str:
     """The identifier written into every forecast: contract name, implementation version, spec hash prefix."""
-    return f"{contract}/{VERSION}/{sha256_json(spec(contract))[:12]}"
+    return f"{contract}/{CONTRACT_VERSION}/{sha256_json(spec(contract))[:12]}"
 
 
 def sha256_json(obj) -> str:
@@ -254,6 +257,13 @@ def validate_fit(doc: dict, month_start: dt.datetime, calendar_path: Path, spec_
     need(data.get("klines_worst_state") == "ok" or data.get("supplied") or data.get("chain"),
          "fit history not recorded as ok")
     need(data.get("dvol_state") in ("ok", None) or data.get("dvol_override"), "fit DVOL state not ok and no override recorded")
+    # Contract compatibility (12.1): a fit names the contract it was built under; RC1 and RC1D share one fit
+    # procedure, so either is accepted. Pre-12.0 rule: a fit with no contract field is accepted only if it was
+    # written by range-job-11.2.0 (the September 2026 fit, built by the same range_model.fit with these terms).
+    if "contract" in doc:
+        need(doc["contract"] in FIT_COMPATIBLE, f"fit contract {doc['contract']!r} is not compatible with {sorted(FIT_COMPATIBLE)}")
+    else:
+        need(doc.get("job") == "range-job-11.2.0", "fit has no contract field and is not the known pre-12.0 fit")
 
 
 # --------------------------------------------------------------------------------------------
@@ -348,3 +358,106 @@ def holm(pvalues: dict) -> dict:
         running = max(running, min(1.0, (m - i) * p))
         out[k] = running
     return out
+
+
+# --------------------------------------------------------------------------------------------
+# Strict RC1D record validation (12.1): the reading, status and scoring boundary. Never raises.
+# --------------------------------------------------------------------------------------------
+FIT_COMPATIBLE = {contract_id("RC1"), contract_id("RC1D")}
+READ_COMPATIBLE = {contract_id("RC1D")}
+MAX_START_DELAY_MIN = 70        # decision -> window start: a run <= 60 min late + 5 min lead + 5-minute rounding
+_HEX64 = frozenset("0123456789abcdef")
+
+
+def _hex64(x):
+    return isinstance(x, str) and len(x) == 64 and set(x) <= _HEX64
+
+
+def _num01(x):
+    return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) and 0 < x < 1
+
+
+def _parse(s):
+    try:
+        return dt.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    except (TypeError, ValueError):
+        return None
+
+
+def validate_rc1d(doc, fid=None, entry=None, publication=None, contracts=None) -> list:
+    """Semantic checks a hash cannot give: an empty list means the record is a well-formed RC1D forecast.
+    Legacy records (range-b2-*, other streams) are not RC1D and are not checked here."""
+    errs = []
+    if not isinstance(doc, dict):
+        return ["document is not an object"]
+    fid = fid if fid is not None else doc.get("id")
+    m = re.fullmatch(r"range-rc1d-(4h|24h|72h)-(\d{8}T\d{4}Z)", fid if isinstance(fid, str) else "")
+    if not m or doc.get("id") != fid:
+        return [f"id {fid!r} is not range-rc1d-<4h|24h|72h>-<YYYYmmddTHHMMZ> or differs from the document"]
+    h, stamp = m.groups()
+    if doc.get("contract") not in (contracts or READ_COMPATIBLE):
+        errs.append(f"contract {doc.get('contract')!r} not in {sorted(contracts or READ_COMPATIBLE)}")
+    if doc.get("instrument") != "BTCUSDT perp, Binance last price":
+        errs.append("instrument mismatch")
+    d, s, e, made = (_parse(doc.get(k)) for k in ("decision_utc", "start_utc", "horizon_utc", "made_utc"))
+    if None in (d, s, e, made):
+        return errs + ["decision/start/horizon/made timestamps missing or malformed"]
+    if f"{d:%Y%m%dT%H%MZ}" != stamp:
+        errs.append("decision does not match the id")
+    if d.minute or d.second or d.hour % 4:
+        errs.append("decision is not a 4H close")
+    if e - s != dt.timedelta(hours=HOURS[h]):
+        errs.append(f"window spans {(e - s).total_seconds() / 3600:g}h, not {h}")
+    delay = (s - d).total_seconds() / 60
+    if not LEAD_MIN <= delay <= MAX_START_DELAY_MIN or s.minute % 5 or s.second:
+        errs.append(f"window start {delay:g} min after the decision (allowed {LEAD_MIN}-{MAX_START_DELAY_MIN}, 5-minute aligned)")
+    if not d <= made <= s - dt.timedelta(minutes=LEAD_MIN):
+        errs.append("preparation time outside [decision, start - lead]")
+    ref = doc.get("reference_price")
+    if not (isinstance(ref, (int, float)) and not isinstance(ref, bool) and math.isfinite(ref) and ref > 0):
+        errs.append("reference_price not finite and positive")
+    if not _hex64(doc.get("input_bundle")) or doc.get("snapshot_hash") != doc.get("input_bundle"):
+        errs.append("input_bundle missing, malformed, or different from snapshot_hash")
+    evs = doc.get("events")
+    if not isinstance(evs, list) or len(evs) != 2:
+        errs.append("events must be exactly the B2 and B0 range events")
+    else:
+        names = []
+        for ev in evs:
+            if not isinstance(ev, dict) or ev.get("type") != "range" or not isinstance(ev.get("name"), str):
+                errs.append("an event is not a named range event")
+                continue
+            names.append(ev["name"][:2])
+            vals = [ev.get(k) for k in ("point", "q10", "q50", "q90")]
+            if not all(_num01(v) for v in vals):
+                errs.append(f"{ev['name'][:2]}: point and q10/q50/q90 must be finite, in (0, 1)")
+            elif not vals[1] <= vals[2] <= vals[3]:
+                errs.append(f"{ev['name'][:2]}: quantiles not ordered")
+        if sorted(names) != ["B0", "B2"]:
+            errs.append(f"events are {names}, not one B2 and one B0")
+    if entry is not None:
+        if not isinstance(entry, dict):
+            errs.append("manifest entry is not an object")
+        else:
+            if entry.get("id", fid) != fid or entry.get("source") != f"registry/{fid}.json":
+                errs.append("manifest id/source inconsistent with the record")
+            if not _hex64(entry.get("sha256")) or entry.get("frozen") != f"registry/frozen/{entry.get('sha256')}.json":
+                errs.append("manifest hash/frozen path malformed")
+            reg = entry.get("registered")
+            if not isinstance(reg, int) or isinstance(reg, bool):
+                errs.append("registration time missing or malformed")     # lateness is eligibility, not validity
+            if not isinstance(entry.get("attempt"), str):
+                errs.append("manifest entry has no attempt")
+    if publication is not None:
+        if not isinstance(publication, dict):
+            errs.append("publication record is not an object")
+        else:
+            conf, ids = publication.get("confirmed"), publication.get("ids")
+            if not isinstance(conf, int) or isinstance(conf, bool):
+                errs.append("publication confirmation time missing or malformed")
+            if not isinstance(ids, list) or fid not in ids:
+                errs.append("publication record does not list this forecast")
+            if publication.get("start_ms") != ms(s):
+                errs.append("publication record's window start differs from the record")
+    return errs
+

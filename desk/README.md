@@ -2,20 +2,22 @@
 
 The automated half of the crypto-desk skill package. It forecasts the size of the next move in BTC,
 not its direction, and registers every forecast before its window opens. Release identity (package,
-contract, module hashes, calendar, routing, deployment evidence) lives in one file: `release.json`,
-written and checked by `make_release.py`.
+contract, module and artifact hashes, calendar, routing, stream start) lives in `release.json`, written and
+checked by `make_release.py`; verified deployment events are appended to `deployments.jsonl`.
 
 | File | What it is |
 |---|---|
 | `range_model.py` | The model, **range-11.1.0**, byte-frozen at the O21 specification `ae6aa254c786…`. Never edited; a new model is a new specification. |
 | `range_contract.py` | **The forecast contract** shared by evaluation, registration, reading and scoring: window rule, calendar terms, point (the OLS value, never the residual median), quantiles, baseline, coherence (reported, not applied), losses, maturity-bounded splits, fit validation, input admissibility. Contracts `RC1` (what O21 evaluated) and `RC1D` (the automated prospective variant). |
 | `range_job.py` | `refit` · `forecast` · `confirm` · `status` · `replay <id>` (below). |
-| `range_reader.py` | The reading contract: resolves the manifest, verifies frozen bytes, returns `valid-current`, `stale`, `missing`, `unregistered`, `ineligible` or `integrity-failed`; writes `reports/range_status.json`. |
+| `range_reader.py` | The reading contract: resolves the manifest, verifies frozen bytes and the strict RC1D checks (`range_contract.validate_rc1d`), returns `valid-current`, `stale`, `missing`, `unregistered`, `ineligible` or `integrity-failed` — never raises. A forecast expires at decision + 4h + 75 min, capped at its window end; `revalidate(result, now)` applies the same rule to a cached result. Writes `reports/range_status.json` (due vs current decisions). |
+| `retained.py` | Verified access to retained bytes: the O21 root inputs (manifest-checked, shared by replay and the refit chain) and calendar versions by content hash (current file, `calendars/`, or Git history). |
 | `jbm_archive.py`, `jbm_measure.py` | The desk's validated loaders and measurement functions (archive-12.0.0, measure-11.1.0). |
-| `releases_2020_2026.csv` | Sourced CPI/NFP/PPI/FOMC release times through Dec 2026 (actual times; schedule vintages not retained). |
+| `releases_2020_2026.csv`, `calendars/` | Sourced CPI/NFP/PPI/FOMC release times through Dec 2026 (actual times; announcement vintages not retained). Every version a forecast used is kept as `calendars/<sha256>.csv`. |
 | `fits/YYYY-MM.json` | One fit per month, validated before every use (`range_contract.validate_fit`). Monthly parameters; not the contract. |
 | `inputs/` | Retained, content-addressed input bundles: one per forecast decision (`inputs/YYYY-MM/`), one delta per refit (`inputs/refit/`). |
-| `research/` | O21's retained inputs, original results, and the 12.0 reanalysis (`o21_reanalysis.py replay|reanalysis`). |
+| `research/` | O21's retained inputs, original results, the 12.0 reanalysis and its 12.1 Holm addendum (`o21_reanalysis.py replay|reanalysis|verify` — `verify` = stored-byte integrity plus numerical replay within declared tolerance). |
+| `release.json`, `deployments.jsonl` | Release identity (versions, hashes, contract, calendar, artifacts, routing, stream start), checked by `make_release.py`; the append-only log of verified deployment events. Live health is `reports/range_status.json`. |
 | `test_*.py`, `fixtures/` | Offline tests; also run by `regression/test_desk_range.py` and before every forecast. |
 
 **Contract RC1D (what gets registered).** At each 4H close D, inputs are cut at D (closed bars; DVOL
@@ -41,3 +43,10 @@ remaining range once the window has started.
 **Scoring.** `scoring.py` (scoring-2.3) scores RC1D events with `range_contract.losses` on the point, and
 only if publication was confirmed before the window started. Legacy 2.14 records (`range-b2-*`) are scored
 on q50 as registered and are never cited as current.
+
+**Monthly fit (12.1).** The history is the retained chain (the O21 root, hash-verified, plus every refit delta,
+each verified before any is used) and the days since. Only an unpublished *trailing* archive segment is filled,
+from closed, validated live bars that must match the archive on an overlap of up to six bars; an interior gap, a
+conflicting overlap, a malformed or unclosed bar, or an unavailable live source stops the refit. The filled tail's
+provenance is kept in the delta.
+

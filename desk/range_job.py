@@ -39,9 +39,10 @@ for p in (str(DESK), str(BASE)):
 import jbm_archive as A          # noqa: E402
 import range_model as R         # noqa: E402
 import range_contract as C      # noqa: E402
+import retained as K             # noqa: E402
 
-JOB_VERSION = "range-job-12.0.0"
-PACKAGE = "crypto-desk 12.0"
+JOB_VERSION = "range-job-12.1.0"
+PACKAGE = "crypto-desk 12.1"
 FROZEN_SPEC = "ae6aa254c786d2dd6045fab098c4237dbe8bcc07d6626d20617366d386ff687d"   # O21, Sep 26 2026
 CONTRACT = "RC1D"
 ID_PREFIX = "range-rc1d-"
@@ -52,7 +53,7 @@ UTC = dt.timezone.utc
 MAX_DECISION_AGE_H = 1.0
 ATTEMPTS, PUBLICATIONS = "state/range_attempts.jsonl", "state/range_publications.jsonl"
 INPUTS = "desk/inputs"
-CHAIN_ROOT = DESK / "research/o21/inputs"
+CHAIN_ROOT = DESK / "research/o21"          # verified through retained.load_o21_inputs
 BUNDLE_BARS = R.WARMUP                            # features never read more than the last 180 bars
 BUNDLE_DVOL_H = 8
 
@@ -63,6 +64,12 @@ class StaleDecision(RuntimeError):
 
 class AttemptRefused(RuntimeError):
     """This decision already has a recorded window; a retry would move it."""
+
+
+def _say(msg):
+    """Job narration; tests set RANGE_JOB_QUIET so injected-failure fixtures never read like production output."""
+    if not os.environ.get("RANGE_JOB_QUIET"):
+        print(msg)
 
 
 def _now():
@@ -101,7 +108,7 @@ def record(base, attempt, decision, state, run, t, **extra):
     row = {"attempt": attempt, "decision_utc": decision, "contract": C.contract_id(CONTRACT), "state": state,
            "t": t, "job": JOB_VERSION, "run": run, **extra}
     _append(base, ATTEMPTS, row)
-    print(f"attempt {attempt}: {state}" + (f" ({extra['reason']})" if extra.get("reason") else ""))
+    _say(f"attempt {attempt}: {state}" + (f" ({extra['reason']})" if extra.get("reason") else ""))
     return row
 
 
@@ -141,8 +148,10 @@ def fetch_recent_dvol(now, hours=96, opener=None):
                          "retrieved_utc": rep.get("retrieved_at_utc")}
 
 
-def calendar():
-    return R.load_calendar(str(CALENDAR)), hashlib.sha256(CALENDAR.read_bytes()).hexdigest()
+def calendar(raw: bytes | None = None):
+    """(release times, sha256) of the current calendar, or of given calendar bytes (replay)."""
+    raw = CALENDAR.read_bytes() if raw is None else raw
+    return K.parse_calendar(raw), hashlib.sha256(raw).hexdigest()
 
 
 def write_blob(base, rel_dir, obj) -> tuple:
@@ -182,21 +191,88 @@ def load_fit(base, month_start):
 
 
 def history_chain(base=BASE):
-    """Bars and DVOL rows retained in the repository: the O21 inputs plus every refit delta, in order."""
-    root_k, root_d = CHAIN_ROOT / "klines_4h.json.gz", CHAIN_ROOT / "dvol_1h.json.gz"
-    if not root_k.exists():
-        return [], [], []
-    k = json.loads(gzip.decompress(root_k.read_bytes()))
-    d = json.loads(gzip.decompress(root_d.read_bytes()))
+    """Bars and DVOL rows retained in the repository: the O21 inputs (hash-verified against their manifest)
+    plus every refit delta (each verified against its content-addressed name) - all verified before any is used."""
+    k, d = K.load_o21_inputs(CHAIN_ROOT)
+    deltas, months = [], set()
+    for p in sorted((Path(base) / INPUTS / "refit").glob("*.json.gz")):
+        try:
+            sha, delta = read_blob(p)
+        except (OSError, ValueError) as exc:
+            raise K.RetainedError(f"refit delta {p.name} unreadable: {exc}") from exc
+        if p.name != f"{sha}.json.gz":
+            raise K.RetainedError(f"refit delta {p.name} altered: content hash {sha[:12]}")
+        if not (isinstance(delta, dict) and isinstance(delta.get("month"), str)
+                and isinstance(delta.get("bars"), list) and isinstance(delta.get("dvol"), list)):
+            raise K.RetainedError(f"refit delta {p.name} malformed")
+        if delta["month"] in months:
+            raise K.RetainedError(f"two refit deltas for {delta['month']}")
+        months.add(delta["month"])
+        deltas.append((delta["month"], p.name, delta))
     bars, dvol, links = list(k["rows"]), list(d["rows"]), ["o21-inputs"]
-    deltas = [(read_blob(p), p.name) for p in (Path(base) / INPUTS / "refit").glob("*.json.gz")]
-    for (sha, delta), name in sorted(deltas, key=lambda x: x[0][1]["month"]):
-        if name != f"{sha}.json.gz":
-            raise ValueError(f"refit delta {name} altered: content hash {sha[:12]}")
+    for _, name, delta in sorted(deltas):
         bars += [b for b in delta["bars"] if b["open_utc"] > bars[-1]["open_utc"]]
         dvol += [r for r in delta["dvol"] if r["open_utc"] > dvol[-1]["open_utc"]]
         links.append(name)
     return bars, dvol, links
+
+
+def _bar_ok(b) -> bool:
+    try:
+        o, h, l, c = (float(b[k]) for k in ("open", "high", "low", "close"))
+    except (KeyError, TypeError, ValueError):
+        return False
+    return all(math.isfinite(x) and x > 0 for x in (o, h, l, c)) and l <= min(o, c) <= max(o, c) <= h
+
+
+def archive_with_tail(first_open: dt.datetime, m0: dt.datetime, span=None, live=None):
+    """4H bars [first_open, m0): the archive, plus - only when the archive's trailing file(s) are not yet
+    published - a tail of closed, validated live bars. Every other non-ok archive state, an interior gap,
+    a conflicting overlap, a malformed or unclosed bar, or an unavailable live source raises."""
+    span = span or A.load_klines_span
+    live = live or fetch_recent_bars
+    st, rows, manifest = span(first_open.date(), (m0 - dt.timedelta(days=1)).date(), "4h")
+    states = [(m or {}).get("state") for m in manifest]
+    if st != "ok":
+        bad = sorted({x for x in states if x not in ("ok", "missing")} | ({st} - {"ok", "missing"}))
+        if bad:
+            raise RuntimeError(f"refit klines not admissible: {bad} (only an unpublished trailing segment is filled)")
+        if "missing" in states and "ok" in states[states.index("missing"):]:
+            raise RuntimeError("refit klines: interior archive gap (a missing file before a published one)")
+    rows = sorted((b for b in rows if first_open <= R._t(b["open_utc"]) < m0), key=lambda b: b["open_utc"])
+    expect, arch = first_open, []
+    for b in rows:
+        if R._t(b["open_utc"]) != expect or not _bar_ok(b):
+            raise RuntimeError(f"refit klines: archive gap, duplicate or malformed bar at {b['open_utc']}")
+        arch.append(b)
+        expect += dt.timedelta(hours=4)
+    tail = {"from": None, "bars": 0}
+    if expect < m0:
+        if st == "ok":
+            raise RuntimeError(f"refit klines: archive reported ok but ends at {_iso(expect)}")
+        need = int((m0 - expect).total_seconds() // 14400)
+        overlap = min(6, len(arch))
+        got, meta = live(m0, n=need + overlap)             # raises when unavailable or not ok
+        known = {b["open_utc"]: b for b in arch}
+        fill = []
+        for b in sorted(got, key=lambda b: b["open_utc"]):
+            if R._t(b["close_utc"]) > m0 or not _bar_ok(b):
+                raise RuntimeError(f"refit live tail: unclosed or malformed bar at {b.get('open_utc')}")
+            if b["open_utc"] in known:
+                a = known[b["open_utc"]]
+                if any(float(a[k]) != float(b[k]) for k in ("open", "high", "low", "close")):
+                    raise RuntimeError(f"refit live tail conflicts with the archive at {b['open_utc']}")
+            elif R._t(b["open_utc"]) >= expect:
+                fill.append(b)
+        for b in fill:
+            if R._t(b["open_utc"]) != expect:
+                raise RuntimeError(f"refit live tail not contiguous at {b['open_utc']}")
+            expect += dt.timedelta(hours=4)
+        if expect != m0:
+            raise RuntimeError(f"refit live tail ends at {_iso(expect)}, not the month start")
+        tail = {"from": fill[0]["open_utc"], "bars": len(fill), "overlap_checked": overlap, "source": meta}
+        arch += fill
+    return arch, manifest, tail
 
 
 def refit(now=None, base=BASE, history=None):
@@ -206,7 +282,7 @@ def refit(now=None, base=BASE, history=None):
     path = fit_path(m0.date(), base)
     if path.exists():
         load_fit(base, m0)                              # raises FitInvalid on any mismatch
-        print(f"refit: {path.name} exists and validates")
+        _say(f"refit: {path.name} exists and validates")
         return path
     if not spec_ok():
         raise SystemExit("refit refused: range_model.py does not match the frozen specification")
@@ -218,21 +294,12 @@ def refit(now=None, base=BASE, history=None):
         last = R._t(bars[-1]["open_utc"])
         delta = {"bars": [], "dvol": [], "manifest": [], "dvol_report": None}
         if last < m0 - dt.timedelta(hours=4):
-            first = (last + dt.timedelta(hours=4)).date()
-            st, new, manifest = A.load_klines_span(first, (m0 - dt.timedelta(days=1)).date(), "4h")
-            if st != "ok":
-                raise RuntimeError(f"refit klines not admissible: {st}")
-            new = [b for b in new if last < R._t(b["open_utc"]) < m0]
-            want = int((m0 - last).total_seconds() // 14400) - 1
-            if len(new) < want:                     # archive for the last day(s) not yet published
-                recent, meta = fetch_recent_bars(m0, n=want)
-                new = sorted({b["open_utc"]: b for b in new + [b for b in recent if R._t(b["open_utc"]) > last]}.values(),
-                             key=lambda b: b["open_utc"])
-                manifest = manifest + [meta]
+            new, manifest, tail = archive_with_tail(last + dt.timedelta(hours=4), m0)
             dlast = R._t(dvol[-1]["open_utc"])
             dstate, dnew, drep = A.load_dvol(dlast + dt.timedelta(hours=1), m0)
             admit = C.admit_dvol(dstate, dnew, m0, drep, "history")
-            delta = {"bars": new, "dvol": dnew, "manifest": manifest, "dvol_report": drep, "dvol_admissibility": admit}
+            delta = {"bars": new, "dvol": dnew, "manifest": manifest, "live_tail": tail, "dvol_report": drep,
+                     "dvol_admissibility": admit}
             bars, dvol = bars + new, dvol + dnew
         dsha, drel = write_blob(base, f"{INPUTS}/refit", dict(delta, month=f"{m0:%Y-%m}")) if delta["bars"] else (None, None)
         data = {"chain": links + ([Path(drel).name] if drel else []), "klines_worst_state": "ok",
@@ -243,6 +310,7 @@ def refit(now=None, base=BASE, history=None):
         data = {"supplied": True}
     times = [R._t(b["open_utc"]) for b in bars]
     gaps = sum(1 for a, b in zip(times, times[1:]) if b - a != dt.timedelta(hours=4))
+    gaps += sum(1 for b in bars if not _bar_ok(b))
     if gaps or times[-1] != m0 - dt.timedelta(hours=4):
         raise RuntimeError(f"refit history not contiguous to the month start (gaps={gaps}, last={times[-1]})")
     panel = R.build_panel(bars, releases, dvol)
@@ -262,16 +330,17 @@ def refit(now=None, base=BASE, history=None):
     C.validate_fit(doc, m0, CALENDAR, FROZEN_SPEC)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n")
-    print(f"refit: wrote {path.name} (n={ {h: f['n'] for h, f in fits.items()} })")
+    _say(f"refit: wrote {path.name} (n={ {h: f['n'] for h, f in fits.items()} })")
     return path
 
 
 # --------------------------------------------------------------------------------------------
 # Forecast: prepare -> freeze (one transaction) -> [workflow push] -> confirm
 # --------------------------------------------------------------------------------------------
-def build(bars, dvol_rows, fit_doc, fit_sha, prepared: dt.datetime, sources: dict):
-    """The input bundle and the three forecast documents (RC1D). Pure: no I/O."""
-    releases, cal_sha = calendar()
+def build(bars, dvol_rows, fit_doc, fit_sha, prepared: dt.datetime, sources: dict, cal=None):
+    """The input bundle and the three forecast documents (RC1D). Pure: no I/O. `cal` = (releases, sha)
+    of a retained calendar version (replay); default the current calendar."""
+    releases, cal_sha = cal or calendar()
     decision = R._t(bars[-1]["close_utc"])
     keep = bars[-BUNDLE_BARS:]
     dv = [r for r in dvol_rows if decision - dt.timedelta(hours=BUNDLE_DVOL_H) <= R._t(r["available_at_utc"]) <= decision]
@@ -336,7 +405,7 @@ def reconcile(base, now_ms, run):
     if mine:
         fixed = restore_sources(base, mine)
         if fixed:
-            print(f"reconcile: restored sources {fixed}")
+            _say(f"reconcile: restored sources {fixed}")
     pubs = {r["attempt"] for r in _rows(base, PUBLICATIONS)}
     latest = {}
     for r in _rows(base, ATTEMPTS):
@@ -379,7 +448,7 @@ def forecast(now=None, base=BASE, bars=None, dvol=None, clock=None, run=None, ho
     if all(i in manifest for i in ids):
         from registration import restore_sources
         restore_sources(base, ids)
-        print(f"forecast: {dstr} already registered ({', '.join(ids)}); verified against the manifest")
+        _say(f"forecast: {dstr} already registered ({', '.join(ids)}); verified against the manifest")
         return "existing", ids
     prior = [r for r in attempts_for(base, dstr) if r.get("start_ms")]
     if prior or any(i in manifest for i in ids):
@@ -405,6 +474,7 @@ def forecast(now=None, base=BASE, bars=None, dvol=None, clock=None, run=None, ho
         record(base, attempt, dstr, "abandoned", run, frozen_at, reason="clock reached the freezing margin before the window start", **window)
         raise RuntimeError(f"{dstr}: freezing at {frozen_at} leaves < {C.MIN_MARGIN_S}s before the window start; abandoned")
     write_blob(base, f"{INPUTS}/{decision:%Y-%m}", bundle)
+    K.retain_calendar(base, CALENDAR.read_bytes())      # the calendar version this bundle names, kept by content hash
     record(base, attempt, dstr, "prepared", run, frozen_at, **window)
     items = [(f"registry/{d['id']}.json", _raw(d)) for d in docs]
     meta = {"attempt": attempt, "contract": C.contract_id(CONTRACT), "code_commit": run.get("code_commit"),
@@ -416,7 +486,7 @@ def forecast(now=None, base=BASE, bars=None, dvol=None, clock=None, run=None, ho
         if all(i in after and after[i].get("attempt") == attempt for i in ids):
             from registration import restore_sources
             restore_sources(base, ids)                  # commit point passed: roll forward
-            print(f"forecast: registered despite a post-commit error ({exc}); sources restored")
+            _say(f"forecast: registered despite a post-commit error ({exc}); sources restored")
         else:
             record(base, attempt, dstr, "failed", run, clock(), reason=f"registration: {type(exc).__name__}: {exc}"[:300], **window)
             raise
@@ -444,7 +514,7 @@ def confirm(base=BASE, clock=None, remote=None, run=None):
         latest[r["attempt"]] = r
     pending = [r for a, r in latest.items() if r["state"] == "frozen" and a not in pubs]
     if not pending:
-        print("confirm: nothing pending")
+        _say("confirm: nothing pending")
         return []
     local = read_json(Path(base) / "state/forecast_manifest.json", {})
     commit, remote_manifest = remote()
@@ -453,7 +523,7 @@ def confirm(base=BASE, clock=None, remote=None, run=None):
     for r in pending:
         ok = all(i in remote_manifest and remote_manifest[i]["sha256"] == local[i]["sha256"] for i in r["ids"])
         if not ok:
-            print(f"confirm: {r['attempt']} not on the remote yet")
+            _say(f"confirm: {r['attempt']} not on the remote yet")
             continue
         row = {"attempt": r["attempt"], "ids": r["ids"], "commit": commit, "confirmed": t, "start_ms": r["start_ms"],
                "eligible": t < r["start_ms"], "method": "git fetch origin; manifest entries and hashes match",
@@ -469,31 +539,47 @@ def confirm(base=BASE, clock=None, remote=None, run=None):
 # Replay (offline)
 # --------------------------------------------------------------------------------------------
 def replay(fid, base=BASE):
-    """Rebuild a registered RC1D forecast from its retained bundle, fit and calendar; compare with frozen bytes."""
+    """Rebuild a registered RC1D forecast offline from its retained bundle, the fit and the calendar version it
+    names (each resolved by content hash: current file, retained copy, or Git history), and compare the result
+    with the frozen bytes. Recoverable calendar bytes prove what the forecast used - not when a historical
+    schedule change became publicly known."""
+    import tempfile
     from storage import read_json
-    entry = read_json(Path(base) / "state/forecast_manifest.json", {})[fid]
-    frozen = json.loads((Path(base) / entry["frozen"]).read_bytes())
+    base = Path(base)
+    entry = read_json(base / "state/forecast_manifest.json", {})[fid]
+    frozen = json.loads((base / entry["frozen"]).read_bytes())
     bsha = frozen["input_bundle"]
     decision = R._t(frozen["decision_utc"])
-    path = Path(base) / INPUTS / f"{decision:%Y-%m}" / f"{bsha}.json.gz"
+    path = base / INPUTS / f"{decision:%Y-%m}" / f"{bsha}.json.gz"
     if not path.exists():
         raise FileNotFoundError(f"input bundle {bsha[:12]} missing - forecast cannot be replayed")
     got, bundle = read_blob(path)
     if got != bsha:
         raise ValueError(f"input bundle altered: {got[:12]} != {bsha[:12]}")
-    fit_doc, fit_sha = load_fit(base, dt.datetime(decision.year, decision.month, 1, tzinfo=UTC))
-    if fit_sha != bundle["fit"]["sha256"]:
-        raise ValueError("fit file changed since the forecast")
-    if hashlib.sha256(CALENDAR.read_bytes()).hexdigest() != bundle["calendar_sha256"]:
-        raise ValueError("calendar changed since the forecast")
+    if bundle.get("contract") not in C.READ_COMPATIBLE:
+        raise ValueError(f"bundle contract {bundle.get('contract')} is not implemented by this code; replay with "
+                         f"the recorded commit {entry.get('code_commit')}")
+    cal_raw, cal_where = K.calendar_bytes(bundle["calendar_sha256"], base, CALENDAR)
+    m0 = dt.datetime(decision.year, decision.month, 1, tzinfo=UTC)
+    rel = f"desk/fits/{m0:%Y-%m}.json"
+    fit_raw = (base / rel).read_bytes() if (base / rel).exists() else b""
+    if hashlib.sha256(fit_raw).hexdigest() != bundle["fit"]["sha256"]:
+        fit_raw = K.git_blob(base, rel, bundle["fit"]["sha256"])
+        if fit_raw is None:
+            raise ValueError(f"fit {rel} version {bundle['fit']['sha256'][:12]} not found (file or Git history)")
+    fit_doc = json.loads(fit_raw)
+    with tempfile.NamedTemporaryFile(suffix=".csv") as tmp:
+        tmp.write(cal_raw); tmp.flush()
+        C.validate_fit(fit_doc, m0, Path(tmp.name), FROZEN_SPEC)
     bars = [dict(b) for b in bundle["bars"]]
-    _, sha2, docs = build(bars, bundle["dvol"], fit_doc, fit_sha, R._t(bundle["prepared_utc"]), bundle["sources"])
+    _, sha2, docs = build(bars, bundle["dvol"], fit_doc, bundle["fit"]["sha256"], R._t(bundle["prepared_utc"]),
+                          bundle["sources"], cal=calendar(cal_raw))
     if sha2 != bsha:
         raise ValueError("rebuilt bundle differs from the retained bundle")
     mine = next(d for d in docs if d["id"] == fid)
     if mine["events"] != frozen["events"] or mine["start_utc"] != frozen["start_utc"]:
         raise ValueError("replay does not reproduce the registered events")
-    return mine
+    return dict(mine, _replay={"calendar": cal_where, "bundle": bsha})
 
 
 # --------------------------------------------------------------------------------------------
@@ -507,7 +593,7 @@ def status(base=BASE, now=None, out_json="reports/range_status.json", out_md="re
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(st, indent=1, sort_keys=True) + "\n")
     (Path(base) / out_md).write_text(RR.markdown(st))
-    print(f"status: {st['outcomes']} -> {out_json}")
+    _say(f"status: {st['outcomes']} -> {out_json}")
     return st
 
 
@@ -519,11 +605,11 @@ if __name__ == "__main__":
         try:
             forecast()
         except StaleDecision as exc:
-            print(f"forecast skipped: {exc}")
+            _say(f"forecast skipped: {exc}")
             if os.environ.get("GITHUB_EVENT_NAME") == "schedule":
                 raise SystemExit(1)
         except AttemptRefused as exc:
-            print(f"forecast refused: {exc}")
+            _say(f"forecast refused: {exc}")
     elif cmd == "confirm":
         confirm()
     elif cmd == "status":

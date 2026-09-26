@@ -1,17 +1,21 @@
 {
- "audited_snapshot": "0a9ba0e2eabbda73c6113723d05e447528650e74 (package 11.2, repo 2.14)",
- "base_commit": "09549f89fee2158dae9516b64520529f23025085",
+ "artifacts": {
+  "research/o21/MANIFEST.json": "c5f2bcd895d6173da2718852cfe3ba7ae7d5aeee14a064bac21e55fabe42a6b0",
+  "research/o21/holm_addendum_12.1.json": "0c7cfa80f252b07683647812a7bf49b6360969bb74f21516049a28f1179dca39",
+  "research/o21/reanalysis_12.0.json": "e2e206fed65d3581a4e138d19c7bc935320779ba5d50c7e0cdff83f9729add1d",
+  "research/o21/reanalysis_12.0_rows.json.gz": "4a3f9cc41449d471b6748122748372634386fed97881c410b2cf2a8e7b3dd842"
+ },
+ "audited_snapshot": "cabc40d328f883aaa8bdd6f7f65251a7f3828c11 (package 12.0, repo 2.15; deployment evidence to fe27eb2)",
+ "base_commit": "3433ec94d9d2c12b319efa30ef3026313a5e3fb6",
  "calendar": {
   "file": "releases_2020_2026.csv",
   "last_event_utc": "2026-12-15T13:30:00Z",
   "sha256": "f7f1fd69f98d05b0ea5f587327fb31727dff707119ced7a0ad613ca0b2375074",
-  "vintages": "not retained (actual release times; see research/o21/reanalysis_12.0.json)"
+  "versions": "every version a forecast used is retained as calendars/<sha256>.csv (replay resolves by hash)",
+  "vintages": "announcement times of schedule changes are not retained (see research/o21/reanalysis_12.0.json)"
  },
  "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
- "deployment": {
-  "evidence": [],
-  "state": "built and tested; not merged"
- },
+ "deployment_log": "desk/deployments.jsonl (append-only, verified events); live health: reports/range_status.json",
  "evaluated_contract": "RC1/contract-12.0.0/e8f291740f27",
  "model": {
   "range_model": "range-11.1.0",
@@ -29,14 +33,14 @@
    "version": "measure-11.1.0"
   },
   "range_contract.py": {
-   "sha256": "8da8d5ab5a7d1a89842293b12b8cff12f02de2c6b5cdb6af7d4b2dcfaec3f4e2",
+   "sha256": "eda20d8e65a2812e8e61fc21ab07b0e4e9caa72aa84376bef8d4388fcc33ffeb",
    "shared_with_skill": true,
-   "version": "contract-12.0.0"
+   "version": "contract-12.1.0\"            # this module's implementation version"
   },
   "range_job.py": {
-   "sha256": "5c8e7fe487c93876c7d9ae66c80e8847be0e4b225241beab0a4f5c32f9824b9b",
+   "sha256": "8d17bc1a07fd8685da2fe7deaded4281c30d3dc3042dfaa17158167c59f76bb5",
    "shared_with_skill": false,
-   "version": "range-job-12.0.0"
+   "version": "range-job-12.1.0"
   },
   "range_model.py": {
    "sha256": "ae6aa254c786d2dd6045fab098c4237dbe8bcc07d6626d20617366d386ff687d",
@@ -44,18 +48,23 @@
    "version": "range-11.1.0"
   },
   "range_reader.py": {
-   "sha256": "ba8c63cc1ad039e68ccc0869f1edd86a9b77e6874dfd2744f3d4bd85cc9c6168",
+   "sha256": "9e5481aa9977fe116a68bc1b054f33579df98f2855e13b0a1816e14f6e77cfa6",
    "shared_with_skill": true,
-   "version": "reader-12.0.0"
+   "version": "reader-12.1.0"
+  },
+  "retained.py": {
+   "sha256": "2b1c10821bb9d29f379b1be97f0df265dfbca2e6c90ce8165bc89eb1fe62ab94",
+   "shared_with_skill": false,
+   "version": "retained-12.1.0"
   }
  },
- "package": "crypto-desk 12.0",
- "range_stream_start_utc": null,
+ "package": "crypto-desk 12.1",
+ "range_stream_start_utc": "2026-09-26T04:00:00Z",
  "registry_routing": {
   "in-thread forecasts": "artifact registry https://claude.ai/artifact/8QyreLBMA2aT3BCkT6atkR",
   "legacy": "range-b2-* (repo 2.14, q50 contract, pre-12.0): scored as registered, never cited as current",
   "range stream (automatic)": "GitHub registry/, ids range-rc1d-{4h,24h,72h}-<decision>, desk/range_job.py; read through desk/range_reader.py or reports/range_status.json"
  },
- "release_sha256": "a4e59825a270290c06cbe953f50a5e9119c302c44b06255d9e6bf2f5e20d3af2",
- "repo_revision": "2.15"
+ "release_sha256": "bba1d98f231f07651520d9a8e565bd22178de0f13213e8e9ff1ec3a47180b4a1",
+ "repo_revision": "2.16"
 }
