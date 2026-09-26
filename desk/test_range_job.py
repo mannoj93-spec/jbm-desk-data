@@ -212,7 +212,11 @@ class TestEligibility(Base):
     def test_never_confirmed_becomes_unconfirmed(self):
         self.fit()
         self.run_forecast()
-        self.assertEqual(RR.read_current(self.tmp, T(0, 9), "4h")["state"], "ineligible")
+        # 12.2 as-of semantics: before its window starts, an unconfirmed record is not yet available (pending);
+        # once the window has started without a confirmation it can never be eligible.
+        early = RR.read_current(self.tmp, T(0, 9), "4h")
+        self.assertEqual((early["state"], len(early["newer_pending"])), ("missing", 1))
+        self.assertEqual(RR.read_current(self.tmp, T(0, 16), "4h")["state"], "ineligible")   # window started 00:15
         J.reconcile(self.tmp, ms(T(4, 3)), PROD)
         self.assertEqual(self.attempts()[-1]["state"], "unconfirmed")
 

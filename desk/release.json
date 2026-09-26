@@ -5,8 +5,8 @@
   "research/o21/reanalysis_12.0.json": "e2e206fed65d3581a4e138d19c7bc935320779ba5d50c7e0cdff83f9729add1d",
   "research/o21/reanalysis_12.0_rows.json.gz": "4a3f9cc41449d471b6748122748372634386fed97881c410b2cf2a8e7b3dd842"
  },
- "audited_snapshot": "cabc40d328f883aaa8bdd6f7f65251a7f3828c11 (package 12.0, repo 2.15; deployment evidence to fe27eb2)",
- "base_commit": "3433ec94d9d2c12b319efa30ef3026313a5e3fb6",
+ "audited_snapshot": "03ab59957933e34c1f97dadbf56498fbe393d6c0 (package 12.1, repo 2.16; overnight production evidence)",
+ "base_commit": "365ff99239733d26fb2609db79a5884c774dd5ef",
  "calendar": {
   "file": "releases_2020_2026.csv",
   "last_event_utc": "2026-12-15T13:30:00Z",
@@ -15,7 +15,7 @@
   "vintages": "announcement times of schedule changes are not retained (see research/o21/reanalysis_12.0.json)"
  },
  "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
- "deployment_log": "desk/deployments.jsonl (append-only, verified events); live health: reports/range_status.json",
+ "deployment_log": "desk/deployments.jsonl (append-only, verified events); operational health (changes every run, not release identity): reports/range_status.json, state/range_runs.jsonl, state/range_scoring.jsonl, range-monitor.yml",
  "evaluated_contract": "RC1/contract-12.0.0/e8f291740f27",
  "model": {
   "range_model": "range-11.1.0",
@@ -33,24 +33,34 @@
    "version": "measure-11.1.0"
   },
   "range_contract.py": {
-   "sha256": "eda20d8e65a2812e8e61fc21ab07b0e4e9caa72aa84376bef8d4388fcc33ffeb",
+   "sha256": "4d209912dae170145e7cc77985a0163fd81640d0a964ce48bc63f3e97bf6a94a",
    "shared_with_skill": true,
-   "version": "contract-12.1.0\"            # this module's implementation version"
+   "version": "contract-12.2.0"
   },
   "range_job.py": {
-   "sha256": "8d17bc1a07fd8685da2fe7deaded4281c30d3dc3042dfaa17158167c59f76bb5",
+   "sha256": "814e38ebb19619d3b9de92591ef69d1597c0b2d6c95cbf38149c59bd5ba4e1fa",
    "shared_with_skill": false,
-   "version": "range-job-12.1.0"
+   "version": "range-job-12.2.0"
   },
   "range_model.py": {
    "sha256": "ae6aa254c786d2dd6045fab098c4237dbe8bcc07d6626d20617366d386ff687d",
    "shared_with_skill": true,
    "version": "range-11.1.0"
   },
-  "range_reader.py": {
-   "sha256": "9e5481aa9977fe116a68bc1b054f33579df98f2855e13b0a1816e14f6e77cfa6",
+  "range_monitor.py": {
+   "sha256": "8a787a300c530f509f1e508cb642a781f2c7d652584b3c8ed6fc7413b84ff176",
+   "shared_with_skill": false,
+   "version": "monitor-12.2.0"
+  },
+  "range_ops.py": {
+   "sha256": "76a13514512b1fc8bdb68b3070b6c578fa9343efc14a570eb21780e1318eec25",
    "shared_with_skill": true,
-   "version": "reader-12.1.0"
+   "version": "ops-12.2.0"
+  },
+  "range_reader.py": {
+   "sha256": "6af7b37a09cc57716f05fdb7fb1e85b7dc98b4b0ab8dd58d466e75951b3953d5",
+   "shared_with_skill": true,
+   "version": "reader-12.2.0"
   },
   "retained.py": {
    "sha256": "2b1c10821bb9d29f379b1be97f0df265dfbca2e6c90ce8165bc89eb1fe62ab94",
@@ -58,13 +68,13 @@
    "version": "retained-12.1.0"
   }
  },
- "package": "crypto-desk 12.1",
+ "package": "crypto-desk 12.2",
  "range_stream_start_utc": "2026-09-26T04:00:00Z",
  "registry_routing": {
   "in-thread forecasts": "artifact registry https://claude.ai/artifact/8QyreLBMA2aT3BCkT6atkR",
   "legacy": "range-b2-* (repo 2.14, q50 contract, pre-12.0): scored as registered, never cited as current",
   "range stream (automatic)": "GitHub registry/, ids range-rc1d-{4h,24h,72h}-<decision>, desk/range_job.py; read through desk/range_reader.py or reports/range_status.json"
  },
- "release_sha256": "bba1d98f231f07651520d9a8e565bd22178de0f13213e8e9ff1ec3a47180b4a1",
- "repo_revision": "2.16"
+ "release_sha256": "b84c2e2b1470eb9a6561e406f144a716d9ba2775dc0d957d203d9e8149627aeb",
+ "repo_revision": "2.17"
 }

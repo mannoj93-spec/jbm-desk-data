@@ -37,7 +37,7 @@ from pathlib import Path
 
 import range_model as R
 
-VERSION = "contract-12.1.0"            # this module's implementation version
+VERSION = "contract-12.2.0"            # this module's implementation version
 CONTRACT_VERSION = "contract-12.0.0"   # the contract's semantic version: unchanged since 12.0, so contract ids
                                        # (and every registered record) stay valid across implementation fixes
 UTC = dt.timezone.utc
@@ -373,6 +373,10 @@ def _hex64(x):
     return isinstance(x, str) and len(x) == 64 and set(x) <= _HEX64
 
 
+def _int(x):
+    return isinstance(x, int) and not isinstance(x, bool)
+
+
 def _num01(x):
     return isinstance(x, (int, float)) and not isinstance(x, bool) and math.isfinite(x) and 0 < x < 1
 
@@ -395,8 +399,9 @@ def validate_rc1d(doc, fid=None, entry=None, publication=None, contracts=None) -
     if not m or doc.get("id") != fid:
         return [f"id {fid!r} is not range-rc1d-<4h|24h|72h>-<YYYYmmddTHHMMZ> or differs from the document"]
     h, stamp = m.groups()
-    if doc.get("contract") not in (contracts or READ_COMPATIBLE):
-        errs.append(f"contract {doc.get('contract')!r} not in {sorted(contracts or READ_COMPATIBLE)}")
+    allowed = contracts or READ_COMPATIBLE
+    if not isinstance(doc.get("contract"), str) or doc["contract"] not in allowed:
+        errs.append(f"contract {doc.get('contract')!r} not in {sorted(allowed)}")
     if doc.get("instrument") != "BTCUSDT perp, Binance last price":
         errs.append("instrument mismatch")
     d, s, e, made = (_parse(doc.get(k)) for k in ("decision_utc", "start_utc", "horizon_utc", "made_utc"))
@@ -408,6 +413,10 @@ def validate_rc1d(doc, fid=None, entry=None, publication=None, contracts=None) -
         errs.append("decision is not a 4H close")
     if e - s != dt.timedelta(hours=HOURS[h]):
         errs.append(f"window spans {(e - s).total_seconds() / 3600:g}h, not {h}")
+    want_s, want_e = window("RC1D", d, h, made)          # the canonical window for this preparation time
+    if (s, e) != (want_s, want_e):
+        errs.append(f"window [{iso(s)}, {iso(e)}) is not the RC1D window for preparation {iso(made)}: "
+                    f"[{iso(want_s)}, {iso(want_e)})")
     delay = (s - d).total_seconds() / 60
     if not LEAD_MIN <= delay <= MAX_START_DELAY_MIN or s.minute % 5 or s.second:
         errs.append(f"window start {delay:g} min after the decision (allowed {LEAD_MIN}-{MAX_START_DELAY_MIN}, 5-minute aligned)")
@@ -443,21 +452,65 @@ def validate_rc1d(doc, fid=None, entry=None, publication=None, contracts=None) -
                 errs.append("manifest id/source inconsistent with the record")
             if not _hex64(entry.get("sha256")) or entry.get("frozen") != f"registry/frozen/{entry.get('sha256')}.json":
                 errs.append("manifest hash/frozen path malformed")
-            reg = entry.get("registered")
-            if not isinstance(reg, int) or isinstance(reg, bool):
+            reg, prep = entry.get("registered"), entry.get("prepared")
+            if not _int(reg):
                 errs.append("registration time missing or malformed")     # lateness is eligibility, not validity
+            if prep is not None and (not _int(prep) or prep != ms(made)):
+                errs.append("manifest preparation time malformed or different from made_utc")
+            if _int(reg) and reg < ms(made):
+                errs.append("registered before the record was prepared")
             if not isinstance(entry.get("attempt"), str):
-                errs.append("manifest entry has no attempt")
+                errs.append("manifest entry has no attempt (or it is not a string)")
     if publication is not None:
         if not isinstance(publication, dict):
             errs.append("publication record is not an object")
         else:
             conf, ids = publication.get("confirmed"), publication.get("ids")
-            if not isinstance(conf, int) or isinstance(conf, bool):
+            if not _int(conf):
                 errs.append("publication confirmation time missing or malformed")
+            elif isinstance(entry, dict) and _int(entry.get("registered")) and conf < entry["registered"]:
+                errs.append("publication confirmed before the record was registered")
             if not isinstance(ids, list) or fid not in ids:
                 errs.append("publication record does not list this forecast")
             if publication.get("start_ms") != ms(s):
                 errs.append("publication record's window start differs from the record")
     return errs
+
+
+def eligibility(start_ms: int, entry, publication, now_ms: int | None = None) -> tuple:
+    """Prospective eligibility of a registered forecast, shared by the reader and the scorer.
+    Returns (state, reason) with state one of:
+      eligible          registered and publication confirmed, both strictly before the window start
+      late-registration registered at or after the window start (never eligible)
+      late-publication  publication confirmed at or after the window start (never eligible)
+      unconfirmed       no confirmation before the window start, and the start has passed (never eligible)
+      pending           not yet confirmed, window not started: not available yet, may still become eligible
+    `publication` is the first confirmation row for the entry's attempt; with `now_ms`, a confirmation
+    after now does not exist yet (historical reads). Types are assumed validated (validate_rc1d)."""
+    reg = entry.get("registered") if isinstance(entry, dict) else None
+    if not _int(reg):
+        return "late-registration", "registration time missing or malformed"
+    if reg >= start_ms:
+        return "late-registration", "registered at or after the window start"
+    conf = publication.get("confirmed") if isinstance(publication, dict) else None
+    if _int(conf) and now_ms is not None and conf > now_ms:
+        conf = None                                               # not yet confirmed at the requested time
+    if not _int(conf):
+        if now_ms is not None and now_ms < start_ms:
+            return "pending", "publication not yet confirmed (window not started)"
+        return "unconfirmed", "publication not confirmed before the window start"
+    if conf >= start_ms:
+        return "late-publication", "publication confirmed at or after the window start"
+    return "eligible", "registered and publication confirmed before the window start"
+
+
+def available_ms(doc: dict, entry: dict, publication) -> int:
+    """Earliest instant a registered forecast can be read: its decision, preparation, registration and
+    publication confirmation have all happened. Nothing is available before this, whatever its window."""
+    times = [ms(_parse(doc["decision_utc"])), ms(_parse(doc["made_utc"])), entry["registered"]]
+    if _int(entry.get("prepared")):
+        times.append(entry["prepared"])
+    if isinstance(publication, dict) and _int(publication.get("confirmed")):
+        times.append(publication["confirmed"])
+    return max(times)
 

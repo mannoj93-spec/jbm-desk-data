@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""range_job — the desk's automated range forecasts (crypto-desk package 12.0, repo revision 2.15).
+"""range_job — the desk's automated range forecasts (crypto-desk package 12.2, repo revision 2.17).
 
 Commands (workflow .github/workflows/range.yml, a few minutes after every 4H close):
   refit     once per calendar month: validate or build desk/fits/YYYY-MM.json from the retained history
@@ -11,6 +11,8 @@ Commands (workflow .github/workflows/range.yml, a few minutes after every 4H clo
   confirm   after the workflow pushed: verify the manifest entries are on the remote branch and record the
             confirmation time in state/range_publications.jsonl. Prospective eligibility = local freeze
             before the window start AND remote confirmation before the window start.
+  score     hourly (.github/workflows/range-score.yml): score matured, eligible range forecasts with the
+            repository scorer, log each attempt in state/range_scoring.jsonl, refresh the status.
   status    reports/range_status.json (machine-readable, read by the skill) and reports/range.md.
   replay    `replay <forecast id>`: rebuild a registered forecast from its retained input bundle, offline.
 
@@ -41,8 +43,8 @@ import range_model as R         # noqa: E402
 import range_contract as C      # noqa: E402
 import retained as K             # noqa: E402
 
-JOB_VERSION = "range-job-12.1.0"
-PACKAGE = "crypto-desk 12.1"
+JOB_VERSION = "range-job-12.2.0"
+PACKAGE = "crypto-desk 12.2"
 FROZEN_SPEC = "ae6aa254c786d2dd6045fab098c4237dbe8bcc07d6626d20617366d386ff687d"   # O21, Sep 26 2026
 CONTRACT = "RC1D"
 ID_PREFIX = "range-rc1d-"
@@ -585,6 +587,26 @@ def replay(fid, base=BASE):
 # --------------------------------------------------------------------------------------------
 # Status surface
 # --------------------------------------------------------------------------------------------
+def score(base=BASE, now=None, fetch=None):
+    """Score matured, eligible range forecasts now (idempotent; independent of forecast generation). Uses the
+    repository's scorer (scoring.score_registry: complete aligned 1m coverage, evidence retained under
+    registry/evidence/, provenance and implementation hash in each record). Each attempt is logged in
+    state/range_scoring.jsonl; missing observations stay pending (never a loss). Then refreshes the status."""
+    import scoring
+    now = now or _now()
+    attempts = []
+    kw = {"fetch": fetch} if fetch else {}
+    _, new, pending, alerts = scoring.score_registry(base, C.ms(now), f"{JOB_VERSION} hourly scoring",
+                                                     only_prefix="range-rc1d-", attempts=attempts, **kw)
+    for a in attempts:
+        _append(base, "state/range_scoring.jsonl", dict(a, t=_iso(now), job=JOB_VERSION))
+    for a in alerts:
+        _say(f"scoring: {a}")
+    _say(f"scoring: {len(new)} new record(s), {pending} pending")
+    status(base, now)
+    return new, pending, alerts
+
+
 def status(base=BASE, now=None, out_json="reports/range_status.json", out_md="reports/range.md"):
     import range_reader as RR
     now = now or _now()
@@ -610,6 +632,8 @@ if __name__ == "__main__":
                 raise SystemExit(1)
         except AttemptRefused as exc:
             _say(f"forecast refused: {exc}")
+    elif cmd == "score":
+        score()
     elif cmd == "confirm":
         confirm()
     elif cmd == "status":
