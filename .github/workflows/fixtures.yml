@@ -12,7 +12,7 @@ permissions:
 jobs:
   tests:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -20,3 +20,6 @@ jobs:
           python-version: '3.12'
       - run: python test_fixtures.py
       - run: python -m unittest discover -s regression -v
+      # 12.2: the O21 research replay as a gate - stored-byte integrity (exact) and numerical equivalence of a
+      # fresh rerun, summary and every row, per value within the declared tolerance. Nonzero exit fails CI.
+      - run: python desk/research/o21_reanalysis.py verify

@@ -1,0 +1,45 @@
+name: Range scoring
+# Hourly maturity scoring of the desk's range stream (desk/range_job.py score, package 12.2, repo 2.17).
+# Independent of forecast generation: it scores forecasts already registered, whatever the forecast workflow
+# or its tests are doing. The repository scorer (scoring.py) requires complete, aligned Binance BTCUSDT
+# perpetual 1m coverage of each window, retains the bars as evidence (registry/evidence/), and is idempotent
+# by forecast id and frozen hash; missing observations stay pending and are retried, never scored as a loss.
+# The weekly report remains the presentation and review cadence.
+on:
+  schedule:
+    - cron: '41 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Shares the repository-write queue with the collector, forecast, intake and report jobs.
+    concurrency:
+      group: repo-write
+      queue: max
+      cancel-in-progress: false
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Score matured range forecasts and refresh the status
+        id: score
+        continue-on-error: true
+        run: python desk/range_job.py score
+      - name: Persist scores, evidence, the scoring log and the status
+        if: always()
+        env:
+          COMMIT_MESSAGE: Range scores
+          PERSIST_BUDGET_S: '120'
+        run: bash scripts/commit_push.sh registry/scores.jsonl registry/evidence state/range_scoring.jsonl reports/range.md reports/range_status.json
+      - name: Fail if scoring failed
+        if: steps.score.outcome == 'failure'
+        run: exit 1

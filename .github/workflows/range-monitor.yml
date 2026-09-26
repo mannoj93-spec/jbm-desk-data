@@ -1,0 +1,37 @@
+name: Range stream monitor
+# Read-only health check of the desk's range stream (desk/range_monitor.py, stdlib only): failed or absent
+# runs for due decisions, the last eligible publication, status freshness and the scoring backlog, plus the
+# GitHub run list of range.yml. It imports none of the forecasting code, so it keeps working when the
+# forecast test suite fails. A problem fails this workflow (GitHub's failure notification is the alert).
+on:
+  schedule:
+    - cron: '53 1,5,9,13,17,21 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: range-monitor
+  cancel-in-progress: true
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: |
+            desk/range_monitor.py
+            desk/release.json
+            state
+            reports
+            registry/scores.jsonl
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check the range stream
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python desk/range_monitor.py
