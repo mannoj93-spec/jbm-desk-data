@@ -1,6 +1,6 @@
 # Range forecasts - status
 
-Generated 2026-09-27T15:50:25Z by reader-12.2.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-27T16:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
+Generated 2026-09-27T16:14:14Z by reader-12.2.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-27T16:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
 
 | horizon | state | id | window | valid until | reason |
 |---|---|---|---|---|---|
@@ -8,7 +8,7 @@ Generated 2026-09-27T15:50:25Z by reader-12.2.0; contract `RC1D/contract-12.0.0/
 | 24h | valid-current | range-rc1d-24h-20260927T1200Z | 2026-09-27T12:25:00Z → 2026-09-28T12:25:00Z | 2026-09-27T17:15:00Z | eligible and current |
 | 72h | valid-current | range-rc1d-72h-20260927T1200Z | 2026-09-27T12:25:00Z → 2026-09-30T12:25:00Z | 2026-09-27T17:15:00Z | eligible and current |
 
-Due production decisions: 9; outcomes: missing 1, registered-pending 8.
+Current decision 2026-09-27T16:00:00Z: registered-pending (frozen; publication confirmation pending). Due production decisions: 9; outcomes: missing 1, registered-pending 8.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
