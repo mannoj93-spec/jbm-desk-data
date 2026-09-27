@@ -14,7 +14,10 @@
    "horizon": "24h",
    "id": "range-rc1d-24h-20260927T0800Z",
    "label": "range-rc1d-24h-20260927T0800Z - full-window range forecast for [2026-09-27T08:20:00Z, 2026-09-28T08:20:00Z) (16% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-09-27T12:16:58Z",
+   "newer_pending": [
+    "range-rc1d-24h-20260927T1200Z"
+   ],
+   "now_utc": "2026-09-27T12:17:00Z",
    "point_lr": 0.020493149657,
    "points_at_decision_close": {
     "point": 1754.7,
@@ -43,13 +46,16 @@
    "b0_point_lr": 0.009338287788,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-09-27T08:00:00Z",
-   "elapsed_fraction": 0.9874,
+   "elapsed_fraction": 0.9875,
    "end_utc": "2026-09-27T12:20:00Z",
    "frozen_sha256": "7e6547f419c61a1b466d403a2e120e15cb227b8c48890390932ad5c89e4503e8",
    "horizon": "4h",
    "id": "range-rc1d-4h-20260927T0800Z",
    "label": "range-rc1d-4h-20260927T0800Z - full-window range forecast for [2026-09-27T08:20:00Z, 2026-09-27T12:20:00Z) (99% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-09-27T12:16:58Z",
+   "newer_pending": [
+    "range-rc1d-4h-20260927T1200Z"
+   ],
+   "now_utc": "2026-09-27T12:17:00Z",
    "point_lr": 0.006169584529,
    "points_at_decision_close": {
     "point": 524.5,
@@ -84,7 +90,10 @@
    "horizon": "72h",
    "id": "range-rc1d-72h-20260927T0800Z",
    "label": "range-rc1d-72h-20260927T0800Z - full-window range forecast for [2026-09-27T08:20:00Z, 2026-09-30T08:20:00Z) (5% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-09-27T12:16:58Z",
+   "newer_pending": [
+    "range-rc1d-72h-20260927T1200Z"
+   ],
+   "now_utc": "2026-09-27T12:17:00Z",
    "point_lr": 0.044266162114,
    "points_at_decision_close": {
     "point": 3835.9,
@@ -116,12 +125,12 @@
    "range-rc1d-72h-20260927T1200Z"
   ],
   "outcome": "registered-pending",
-  "reason": "frozen; publication confirmation pending"
+  "reason": "eligible; 0/3 scored"
  },
  "due_decisions": 8,
  "expected_decisions": 8,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-09-27T12:16:58Z",
+ "generated_utc": "2026-09-27T12:17:00Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
@@ -216,7 +225,7 @@
   "release_sha256": "b84c2e2b1470eb9a6561e406f144a716d9ba2775dc0d957d203d9e8149627aeb",
   "repo_revision": "2.17"
  },
- "runs_recorded": 39,
+ "runs_recorded": 42,
  "scored": {
   "24h": {
    "coverage_b0": 0.0,
@@ -241,7 +250,7 @@
    "ineligible": 0,
    "ready": 0,
    "scored": 2,
-   "waiting-maturity": 5,
+   "waiting-maturity": 6,
    "waiting-observations": 0
   },
   "4h": {
@@ -249,7 +258,7 @@
    "ineligible": 0,
    "ready": 0,
    "scored": 6,
-   "waiting-maturity": 1,
+   "waiting-maturity": 2,
    "waiting-observations": 0
   },
   "72h": {
@@ -257,7 +266,7 @@
    "ineligible": 0,
    "ready": 0,
    "scored": 0,
-   "waiting-maturity": 7,
+   "waiting-maturity": 8,
    "waiting-observations": 0
   }
  },
