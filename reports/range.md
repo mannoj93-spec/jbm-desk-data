@@ -1,12 +1,12 @@
 # Range forecasts - status
 
-Generated 2026-09-27T00:19:20Z by reader-12.2.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-27T00:20:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
+Generated 2026-09-27T00:54:30Z by reader-12.2.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-27T04:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
 
 | horizon | state | id | window | valid until | reason |
 |---|---|---|---|---|---|
-| 4h | valid-current | range-rc1d-4h-20260926T2000Z | 2026-09-26T20:20:00Z → 2026-09-27T00:20:00Z | 2026-09-27T00:20:00Z | eligible and current |
-| 24h | valid-current | range-rc1d-24h-20260926T2000Z | 2026-09-26T20:20:00Z → 2026-09-27T20:20:00Z | 2026-09-27T01:15:00Z | eligible and current |
-| 72h | valid-current | range-rc1d-72h-20260926T2000Z | 2026-09-26T20:20:00Z → 2026-09-29T20:20:00Z | 2026-09-27T01:15:00Z | eligible and current |
+| 4h | valid-current | range-rc1d-4h-20260927T0000Z | 2026-09-27T00:25:00Z → 2026-09-27T04:25:00Z | 2026-09-27T04:25:00Z | eligible and current |
+| 24h | valid-current | range-rc1d-24h-20260927T0000Z | 2026-09-27T00:25:00Z → 2026-09-28T00:25:00Z | 2026-09-27T05:15:00Z | eligible and current |
+| 72h | valid-current | range-rc1d-72h-20260927T0000Z | 2026-09-27T00:25:00Z → 2026-09-30T00:25:00Z | 2026-09-27T05:15:00Z | eligible and current |
 
 Current decision 2026-09-27T00:00:00Z: registered-pending (eligible; 0/3 scored). Due production decisions: 5; outcomes: missing 1, registered-pending 4.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
@@ -16,7 +16,7 @@ Prospective scores (RC1D, losses on the registered point; windows overlap within
 
 | horizon | scored | MAE B2 | MAE B0 | skill | coverage B2 | coverage B0 |
 |---|---|---|---|---|---|---|
-| 4h | 3 | 0.36461 | 1.08077 | 66.3% | 67% | 0% |
+| 4h | 4 | 0.46452 | 0.85234 | 45.5% | 50% | 25% |
 | 24h | 0 | — | — | — | — | — |
 | 72h | 0 | — | — | — | — | — |
 
@@ -24,7 +24,7 @@ Scoring pipeline (RC1D):
 
 | horizon | waiting maturity | waiting observations | ready | scored | ineligible |
 |---|---|---|---|---|---|
-| 4h | 2 | 0 | 0 | 3 | 0 |
+| 4h | 1 | 0 | 0 | 4 | 0 |
 | 24h | 5 | 0 | 0 | 0 | 0 |
 | 72h | 5 | 0 | 0 | 0 | 0 |
 
@@ -34,4 +34,4 @@ Scoring pipeline (RC1D):
 | 2026-09-26T08:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-09-26T12:00:00Z | missing | no production attempt or run record (run absent, or it failed before persisting) |
 | 2026-09-26T16:00:00Z | registered-pending | eligible; 1/3 scored |
-| 2026-09-26T20:00:00Z | registered-pending | eligible; 0/3 scored |
+| 2026-09-26T20:00:00Z | registered-pending | eligible; 1/3 scored |
