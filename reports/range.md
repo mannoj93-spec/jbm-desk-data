@@ -1,6 +1,6 @@
 # Range forecasts - status
 
-Generated 2026-09-27T16:14:17Z by reader-12.2.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-27T20:20:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
+Generated 2026-09-27T16:51:17Z by reader-12.2.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-27T20:20:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
 
 | horizon | state | id | window | valid until | reason |
 |---|---|---|---|---|---|
@@ -16,16 +16,16 @@ Prospective scores (RC1D, losses on the registered point; windows overlap within
 
 | horizon | scored | MAE B2 | MAE B0 | skill | coverage B2 | coverage B0 |
 |---|---|---|---|---|---|---|
-| 4h | 7 | 0.36681 | 0.71533 | 48.7% | 71% | 43% |
-| 24h | 2 | 0.24388 | 1.00933 | 75.8% | 100% | 0% |
+| 4h | 8 | 0.38158 | 0.63874 | 40.3% | 75% | 50% |
+| 24h | 3 | 0.17048 | 0.83371 | 79.5% | 100% | 33% |
 | 72h | 0 | — | — | — | — | — |
 
 Scoring pipeline (RC1D):
 
 | horizon | waiting maturity | waiting observations | ready | scored | ineligible |
 |---|---|---|---|---|---|
-| 4h | 2 | 0 | 0 | 7 | 0 |
-| 24h | 7 | 0 | 0 | 2 | 0 |
+| 4h | 1 | 0 | 0 | 8 | 0 |
+| 24h | 6 | 0 | 0 | 3 | 0 |
 | 72h | 9 | 0 | 0 | 0 | 0 |
 
 | decision | outcome | reason |
@@ -33,9 +33,9 @@ Scoring pipeline (RC1D):
 | 2026-09-26T04:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-09-26T08:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-09-26T12:00:00Z | missing | no production attempt or run record (run absent, or it failed before persisting) |
-| 2026-09-26T16:00:00Z | registered-pending | eligible; 1/3 scored |
+| 2026-09-26T16:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-09-26T20:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-09-27T00:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-09-27T04:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-09-27T08:00:00Z | registered-pending | eligible; 1/3 scored |
-| 2026-09-27T12:00:00Z | registered-pending | eligible; 0/3 scored |
+| 2026-09-27T12:00:00Z | registered-pending | eligible; 1/3 scored |
