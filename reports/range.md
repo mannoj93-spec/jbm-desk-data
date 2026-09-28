@@ -1,14 +1,14 @@
 # Range forecasts - status
 
-Generated 2026-09-28T16:16:00.934Z by reader-12.3.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-28T16:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
+Generated 2026-09-28T16:16:03.805Z by reader-12.3.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-28T20:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
 
 | horizon | state | id | window | valid until | reason |
 |---|---|---|---|---|---|
-| 4h | valid-current | range-rc1d-4h-20260928T1200Z | 2026-09-28T12:25:00Z → 2026-09-28T16:25:00Z | 2026-09-28T16:25:00Z | eligible and current |
-| 24h | valid-current | range-rc1d-24h-20260928T1200Z | 2026-09-28T12:25:00Z → 2026-09-29T12:25:00Z | 2026-09-28T17:15:00Z | eligible and current |
-| 72h | valid-current | range-rc1d-72h-20260928T1200Z | 2026-09-28T12:25:00Z → 2026-10-01T12:25:00Z | 2026-09-28T17:15:00Z | eligible and current |
+| 4h | valid-current | range-rc1d-4h-20260928T1600Z | 2026-09-28T16:25:00Z → 2026-09-28T20:25:00Z | 2026-09-28T20:25:00Z | eligible and current |
+| 24h | valid-current | range-rc1d-24h-20260928T1600Z | 2026-09-28T16:25:00Z → 2026-09-29T16:25:00Z | 2026-09-28T21:15:00Z | eligible and current |
+| 72h | valid-current | range-rc1d-72h-20260928T1600Z | 2026-09-28T16:25:00Z → 2026-10-01T16:25:00Z | 2026-09-28T21:15:00Z | eligible and current |
 
-Current decision 2026-09-28T16:00:00Z: registered-pending (frozen; publication confirmation pending). Due production decisions: 15; outcomes: missing 1, registered-pending 14.
+Current decision 2026-09-28T16:00:00Z: registered-pending (eligible; 0/3 scored). Due production decisions: 15; outcomes: missing 1, registered-pending 14.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
