@@ -37,7 +37,7 @@ from pathlib import Path
 
 import range_model as R
 
-VERSION = "contract-12.2.0"            # this module's implementation version
+VERSION = "contract-12.3.0"            # this module's implementation version
 CONTRACT_VERSION = "contract-12.0.0"   # the contract's semantic version: unchanged since 12.0, so contract ids
                                        # (and every registered record) stay valid across implementation fixes
 UTC = dt.timezone.utc
@@ -87,7 +87,20 @@ def canonical(obj) -> bytes:
 
 
 def iso(t: dt.datetime) -> str:
+    """Whole seconds: frozen documents, windows and every stored forecast timestamp (unchanged)."""
     return t.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def iso_ms(t: dt.datetime) -> str:
+    """Millisecond precision for report clocks (`now_utc`, `generated_utc`, 12.3): a report written in the same
+    second as, but after, a confirmation must show that it read after it."""
+    return t.strftime("%Y-%m-%dT%H:%M:%S.") + f"{t.microsecond // 1000:03d}Z"
+
+
+def parse_utc(s: str) -> dt.datetime:
+    """Parse either form (whole seconds or with a fractional part). Raises ValueError/TypeError on anything else."""
+    fmt = "%Y-%m-%dT%H:%M:%S.%fZ" if "." in s else "%Y-%m-%dT%H:%M:%SZ"
+    return dt.datetime.strptime(s, fmt).replace(tzinfo=UTC)
 
 
 def ms(t: dt.datetime) -> int:

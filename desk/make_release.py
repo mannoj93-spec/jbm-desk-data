@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write or check desk/release.json - the one place release identity lives (package 12.2, repo 2.17).
+"""Write or check desk/release.json - the one place release identity lives (package 12.3, repo 2.18).
 
 Identity only: package, commits, contract, module and artifact hashes, calendar, routing, stream start. Verified
 deployment events live in desk/deployments.jsonl (append-only); live operational health in reports/range_status.json.
@@ -50,9 +50,9 @@ def body(desk=HERE, previous=None):
     cal = desk / CALENDAR
     last = [x for x in cal.read_text().splitlines() if x and not x.startswith("#")][-1].split(",")[0]
     return {
-        "package": "crypto-desk 12.2", "repo_revision": "2.17.1",
-        "base_commit": "365ff99239733d26fb2609db79a5884c774dd5ef",
-        "audited_snapshot": "03ab59957933e34c1f97dadbf56498fbe393d6c0 (package 12.1, repo 2.16; overnight production evidence)",
+        "package": "crypto-desk 12.3", "repo_revision": "2.18",
+        "base_commit": "0215ee17d4cf78c650acd901d6bb63f27d657528",
+        "audited_snapshot": "eb776d52a2d66563b6dad188d1b899c4efdf9134 (package 12.2, repo 2.17.1; after PR #19)",
         "contract": C.contract_id("RC1D"), "evaluated_contract": C.contract_id("RC1"),
         "model": {"range_model": "range-11.1.0", "spec_sha256": _sha(desk / "range_model.py")},
         "modules": mods,

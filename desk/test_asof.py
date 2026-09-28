@@ -166,6 +166,74 @@ class TestAsOf(unittest.TestCase):
         self.assertEqual(self.r.read(T(8, 5))["state"], "valid-current")             # did not exist yet at 08:05
 
 
+@unittest.skipUnless(REPO, "needs the repository")
+class TestSubSecondAvailability(unittest.TestCase):
+    """12.3 (repo 2.18): the report clock keeps sub-second precision. Production, Sep 28: the 00:00Z batch was
+    confirmed at 00:21:15.778Z and the status step, evaluated at 00:21:15.000Z (range_job._now dropped the
+    microseconds), reported the 20:00Z batch. Here the fixture's 08:00Z batch, confirmed at 08:15:21.137Z."""
+    CONF = T(8, 15, 21, us=137000)
+
+    def setUp(self):
+        self.r = Repo()
+        (self.r.base / "reports").mkdir()
+
+    def tearDown(self):
+        self.r.close()
+
+    def test_immediately_before_at_and_after(self):
+        self.assertEqual(MS(self.CONF), [p for p in self.r.pubs() if p["attempt"].startswith("2026-09-26T08")][0]["confirmed"])
+        cases = [(T(8, 15, 21), IDS4[0]),                             # the truncated 12.2 clock: genuinely earlier
+                 (self.CONF - dt.timedelta(milliseconds=1), IDS4[0]),  # 1 ms before availability
+                 (self.CONF, IDS8[0]),                                 # at availability
+                 (self.CONF + dt.timedelta(microseconds=500), IDS8[0]),
+                 (T(8, 15, 21, us=900000), IDS8[0])]                   # later in the same second
+        for t, want in cases:
+            with self.subTest(t=t.isoformat()):
+                res = self.r.read(t)
+                self.assertEqual((res["state"], res["id"]), ("valid-current", want))
+                self.assertEqual(res["now_utc"], C.iso_ms(t))
+
+    def test_status_json_and_markdown_agree_after_same_second_confirmation(self):
+        import range_job as J
+        t = T(8, 15, 21, us=900000)
+        st = J.status(self.r.base, t)
+        js = json.loads((self.r.base / "reports/range_status.json").read_text())
+        md = (self.r.base / "reports/range.md").read_text()
+        self.assertEqual(js["generated_utc"], "2026-09-26T08:15:21.900Z")
+        self.assertEqual(js, json.loads(json.dumps(st)))
+        self.assertIn("Generated 2026-09-26T08:15:21.900Z", md)
+        for h, fid in zip(("4h", "24h", "72h"), IDS8):
+            self.assertEqual(js["current"][h]["id"], fid)            # the confirmed batch, not the previous one
+            self.assertIn(f"| {h} | valid-current | {fid} |", md)
+        cd = js["current_decision"]
+        self.assertEqual((cd["decision_utc"], cd["outcome"], cd["reason"]),
+                         ("2026-09-26T08:00:00Z", "registered-pending", "eligible; 0/3 scored"))
+        self.assertLess(RR._t(js["generated_utc"]), RR._t(js["status_expires_utc"]))
+
+    def test_job_clock_keeps_microseconds(self):
+        import range_job as J
+        from unittest import mock
+        fixed = T(8, 15, 21, us=778123)
+
+        class Clock(dt.datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return fixed
+        with mock.patch.object(J.dt, "datetime", Clock):
+            self.assertEqual(J._now(), fixed)
+
+    def test_serialization_round_trip_and_legacy_parse(self):
+        t = T(0, 21, 15, us=778999)
+        self.assertEqual(C.iso_ms(t), "2026-09-26T00:21:15.778Z")
+        self.assertEqual(C.parse_utc(C.iso_ms(t)), T(0, 21, 15, us=778000))
+        self.assertEqual(C.parse_utc("2026-09-26T00:21:15Z"), T(0, 21, 15))       # 12.2 files still parse
+        self.assertEqual(RR._t("2026-09-26T00:21:15.778Z"), T(0, 21, 15, us=778000))
+        for bad in ("2026-09-26 00:21:15", "yesterday"):
+            with self.assertRaises(ValueError):
+                C.parse_utc(bad)
+        self.assertEqual(C.iso(t), "2026-09-26T00:21:15Z")                         # stored timestamps unchanged
+
+
 @unittest.skipUnless(REPO and FX.exists(), "needs the repository and its fixture")
 class TestEligibilityAndValidation(unittest.TestCase):
     """Finding 2: reader and scorer share one eligibility rule; the strict validator uses the canonical window
