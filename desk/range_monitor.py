@@ -11,7 +11,8 @@ Checks (each problem is one line; exit 1 when any exists, 0 when healthy):
   publication  hours since the last eligible publication (confirmed before its window start)
   freshness    reports/range_status.json regenerated within the stale limit
   scoring      eligible forecasts matured more than SCORE_LAG_MIN ago with no score record, per horizon
-  actions      (token only) failed or missing scheduled range.yml runs the repository has no record of
+  actions      (token only) failed scheduled range.yml runs the repository has no record of (run log, attempt
+               log, or - for runs before the run log existed - the deployment log)
 """
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-VERSION = "monitor-12.2.0"
+VERSION = "monitor-12.2.1"
 UTC = dt.timezone.utc
 GRACE_MIN = 75            # a decision is due once its run window (grace) has passed
 LOOKBACK_H = 12            # due decisions checked for failed or absent runs (older ones: info only)
@@ -75,6 +76,7 @@ def check(base, now, actions=None) -> tuple:
     runs = [r for r in _rows(base / "state/range_runs.jsonl") if isinstance(r.get("decision_utc"), str)
             and r.get("event") in ("schedule", "workflow_dispatch")]
     pubs = [p for p in _rows(base / "state/range_publications.jsonl") if p.get("eligible") is True]
+    deploy = _rows(base / "desk/deployments.jsonl")
     release = _json(base / "desk/release.json", {})
     stream_start = _t(release["range_stream_start_utc"]) if isinstance(release.get("range_stream_start_utc"), str) else None
     # runs
@@ -101,8 +103,14 @@ def check(base, now, actions=None) -> tuple:
             seen[key] = "failed before forecasting"
             problems.append(f"runs: decision {key}: run {lr.get('run_id')} produced no attempt ({why})")
         else:
-            seen[key] = "absent"
-            problems.append(f"runs: decision {key}: no attempt and no run record (run absent or failed before persisting)")
+            dep = [r for r in deploy if r.get("decision_utc") == key and r.get("run_id")]
+            if dep:
+                seen[key] = "failed before forecasting (deployment log)"
+                problems.append(f"runs: decision {key}: run {dep[-1]['run_id']} failed before forecasting "
+                                f"({dep[-1].get('failed_stage') or dep[-1].get('event')}; recorded in desk/deployments.jsonl)")
+            else:
+                seen[key] = "absent"
+                problems.append(f"runs: decision {key}: no attempt and no run record (run absent or failed before persisting)")
         d += dt.timedelta(hours=4)
     info["decisions"] = seen
     # publication
@@ -148,6 +156,11 @@ def check(base, now, actions=None) -> tuple:
     # GitHub Actions (optional)
     if actions is not None:
         recorded = {r.get("run_id") for r in runs} | {(a.get("run") or {}).get("run_id") for a in attempts}
+        # A run that failed before the lifecycle log existed is recorded, with its verified cause, in the
+        # append-only deployment log; it is acknowledged there, not re-alarmed on every check (12.2.1).
+        acknowledged = {str(r.get("run_id")) for r in deploy if r.get("run_id")}
+        info["acknowledged_runs"] = sorted(acknowledged & {str(x.get("run_id")) for x in actions})
+        recorded |= acknowledged
         for run in actions:
             if run.get("event") == "schedule" and run.get("conclusion") not in (None, "success") \
                     and str(run.get("run_id")) not in recorded:
