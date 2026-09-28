@@ -50,7 +50,7 @@ def body(desk=HERE, previous=None):
     cal = desk / CALENDAR
     last = [x for x in cal.read_text().splitlines() if x and not x.startswith("#")][-1].split(",")[0]
     return {
-        "package": "crypto-desk 12.2", "repo_revision": "2.17",
+        "package": "crypto-desk 12.2", "repo_revision": "2.17.1",
         "base_commit": "365ff99239733d26fb2609db79a5884c774dd5ef",
         "audited_snapshot": "03ab59957933e34c1f97dadbf56498fbe393d6c0 (package 12.1, repo 2.16; overnight production evidence)",
         "contract": C.contract_id("RC1D"), "evaluated_contract": C.contract_id("RC1"),

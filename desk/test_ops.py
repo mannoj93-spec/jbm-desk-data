@@ -174,6 +174,24 @@ class TestMonitor(unittest.TestCase):
         self.assertEqual([p for p in problems if p.startswith("actions:")],
                          ["actions: range.yml run 555 (2026-09-26T16:02:00Z) concluded failure with no record in the repository"])
 
+    def test_failure_recorded_in_the_deployment_log_is_acknowledged(self):
+        # Sep 26: run 36241307098 failed before the run log existed; every monitor run then failed on it (12.2.1).
+        self.status_at(T(9, 30))
+        run = [{"run_id": "36241307098", "event": "schedule", "created_utc": "2026-09-26T12:14:41Z", "conclusion": "failure"}]
+        problems, _ = MON.check(self.r.base, T(9, 40), run)
+        self.assertEqual(len([p for p in problems if p.startswith("actions:")]), 1)          # unrecorded: alarm
+        (self.r.base / "desk/deployments.jsonl").write_text(json.dumps(
+            {"revision": "2.16", "event": "scheduled run failed before forecasting", "run_id": "36241307098",
+             "decision_utc": "2026-09-26T12:00:00Z"}) + "\n")
+        problems, info = MON.check(self.r.base, T(9, 40), run)
+        self.assertEqual([p for p in problems if p.startswith("actions:")], [])              # recorded: acknowledged
+        self.assertEqual(info["acknowledged_runs"], ["36241307098"])
+        problems, _ = MON.check(self.r.base, T(13, 30), run[:1])
+        self.assertTrue(any("run 36241307098 failed before forecasting" in p for p in problems), problems)
+        run.append({"run_id": "999", "event": "schedule", "created_utc": "x", "conclusion": "failure"})
+        problems, _ = MON.check(self.r.base, T(9, 40), run)
+        self.assertEqual(len([p for p in problems if p.startswith("actions:")]), 1)          # a new one still alarms
+
     def test_monitor_runs_when_forecasting_code_is_broken(self):
         tmp = self.r.base
         shutil.copy(DESK / "range_monitor.py", tmp / "desk/range_monitor.py")
