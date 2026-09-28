@@ -1,17 +1,11 @@
-# Validation record — desk production fixes, revision 2.17
+# Validation record — monitor fix, revision 2.17.1
 
-Validated 2026-09-26 (~13:30–14:10Z) with Python 3.11 and 3.12.3 (container). Earlier blocks below are kept as recorded.
+Validated 2026-09-28 ~00:30Z (Python 3.11, container). Earlier blocks below are kept as recorded.
 
-| Check (2.17) | Result |
+| Check (2.17.1) | Result |
 |---|---|
-| Assessed snapshot / base | Assessment of 12.1 / 2.16, overnight snapshot `03ab599`; built on `365ff99` (main moved only by data commits since the 2.16 merge `3ea238b`) |
-| Production evidence (verified) | Run 36229141684 (schedule, code `03274ce`, a descendant of `3ea238b`): 08:00Z batch frozen 08:15:19.365Z, confirmed 08:15:21.137Z, window 08:25Z, eligible. Run 36241307098 (schedule, code `79ee0e7`): preflight failed on `TestLiveRecords.test_read_and_replay`, refit/forecast/confirm skipped, only reports committed (`c09c861`); no 12:00Z forecast. Both appended to `desk/deployments.jsonl` |
-| Reproductions on 2.16 | 04:30Z and 03:50Z reads return the 08:00Z batch; 00:04Z/01:00Z window accepted; `contract: []` TypeError; old `verify` on 3.12.3: "OUT OF TOLERANCE" at `.rows_file.sha256_uncompressed`, summary max 8.2e-14, exit 0 |
-| Same on 2.17 | Reads at 03:50, 04:13:19.581, 04:13:20, 08:05, 08:15:21, 08:15:22, 09:15, 12:25Z give the record available at that instant; strict checks and eligibility as in CHANGELOG 2.17; `verify` PASS, exit 0; injected failures exit 1/2 |
-| Regression suite | 535 passed (332 + desk 203), 0 skipped; fixtures 25 |
-| Evaluation versions | Identical for all eight designs (`lab/versioning.py`, `365ff99` vs branch) |
-| Registered forecasts | All six production RC1D records validate under the 2.17 strict checks and replay; frozen bytes unchanged |
-| O21 | Replay zero differences; `verify` 275,016 row values + 218 summary values within 1e-9 (3.11: 0.0; 3.12.3: 1.0e-12), 0 structural, 0 categorical |
-| Checksums | `SHA256SUMS` regenerated from its list plus the new code, tests, workflows and fixture |
-| Not observed | Any 2.17 scheduled run, the hourly scorer or the monitor running on GitHub, any production score |
+| Production evidence (verified) | Range stream monitor runs #1–#8 (Sep 26 17:56Z – Sep 27 21:56Z) all failed; run #8 (36353516254) annotation: "actions: range.yml run 36241307098 (2026-09-26T12:14:41Z) concluded failure with no record in the repository". Range forecasts: 8 scheduled runs Sep 26 16:00Z – Sep 27 20:00Z, all `published` in `state/range_runs.jsonl`, all confirmed eligible; no integrity failures |
+| Reproduction | Monitor on the Sep 27 21:56Z repository with that run in the Actions list: the same single error. Without the Actions list: no problems (the repository checks were healthy) |
+| Same on 2.17.1 | CI-like sparse checkout (with `desk/deployments.jsonl`): no problems at 21:56Z; `acknowledged_runs` = [36241307098]; a new unrecorded failed run still alarms; a due decision inside the lookback whose failure is in the deployment log is reported with that cause |
+| Regression suite | 536 passed (desk 204), 0 skipped; fixtures 25; evaluation ids identical |
 
