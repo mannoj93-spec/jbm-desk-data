@@ -20,12 +20,12 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           ref: ${{ github.event.repository.default_branch }}
           # Only run records and code are needed; skip the growing market-data files.
           sparse-checkout: data/runs
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
       - name: Check for a stale, missing, or failing collector
