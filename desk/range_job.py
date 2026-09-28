@@ -43,7 +43,7 @@ import range_model as R         # noqa: E402
 import range_contract as C      # noqa: E402
 import retained as K             # noqa: E402
 
-JOB_VERSION = "range-job-12.2.0"
+JOB_VERSION = "range-job-12.3.0"
 PACKAGE = "crypto-desk 12.2"
 FROZEN_SPEC = "ae6aa254c786d2dd6045fab098c4237dbe8bcc07d6626d20617366d386ff687d"   # O21, Sep 26 2026
 CONTRACT = "RC1D"
@@ -75,7 +75,10 @@ def _say(msg):
 
 
 def _now():
-    return dt.datetime.now(UTC).replace(microsecond=0)
+    # Full precision (12.3). 12.2 dropped the microseconds, so a status written 0.8 s after a confirmation in the
+    # same second read "before" it and showed the previous batch. Stored forecast timestamps are still whole
+    # seconds (`prepared` is truncated where it is frozen; C.iso serializes seconds).
+    return dt.datetime.now(UTC)
 
 
 _ms, _iso, _sha = C.ms, C.iso, C.sha256_json

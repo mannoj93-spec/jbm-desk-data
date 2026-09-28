@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""range_monitor — health check of the desk's range stream (crypto-desk 12.2, repo 2.17).
+"""range_monitor — health check of the desk's range stream (crypto-desk 12.3, repo 2.18).
 
 Stdlib only and independent of the forecasting modules (it never imports them), so it keeps working when
 the forecast test suite fails. Read-only: it inspects the repository's own records and, when a token is
@@ -10,9 +10,23 @@ Checks (each problem is one line; exit 1 when any exists, 0 when healthy):
                failed (lifecycle or attempt log, with its stage and reason) or absent (no record at all)
   publication  hours since the last eligible publication (confirmed before its window start)
   freshness    reports/range_status.json regenerated within the stale limit
+  current      (12.3) what the status file says is current, re-checked on the monitor's own clock:
+               - integrity-failed: always a problem (no grace);
+               - valid-current: a problem once the monitor clock reaches its valid_until_utc (a cached "valid"
+                 never implies health);
+               - missing, unavailable, ineligible, stale, unregistered (anything else): a transition, reported
+                 in info only, while the monitor clock is inside the run window (GRACE_MIN after the 4H
+                 boundary) of the interval the status was generated in; otherwise persistent, a problem;
+               - a status past its status_expires_utc says nothing current: a problem (regenerate it).
   scoring      eligible forecasts matured more than SCORE_LAG_MIN ago with no score record, per horizon
   actions      (token only) failed scheduled range.yml runs the repository has no record of (run log, attempt
-               log, or - for runs before the run log existed - the deployment log)
+               log, or - for runs before the run log existed - the deployment log). Incident lifetime (12.3):
+               an unrecorded failure is ACTIVE while it is inside the LOOKBACK_H window (the same window as the
+               runs check) or while no later scheduled run has succeeded (an ongoing outage); otherwise it is
+               HISTORICAL: kept in info["historical_failures"], not a problem. A failed latest scheduled run is
+               a problem whatever the logs say (acknowledgment never hides an ongoing outage).
+
+INPUTS lists every path read; range-monitor.yml's sparse checkout must cover each (test_ops checks it).
 """
 from __future__ import annotations
 
@@ -23,7 +37,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-VERSION = "monitor-12.2.1"
+VERSION = "monitor-12.3.0"
 UTC = dt.timezone.utc
 GRACE_MIN = 75            # a decision is due once its run window (grace) has passed
 LOOKBACK_H = 12            # due decisions checked for failed or absent runs (older ones: info only)
@@ -31,10 +45,23 @@ PUBLICATION_STALE_H = 8.5  # two missed decisions plus grace
 STATUS_STALE_MIN = 150     # hourly scoring refreshes the status; 2.5 h without it is stale
 SCORE_LAG_MIN = 150        # a matured, eligible forecast unscored for this long is backlog
 MATURITY_MIN = 5
+VALID = "valid-current"
+INPUTS = ("state/range_attempts.jsonl", "state/range_runs.jsonl", "state/range_publications.jsonl",
+          "state/forecast_manifest.json", "desk/deployments.jsonl", "desk/release.json",
+          "reports/range_status.json", "registry/scores.jsonl")
 
 
 def _t(s):
-    return dt.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    """Whole seconds or fractional (12.3 status clocks carry milliseconds). Raises ValueError/TypeError."""
+    fmt = "%Y-%m-%dT%H:%M:%S.%fZ" if "." in s else "%Y-%m-%dT%H:%M:%SZ"
+    return dt.datetime.strptime(s, fmt).replace(tzinfo=UTC)
+
+
+def _tt(s):
+    try:
+        return _t(s)
+    except (TypeError, ValueError):
+        return None
 
 
 def _iso(t):
@@ -124,16 +151,15 @@ def check(base, now, actions=None) -> tuple:
         problems.append("publication: no eligible publication recorded since the stream started")
     # freshness of the status file
     st = _json(base / "reports/range_status.json", {})
-    gen = st.get("generated_utc") if isinstance(st, dict) else None
-    if not isinstance(gen, str):
+    gen = _tt(st.get("generated_utc")) if isinstance(st, dict) else None
+    if gen is None:
         problems.append("freshness: reports/range_status.json missing or malformed")
     else:
-        age_m = (now - _t(gen)).total_seconds() / 60
+        age_m = (now - gen).total_seconds() / 60
         info["status_age_min"] = round(age_m, 1)
         if age_m > STATUS_STALE_MIN:
-            problems.append(f"freshness: reports/range_status.json generated {gen} ({age_m:.0f} min ago)")
-        cur = st.get("current") if isinstance(st.get("current"), dict) else {}
-        info["current_states"] = {h: (c.get("state") if isinstance(c, dict) else None) for h, c in cur.items()}
+            problems.append(f"freshness: reports/range_status.json generated {st['generated_utc']} ({age_m:.0f} min ago)")
+        problems += _current(st, gen, now, info)
     # scoring backlog (eligible publications only; the scorer decides scorability)
     manifest = _json(base / "state/forecast_manifest.json", {})
     scores = {r.get("id") for r in _rows(base / "registry/scores.jsonl")}
@@ -155,18 +181,74 @@ def check(base, now, actions=None) -> tuple:
         problems.append(f"scoring: {len(ids)} matured {h} forecast(s) unscored > {SCORE_LAG_MIN} min: {', '.join(sorted(ids)[:4])}")
     # GitHub Actions (optional)
     if actions is not None:
-        recorded = {r.get("run_id") for r in runs} | {(a.get("run") or {}).get("run_id") for a in attempts}
-        # A run that failed before the lifecycle log existed is recorded, with its verified cause, in the
-        # append-only deployment log; it is acknowledged there, not re-alarmed on every check (12.2.1).
-        acknowledged = {str(r.get("run_id")) for r in deploy if r.get("run_id")}
-        info["acknowledged_runs"] = sorted(acknowledged & {str(x.get("run_id")) for x in actions})
-        recorded |= acknowledged
-        for run in actions:
-            if run.get("event") == "schedule" and run.get("conclusion") not in (None, "success") \
-                    and str(run.get("run_id")) not in recorded:
-                problems.append(f"actions: range.yml run {run.get('run_id')} ({run.get('created_utc')}) concluded "
-                                f"{run.get('conclusion')} with no record in the repository")
+        problems += _actions(actions, runs, attempts, deploy, now, info)
     return problems, info
+
+
+def _current(st, gen, now, info):
+    """Current availability from the status file, judged on the monitor's clock (see the module docstring)."""
+    out, states = [], {}
+    cur = st.get("current")
+    if not isinstance(cur, dict) or not cur:
+        return ["current: reports/range_status.json has no current forecasts"]
+    exp = _tt(st.get("status_expires_utc"))
+    if exp is None or now >= exp:
+        out.append(f"current: status expired at {st.get('status_expires_utc')} (monitor clock {_iso(now)}); it cannot "
+                   "say what is current - regenerate it (range_job.py status)")
+    b = boundary(gen)
+    transition = now < b + dt.timedelta(minutes=GRACE_MIN)       # monitor clock inside the generating interval's run window
+    for h, c in sorted(cur.items()):
+        c = c if isinstance(c, dict) else {}
+        state, fid, why = c.get("state"), c.get("id"), c.get("reason") or ""
+        states[h] = state
+        if state == "integrity-failed":
+            out.append(f"current: {h} integrity-failed ({fid or 'no id'}): {why}".rstrip(": "))
+        elif state == VALID:
+            vu = _tt(c.get("valid_until_utc"))
+            if vu is None or now >= vu:
+                out.append(f"current: {h} {fid} was valid-current at {st.get('generated_utc')} but expired at "
+                           f"{c.get('valid_until_utc')} on the monitor clock")
+        elif transition:
+            info.setdefault("current_transition", {})[h] = state
+        else:
+            out.append(f"current: {h} {state} ({fid or 'no id'}) persists past the run window of {_iso(b)}: {why}".rstrip(": "))
+    info["current_states"] = states
+    return out
+
+
+def _actions(actions, runs, attempts, deploy, now, info):
+    """Failed scheduled range.yml runs with no record in the repository: active vs historical (module docstring)."""
+    out = []
+    recorded = {str(r.get("run_id")) for r in runs} | {str((a.get("run") or {}).get("run_id")) for a in attempts}
+    # A run that failed before the lifecycle log existed is recorded, with its verified cause, in the
+    # append-only deployment log; it is acknowledged there, not re-alarmed on every check (12.2.1).
+    acknowledged = {str(r.get("run_id")) for r in deploy if r.get("run_id")}
+    info["acknowledged_runs"] = sorted(acknowledged & {str(x.get("run_id")) for x in actions})
+    recorded |= acknowledged
+    sched = [r for r in actions if r.get("event") == "schedule" and r.get("conclusion") is not None]
+    sched.sort(key=lambda r: (_tt(r.get("created_utc")) or dt.datetime.min.replace(tzinfo=UTC), str(r.get("run_id"))))
+    successes = [_tt(r.get("created_utc")) for r in sched if r.get("conclusion") == "success"]
+    window = now - dt.timedelta(hours=LOOKBACK_H)
+    historical = []
+    for run in sched:
+        if run.get("conclusion") == "success" or str(run.get("run_id")) in recorded:
+            continue
+        t = _tt(run.get("created_utc"))
+        recovered = t is not None and any(s is not None and s > t for s in successes)
+        if t is not None and t < window and recovered:
+            historical.append(str(run.get("run_id")))
+            continue
+        out.append(f"actions: range.yml run {run.get('run_id')} ({run.get('created_utc')}) concluded "
+                   f"{run.get('conclusion')} with no record in the repository"
+                   + ("" if recovered else " (no later scheduled run has succeeded)"))
+    info["historical_failures"] = historical
+    if sched and sched[-1].get("conclusion") != "success":
+        last = sched[-1]
+        info["latest_scheduled_run"] = {"run_id": str(last.get("run_id")), "conclusion": last.get("conclusion")}
+        if str(last.get("run_id")) in recorded:            # recorded or acknowledged, but still the latest outcome
+            out.append(f"actions: the latest scheduled range.yml run {last.get('run_id')} ({last.get('created_utc')}) "
+                       f"concluded {last.get('conclusion')} (recorded; the stream has not recovered since)")
+    return out
 
 
 def fetch_actions(repo, token, opener=None):
@@ -186,7 +268,7 @@ def fetch_actions(repo, token, opener=None):
 
 def main():
     base = Path(os.environ.get("RANGE_BASE", Path(__file__).resolve().parent.parent))
-    now = dt.datetime.now(UTC).replace(microsecond=0)
+    now = dt.datetime.now(UTC)
     actions = None
     if os.environ.get("GITHUB_TOKEN") and os.environ.get("GITHUB_REPOSITORY"):
         actions = fetch_actions(os.environ["GITHUB_REPOSITORY"], os.environ["GITHUB_TOKEN"])

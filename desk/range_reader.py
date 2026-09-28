@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """range_reader — the deterministic contract for reading the desk's registered range forecasts.
 
-Version reader-12.2.0 (crypto-desk 12.2, repo 2.17). Stdlib only. Used by range_job.py (to write
+Version reader-12.3.0 (crypto-desk 12.3, repo 2.18). Stdlib only. Used by range_job.py (to write
 reports/range_status.json) and by a desk thread (on a clone, or through that JSON).
 
 read_current(base, now, horizon) is an AS-OF read: it resolves the manifest - never raw registry/ files - and
@@ -40,7 +40,7 @@ for p in (str(DESK), str(DESK.parent)):
 import range_contract as C      # noqa: E402
 import range_ops as OPS          # noqa: E402
 
-VERSION = "reader-12.2.0"
+VERSION = "reader-12.3.0"
 UTC = dt.timezone.utc
 PREFIX = "range-rc1d-"
 LEGACY = "range-b2-"
@@ -87,7 +87,7 @@ def expiry(decision: dt.datetime, end: dt.datetime) -> dt.datetime:
 
 
 def _t(s):
-    return dt.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)
+    return C.parse_utc(s)          # whole seconds or fractional (12.3 report clocks carry milliseconds)
 
 
 def boundary(now):
@@ -128,7 +128,7 @@ def read_current(base, now: dt.datetime, horizon: str, contract: str | None = No
         sys.path.append(str(base))
     contract = contract or C.contract_id("RC1D")
     now_ms = C.ms(now)
-    out = {"reader": VERSION, "horizon": horizon, "now_utc": C.iso(now), "contract": contract, "id": None,
+    out = {"reader": VERSION, "horizon": horizon, "now_utc": C.iso_ms(now), "contract": contract, "id": None,
            "remaining": None}
     try:
         manifest = _read_json(base / "state/forecast_manifest.json", {})
@@ -187,7 +187,7 @@ def read_current(base, now: dt.datetime, horizon: str, contract: str | None = No
         if state != "eligible":
             return _timed(dict(res, state="ineligible", reason=why), now)
         return revalidate(dict(res, state="valid-current", reason="eligible and current"), now)
-    why = f"no {PREFIX}* forecast available at {C.iso(now)}"
+    why = f"no {PREFIX}* forecast available at {C.iso_ms(now)}"
     if pending:
         why += f" ({', '.join(pending)} registered, publication not yet confirmed)"
     legacy = sorted(fid for fid in manifest if isinstance(fid, str) and fid.startswith(f"{LEGACY}{horizon}-"))
@@ -200,7 +200,7 @@ def _timed(res, now):
     """Time-dependent fields, recomputed against the consumer's clock."""
     start, end = _t(res["start_utc"]), _t(res["end_utc"])
     elapsed = min(1.0, max(0.0, (now - start).total_seconds() / (end - start).total_seconds()))
-    return dict(res, now_utc=C.iso(now), elapsed_fraction=round(elapsed, 4))
+    return dict(res, now_utc=C.iso_ms(now), elapsed_fraction=round(elapsed, 4))
 
 
 def revalidate(res: dict, now: dt.datetime) -> dict:
@@ -408,7 +408,7 @@ def status(base, now: dt.datetime) -> dict:
     scoring = scoring_states(base, now, docs, scores, problems)
     valid_untils = [_t(c["valid_until_utc"]) for c in current.values() if c.get("state") == "valid-current"]
     expires = min(valid_untils + [latest + dt.timedelta(hours=4, minutes=GRACE_MIN)])
-    return {"generated_utc": C.iso(now), "status_expires_utc": C.iso(expires),
+    return {"generated_utc": C.iso_ms(now), "status_expires_utc": C.iso(expires),
             "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot "
                               "tell you what is current; before then, re-check every current[h] on your own clock with "
                               "range_reader.revalidate (valid only while now < valid_until_utc).",
@@ -468,5 +468,5 @@ def markdown(st: dict) -> str:
 
 if __name__ == "__main__":
     base = Path(sys.argv[1]) if len(sys.argv) > 1 else DESK.parent
-    now = _t(sys.argv[2]) if len(sys.argv) > 2 else dt.datetime.now(UTC).replace(microsecond=0)
+    now = _t(sys.argv[2]) if len(sys.argv) > 2 else dt.datetime.now(UTC)
     print(json.dumps({h: read_current(base, now, h) for h in HORIZONS}, indent=1))

@@ -350,8 +350,11 @@ class TestCalendarReplay(Base):
 @unittest.skipUnless(REPO, "needs the repository")
 class TestLiveRecords(unittest.TestCase):
     """The three registered 04:00Z forecasts stay authoritative and replayable (ID-specific checks on the
-    production records). Time-dependent reads run on the immutable fixture in test_asof.py (12.2): reading the
-    growing production registry "as of" a time was what broke the 12:00Z preflight on Sep 26."""
+    production records). Time-dependent reads run on the immutable fixture in test_asof.py (12.2).
+    12.3: production scores are validated as they stand, whatever their number. The 2.17 version scored a copy of
+    production at a synthetic future time and required new rows, so it failed as soon as the real scorer had
+    scored all three (the 72h window matures Sep 29 04:25Z). Scoring behaviour from an explicit initial state
+    (unscored, partial, full, repeated, an additional batch) is tested on the fixture in test_ops.TestScoringStates."""
     IDS = ["range-rc1d-4h-20260926T0400Z", "range-rc1d-24h-20260926T0400Z", "range-rc1d-72h-20260926T0400Z"]
 
     def test_read_and_replay(self):
@@ -363,17 +366,31 @@ class TestLiveRecords(unittest.TestCase):
             self.assertEqual(hashlib.sha256((base / m[fid]["frozen"]).read_bytes()).hexdigest(), m[fid]["sha256"])
             self.assertEqual(C.validate_rc1d(json.loads((base / m[fid]["frozen"]).read_bytes()), fid, m[fid]), [])
             self.assertEqual(J.replay(fid, base=base)["id"], fid)
-        # scoring path on a disposable copy (synthetic 1m bars; real scoring needs the matured windows)
-        import scoring
-        tmp = Path(tempfile.mkdtemp())
-        for d in ("registry", "state"):
-            shutil.copytree(base / d, tmp / d)
-        fetch = lambda s, e: [(t, 101.0, 99.0, 100.0) for t in range(s, e, 60_000)]   # noqa: E731
-        _, new, _, _ = scoring.score_registry(tmp, ms(T(12, 0, d=29)), "test", fetch=fetch)
-        got = {r["id"]: r for r in new if r["id"] in self.IDS}
-        self.assertEqual({r["status"] for r in got.values()}, {"scored"})
-        self.assertEqual({r["events"][0]["loss_basis"] for r in got.values()}, {"point (desk/range_contract.py)"})
-        shutil.rmtree(tmp)
+
+    def test_existing_scores_are_complete_and_unique(self):
+        """Every production score of these records, if any, is complete, matches its frozen record and its retained
+        evidence, and is unique by (id, forecast hash). Zero, some or all may be scored: no new rows are required."""
+        base = DESK.parent
+        m = json.loads((base / "state/forecast_manifest.json").read_text())
+        path = base / "registry/scores.jsonl"
+        if not all(i in m for i in self.IDS) or not path.exists():
+            self.skipTest("checkout without the Sep 26 04:00Z registrations or scores")
+        rows = [json.loads(x) for x in path.read_text().splitlines() if x.strip()]
+        keys = [(r.get("id"), r.get("forecast_sha256")) for r in rows]
+        self.assertEqual(len(keys), len(set(keys)), "duplicate score rows")
+        for r in (r for r in rows if r.get("id") in self.IDS):
+            with self.subTest(id=r["id"]):
+                doc = json.loads((base / m[r["id"]]["frozen"]).read_bytes())
+                self.assertEqual(r["status"], "scored")
+                self.assertEqual(r["forecast_sha256"], m[r["id"]]["sha256"])
+                self.assertEqual((r["start"], r["horizon"]), (ms(RR._t(doc["start_utc"])), ms(RR._t(doc["horizon_utc"]))))
+                self.assertEqual(r["publication"]["attempt"], m[r["id"]]["attempt"])
+                self.assertGreaterEqual(r["scored"], r["horizon"])
+                self.assertEqual({e["loss_basis"] for e in r["events"]}, {"point (desk/range_contract.py)"})
+                ev = json.loads((base / r["evidence"]).read_text())
+                import scoring
+                self.assertEqual(scoring.digest(ev), r["evidence_sha256"])
+                self.assertEqual(ev["forecast_sha256"], r["forecast_sha256"])
 
 
 @unittest.skipUnless(REPO, "needs the repository")
