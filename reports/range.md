@@ -1,6 +1,6 @@
 # Range forecasts - status
 
-Generated 2026-09-29T11:54:18.526Z by reader-12.3.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-29T12:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
+Generated 2026-09-29T12:18:57.622Z by reader-12.3.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-29T12:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
 
 | horizon | state | id | window | valid until | reason |
 |---|---|---|---|---|---|
@@ -8,7 +8,7 @@ Generated 2026-09-29T11:54:18.526Z by reader-12.3.0; contract `RC1D/contract-12.
 | 24h | valid-current | range-rc1d-24h-20260929T0800Z | 2026-09-29T08:25:00Z → 2026-09-30T08:25:00Z | 2026-09-29T13:15:00Z | eligible and current |
 | 72h | valid-current | range-rc1d-72h-20260929T0800Z | 2026-09-29T08:25:00Z → 2026-10-02T08:25:00Z | 2026-09-29T13:15:00Z | eligible and current |
 
-Due production decisions: 20; outcomes: failed 1, missing 1, registered-pending 16, scored 2.
+Current decision 2026-09-29T12:00:00Z: registered-pending (frozen; publication confirmation pending). Due production decisions: 20; outcomes: failed 1, missing 1, registered-pending 16, scored 2.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
@@ -24,9 +24,9 @@ Scoring pipeline (RC1D):
 
 | horizon | waiting maturity | waiting observations | ready | scored | ineligible |
 |---|---|---|---|---|---|
-| 4h | 1 | 0 | 0 | 17 | 0 |
-| 24h | 5 | 0 | 0 | 13 | 0 |
-| 72h | 16 | 0 | 0 | 2 | 0 |
+| 4h | 2 | 0 | 0 | 17 | 0 |
+| 24h | 6 | 0 | 0 | 13 | 0 |
+| 72h | 17 | 0 | 0 | 2 | 0 |
 
 | decision | outcome | reason |
 |---|---|---|
