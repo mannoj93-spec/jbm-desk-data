@@ -1,6 +1,6 @@
 # Range forecasts - status
 
-Generated 2026-09-29T03:53:53.229Z by reader-12.3.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-29T04:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
+Generated 2026-09-29T04:13:58.268Z by reader-12.3.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-09-29T04:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).
 
 | horizon | state | id | window | valid until | reason |
 |---|---|---|---|---|---|
@@ -8,7 +8,7 @@ Generated 2026-09-29T03:53:53.229Z by reader-12.3.0; contract `RC1D/contract-12.
 | 24h | valid-current | range-rc1d-24h-20260929T0000Z | 2026-09-29T00:25:00Z → 2026-09-30T00:25:00Z | 2026-09-29T05:15:00Z | eligible and current |
 | 72h | valid-current | range-rc1d-72h-20260929T0000Z | 2026-09-29T00:25:00Z → 2026-10-02T00:25:00Z | 2026-09-29T05:15:00Z | eligible and current |
 
-Due production decisions: 18; outcomes: missing 1, registered-pending 17.
+Current decision 2026-09-29T04:00:00Z: failed (run 36520641829: preflight failure: release check: OK; FAIL: test_pinned_bytes_detect_revision (__main__.TestProvenanceAndAvailability.test_pinned_bytes_detect_revision)). Due production decisions: 18; outcomes: missing 1, registered-pending 17.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
