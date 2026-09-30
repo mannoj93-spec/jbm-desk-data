@@ -35,11 +35,33 @@ def rows_from(text):
     return list(csv.DictReader(io.StringIO(text)))
 
 
+ZIP_TIME = (2026, 9, 20, 0, 0, 0)          # fixed member timestamp (12.4): no wall clock in synthetic archives
+
+
 def zip_of(text, name="x.csv"):
+    """A deterministic synthetic provider archive: identical text -> identical bytes, whatever the clock.
+    12.3 used ZipFile.writestr(name, ...), which stamps the member with the current time (2-second DOS
+    resolution); two archives of the same text built across a boundary differed, and the pin test read
+    `revised` (production preflight, Sep 29 04:13Z, run 36520641829)."""
+    info = zipfile.ZipInfo(name, date_time=ZIP_TIME)
+    info.compress_type = zipfile.ZIP_DEFLATED
+    info.create_system = 3                              # fixed, whatever the host OS
+    info.external_attr = 0o100644 << 16
     b = io.BytesIO()
     with zipfile.ZipFile(b, "w") as z:
-        z.writestr(name, text)
+        z.writestr(info, text.encode(), compress_type=zipfile.ZIP_DEFLATED, compresslevel=6)
     return b.getvalue()
+
+
+_FIRST_BYTES = None
+
+
+def serve_bytes():
+    """Bytes of the default fixture, built once at first use (under whatever clock) and compared later."""
+    global _FIRST_BYTES
+    if _FIRST_BYTES is None:
+        _FIRST_BYTES = zip_of(day_text())
+    return _FIRST_BYTES
 
 
 def serve(text, headers=None, checksum="auto"):
@@ -288,6 +310,22 @@ class TestProvenanceAndAvailability(unittest.TestCase):
         self.assertEqual(A.load_metrics(D, opener=serve(day_text()), pin=pin)[0], "ok")
         st2, rows2, rep2 = A.load_metrics(D, opener=serve(day_text(oi="101")), pin=pin)
         self.assertEqual(st2, "revised"); self.assertEqual(rep2["prov"]["pin_status"], "revised")
+
+    def test_synthetic_archives_are_clock_independent(self):
+        """12.4: the same text gives the same bytes across a 2-second ZIP timestamp boundary (and any clock);
+        changed content still changes the bytes, so a pin still reads `revised` for a real revision."""
+        from unittest import mock
+        for t in (1790654398.0, 1790654400.0, 1790654401.9, 1.0e9):
+            with mock.patch("time.time", return_value=t), mock.patch("time.localtime", return_value=__import__("time").gmtime(t)):
+                with self.subTest(clock=t):
+                    self.assertEqual(zip_of(day_text()), zip_of(day_text()))
+                    self.assertEqual(hashlib.sha256(zip_of(day_text())).hexdigest(), hashlib.sha256(serve_bytes()).hexdigest())
+        self.assertNotEqual(zip_of(day_text()), zip_of(day_text(oi="101")))
+        st, _, rep = A.load_metrics(D, opener=serve(day_text()))
+        pin = A.manifest_entry(st, rep)
+        with mock.patch("time.time", return_value=1790654401.9):
+            self.assertEqual(A.load_metrics(D, opener=serve(day_text()), pin=pin)[0], "ok")
+            self.assertEqual(A.load_metrics(D, opener=serve(day_text(oi="101")), pin=pin)[0], "revised")
 
     def test_four_times_are_distinct(self):
         _, out, _ = A.inspect_metrics(rows_from(HDR + "\n" + ROW_1200 + "\n"), D)

@@ -126,6 +126,9 @@ class TestTransaction(Base):
             self.assertEqual(doc["start_utc"], "2026-09-26T00:15:00Z")          # 00:07:05 + 5 min -> 00:15
             self.assertEqual(doc["contract"], C.contract_id("RC1D"))
             self.assertIn("point", doc["events"][0])
+            # 12.4: package identity comes from the release manifest and shares the job's release family
+            self.assertEqual(doc["package"], json.loads((DESK / "release.json").read_text())["package"])
+            self.assertEqual(J.family(doc["package"]), J.family(doc["code_version"].split(" / ")[-1]))
         self.assertEqual(self.sources(), sorted(f"{i}.json" for i in ids))
 
     def test_reproduced_timing_cannot_strand_files(self):

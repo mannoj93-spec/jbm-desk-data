@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write or check desk/release.json - the one place release identity lives (package 12.3, repo 2.18).
+"""Write or check desk/release.json - the one place release identity lives (package 12.4, repo 2.19).
 
 Identity only: package, commits, contract, module and artifact hashes, calendar, routing, stream start. Verified
 deployment events live in desk/deployments.jsonl (append-only); live operational health in reports/range_status.json.
@@ -50,7 +50,7 @@ def body(desk=HERE, previous=None):
     cal = desk / CALENDAR
     last = [x for x in cal.read_text().splitlines() if x and not x.startswith("#")][-1].split(",")[0]
     return {
-        "package": "crypto-desk 12.3", "repo_revision": "2.18",
+        "package": "crypto-desk 12.4", "repo_revision": "2.19",
         "base_commit": "0215ee17d4cf78c650acd901d6bb63f27d657528",
         "audited_snapshot": "eb776d52a2d66563b6dad188d1b899c4efdf9134 (package 12.2, repo 2.17.1; after PR #19)",
         "contract": C.contract_id("RC1D"), "evaluated_contract": C.contract_id("RC1"),
@@ -79,6 +79,31 @@ def write(extra=None):
     doc["release_sha256"] = hashlib.sha256(json.dumps({k: doc[k] for k in FIELDS}, sort_keys=True).encode()).hexdigest()
     path.write_text(json.dumps(doc, indent=1, sort_keys=True) + "\n")
     print(f"release.json written: {doc['release_sha256'][:12]}")
+
+
+def _family(v):
+    import re
+    m = re.search(r"(\d+)\.(\d+)", v or "")
+    return f"{m.group(1)}.{m.group(2)}" if m else None
+
+
+def _generation_identity(folder, doc) -> list:
+    """12.4: the forecast job records the package from this manifest, never a literal of its own, and its version
+    belongs to the same release family - so a release cannot ship a job that labels new forecasts with an older
+    package (12.3 did: `PACKAGE = "crypto-desk 12.2"` beside range-job-12.3.0)."""
+    import ast
+    job = Path(folder) / "range_job.py"
+    if not job.exists():
+        return []                                           # the skill folder carries no job
+    out = []
+    tree = ast.parse(job.read_text())
+    for node in tree.body:
+        if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == "PACKAGE" for t in node.targets) \
+                and isinstance(node.value, ast.Constant):
+            out.append("range_job.py: PACKAGE is a literal; it must be read from release.json")
+    if _family(_version(job)) != _family(doc.get("package")):
+        out.append(f"range_job.py: {_version(job)} is not in the {doc.get('package')} release family")
+    return out
 
 
 def check(folder=HERE) -> list:
@@ -119,6 +144,7 @@ def check(folder=HERE) -> list:
                 assert isinstance(row, dict) and row.get("revision") and row.get("event")
             except (ValueError, AssertionError):
                 problems.append(f"deployments.jsonl line {i}: not a revision/event object")
+    problems += _generation_identity(folder, doc)
     want = hashlib.sha256(json.dumps({k: doc.get(k) for k in FIELDS}, sort_keys=True).encode()).hexdigest()
     if doc.get("release_sha256") != want:
         problems.append("release_sha256 does not match the manifest body")

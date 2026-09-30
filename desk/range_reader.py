@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """range_reader — the deterministic contract for reading the desk's registered range forecasts.
 
-Version reader-12.3.0 (crypto-desk 12.3, repo 2.18). Stdlib only. Used by range_job.py (to write
+Version reader-12.4.0 (crypto-desk 12.4, repo 2.19). Stdlib only. Used by range_job.py (to write
 reports/range_status.json) and by a desk thread (on a clone, or through that JSON).
 
 read_current(base, now, horizon) is an AS-OF read: it resolves the manifest - never raw registry/ files - and
@@ -29,6 +29,7 @@ from __future__ import annotations
 import datetime as dt
 import hashlib
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -40,7 +41,7 @@ for p in (str(DESK), str(DESK.parent)):
 import range_contract as C      # noqa: E402
 import range_ops as OPS          # noqa: E402
 
-VERSION = "reader-12.3.0"
+VERSION = "reader-12.4.0"
 UTC = dt.timezone.utc
 PREFIX = "range-rc1d-"
 LEGACY = "range-b2-"
@@ -49,6 +50,15 @@ GRACE_MIN = 75            # after a 4H close, the previous decision's forecast s
 HORIZONS = ("4h", "24h", "72h")
 MATURITY_BUFFER_MIN = 5   # scoring.MATURITY_BUFFER_MS: a window is scorable this long after it ends
 SCORING_LOG = "state/range_scoring.jsonl"
+SCORE_OVERDUE_MIN = 150   # the hourly scorer runs at :41; unscored this long after maturity is overdue (= the monitor)
+# RC1D-EVAL-1 (dated Sep 30 2026, before any support claim): the uncertainty method for registered RC1D forecasts.
+# Paired loss differential d = |ln-range error| of B2 minus B0, one per decision, in decision order; a moving-block
+# bootstrap of mean(d) with blocks of 42 decisions (7 days of 4H decisions - O21's block, runbook E2), 2,000
+# resamples, fixed seed. Reported only with >= 10 complete blocks per horizon; below that "unavailable". It
+# changes no loss, model, threshold, evaluation id or promotion criterion, and is not a support claim by itself.
+EVAL_VERSION = "rc1d-eval-1 (2026-09-30)"
+EVAL_BLOCK, EVAL_MIN_BLOCKS, EVAL_RESAMPLES, EVAL_SEED = 42, 10, 2000, 20260930
+PROVENANCE = "desk/provenance_corrections.jsonl"
 
 
 def _read_json(path, default):
@@ -276,16 +286,19 @@ def _scoring_log(base):
 
 
 def scoring_states(base, now, docs, scores, problems) -> dict:
-    """Per-horizon scoring pipeline states for registered RC1D forecasts available at `now`:
-    waiting-maturity (window not ended + buffer), waiting-observations (matured; the last scoring attempt
-    found observations incomplete, conflicting or unavailable), ready (matured, eligible, not yet attempted
-    or attempt pending), scored, ineligible (never scored: late registration or publication, unconfirmed,
-    integrity failure). `backlog` = ready + waiting-observations, oldest end first; a mature 4h backlog is
-    shown on its own, never hidden behind an unfinished 72h window."""
+    """Per-horizon scoring states for registered RC1D forecasts available at `now` (12.4):
+      waiting-maturity  window not ended + the 5-minute buffer - not a backlog
+      ready             matured under SCORE_OVERDUE_MIN ago, not yet attempted: the next scheduled (hourly)
+                        scorer takes it - not a backlog
+      overdue           matured longer ago than that with no attempt: the scorer is not running (operational)
+      scoring-failed    the last attempt could not score it (observations incomplete, conflicting or
+                        unavailable); retried hourly, never scored as a loss (operational until it scores)
+      scored / ineligible (late registration or publication, unconfirmed, integrity failure: never scored)
+    `backlog` = overdue + scoring-failed, oldest first; a mature 4h problem is never hidden behind a 72h window."""
     now_ms = C.ms(now)
     log = _scoring_log(base)
-    out = {h: {"waiting-maturity": 0, "waiting-observations": 0, "ready": 0, "scored": 0, "ineligible": 0,
-               "backlog": []} for h in HORIZONS}
+    keys = ("waiting-maturity", "ready", "overdue", "scoring-failed", "scored", "ineligible")
+    out = {h: dict({k: 0 for k in keys}, backlog=[]) for h in HORIZONS}
     for fid, item in sorted(docs.items()):
         h = fid[len(PREFIX):].split("-")[0]
         if h not in out:
@@ -303,21 +316,114 @@ def scoring_states(base, now, docs, scores, problems) -> dict:
         except (KeyError, TypeError, ValueError) as exc:
             problems.append(f"scoring state {fid}: {exc}")
             continue
+        mature = end + MATURITY_BUFFER_MIN * 60_000
         if sc.get("status") == "scored":
             state = "scored"
         elif sc.get("status") or elig in ("late-registration", "late-publication") or \
                 (elig == "unconfirmed" and end <= now_ms):
             state = "ineligible"
-        elif end + MATURITY_BUFFER_MIN * 60_000 > now_ms:
+        elif mature > now_ms:
             state = "waiting-maturity"
         elif (log.get(fid) or {}).get("outcome") == "unscorable":
-            state = "waiting-observations"
+            state = "scoring-failed"
+        elif now_ms - mature > SCORE_OVERDUE_MIN * 60_000:
+            state = "overdue"
         else:
             state = "ready"
         out[h][state] += 1
-        if state in ("ready", "waiting-observations"):
-            out[h]["backlog"].append({"id": fid, "matured_utc": C.iso(C.from_ms(end + MATURITY_BUFFER_MIN * 60_000)),
-                                      "state": state, "last_attempt": log.get(fid)})
+        if state in ("overdue", "scoring-failed"):
+            out[h]["backlog"].append({"id": fid, "matured_utc": C.iso(C.from_ms(mature)), "state": state,
+                                      "last_attempt": log.get(fid)})
+    return out
+
+
+def _quantile(xs, q):
+    xs = sorted(xs)
+    if not xs:
+        return None
+    i = (len(xs) - 1) * q
+    lo = int(i)
+    return xs[lo] + (xs[min(lo + 1, len(xs) - 1)] - xs[lo]) * (i - lo)
+
+
+def _bootstrap_mean(d, block, resamples, seed):
+    """Moving-block bootstrap 95% interval of mean(d) (RC1D-EVAL-1). Stdlib; deterministic for a given seed."""
+    import random
+    rng = random.Random(seed)
+    n = len(d)
+    starts = n - block + 1
+    k = -(-n // block)
+    means = []
+    for _ in range(resamples):
+        xs = []
+        for _ in range(k):
+            a = rng.randrange(starts)
+            xs.extend(d[a:a + block])
+        means.append(sum(xs[:n]) / n)
+    return [_quantile(means, 0.025), _quantile(means, 0.975)]
+
+
+def evaluation(docs, scores) -> dict:
+    """Paired B2-vs-B0 evidence per horizon on scored, eligible RC1D forecasts (RC1D-EVAL-1). The metric is the
+    mean absolute error of the log range forecast (ln of the realised high/low range over the window) - not a
+    price-percentage error, a directional hit rate or a trading return. Everything here is descriptive; the
+    interval is reported only when the pre-declared block count is reached."""
+    out = {}
+    for h in HORIZONS:
+        rows = []
+        for fid, item in docs.items():
+            sc = scores.get(fid) or {}
+            if not fid.startswith(f"{PREFIX}{h}-") or item is None or sc.get("status") != "scored":
+                continue
+            ev = {e.get("name", "").split(" ")[0]: e for e in sc.get("events", []) if isinstance(e, dict)}
+            fz = {e.get("name", "").split(" ")[0]: e for e in item[0].get("events", []) if isinstance(e, dict)}
+            try:
+                width = {k: math.log(fz[k]["q90"] / fz[k]["q10"]) for k in ("B2", "B0")}
+                rows.append((item[0]["decision_utc"], ev["B2"]["abs_error_log_lr"], ev["B0"]["abs_error_log_lr"],
+                             bool(ev["B2"]["covered_80"]), bool(ev["B0"]["covered_80"]), width["B2"], width["B0"]))
+            except (KeyError, TypeError, ValueError, ZeroDivisionError):
+                continue
+        rows.sort()
+        n = len(rows)
+        hours = int(h[:-1])
+        entry = {"n": n, "metric": "mean absolute error of ln range (log units), B2 vs B0 persistence",
+                 "windows": f"{hours}h, one per 4H decision; each overlaps up to {max(0, hours // 4 - 1)} earlier "
+                            f"and {max(0, hours // 4 - 1)} later windows"}
+        if n:
+            d = [r[1] - r[2] for r in rows]
+            m2, m0 = sum(r[1] for r in rows) / n, sum(r[2] for r in rows) / n
+            blocks = n // EVAL_BLOCK
+            entry.update({
+                "first_decision_utc": rows[0][0], "last_decision_utc": rows[-1][0],
+                "mae_b2": round(m2, 5), "mae_b0": round(m0, 5),
+                "reduction_vs_b0": round(1 - m2 / m0, 4) if m0 else None,
+                "diff_mean": round(sum(d) / n, 5), "diff_median": round(_quantile(d, 0.5), 5),
+                "b2_better": sum(x < -1e-12 for x in d), "ties": sum(abs(x) <= 1e-12 for x in d),
+                "b2_worse": sum(x > 1e-12 for x in d),
+                "coverage_b2": round(sum(r[3] for r in rows) / n, 3), "coverage_b0": round(sum(r[4] for r in rows) / n, 3),
+                "width_b2": round(sum(r[5] for r in rows) / n, 4), "width_b0": round(sum(r[6] for r in rows) / n, 4),
+                "blocks": blocks})
+            if blocks >= EVAL_MIN_BLOCKS:
+                entry["diff_mean_ci95"] = [round(x, 5) for x in _bootstrap_mean(d, EVAL_BLOCK, EVAL_RESAMPLES, EVAL_SEED)]
+            else:
+                entry["diff_mean_ci95"] = None
+                entry["uncertainty"] = (f"unavailable: {blocks} complete block(s) of {EVAL_BLOCK} decisions; "
+                                        f"{EVAL_VERSION} needs {EVAL_MIN_BLOCKS}")
+        out[h] = entry
+    return {"method": EVAL_VERSION, "block_decisions": EVAL_BLOCK, "min_blocks": EVAL_MIN_BLOCKS,
+            "note": "Descriptive. Overlapping windows are dependent; the count of non-overlapping windows is not an "
+                    "effective sample size. No support claim; promotion criteria unchanged (queue.md section 0).",
+            "horizons": out}
+
+
+def provenance_corrections(base) -> list:
+    """Append-only metadata corrections (desk/provenance_corrections.jsonl): shown beside the records, never applied
+    to frozen bytes."""
+    out = []
+    for r in _rows(Path(base) / PROVENANCE) if (Path(base) / PROVENANCE).exists() else []:
+        if isinstance(r, dict) and r.get("event") == "provenance correction":
+            out.append({k: r.get(k) for k in ("field", "recorded_as", "correct_value", "affected_rule", "revision")}
+                       | {"listed": (r.get("listed") or {}).get("count")})
     return out
 
 
@@ -416,6 +522,7 @@ def status(base, now: dt.datetime) -> dict:
             "release": {k: release.get(k) for k in ("package", "repo_revision", "contract", "release_sha256")},
             "current": current, "scored": scored, "due_decisions": len(rows), "expected_decisions": len(rows),
             "current_decision": current_decision, "outcomes": counts, "recent": rows[-18:], "scoring": scoring,
+            "evaluation": evaluation(docs, scores), "provenance_corrections": provenance_corrections(base),
             "runs_recorded": len(runs),
             "non_production_attempts": len(attempts) - len(prod), "orphans": orphans, "integrity_failures": problems,
             "legacy_2_14_registrations": sorted(f for f in manifest if isinstance(f, str) and f.startswith(LEGACY)),
@@ -427,11 +534,19 @@ def status(base, now: dt.datetime) -> dict:
 
 
 def markdown(st: dict) -> str:
+    wf = "https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows"
+    badge = lambda name, f: f"[![{name}]({wf}/{f}/badge.svg)]({wf}/{f})"   # noqa: E731
     lines = ["# Range forecasts - status", "",
+             " ".join([badge("Range forecasts", "range.yml"), badge("Range scoring", "range-score.yml"),
+                       badge("Range monitor", "range-monitor.yml")]), "",
+             "Badges show the latest workflow run (recent operation), not what is current: current availability is "
+             "the table below, on your own clock.", "",
              f"Generated {st['generated_utc']} by {st['reader']}; contract `{st['contract']}`. "
              f"**Expires {st.get('status_expires_utc')}**: after that this page cannot say what is current; before "
              "then re-check each row's valid-until on your own clock. "
-             "Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (hourly scoring).", "",
+             "Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by "
+             "`range-score.yml`; the weekly report only summarises).", "",
+             "## Current availability", "",
              "| horizon | state | id | window | valid until | reason |", "|---|---|---|---|---|---|"]
     for h, c in st["current"].items():
         win = f"{c.get('start_utc', '—')} → {c.get('end_utc', '—')}"
@@ -444,24 +559,43 @@ def markdown(st: dict) -> str:
               f"Orphan source files: {len(st['orphans'])}. Integrity failures: {len(st['integrity_failures'])}. "
               f"Legacy 2.14 registrations (q50-scored, pre-contract): {len(st['legacy_2_14_registrations'])}.",
               "Valid-current rows are current only until their valid_until_utc (see the JSON twin).", ""]
-    lines += ["Prospective scores (RC1D, losses on the registered point; windows overlap within a horizon, so "
-              "independent n is far below the count; below ~100 independent windows nothing is eligible for "
-              "forecast status):", "", "| horizon | scored | MAE B2 | MAE B0 | skill | coverage B2 | coverage B0 |",
-              "|---|---|---|---|---|---|---|"]
-    for h in HORIZONS:
-        s = st["scored"].get(h)
-        lines.append(f"| {h} | 0 | — | — | — | — | — |" if not s else
-                     f"| {h} | {s['n']} | {s['mae_b2']} | {s['mae_b0']} | {s['skill']:.1%} | {s['coverage_b2']:.0%} | {s['coverage_b0']:.0%} |")
-    lines.append("")
+    for pc in st.get("provenance_corrections") or []:
+        lines += [f"Provenance correction ({pc.get('revision')}): `{pc.get('field')}` recorded as "
+                  f"\"{pc.get('recorded_as')}\" should read \"{pc.get('correct_value')}\" for "
+                  f"{pc.get('affected_rule')}. Frozen records are unchanged; see `desk/provenance_corrections.jsonl`.", ""]
+    ev = st.get("evaluation") or {}
+    if ev:
+        lines += ["## Evidence (descriptive)", "",
+                  f"Mean absolute error of the ln-range forecast, B2 against B0 persistence, on scored eligible windows "
+                  f"(not price error, direction or return). Method `{ev['method']}`: paired differences d = B2 − B0 "
+                  f"(negative favours B2); uncertainty only with ≥{ev['min_blocks']} complete blocks of "
+                  f"{ev['block_decisions']} decisions. {ev['note']}", "",
+                  "| horizon | n | MAE B2 | MAE B0 | reduction | mean d | median d | B2 better/tie/worse | "
+                  "coverage B2 / B0 | mean 10–90 width B2 / B0 (log) | blocks | 95% interval of mean d | overlap |",
+                  "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        for h in HORIZONS:
+            e = ev["horizons"].get(h) or {"n": 0}
+            if not e.get("n"):
+                lines.append(f"| {h} | 0 | — | — | — | — | — | — | — | — | 0 | unavailable | {e.get('windows', '')} |")
+                continue
+            ci = e.get("diff_mean_ci95")
+            lines.append(f"| {h} | {e['n']} | {e['mae_b2']} | {e['mae_b0']} | {e['reduction_vs_b0']:.1%} | {e['diff_mean']} | "
+                         f"{e['diff_median']} | {e['b2_better']}/{e['ties']}/{e['b2_worse']} | "
+                         f"{e['coverage_b2']:.0%} / {e['coverage_b0']:.0%} | {e['width_b2']} / {e['width_b0']} | "
+                         f"{e['blocks']} | {ci if ci else e.get('uncertainty')} | {e['windows']} |")
+        lines.append("")
     sc = st.get("scoring") or {}
     if sc:
-        lines += ["Scoring pipeline (RC1D):", "", "| horizon | waiting maturity | waiting observations | ready | scored | ineligible |",
-                  "|---|---|---|---|---|---|"]
-        lines += [f"| {h} | {x['waiting-maturity']} | {x['waiting-observations']} | {x['ready']} | {x['scored']} | {x['ineligible']} |"
-                  for h, x in sc.items()]
+        lines += ["## Scoring pipeline (RC1D)", "",
+                  "Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue and scoring failed "
+                  "are operational problems.", "",
+                  "| horizon | waiting maturity | ready | overdue | scoring failed | scored | ineligible |",
+                  "|---|---|---|---|---|---|---|"]
+        lines += [f"| {h} | {x['waiting-maturity']} | {x['ready']} | {x['overdue']} | {x['scoring-failed']} | "
+                  f"{x['scored']} | {x['ineligible']} |" for h, x in sc.items()]
         lines.append("")
     if st["recent"]:
-        lines += ["| decision | outcome | reason |", "|---|---|---|"]
+        lines += ["## Recent decisions (history)", "", "| decision | outcome | reason |", "|---|---|---|"]
         lines += [f"| {r['decision_utc']} | {r['outcome']} | {r['reason']} |" for r in st["recent"]]
     return "\n".join(lines) + "\n"
 
