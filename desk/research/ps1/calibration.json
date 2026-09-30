@@ -1,0 +1,44 @@
+{
+ "constants": {
+  "k_b2": 0.798526822408,
+  "k_vol": 1.010628094936,
+  "s_uncond": 0.009416945766,
+  "sigma_star_4h": 0.003205303824,
+  "target_annual_vol": 0.15
+ },
+ "descriptive_only": {
+  "mean_weight": {
+   "B2": 0.412003,
+   "FIXED": 0.340376,
+   "VOL": 0.371183
+  },
+  "note": "weights implied by the constants over the calibration decisions; reported, not used to choose anything (no return, cost or turnover statistic was computed)",
+  "share_capped": {
+   "B2": 0.010502,
+   "VOL": 0.0
+  }
+ },
+ "inputs": {
+  "contract_rule": "range_contract.walk_forward (monthly refits on matured targets)",
+  "model": "range-11.1.0",
+  "return": "ln(close of the 4H bar opening at the decision / close at the decision)",
+  "source": "desk/research/o21 retained inputs (MANIFEST.json hashes)"
+ },
+ "label": "TRAINING/CALIBRATION - not evidence, not a holdout",
+ "theory": {
+  "k_parkinson_brownian": 1.0,
+  "k_range_brownian": 0.626657
+ },
+ "version": "ps1-calibration-1",
+ "window": {
+  "cutoff_utc": "2026-09-23T00:00:00Z",
+  "decisions": 4380,
+  "first_decision_utc": "2024-09-23T00:00:00Z",
+  "last_decision_utc": "2026-09-22T20:00:00Z",
+  "refit_months": 25,
+  "refits": [
+   "2024-09-01T00:00:00Z",
+   "2026-09-01T00:00:00Z"
+  ]
+ }
+}

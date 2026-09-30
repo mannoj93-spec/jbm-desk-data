@@ -1,0 +1,96 @@
+name: Research streams
+# Repo 2.20 prospective research streams, isolated from the range stream, its scoring and the collector:
+#   companion B1   desk/companion_job.py  - B1 (HAR/calendar without DVOL) registered beside each RC1D batch, same
+#                                           decision, snapshot and window, in streams/rc1d-b1/ (never registry/)
+#   paper PS1      desk/paper_ps1.py      - paper sizing experiment on captured Binance spot quotes, protocol
+#                                           desk/research/ps1/protocol.json (frozen; the job refuses on drift)
+#   feasibility    feasibility.py         - read-only report on whether each hypothesis can accumulate evidence
+# It starts after a "Range forecasts" run completes (so the RC1D batch is confirmed before it reads it) and on a
+# fallback schedule 50 minutes after each 4H close. It writes only streams/** and its own reports; a failure here
+# cannot move, alter or delay an RC1D forecast, a score, a lab result or a collection (it never runs inside those
+# jobs, and it does not wait while holding the repository-write queue). Late or missing registrations and quotes
+# are recorded as such; nothing is reconstructed later.
+on:
+  workflow_run:
+    workflows: ["Range forecasts"]
+    types: [completed]
+  schedule:
+    - cron: '50 0,4,8,12,16,20 * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  streams:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    concurrency:
+      group: repo-write
+      queue: max
+      cancel-in-progress: false
+    env:
+      TRIGGERING_RUN_ID: ${{ github.event.workflow_run.id }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Stream tests and the PS1 calibration check (refuse to register from untested code)
+        id: preflight
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          cd desk
+          PYTHONDONTWRITEBYTECODE=1 python test_streams.py
+          python research/ps1/calibrate.py verify
+      - name: Companion fit (once per month, after the RC1D fit exists)
+        id: fit
+        if: steps.preflight.outcome == 'success'
+        continue-on-error: true
+        run: python desk/companion_job.py fit
+      - name: Companion forecasts for the latest decision (only before the window start margin)
+        if: steps.preflight.outcome == 'success'
+        continue-on-error: true
+        run: python desk/companion_job.py forecast
+      - name: PS1 decision for the latest decision
+        if: steps.preflight.outcome == 'success'
+        continue-on-error: true
+        run: python desk/paper_ps1.py decide
+      - name: Publish the registrations
+        id: publish
+        if: always()
+        env:
+          COMMIT_MESSAGE: Research streams registered
+          PERSIST_BUDGET_S: '90'
+        run: bash scripts/commit_push.sh streams
+      - name: Confirm the registrations on the remote
+        if: steps.publish.outcome == 'success' && steps.preflight.outcome == 'success'
+        continue-on-error: true
+        run: |
+          python desk/companion_job.py confirm
+          python desk/paper_ps1.py confirm
+      - name: PS1 execution on a quote captured after confirmation (simulated fills)
+        if: steps.publish.outcome == 'success' && steps.preflight.outcome == 'success'
+        continue-on-error: true
+        run: python desk/paper_ps1.py execute
+      - name: Scores and reports
+        if: always()
+        continue-on-error: true
+        run: |
+          python desk/companion_job.py score
+          python desk/companion_job.py report
+          python desk/paper_ps1.py report
+          python feasibility.py
+      - name: Persist
+        if: always()
+        env:
+          COMMIT_MESSAGE: Research streams
+          PERSIST_BUDGET_S: '90'
+        run: bash scripts/commit_push.sh streams reports/companion_b1.json reports/companion_b1.md reports/paper_ps1.json reports/paper_ps1.md reports/feasibility.json reports/feasibility.md
+      - name: Fail if the stream tests failed
+        if: steps.preflight.outcome == 'failure'
+        run: exit 1

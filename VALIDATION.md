@@ -1,3 +1,19 @@
+# Validation record — research upgrade, revision 2.20 (crypto-desk 12.4.3 on the 12.4 release family)
+
+Validated 2026-09-30 22:30–23:30Z on branch `research-ps1` from `main` at `89fde1a7` (container; Python 3.11.15 and 3.12.11). Earlier blocks below are kept as recorded.
+
+| Check (2.20) | Result |
+|---|---|
+| Baseline | `main` 89fde1a7; repo 2.19 deployed (PR #23 merged 17:34:07Z; first 2.19 scoring and monitor runs in `desk/deployments.jsonl`). Registry at the base: RC1D batches through 2026-09-30T20:00Z |
+| Regression suite (`python -m unittest discover -s regression`, every desk suite, now including `test_streams`) | 600 run, 0 failed; skipped 1 on 3.12.11, 2 on 3.11.15 (the extra 3.11 skip: lab evaluation versions hash the 3.12 AST) |
+| New tests (`desk/test_streams.py`) | 41: look-ahead (4), late registration (6), hindsight fills (5), joint missing data (5), accounting (7), retries (3), identity preservation (6), RC1D compatibility (3), feasibility (2) |
+| Identity preservation | range_model spec `ae6aa254…`, contract ids RC1D/RC1, range-job-12.4.0 and the O21 selection unchanged; lab `code_hash` equals every current evidence card's `code_sha256`; on 3.12 every design's evaluation version recomputes to the current id; a companion and PS1 run leave `registry/` and the manifest byte-identical |
+| PS1 calibration | `calibrate.py verify` PASS on both Pythons (k_b2 0.798527, k_vol 1.010628, s_uncond 0.009417 over 4,380 decisions 2024-09-23 .. 2026-09-22, 25 monthly refits) |
+| Fixtures, release, checksums, O21 verify | `test_fixtures.py` all pass; `make_release.py check` OK (release 2.20 manifest); `SHA256SUMS` 176 files verify; O21 `verify` PASS |
+| Dry run on a copy of `main` | companion fit written for 2026-09 (n 14,430 / 14,425 / 14,413); the 20:00Z companions recorded missed (window already started - correct); PS1 `not launched`; reports written |
+| Live quote probe (container) | Binance spot depth via www.binance.com returned a valid 20-level book in ~0.6 s; a GitHub-runner capture is unobserved until the workflow runs |
+| Not executed | the workflow on GitHub; any companion or PS1 registration; the PS1 launch (not before 2026-10-03T00:00Z and only after merge); the October rollover |
+
 # Validation record — maintenance, revision 2.19 (crypto-desk 12.4)
 
 Validated 2026-09-30 17:00–17:30Z on branch `desk-maint-2-19` from `main` at `a1341401` (container; Python 3.11.15 and 3.12.11). Earlier blocks below are kept as recorded.

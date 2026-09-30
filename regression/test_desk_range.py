@@ -7,7 +7,7 @@ from pathlib import Path
 
 DESK = Path(__file__).resolve().parents[1] / "desk"
 MODULES = ("test_jbm_measure", "test_jbm_archive", "test_range_model", "test_range_contract", "test_range_job",
-           "test_hardening", "test_release", "test_asof", "test_ops", "test_verify")
+           "test_hardening", "test_release", "test_asof", "test_ops", "test_verify", "test_streams")
 
 
 def load_tests(loader, tests, pattern):

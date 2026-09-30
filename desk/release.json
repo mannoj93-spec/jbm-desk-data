@@ -3,10 +3,13 @@
   "research/o21/MANIFEST.json": "c5f2bcd895d6173da2718852cfe3ba7ae7d5aeee14a064bac21e55fabe42a6b0",
   "research/o21/holm_addendum_12.1.json": "0c7cfa80f252b07683647812a7bf49b6360969bb74f21516049a28f1179dca39",
   "research/o21/reanalysis_12.0.json": "e2e206fed65d3581a4e138d19c7bc935320779ba5d50c7e0cdff83f9729add1d",
-  "research/o21/reanalysis_12.0_rows.json.gz": "4a3f9cc41449d471b6748122748372634386fed97881c410b2cf2a8e7b3dd842"
+  "research/o21/reanalysis_12.0_rows.json.gz": "4a3f9cc41449d471b6748122748372634386fed97881c410b2cf2a8e7b3dd842",
+  "research/ps1/calibrate.py": "28c5586bfc9bb4b7a15d0365e9c59f3e5aafb57c9e8152966e558b6842f7f245",
+  "research/ps1/calibration.json": "e29bee967c88b29385b67ecfb48ebd58d8aaeeb6e25cfec03c462ecc1471b01a",
+  "research/ps1/protocol.json": "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f"
  },
  "audited_snapshot": "eb776d52a2d66563b6dad188d1b899c4efdf9134 (package 12.2, repo 2.17.1; after PR #19)",
- "base_commit": "0215ee17d4cf78c650acd901d6bb63f27d657528",
+ "base_commit": "89fde1a701bf56fafd43551f641503da5f3b2c21",
  "calendar": {
   "file": "releases_2020_2026.csv",
   "last_event_utc": "2026-12-15T13:30:00Z",
@@ -22,6 +25,11 @@
   "spec_sha256": "ae6aa254c786d2dd6045fab098c4237dbe8bcc07d6626d20617366d386ff687d"
  },
  "modules": {
+  "companion_job.py": {
+   "sha256": "539559646cb1f6f4214ade251e33b7e88f46ac668f23e9d0138b5b769732baf0",
+   "shared_with_skill": false,
+   "version": "companion-1.0.0"
+  },
   "jbm_archive.py": {
    "sha256": "35966ae62f21ad4ceee3020dd3792c19c20b803afa37e8dd5dd4dd359a8b0428",
    "shared_with_skill": true,
@@ -31,6 +39,11 @@
    "sha256": "22197d79bfa1e6ecc257547e25f5154e90713c34d1dfcc595981ad280996af4e",
    "shared_with_skill": true,
    "version": "measure-11.1.0"
+  },
+  "paper_ps1.py": {
+   "sha256": "c5c3b97c00fdc12a66411808af117d397fe27b0ad858e65d24a48f0dd2cc968a",
+   "shared_with_skill": false,
+   "version": "ps1-job-1.0.0"
   },
   "range_contract.py": {
    "sha256": "83a24eff32dd267f367224133c8072a9898cf78be0cc5c058bbbc4869db1d1e5",
@@ -66,15 +79,23 @@
    "sha256": "2b1c10821bb9d29f379b1be97f0df265dfbca2e6c90ce8165bc89eb1fe62ab94",
    "shared_with_skill": false,
    "version": "retained-12.1.0"
+  },
+  "stream_util.py": {
+   "sha256": "4db3aadeb64c454169b2dac076471261fe85d5e36ee44071b03738b39253f9e2",
+   "shared_with_skill": false,
+   "version": "stream-util-1.0.0"
   }
  },
  "package": "crypto-desk 12.4",
  "range_stream_start_utc": "2026-09-26T04:00:00Z",
  "registry_routing": {
+  "companion B1 (repo 2.20)": "streams/rc1d-b1/, ids rc1d-b1-{4h,24h,72h}-<decision>, desk/companion_job.py; outside contract RC1D; report reports/companion_b1.{json,md}",
+  "feasibility (repo 2.20)": "reports/feasibility.{json,md}, feasibility.py (read-only)",
   "in-thread forecasts": "artifact registry https://claude.ai/artifact/8QyreLBMA2aT3BCkT6atkR",
   "legacy": "range-b2-* (repo 2.14, q50 contract, pre-12.0): scored as registered, never cited as current",
+  "paper sizing PS1 (repo 2.20)": "streams/ps1/, protocol desk/research/ps1/protocol.json, desk/paper_ps1.py; simulated fills; report reports/paper_ps1.{json,md}",
   "range stream (automatic)": "GitHub registry/, ids range-rc1d-{4h,24h,72h}-<decision>, desk/range_job.py; read through desk/range_reader.py or reports/range_status.json"
  },
- "release_sha256": "0151b9cbe3c241c2a68d38ee0cd51c70cc970faac1ad32277fb247ef7dd15ed1",
- "repo_revision": "2.19"
+ "release_sha256": "9e0a5672c14b9c626356f9a0495e07c4c16f0a4a14e5947213441160ed9c3f5f",
+ "repo_revision": "2.20"
 }
