@@ -8,13 +8,13 @@
    "b0_point_lr": 0.020988911575,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-09-30T16:00:00Z",
-   "elapsed_fraction": 0.0201,
+   "elapsed_fraction": 0.0616,
    "end_utc": "2026-10-01T16:25:00Z",
    "frozen_sha256": "8b9eba0c7e4a18ae52494c3f1a51a4546ab9b9bf26823ec5d4a425628428fc92",
    "horizon": "24h",
    "id": "range-rc1d-24h-20260930T1600Z",
-   "label": "range-rc1d-24h-20260930T1600Z - full-window range forecast for [2026-09-30T16:25:00Z, 2026-10-01T16:25:00Z) (2% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-09-30T16:53:56.316Z",
+   "label": "range-rc1d-24h-20260930T1600Z - full-window range forecast for [2026-09-30T16:25:00Z, 2026-10-01T16:25:00Z) (6% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
+   "now_utc": "2026-09-30T17:53:38.782Z",
    "point_lr": 0.030171269552,
    "points_at_decision_close": {
     "point": 2576.2,
@@ -27,7 +27,7 @@
     0.029118563695,
     0.054106443286
    ],
-   "reader": "reader-12.3.0",
+   "reader": "reader-12.4.0",
    "reason": "eligible and current",
    "reference_price": 84104.9,
    "registered_ms": 1790785006488,
@@ -43,13 +43,13 @@
    "b0_point_lr": 0.008811419055,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-09-30T16:00:00Z",
-   "elapsed_fraction": 0.1206,
+   "elapsed_fraction": 0.3694,
    "end_utc": "2026-09-30T20:25:00Z",
    "frozen_sha256": "92e76f492002da0f90b60d1db2ff4b12d259132faf015adf14c564aea7591e8a",
    "horizon": "4h",
    "id": "range-rc1d-4h-20260930T1600Z",
-   "label": "range-rc1d-4h-20260930T1600Z - full-window range forecast for [2026-09-30T16:25:00Z, 2026-09-30T20:25:00Z) (12% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-09-30T16:53:56.316Z",
+   "label": "range-rc1d-4h-20260930T1600Z - full-window range forecast for [2026-09-30T16:25:00Z, 2026-09-30T20:25:00Z) (37% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
+   "now_utc": "2026-09-30T17:53:38.782Z",
    "point_lr": 0.011964535457,
    "points_at_decision_close": {
     "point": 1012.3,
@@ -62,7 +62,7 @@
     0.011435236525,
     0.023065460198
    ],
-   "reader": "reader-12.3.0",
+   "reader": "reader-12.4.0",
    "reason": "eligible and current",
    "reference_price": 84104.9,
    "registered_ms": 1790785006488,
@@ -78,13 +78,13 @@
    "b0_point_lr": 0.049843332516,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-09-30T16:00:00Z",
-   "elapsed_fraction": 0.0067,
+   "elapsed_fraction": 0.0205,
    "end_utc": "2026-10-03T16:25:00Z",
    "frozen_sha256": "fa838662bc60ddad4258ad0b84d278624ef0d0c0ec8d6d34a0daf506756d4f33",
    "horizon": "72h",
    "id": "range-rc1d-72h-20260930T1600Z",
-   "label": "range-rc1d-72h-20260930T1600Z - full-window range forecast for [2026-09-30T16:25:00Z, 2026-10-03T16:25:00Z) (1% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-09-30T16:53:56.316Z",
+   "label": "range-rc1d-72h-20260930T1600Z - full-window range forecast for [2026-09-30T16:25:00Z, 2026-10-03T16:25:00Z) (2% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
+   "now_utc": "2026-09-30T17:53:38.782Z",
    "point_lr": 0.045642513293,
    "points_at_decision_close": {
     "point": 3927.7,
@@ -97,7 +97,7 @@
     0.043531488267,
     0.078515935859
    ],
-   "reader": "reader-12.3.0",
+   "reader": "reader-12.4.0",
    "reason": "eligible and current",
    "reference_price": 84104.9,
    "registered_ms": 1790785006488,
@@ -107,21 +107,85 @@
    "valid_until_utc": "2026-09-30T21:15:00Z"
   }
  },
- "current_decision": {
-  "decision_utc": "2026-09-30T16:00:00Z",
-  "grace_until_utc": "2026-09-30T17:15:00Z",
-  "ids": [
-   "range-rc1d-4h-20260930T1600Z",
-   "range-rc1d-24h-20260930T1600Z",
-   "range-rc1d-72h-20260930T1600Z"
-  ],
-  "outcome": "registered-pending",
-  "reason": "eligible; 0/3 scored"
+ "current_decision": null,
+ "due_decisions": 28,
+ "evaluation": {
+  "block_decisions": 42,
+  "horizons": {
+   "24h": {
+    "b2_better": 7,
+    "b2_worse": 13,
+    "blocks": 0,
+    "coverage_b0": 0.85,
+    "coverage_b2": 1.0,
+    "diff_mean": -0.05589,
+    "diff_mean_ci95": null,
+    "diff_median": 0.08006,
+    "first_decision_utc": "2026-09-26T04:00:00Z",
+    "last_decision_utc": "2026-09-29T16:00:00Z",
+    "mae_b0": 0.28415,
+    "mae_b2": 0.22826,
+    "metric": "mean absolute error of ln range (log units), B2 vs B0 persistence",
+    "n": 20,
+    "reduction_vs_b0": 0.1967,
+    "ties": 0,
+    "uncertainty": "unavailable: 0 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10",
+    "width_b0": 1.3024,
+    "width_b2": 1.1139,
+    "windows": "24h, one per 4H decision; each overlaps up to 5 earlier and 5 later windows"
+   },
+   "4h": {
+    "b2_better": 16,
+    "b2_worse": 9,
+    "blocks": 0,
+    "coverage_b0": 0.76,
+    "coverage_b2": 0.76,
+    "diff_mean": -0.08566,
+    "diff_mean_ci95": null,
+    "diff_median": -0.04138,
+    "first_decision_utc": "2026-09-26T04:00:00Z",
+    "last_decision_utc": "2026-09-30T12:00:00Z",
+    "mae_b0": 0.47244,
+    "mae_b2": 0.38678,
+    "metric": "mean absolute error of ln range (log units), B2 vs B0 persistence",
+    "n": 25,
+    "reduction_vs_b0": 0.1813,
+    "ties": 0,
+    "uncertainty": "unavailable: 0 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10",
+    "width_b0": 1.4437,
+    "width_b2": 1.2456,
+    "windows": "4h, one per 4H decision; each overlaps up to 0 earlier and 0 later windows"
+   },
+   "72h": {
+    "b2_better": 8,
+    "b2_worse": 1,
+    "blocks": 0,
+    "coverage_b0": 1.0,
+    "coverage_b2": 1.0,
+    "diff_mean": -0.11821,
+    "diff_mean_ci95": null,
+    "diff_median": -0.0614,
+    "first_decision_utc": "2026-09-26T04:00:00Z",
+    "last_decision_utc": "2026-09-27T16:00:00Z",
+    "mae_b0": 0.3997,
+    "mae_b2": 0.28149,
+    "metric": "mean absolute error of ln range (log units), B2 vs B0 persistence",
+    "n": 9,
+    "reduction_vs_b0": 0.2957,
+    "ties": 0,
+    "uncertainty": "unavailable: 0 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10",
+    "width_b0": 1.1975,
+    "width_b2": 1.0381,
+    "windows": "72h, one per 4H decision; each overlaps up to 17 earlier and 17 later windows"
+   }
+  },
+  "method": "rc1d-eval-1 (2026-09-30)",
+  "min_blocks": 10,
+  "note": "Descriptive. Overlapping windows are dependent; the count of non-overlapping windows is not an effective sample size. No support claim; promotion criteria unchanged (queue.md section 0)."
  },
- "due_decisions": 27,
- "expected_decisions": 27,
+ "expected_decisions": 28,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-09-30T16:53:56.316Z",
+ "generated_utc": "2026-09-30T17:53:38.782Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
@@ -130,21 +194,21 @@
  "outcomes": {
   "failed": 1,
   "missing": 1,
-  "registered-pending": 16,
+  "registered-pending": 17,
   "scored": 9
  },
- "reader": "reader-12.3.0",
- "recent": [
+ "provenance_corrections": [
   {
-   "decision_utc": "2026-09-27T16:00:00Z",
-   "ids": [
-    "range-rc1d-4h-20260927T1600Z",
-    "range-rc1d-24h-20260927T1600Z",
-    "range-rc1d-72h-20260927T1600Z"
-   ],
-   "outcome": "scored",
-   "reason": "all horizons scored"
-  },
+   "affected_rule": "every RC1D forecast whose code_version ends with 'range-job-12.3.0' (the 2.18 job); the rule, not the list, defines the set, so forecasts the 2.18 job writes after this row are covered until 2.19 is deployed",
+   "correct_value": "crypto-desk 12.3",
+   "field": "package",
+   "listed": 36,
+   "recorded_as": "crypto-desk 12.2",
+   "revision": "2.19"
+  }
+ ],
+ "reader": "reader-12.4.0",
+ "recent": [
   {
    "decision_utc": "2026-09-27T20:00:00Z",
    "ids": [
@@ -310,13 +374,23 @@
    ],
    "outcome": "registered-pending",
    "reason": "eligible; 1/3 scored"
+  },
+  {
+   "decision_utc": "2026-09-30T16:00:00Z",
+   "ids": [
+    "range-rc1d-4h-20260930T1600Z",
+    "range-rc1d-24h-20260930T1600Z",
+    "range-rc1d-72h-20260930T1600Z"
+   ],
+   "outcome": "registered-pending",
+   "reason": "eligible; 0/3 scored"
   }
  ],
  "release": {
   "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
-  "package": "crypto-desk 12.3",
-  "release_sha256": "9be416598f2d42a796772770431fee4dd0fa9d5656ff793f90185234be4f1571",
-  "repo_revision": "2.18"
+  "package": "crypto-desk 12.4",
+  "release_sha256": "0151b9cbe3c241c2a68d38ee0cd51c70cc970faac1ad32277fb247ef7dd15ed1",
+  "repo_revision": "2.19"
  },
  "runs_recorded": 175,
  "scored": {
@@ -349,26 +423,29 @@
   "24h": {
    "backlog": [],
    "ineligible": 0,
+   "overdue": 0,
    "ready": 0,
    "scored": 20,
-   "waiting-maturity": 6,
-   "waiting-observations": 0
+   "scoring-failed": 0,
+   "waiting-maturity": 6
   },
   "4h": {
    "backlog": [],
    "ineligible": 0,
+   "overdue": 0,
    "ready": 0,
    "scored": 25,
-   "waiting-maturity": 1,
-   "waiting-observations": 0
+   "scoring-failed": 0,
+   "waiting-maturity": 1
   },
   "72h": {
    "backlog": [],
    "ineligible": 0,
+   "overdue": 0,
    "ready": 0,
    "scored": 9,
-   "waiting-maturity": 17,
-   "waiting-observations": 0
+   "scoring-failed": 0,
+   "waiting-maturity": 17
   }
  },
  "status_expires_utc": "2026-09-30T20:25:00Z"
