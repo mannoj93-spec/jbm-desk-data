@@ -5,6 +5,8 @@
 [![Regression and numerical fixtures](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/fixtures.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/fixtures.yml)
 [![Collector watchdog](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/watchdog.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/watchdog.yml)
 [![Range forecasts](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range.yml)
+[![Range scoring](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-score.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-score.yml)
+[![Range monitor](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-monitor.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-monitor.yml)
 
 This repository preserves public crypto-market history, freezes forecasts before they start, and
 tests pre-registered research questions against that history. Its reports are evidence for human
@@ -20,8 +22,8 @@ review of trading skill files; nothing here trades, holds credentials, or edits 
 | Is collection running and fresh? | [reports/latest.md](reports/latest.md) - coverage, data age, cadence |
 | What did the research find? | [reports/research.md](reports/research.md) - every design, its status, integrity and evidence |
 | Is any skill change proposed? | [reports/skill_proposals.md](reports/skill_proposals.md) - proposals, or why there are none |
-| Weekly forecast scores | [reports/](reports/) - dated weekly reports |
-| How is the desk's range model doing? | [reports/range.md](reports/range.md) - current forecasts, run outcomes, and B2 vs persistence on scored windows ([status JSON](reports/range_status.json), [desk/](desk/README.md)) |
+| Weekly forecast scores (issue-intake streams) | [reports/](reports/) - dated weekly reports; desk range forecasts are scored hourly (next row) |
+| How is the desk's range model doing? | [reports/range.md](reports/range.md) - current availability, scoring pipeline, paired B2 vs persistence evidence (descriptive) and recent decisions ([status JSON](reports/range_status.json), [desk/](desk/README.md)) |
 | How was this version tested and deployed? | [VALIDATION.md](VALIDATION.md) |
 | What changed, release by release | [CHANGELOG.md](CHANGELOG.md) |
 | How to run and operate it | [Quick start](#quick-start) and [docs/OPERATIONS.md](docs/OPERATIONS.md) |
@@ -47,7 +49,8 @@ Counts, ages and statuses change every run, so they live only in the generated r
    clock; presentation changes do not.
 3. **Persist** merges the lab's outputs into the latest checkout only if they are complete and
    consistent with the lab's own publication metadata; otherwise nothing is published.
-4. **Weekly report** scores frozen forecasts; **forecast intake** freezes new ones from issues.
+4. **Weekly report** scores the issue-intake forecasts and summarises; **forecast intake** freezes new ones
+   from issues. Desk range forecasts are scored **hourly** by `range-score.yml` (step 5), not weekly.
 5. **Range forecasts** (after every 4H close) run the crypto desk's range model in `desk/`, register
    its 4h, 24h and 72h forecasts with a persistence baseline in one transaction, and confirm the
    publication before the windows open.

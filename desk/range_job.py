@@ -26,6 +26,7 @@ import hashlib
 import json
 import math
 import os
+import re
 import subprocess
 import sys
 import time
@@ -43,8 +44,27 @@ import range_model as R         # noqa: E402
 import range_contract as C      # noqa: E402
 import retained as K             # noqa: E402
 
-JOB_VERSION = "range-job-12.3.0"
-PACKAGE = "crypto-desk 12.2"
+JOB_VERSION = "range-job-12.4.0"
+
+
+def release_package(desk=None) -> str | None:
+    """The package a new forecast records, read from desk/release.json - the one place release identity lives
+    (12.4). 12.3 typed it here and it stayed "crypto-desk 12.2" (36 forecasts; desk/provenance_corrections.jsonl).
+    None when the manifest is missing or malformed: forecast() then refuses."""
+    try:
+        pkg = json.loads((Path(desk or DESK) / "release.json").read_text()).get("package")
+    except (OSError, ValueError, AttributeError):
+        return None
+    return pkg if isinstance(pkg, str) and re.fullmatch(r"crypto-desk \d+\.\d+", pkg) else None
+
+
+def family(version) -> str | None:
+    """'range-job-12.4.0' or 'crypto-desk 12.4' -> '12.4' (the release family both must share)."""
+    m = re.search(r"(\d+)\.(\d+)", version or "")
+    return f"{m.group(1)}.{m.group(2)}" if m else None
+
+
+PACKAGE = release_package()
 FROZEN_SPEC = "ae6aa254c786d2dd6045fab098c4237dbe8bcc07d6626d20617366d386ff687d"   # O21, Sep 26 2026
 CONTRACT = "RC1D"
 ID_PREFIX = "range-rc1d-"
@@ -431,6 +451,9 @@ def forecast(now=None, base=BASE, bars=None, dvol=None, clock=None, run=None, ho
     run = run or run_meta()
     if not spec_ok():
         raise SystemExit("forecast refused: range_model.py does not match the frozen specification")
+    if PACKAGE is None or family(PACKAGE) != family(JOB_VERSION):
+        raise SystemExit(f"forecast refused: package identity {PACKAGE!r} (desk/release.json) does not match "
+                         f"{JOB_VERSION}; regenerate the release manifest (make_release.py write)")
     reconcile(base, clock(), run)
     decision_guess = _iso(last_boundary(now))
     attempt = f"{decision_guess}#{run.get('run_id') or clock()}"

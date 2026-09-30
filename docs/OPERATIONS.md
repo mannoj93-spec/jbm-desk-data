@@ -38,11 +38,13 @@ The GitHub workflows use the repository's scoped `GITHUB_TOKEN` for commits and 
 |---|---|---|
 | Collector (`collect.yml`, formerly *Hourly collector*) | Every 15 minutes at :07, :22, :37, :52 UTC; manual; manual backfill | Preserve history, snapshots, liquidations, forward books and registration records |
 | Forecast intake | Owner's forecast issues opened/edited/reopened; hourly :37 recovery; manual | Validate, freeze, persist, then acknowledge a forecast |
-| Weekly report | Monday 00:30 UTC; manual | Coverage, errors, forecast scores, research summaries, review candidates |
+| Weekly report | Monday 00:30 UTC; manual | Coverage, errors, scores of the issue-intake forecasts, research summaries, review candidates (desk range forecasts are scored hourly, below) |
 | Collector watchdog | Every 30 minutes at :17 and :47 UTC; manual | Fails (so GitHub emails the owner) when the collector is stale or missing, or running but failing |
 | Research lab (`research.yml`) | Every 6 hours at :41 (00:41 UTC also runs a 60-day reconstruction); manual | Versioned events, outcomes, experiments and evidence cards, `reports/research.md`, `reports/skill_proposals.md`, and the coverage refresh of `reports/latest.md`; computes without the write lock, merges into a fresh checkout and commits through `repo-write` |
 | Regression and numerical fixtures | Code/workflow pushes and pull requests; manual | Arithmetic fixtures and offline failure-path regression tests |
 | Range forecasts (`range.yml`) | 00:02, 04:02, 08:02, 12:02, 16:02, 20:02 UTC; manual | Desk tests and release drift check, monthly fit validation/refit, one registration batch per 4H close, publication confirmation, `reports/range_status.json` and `reports/range.md`; holds `repo-write` |
+| Range scoring (`range-score.yml`) | Hourly at :41 UTC; manual | Scores matured range forecasts (`range_job.py score`), logs attempts in `state/range_scoring.jsonl`, refreshes the status; holds `repo-write` |
+| Range monitor (`range-monitor.yml`) | 01:53, 05:53, 09:53, 13:53, 17:53, 21:53 UTC; manual | Read-only: failed or absent runs in the last 12 h, last eligible publication, status freshness, current availability on its own clock, scoring overdue; fails the workflow on any problem |
 
 **Queueing.** Every writing job (collector, backfill, forecast intake, weekly report) holds
 `repo-write`, set at job level with `queue: max`: writes are serialized and up to 100 jobs wait
@@ -159,9 +161,11 @@ window with `range_contract.window` and chronology (prepared <= registered <= co
 only), so a failure before forecasting is reported as `failed` with its stage and reason - never as a forecast,
 a window, or a generic `in-progress`. `range-score.yml` scores matured range forecasts hourly
 (`range_job.py score`, idempotent; attempts in `state/range_scoring.jsonl`; per-horizon states in the status);
-`range-monitor.yml` (`desk/range_monitor.py`, read-only, stdlib only) fails on failed or absent runs, a stale
-last eligible publication, a stale status file or a scoring backlog, and cross-checks the Actions run list.
-The weekly report still scores the other streams and remains the review cadence.
+`range-monitor.yml` (`desk/range_monitor.py`, read-only, stdlib only) fails on failed or absent runs in its
+12-hour window, a stale last eligible publication, a stale status file, a current forecast that is not valid on
+its own clock, or overdue scoring, and cross-checks the Actions run list. A failed run keeps the monitor red until
+it leaves that window (Sep 29 2026: the 04:00Z preflight failure kept four monitor runs red, 05:58Z-18:00Z;
+green from 21:57Z). The weekly report scores the issue-intake streams; it does not score range forecasts.
 
 ## Scoring contract
 

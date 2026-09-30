@@ -352,7 +352,7 @@ class TestHourlyScoring(unittest.TestCase):
         self.assertEqual((new, pending), ([], 6))                  # 4h unscorable + five windows not yet mature
         self.assertTrue(any("incomplete price coverage: 239/240" in a for a in alerts), alerts)
         st = RR.status(self.r.base, t)
-        self.assertEqual(st["scoring"]["4h"]["waiting-observations"], 1)
+        self.assertEqual(st["scoring"]["4h"]["scoring-failed"], 1)                   # 12.4 name: a failed attempt
         self.assertIsNone(json.loads((self.r.base / "registry/scores.jsonl").read_text() or "null")
                           if (self.r.base / "registry/scores.jsonl").exists() else None)   # no loss fabricated
         new, _, _ = self.J.score(self.r.base, T(9, 30), fetch=self.fetch())
@@ -468,6 +468,70 @@ class TestScoringStates(unittest.TestCase):
         self.assertTrue((self.r.base / "registry/scores.jsonl").read_bytes().startswith(before))
         self.assertEqual(len(self.rows()), 7)
         self.assert_unique()
+
+
+@unittest.skipUnless(REPO, "needs the repository and the fixture")
+class TestScoringStatesAndEvidence(unittest.TestCase):
+    """12.4: awaiting maturity, ready for the next scheduled scorer, overdue and scoring failed are distinct; only
+    overdue and failed are backlog. The evidence block reports paired differences, widths and dependence, and
+    withholds uncertainty below the pre-declared block count."""
+
+    def setUp(self):
+        self.r = Repo()
+        (self.r.base / "reports").mkdir()
+        import range_job as J
+        self.J = J
+
+    def tearDown(self):
+        self.r.close()
+
+    @staticmethod
+    def fetch(s, e):
+        return [(t, 101.0, 99.0, 100.0) for t in range(s, e, 60_000)]
+
+    def test_states_across_time(self):
+        end4 = RR._t(self.r.doc(IDS4[0])["horizon_utc"])               # 08:20; mature 08:25
+        at = lambda minutes: RR.status(self.r.base, end4 + dt.timedelta(minutes=minutes))["scoring"]["4h"]   # noqa: E731
+        self.assertEqual(at(4)["waiting-maturity"], 2)
+        x = at(5 + 60)                                                   # matured an hour ago, not yet attempted
+        self.assertEqual((x["ready"], x["overdue"], x["backlog"]), (1, 0, []))
+        x = at(5 + RR.SCORE_OVERDUE_MIN + 1)                             # the scorer has not taken it
+        self.assertEqual((x["ready"], x["overdue"], [b["state"] for b in x["backlog"]]), (0, 1, ["overdue"]))
+        import scoring
+        def partial(s, e):
+            return scoring.check_bars(self.fetch(s, e)[:-1], s, e)
+        self.J.score(self.r.base, end4 + dt.timedelta(minutes=10), fetch=partial)
+        x = at(11)
+        self.assertEqual((x["scoring-failed"], x["ready"], [b["state"] for b in x["backlog"]]), (1, 0, ["scoring-failed"]))
+        self.J.score(self.r.base, end4 + dt.timedelta(minutes=70), fetch=self.fetch)
+        x = at(71)
+        self.assertEqual((x["scored"], x["scoring-failed"], x["backlog"]), (1, 0, []))
+
+    def test_evidence_block(self):
+        import scoring
+        scoring.score_registry(self.r.base, MS(T(12, 0, d=29)), "t", fetch=self.fetch, only_prefix="range-rc1d-")
+        st = RR.status(self.r.base, T(12, 0, d=29))
+        ev = st["evaluation"]
+        self.assertEqual(ev["method"], RR.EVAL_VERSION)
+        e = ev["horizons"]["4h"]
+        self.assertEqual(e["n"], 2)
+        self.assertEqual(e["b2_better"] + e["ties"] + e["b2_worse"], 2)
+        self.assertAlmostEqual(e["diff_mean"], round(e["mae_b2"] - e["mae_b0"], 5), places=4)
+        self.assertTrue(0 < e["width_b2"] and 0 < e["width_b0"])
+        self.assertIsNone(e["diff_mean_ci95"])
+        self.assertIn("unavailable", e["uncertainty"])                  # 2 decisions: no block, no interval
+        self.assertIn("up to 17 earlier", ev["horizons"]["72h"]["windows"])
+        self.assertIn("ln range", e["metric"])
+        md = RR.markdown(st)
+        for want in ("Range scoring", "Range monitor", "## Current availability", "## Evidence (descriptive)",
+                     "B2 better/tie/worse", "## Recent decisions (history)", "the weekly report only summarises"):
+            self.assertIn(want, md)
+
+    def test_interval_reported_only_with_enough_blocks(self):
+        d = [(-0.05 if i % 3 else 0.02) for i in range(RR.EVAL_BLOCK * RR.EVAL_MIN_BLOCKS)]
+        lo, hi = RR._bootstrap_mean(d, RR.EVAL_BLOCK, 400, RR.EVAL_SEED)
+        self.assertTrue(lo <= sum(d) / len(d) <= hi)
+        self.assertEqual(RR._bootstrap_mean(d, RR.EVAL_BLOCK, 400, RR.EVAL_SEED), [lo, hi])   # deterministic
 
 
 class TestVersionParser(unittest.TestCase):

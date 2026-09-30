@@ -14,7 +14,7 @@ from scoring import score_registry
 from research import run_tests
 import cadence
 
-REPORT_VERSION = "report-2.6-2026-09-24"
+REPORT_VERSION = "report-2.6.1-2026-09-30"
 
 
 def iso(ms):
@@ -286,8 +286,11 @@ def build(base, now, days=7, coverage_only=False):
     lines.extend([f"# JBM desk report — {iso(now)}", f"Window {iso(since)} → {iso(now)}. {REPORT_VERSION}.",
                   "Stored observations are research inputs. Missing observations never count as a failed forecast.",
                   ""])
-    lines.extend(provenance(base, now, "coverage refresh; forecast scoring and research tests are in the weekly "
-                                       "report" if coverage_only else "weekly report"))
+    lines.extend(provenance(base, now, "coverage refresh; desk range forecasts are scored hourly (range-score.yml, "
+                                       "reports/range.md), research designs run in the 6-hourly lab "
+                                       "(reports/research.md), other registered forecasts are scored in the weekly report"
+                            if coverage_only else "weekly report; desk range forecasts are scored hourly by "
+                                                  "range-score.yml and only summarised here"))
     lines.extend(["## 1. Collection health"])
     snaps = sorted((r for r in read("data/snap/*.jsonl") if since <= r["t"] <= now), key=lambda r: r["t"])
     try:

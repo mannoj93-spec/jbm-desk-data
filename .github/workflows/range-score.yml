@@ -1,10 +1,10 @@
 name: Range scoring
-# Hourly maturity scoring of the desk's range stream (desk/range_job.py score, package 12.2, repo 2.17).
+# Hourly maturity scoring of the desk's range stream (desk/range_job.py score; since repo 2.17).
 # Independent of forecast generation: it scores forecasts already registered, whatever the forecast workflow
 # or its tests are doing. The repository scorer (scoring.py) requires complete, aligned Binance BTCUSDT
 # perpetual 1m coverage of each window, retains the bars as evidence (registry/evidence/), and is idempotent
 # by forecast id and frozen hash; missing observations stay pending and are retried, never scored as a loss.
-# The weekly report remains the presentation and review cadence.
+# The weekly report scores the issue-intake streams and summarises; it does not score range forecasts.
 on:
   schedule:
     - cron: '41 * * * *'
