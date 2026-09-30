@@ -1,0 +1,121 @@
+{
+ "id": "PS1",
+ "version": 1,
+ "title": "Prospective paper sizing experiment: does sizing by the B2 4h range forecast beat simple volatility sizing after costs?",
+ "label": "PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.",
+ "frozen_utc": "2026-09-30T22:45:00Z",
+ "frozen_by": "repo 2.20 build (crypto-desk package 12.4.3); calibration and protocol written before any PS1 observation existed",
+ "question": "Holding the same synthetic, unlevered BTC spot long, with the same decisions and the same entry/exit/rebalance rules, does sizing each 4H interval by the registered RC1D B2 4h range forecast produce a higher after-cost Sharpe ratio than sizing by a trailing Parkinson volatility estimate at the same ex-ante risk target?",
+ "instrument": {
+  "traded": "BTCUSDT spot on Binance - a synthetic long-only position; cash is USDT",
+  "quote_sources": [
+   "https://www.binance.com/api/v3/depth?symbol=BTCUSDT&limit=20",
+   "https://data-api.binance.vision/api/v3/depth?symbol=BTCUSDT&limit=20"
+  ],
+  "quote_timestamp": "Binance spot depth carries no exchange timestamp: each quote records request-sent and response-received times (the book existed between them), the HTTP Date header and lastUpdateId. The modeled fill time is the receipt time.",
+  "forecast_instrument": "Binance BTCUSDT perpetual (the RC1D target). Sizing a spot position with a perp range forecast is deliberate: perp and spot ranges over 4 hours are near-identical, and the VOL arm reads the same perp bars from the same RC1D input snapshot.",
+  "funding": "not applicable (spot)",
+  "leverage": "none; weights are capped at w_max = 1"
+ },
+ "horizon": "4h",
+ "decision_schedule": "every 4H close (00, 04, 08, 12, 16, 20 UTC) for which the RC1D stream registers a 4h forecast; one decision per close",
+ "start": {
+  "not_before_utc": "2026-10-03T00:00:00Z",
+  "rule": "The experiment starts at the first decision at or after not_before_utc that the deployed workflow executes; that decision and its execution time are written once to streams/ps1/launch.json. Decisions before deployment are 'not deployed', not misses. The protocol and calibration are frozen before that first observation."
+ },
+ "policy": {
+  "direction": "long only, every interval (the direction never varies and is not tested)",
+  "holding": "one holding per arm at a time; each executed rebalance sets the holding until the next executed rebalance (no overlapping positions)",
+  "arms": {
+   "FIXED": "w = min(w_max, sigma_star / s_uncond)",
+   "VOL": "w = min(w_max, sigma_star / (k_vol * sd_park_42)),  sd_park_42 = sqrt(sum_{last 42 closed 4H bars} ln(high/low)^2 / (42 * 4 ln 2)) from the RC1D input bundle of the decision",
+   "B2": "w = min(w_max, sigma_star / (k_b2 * point)),  point = the eligible RC1D 4h B2 point forecast (ln(high/low) units) registered for the decision"
+  },
+  "primary_comparison": "B2 vs VOL",
+  "control": "FIXED (additional control; not the primary comparator)",
+  "w_max": 1.0,
+  "rebalance_band": 0.05,
+  "band_rule": "at an execution, an arm trades to its target only if |w_target - w_current| > 0.05, where w_current = holding value at mid / equity at mid; otherwise it does not trade. Identical for every arm; fixed a priori, not tuned.",
+  "entry_exit": "Entry is the first executed rebalance; each later executed rebalance is the exit of the previous interval and the entry of the next. There is no other exit."
+ },
+ "calibration": {
+  "file": "desk/research/ps1/calibration.json",
+  "file_sha256": "e29bee967c88b29385b67ecfb48ebd58d8aaeeb6e25cfec03c462ecc1471b01a",
+  "script": "desk/research/ps1/calibrate.py",
+  "script_sha256": "28c5586bfc9bb4b7a15d0365e9c59f3e5aafb57c9e8152966e558b6842f7f245",
+  "label": "TRAINING/CALIBRATION on retained history 2024-09-23 .. 2026-09-23 (the O21 validation and holdout years); not evidence and not a holdout",
+  "cutoff_utc": "2026-09-23T00:00:00Z",
+  "constants": {
+   "k_b2": 0.798526822408,
+   "k_vol": 1.010628094936,
+   "s_uncond": 0.009416945766,
+   "sigma_star_4h": 0.003205303824,
+   "target_annual_vol": 0.15
+  },
+  "method": "k^2 = mean(r^2 / x^2) over calibration decisions (r = next 4H close-to-close log return, x = the arm's raw forecast); s_uncond = sqrt(mean(r^2)). Variance calibration only; no return, cost or turnover statistic was computed. Range is not a standard deviation: the Brownian relation E[ln H/L] = 1.596 sigma gives k = 0.627 for a range forecast; the calibrated k_b2 = 0.799 is used.",
+  "permitted_updates": "none for the life of PS1 v1. The B2 forecasts themselves follow the RC1D stream's monthly refit (part of the forecast being tested). Any change to a constant, formula, band, cap, cost or rule is a new protocol version with a new clock."
+ },
+ "capital": {
+  "start_equity_usdt": 100000,
+  "per_arm": "each arm and each cost scenario has its own ledger starting at 100,000 USDT cash, 0 BTC",
+  "cash": "USDT; earns 0; no borrowing, no shorting",
+  "marking": "equity = cash + BTC x mid of the captured quote, at each execution (before trading)"
+ },
+ "execution": {
+  "executable_at": "max(the paper decision's confirmation on origin/main, the RC1D forecast's availability time, the decision computation's end)",
+  "quote_rule": "a quote is eligible only if its request was sent after executable_at; a quote captured earlier, a candle price, or any quote retrieved retrospectively is never used",
+  "max_delay_min": 90,
+  "max_delay_rule": "a decision can execute until its 4H close + 90 minutes; after that it is missed and every arm keeps its holding",
+  "attempts": "up to 3 quote requests per run, 5 s apart; the fallback run may retry within max_delay",
+  "book_validation": "best bid < best ask; prices and sizes positive; bids descending, asks ascending; at least 5 levels per side",
+  "fill_model": "buy: walk the captured asks for the quantity (VWAP), times (1 + slippage); sell: walk the bids, times (1 - slippage); quantity beyond the captured 20 levels fills at the last level with an extra 50 bp. Fee on the filled notional. These are simulated fills, not executions."
+ },
+ "costs": {
+  "version": "ps1-costs-1",
+  "ordinary": {"taker_fee_bp": 10.0, "slippage_bp": 1.0},
+  "stressed": {"taker_fee_bp": 10.0, "slippage_bp": 10.0},
+  "spread": "paid in full by the bid/ask fill model in both scenarios",
+  "source": "Binance spot VIP 0 taker fee 0.1000%, as published in Binance's fee schedule and reported by secondary sources on 2026-09-30 (the primary page was not retrievable from the build container). Slippage values are assumptions. Fixed for PS1 v1.",
+  "funding": "not applicable (spot)"
+ },
+ "missing_data": {
+  "joint_rule": "every rule below applies to all arms together: a decision is executed for all arms or for none, so no arm's comparison is selected by missing data",
+  "missing_forecast": "no eligible RC1D 4h forecast for the decision (not registered, not confirmed before its window start, or not verifiable): no rebalance for any arm; recorded 'no-rebalance: forecast unavailable'",
+  "missing_bars": "RC1D input bundle missing or failing its hash: no rebalance for any arm",
+  "stale_forecast": "a forecast is used only for its own decision; a run processing a decision after close + 90 min records it missed",
+  "missing_quote": "no eligible quote within max_delay: 'missed-execution'; every arm keeps its holding",
+  "no_run": "a scheduled decision with no decision record at all (the workflow did not run) is 'missed: no run' in the report",
+  "delayed_start": "execution delay (decision close to quote receipt) is recorded for every execution",
+  "overlapping_windows": "not possible: a single holding per arm, replaced at each execution",
+  "incomplete_exit": "an interval stays open until the next executed rebalance; if the stream pauses or ends, the open interval is 'pending' and excluded from every metric - no exit price is invented",
+  "retries": "decision ids are ps1-<decision>; a decision is executed at most once; records are append-only and idempotent"
+ },
+ "metrics": {
+  "interval_return": "net simple return of an arm between consecutive executions, from pre-trade equity to pre-trade equity (costs of a trade fall in the interval it opens)",
+  "primary": "difference in annualized after-cost Sharpe ratio, SR(B2) - SR(VOL), ordinary costs, SR = mean / sd of interval net returns x sqrt(2190), cash yield 0",
+  "secondary": ["net return per arm", "maximum drawdown on execution marks", "turnover (traded notional / mean equity, annualized)", "time-weighted exposure", "realized annualized volatility vs the 15% target", "worst interval and 5% expected shortfall", "paired per-interval return differences B2-VOL and B2-FIXED", "all of the above under stressed costs"],
+  "not_improvements": "lower exposure, lower volatility or lower return alone is never reported as an improvement; realized risk and exposure are printed beside every return"
+ },
+ "uncertainty": {
+  "method": "moving-block bootstrap of paired intervals (B2 and VOL returns resampled together), blocks of 42 intervals (7 days), 5,000 resamples, seed 20261003; 90% percentile interval of the Sharpe difference",
+  "minimum": "no interval is reported below 10 complete blocks (420 executed intervals, about 70 days at full coverage)",
+  "dependence_note": "consecutive intervals are adjacent, not overlapping; that does not make them independent (volatility clusters), hence blocks"
+ },
+ "evidence": {
+  "status_vocabulary": ["not launched", "collecting (descriptive)", "paper-inconclusive", "paper-unfavourable", "paper-supported (sizing, simulated)"],
+  "checkpoints": {
+   "C1": "180 days after launch and >= 10 blocks: descriptive report with the interval; no status change beyond 'collecting'",
+   "C2": "365 days after launch and >= 20 blocks: first review at which a status other than 'collecting' may be assigned"
+  },
+  "paper_supported_if": "at C2 or later, all of: (a) the 90% interval of SR(B2)-SR(VOL) lies above 0 under ordinary costs; (b) the point estimate is above 0 under stressed costs; (c) at least 80% of scheduled decisions executed; (d) realized annualized volatility of both arms within 10%-20%",
+  "paper_unfavourable_if": "at C2 or later, the 90% interval lies below 0 under ordinary costs",
+  "otherwise": "paper-inconclusive. Failure to find a difference is not evidence that none exists.",
+  "never": "No PS1 status is a trading edge, a live decision record or an entry endorsement. A paper-supported result would justify only a separately authorized, separately registered live test."
+ },
+ "pause_terminate": {
+  "pause_automatic": "the report shows 'paused' when the last 6 scheduled decisions (24h) all failed for the same infrastructure reason (forecast unavailable, no eligible quote, or no run); holdings are unchanged throughout and it resumes by itself when the cause clears",
+  "refuse": "the job refuses to decide or execute if this file's hash, the calibration file's hash or the calibration script's hash differs from the values the job was frozen with; refused decisions are missed",
+  "terminate": "by an operator decision recorded in streams/ps1/terminated.json, or when the RC1D contract is retired or the quote sources are unavailable for 14 days. After termination the last open interval stays pending; PS1 v1 never restarts under the same id."
+ },
+ "claims_boundary": "PS1 can show whether B2 sizing improved simulated after-cost risk-adjusted returns over trailing-volatility sizing for one synthetic spot policy. It cannot show a directional edge, real fill quality, capacity, or live decision performance."
+}
