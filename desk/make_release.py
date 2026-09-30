@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write or check desk/release.json - the one place release identity lives (package 12.4, repo 2.19).
+"""Write or check desk/release.json - the one place release identity lives (release family 12.4, repo 2.20).
 
 Identity only: package, commits, contract, module and artifact hashes, calendar, routing, stream start. Verified
 deployment events live in desk/deployments.jsonl (append-only); live operational health in reports/range_status.json.
@@ -15,12 +15,14 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SHARED = ("jbm_archive.py", "jbm_measure.py", "range_model.py", "range_contract.py", "range_reader.py", "range_ops.py")
-REPO_ONLY = ("range_job.py", "retained.py", "range_monitor.py")
+REPO_ONLY = ("range_job.py", "retained.py", "range_monitor.py", "stream_util.py", "companion_job.py", "paper_ps1.py")
 CALENDAR = "releases_2020_2026.csv"
 FIELDS = ("package", "repo_revision", "base_commit", "audited_snapshot", "contract", "evaluated_contract", "model",
           "modules", "calendar", "artifacts", "registry_routing", "range_stream_start_utc", "deployment_log")
 ARTIFACTS = ("research/o21/MANIFEST.json", "research/o21/reanalysis_12.0.json", "research/o21/reanalysis_12.0_rows.json.gz",
-             "research/o21/holm_addendum_12.1.json")
+             "research/o21/holm_addendum_12.1.json",
+             # 2.20: the frozen PS1 protocol and its calibration (paper_ps1.py refuses to run if these drift)
+             "research/ps1/protocol.json", "research/ps1/calibration.json", "research/ps1/calibrate.py")
 
 
 def _sha(path):
@@ -50,8 +52,10 @@ def body(desk=HERE, previous=None):
     cal = desk / CALENDAR
     last = [x for x in cal.read_text().splitlines() if x and not x.startswith("#")][-1].split(",")[0]
     return {
-        "package": "crypto-desk 12.4", "repo_revision": "2.19",
-        "base_commit": "0215ee17d4cf78c650acd901d6bb63f27d657528",
+        # "package" is the shared-module release family (range_job's PACKAGE); package documentation versions
+        # (12.4.1, 12.4.2, 12.4.3) sit on this family without changing it.
+        "package": "crypto-desk 12.4", "repo_revision": "2.20",
+        "base_commit": "89fde1a701bf56fafd43551f641503da5f3b2c21",
         "audited_snapshot": "eb776d52a2d66563b6dad188d1b899c4efdf9134 (package 12.2, repo 2.17.1; after PR #19)",
         "contract": C.contract_id("RC1D"), "evaluated_contract": C.contract_id("RC1"),
         "model": {"range_model": "range-11.1.0", "spec_sha256": _sha(desk / "range_model.py")},
@@ -64,7 +68,12 @@ def body(desk=HERE, previous=None):
             "range stream (automatic)": "GitHub registry/, ids range-rc1d-{4h,24h,72h}-<decision>, desk/range_job.py; "
                                         "read through desk/range_reader.py or reports/range_status.json",
             "in-thread forecasts": "artifact registry https://claude.ai/artifact/8QyreLBMA2aT3BCkT6atkR",
-            "legacy": "range-b2-* (repo 2.14, q50 contract, pre-12.0): scored as registered, never cited as current"},
+            "legacy": "range-b2-* (repo 2.14, q50 contract, pre-12.0): scored as registered, never cited as current",
+            "companion B1 (repo 2.20)": "streams/rc1d-b1/, ids rc1d-b1-{4h,24h,72h}-<decision>, desk/companion_job.py; "
+                                         "outside contract RC1D; report reports/companion_b1.{json,md}",
+            "paper sizing PS1 (repo 2.20)": "streams/ps1/, protocol desk/research/ps1/protocol.json, desk/paper_ps1.py; "
+                                            "simulated fills; report reports/paper_ps1.{json,md}",
+            "feasibility (repo 2.20)": "reports/feasibility.{json,md}, feasibility.py (read-only)"},
         "range_stream_start_utc": "2026-09-26T04:00:00Z",
         "deployment_log": "desk/deployments.jsonl (append-only, verified events); operational health (changes every run, not release identity): reports/range_status.json, state/range_runs.jsonl, state/range_scoring.jsonl, range-monitor.yml",
     }
