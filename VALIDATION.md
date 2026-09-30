@@ -1,3 +1,20 @@
+# Validation record — maintenance, revision 2.19 (crypto-desk 12.4)
+
+Validated 2026-09-30 17:00–17:30Z on branch `desk-maint-2-19` from `main` at `a1341401` (container; Python 3.11.15 and 3.12.11). Earlier blocks below are kept as recorded.
+
+| Check (2.19) | Result |
+|---|---|
+| Baseline evidence (GitHub API, check-run annotations, git) | Since the 2.18 merge: 13 scheduled `range.yml` runs, one failure (36520641829, Sep 29 04:13Z, preflight `test_pinned_bytes_detect_revision`), 08:00Z recovered (36541614717). `range-score.yml` 52 runs, all succeeded. `range-monitor.yml` 13 runs: red 05:58Z–18:00Z Sep 29 on the failed decision, otherwise green. Registry: 78 RC1D forecasts, 54 scores |
+| Reproductions | (1) The 2.18 archive test fails when the clock crosses a 2-second boundary between two builds of the same fixture; 2.19 passes. (2) The documented skill loop exits 0 after an early failing file (repro in `TestStartupRunner`); `check_package.py` exits nonzero. (3) `make_release._generation_identity` on the 2.18 `range_job.py` reports the typed package. (4) The audit's evidence figures at `12575d3` are reproduced exactly by `range_reader.evaluation` |
+| Regression suite (`python -m unittest discover -s regression`, includes every desk suite) | 559 run, 0 failed, 1 skipped on 3.11.15 and 3.12.11. The skip is `TestStartupRunner`, which needs the skill's `check_package.py` and runs in the package |
+| Desk suites directly | measure 40, archive 51, range model 18, contract 10, range job 26, hardening 18, release 7 (1 skip), as-of 21, ops 29, verify 7 — both Pythons |
+| Focused | archive determinism test and the pin test, 40 consecutive runs, 0 failures |
+| Fixtures, release, checksums | `test_fixtures.py` all pass; `make_release.py check` OK; `SHA256SUMS` verifies (166 files) |
+| O21 verify gate | PASS on 3.11 (max difference 0.0) and 3.12 (rows 1.0e-12) |
+| Production records | All 78 RC1D forecasts pass hash, strict validation and replay. All 54 scores re-verify from evidence, with no duplicate keys. No file under `registry/`, `state/` or `reports/` changed |
+| Skill package 12.4 | `check_package.py` PASS: 7 files, executed 173, failed 0, errors 0, skipped 42 (repository-only classes) |
+| Not observed | CI on the PR; any 2.19 run after merge. October rollover: the first October fit at the Oct 1 00:02Z run is pending |
+
 # Validation record — maintenance, revision 2.18 (crypto-desk 12.3)
 
 Validated 2026-09-28 ~13:00–14:00Z on branch `desk-maint-2-18` from `main` at `0215ee17` (container; Python 3.11.15

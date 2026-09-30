@@ -1,3 +1,23 @@
+# Maintenance, revision 2.19 (crypto-desk 12.4) — 2026-09-30
+
+**Base.** `main` at `a1341401`, which is `12575d3` (reviewed Sep 30 16:40Z) plus data commits. Revisions 2.18 (PR #21) and the Node 24 actions (PR #22) are deployed.
+
+**What changed.**
+- Shared modules changed (`range_reader.py`), so the package moves to 12.4.
+- `range_job.py` moves to 12.4.0; the version bump keeps it in the package's release family.
+- Unchanged: contract ids, model, fits, calendars, frozen records, scores and evidence, lab code and evaluation ids.
+
+| Finding | Change | Tests |
+|---|---|---|
+| **Nondeterministic archive test stopped production.** The Sep 29 04:00Z forecast run (36520641829) failed preflight in `test_pinned_bytes_detect_revision`: it read `revised` for identical content. `zip_of` used `ZipFile.writestr(name, …)`, which stamps members with the wall clock at 2-second resolution. The 08:00Z run recovered with no code change | Synthetic archives are built with fixed `ZipInfo` metadata (time, system, attributes, deflate level); the changed-content case is kept. Reproduced on 2.18 by patching the clock across a boundary (fails), and fixed in 2.19 (passes). The missed 04:00Z decision is not back-filled | `test_synthetic_archives_are_clock_independent`; 40 repeated runs |
+| **Package label in new forecasts.** The 2.18 job kept `PACKAGE = "crypto-desk 12.2"` beside `range-job-12.3.0`. All 36 forecasts it wrote by Sep 30 16:00Z carry the stale label | `range_job.py` reads the package from `release.json` and refuses to forecast on a family mismatch. `make_release.py check` refuses a typed package or a job outside the package family (it catches the 2.18 file). An append-only `desk/provenance_corrections.jsonl` defines the affected set by rule (code version `range-job-12.3.0`) and lists the 36 ids as of 17:05Z. Frozen bytes, ids, hashes and scores are unchanged, and the status shows the correction | `TestGenerationIdentity` (literal, family, every production record agrees or is covered); `test_range_job` asserts the recorded package |
+| **Scoring states.** "Unscored" read as backlog | The states are `waiting-maturity`, `ready` (for the next hourly scorer), `overdue` (more than 150 min after maturity, unattempted) and `scoring-failed`. Only the last two form the backlog | `TestScoringStatesAndEvidence.test_states_across_time` |
+| **Evidence reporting.** Pooled MAE and skill only | Status `evaluation` block and `reports/range.md` table, method `rc1d-eval-1`, dated Sep 30 before any claim. Per horizon it shows the mean absolute error of ln range for B2 and B0, paired differences (mean, median, better/tie/worse), coverage with 10-90 width for both, and window overlap. It adds a moving-block bootstrap interval (42-decision blocks) only once 10 complete blocks exist; otherwise "unavailable". It reproduces the audit's figures at `12575d3`: 24/19/8 windows, 19.2/15.1/30.4%, B2 better 15/24, 6/19, 7/8 | `test_evidence_block`, `test_interval_reported_only_with_enough_blocks` |
+| **Wording and links.** | `report.py` (report-2.6.1) and README no longer say range forecasts are scored weekly. Range scoring and range monitor badges are added. `reports/range.md` separates current availability, evidence, the scoring pipeline and recent history. OPERATIONS lists the two range workflows | regression suite |
+| **Deployment log.** | Retrospective rows: the PR #21 and #22 merges; the first scoring, monitor and publication runs on 2.18; the Sep 29 04:00Z failure; the 08:00Z recovery | `make_release check` |
+
+The skill's startup command (a shell loop that returned only the last test file's status) is replaced by `check_package.py` in the package. That change is package-only; the repository preflight already stops on the first failure.
+
 # Maintenance, revision 2.18 (crypto-desk 12.3) — 2026-09-28
 
 Base: `main` at `0215ee17` (after PR #19, repo 2.17.1). Shared modules changed (`range_contract.py`, `range_reader.py`),
