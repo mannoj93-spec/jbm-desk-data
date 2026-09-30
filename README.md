@@ -7,6 +7,7 @@
 [![Range forecasts](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range.yml)
 [![Range scoring](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-score.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-score.yml)
 [![Range monitor](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-monitor.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-monitor.yml)
+[![Research streams](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research-streams.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research-streams.yml)
 
 This repository preserves public crypto-market history, freezes forecasts before they start, and
 tests pre-registered research questions against that history. Its reports are evidence for human
@@ -24,6 +25,9 @@ review of trading skill files; nothing here trades, holds credentials, or edits 
 | Is any skill change proposed? | [reports/skill_proposals.md](reports/skill_proposals.md) - proposals, or why there are none |
 | Weekly forecast scores (issue-intake streams) | [reports/](reports/) - dated weekly reports; desk range forecasts are scored hourly (next row) |
 | How is the desk's range model doing? | [reports/range.md](reports/range.md) - current availability, scoring pipeline, paired B2 vs persistence evidence (descriptive) and recent decisions ([status JSON](reports/range_status.json), [desk/](desk/README.md)) |
+| Does DVOL add to the range forecast? | [reports/companion_b1.md](reports/companion_b1.md) - B2 vs B1 (no DVOL) beside B2 vs B0, same windows (descriptive) |
+| Do the range forecasts improve a sizing decision? | [reports/paper_ps1.md](reports/paper_ps1.md) - paper sizing experiment PS1: simulated fills, sizing only, never an entry signal ([protocol](desk/research/ps1/protocol.json)) |
+| Can each research question accumulate evidence? | [reports/feasibility.md](reports/feasibility.md) - coverage, events, warm-up, limiting factor, cautious time-to-checkpoint |
 | How was this version tested and deployed? | [VALIDATION.md](VALIDATION.md) |
 | What changed, release by release | [CHANGELOG.md](CHANGELOG.md) |
 | How to run and operate it | [Quick start](#quick-start) and [docs/OPERATIONS.md](docs/OPERATIONS.md) |
@@ -54,6 +58,9 @@ Counts, ages and statuses change every run, so they live only in the generated r
 5. **Range forecasts** (after every 4H close) run the crypto desk's range model in `desk/`, register
    its 4h, 24h and 72h forecasts with a persistence baseline in one transaction, and confirm the
    publication before the windows open.
+6. **Research streams** (after each range run; 2.20) register a B1 companion forecast for every RC1D window,
+   run the paper sizing experiment PS1 on quotes captured after each decision is confirmed, and refresh the
+   feasibility report ([docs/RESEARCH_STREAMS.md](docs/RESEARCH_STREAMS.md)). Paper results are simulations.
 
 <details>
 <summary>Repository map</summary>
@@ -68,7 +75,8 @@ Counts, ages and statuses change every run, so they live only in the generated r
 | `report.py`, `scoring.py`, `intake.py`, `watchdog.py` | reports, scoring, forecast intake, watchdog |
 | `scripts/` | persistence, merge gate, before/after reproductions |
 | `regression/`, `test_fixtures.py` | offline regression tests and numerical fixtures |
-| `desk/` | the crypto desk's range model, loaders, monthly fits and forecast job (see desk/README.md) |
+| `desk/` | the crypto desk's range model, loaders, monthly fits and forecast job (see desk/README.md); companion and PS1 jobs (2.20) |
+| `streams/`, `feasibility.py` | prospective research streams (companion B1, paper sizing PS1) and the read-only feasibility report |
 | `stream/` | optional streaming recorder (not deployed) |
 | `docs/OPERATIONS.md` | detailed operations and research reference |
 

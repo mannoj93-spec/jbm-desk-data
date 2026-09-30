@@ -1,3 +1,27 @@
+# Research upgrade, revision 2.20 (crypto-desk 12.4.3 on the 12.4 release family) — 2026-09-30
+
+**Base.** `main` at `89fde1a7` (2.19 deployed: PR #23 merged Sep 30 17:34Z; deployment rows `921264da`).
+
+**Purpose.** Make decision-relevant evidence arrive sooner and false confidence harder to sustain. Better range
+forecasts alone do not show an after-cost advantage, so 2.20 adds the smallest experiment that tests whether they
+improve a concrete decision, a stronger forecast benchmark, and a report of which research can accumulate evidence
+at all. Nothing here trades or authorizes a trade.
+
+**Unchanged.** `range_model.py` (spec `ae6aa254…`), contracts RC1D/RC1 and their ids, `range_job.py`
+(range-job-12.4.0), every registered forecast, score, fit, calendar and bundle, the lab's code, designs, evaluation
+versions and research clocks, `range.yml`, `range-score.yml`, `range-monitor.yml`, the collector. Shared modules
+are byte-identical, so the release family stays 12.4 (`release.json` `package`); the skill package documentation
+moves to 12.4.3.
+
+| Addition | What | Tests |
+|---|---|---|
+| **Companion B1** (`desk/companion_job.py`, companion-1.0.0, `streams/rc1d-b1/`) | B1 (HAR/calendar without DVOL) registered beside every RC1D batch: same decision, input snapshot, calendar terms and window, read from the RC1D record and bundle by hash. Monthly fit with the B2 fit's cutoff. Computed only 120 s or more before the window start and confirmed by hash on the remote; late = missed, never computed later. Scored with `range_contract.losses` on the realized range of the paired RC1D score. Report: B2 vs B1 beside B2 vs B0 on the same windows, rc1d-eval-1 block rules | `test_streams`: look-ahead, late registration, remote mismatch, missed-stays-missed, frozen-window features, RC1D files byte-identical |
+| **Paper sizing PS1** (`desk/paper_ps1.py`, ps1-job-1.0.0, protocol `desk/research/ps1/protocol.json`, `streams/ps1/`) | Synthetic unlevered BTC spot long; three arms (FIXED, VOL = trailing Parkinson, B2 = registered 4h point) at the same 15% ex-ante risk target; primary B2 vs VOL on after-cost Sharpe; quotes captured only after the decision is confirmed on the remote; bid/ask-walked fills, ordinary and stressed costs; joint missing-data rules; pending intervals never marked; bootstrap interval only from 10 blocks of 42 intervals; checkpoints at 180 and 365 days. The protocol, calibration and calibration script are hash-frozen; the job refuses on drift | `test_streams`: hindsight quotes, retrospective quotes, deadlines, crossed books, joint missingness, accounting (spread, slippage, fee, no borrowing, no shorting, band, depth walk), idempotent retries, protocol drift |
+| **PS1 calibration** (`desk/research/ps1/calibrate.py`, `calibration.json`) | Variance calibration of the range-to-sigma constant (0.799 vs Brownian 0.627) and the VOL constant on retained history 2024-09-23 to 2026-09-23, walk-forward B2 points; labelled training/calibration, not a holdout; `verify` recomputes exactly | `calibrate.py verify` (both Pythons); look-ahead guard test |
+| **Feasibility report** (`feasibility.py`, `reports/feasibility.{json,md}`) | Read-only, outside `lab/` (the lab's code hash is unchanged): per design coverage, eligible time, candidates, episodes, recorded counters, rates, warm-up, checkpoint progress, limiting factor; ETAs only from five qualifying observations with a Poisson interval; "not observable" kept apart from observed zeros; D1 (TWAP polling) and E1 (streaming depth) capability notes | `TestFeasibility` |
+| **Workflow** (`research-streams.yml`) | `workflow_run` after Range forecasts plus a fallback 50 min after each 4H close; tests first; writes only `streams/**` and its reports; never waits while holding `repo-write` | regression suite |
+| **Release tooling** | `make_release.py`: repo 2.20, base `89fde1a7`, the three repo-only modules, PS1 artifacts, routing for the new streams. `release.json` rewritten | `make_release.py check`; `TestIdentityPreserved` |
+
 # Maintenance, revision 2.19 (crypto-desk 12.4) — 2026-09-30
 
 **Base.** `main` at `a1341401`, which is `12575d3` (reviewed Sep 30 16:40Z) plus data commits. Revisions 2.18 (PR #21) and the Node 24 actions (PR #22) are deployed.
