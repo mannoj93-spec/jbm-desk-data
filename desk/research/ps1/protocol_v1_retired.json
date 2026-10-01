@@ -1,25 +1,10 @@
 {
  "id": "PS1",
- "version": 2,
+ "version": 1,
  "title": "Prospective paper sizing experiment: does sizing by the B2 4h range forecast beat simple volatility sizing after costs?",
  "label": "PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.",
- "frozen_utc": "2026-10-01T01:00:00Z",
- "frozen_by": "repo 2.21 maintenance build (crypto-desk package 12.4.4). Written before any PS1 observation existed: v1 never launched (not_before 2026-10-03T00:00Z) and recorded no decision, quote or execution.",
- "supersedes": {
-  "version": 1,
-  "file": "desk/research/ps1/protocol_v1_retired.json",
-  "sha256": "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f",
-  "state": "retired before launch; zero observations; preserved byte-identical",
-  "changed": [
-   "time accounting: elapsed holding time between fills, duration-weighted estimators, 8760 h/yr basis (v1 assumed 4h per interval)",
-   "interval return: log net return (v1 simple); simple return still recorded",
-   "execution: atomic execution sets with explicit states and recovery from an immutable input snapshot",
-   "confirmation: integrity binding verified before execution and reporting",
-   "quote validation: finite numeric strings, timestamp and symbol checks",
-   "lifecycle: explicit states, operator-only termination, no restart under the same protocol"
-  ],
-  "unchanged": "question, instrument, arms, formulas, calibration constants and files, band, cap, costs, capital, start rule, missing-data rules, primary comparison, checkpoints and evidence thresholds"
- },
+ "frozen_utc": "2026-09-30T22:45:00Z",
+ "frozen_by": "repo 2.20 build (crypto-desk package 12.4.3); calibration and protocol written before any PS1 observation existed",
  "question": "Holding the same synthetic, unlevered BTC spot long, with the same decisions and the same entry/exit/rebalance rules, does sizing each 4H interval by the registered RC1D B2 4h range forecast produce a higher after-cost Sharpe ratio than sizing by a trailing Parkinson volatility estimate at the same ex-ante risk target?",
  "instrument": {
   "traded": "BTCUSDT spot on Binance - a synthetic long-only position; cash is USDT",
@@ -82,22 +67,13 @@
   "max_delay_min": 90,
   "max_delay_rule": "a decision can execute until its 4H close + 90 minutes; after that it is missed and every arm keeps its holding",
   "attempts": "up to 3 quote requests per run, 5 s apart; the fallback run may retry within max_delay",
-  "book_validation": "every price and size a decimal string parsing to a finite number > 0 (NaN, inf, empty, negative, zero and non-string values are rejected - unknown liquidity is never treated as available); at least 5 levels per side; bids strictly descending, asks strictly ascending; best bid < best ask; lastUpdateId an integer; the source URL names symbol=BTCUSDT; t_sent < t_received and t_received - t_sent <= 10 s; the HTTP Date header, when present, within 120 s of t_received. A quote failing any check is recorded with its reasons and is ineligible.",
-  "fill_model": "buy: walk the captured asks for the quantity (VWAP), times (1 + slippage); sell: walk the bids, times (1 - slippage); quantity beyond the captured 20 levels fills at the last level with an extra 50 bp. Fee on the filled notional. These are simulated fills, not executions.",
-  "atomicity": "an execution has id <decision_id>#<quote_id>. Before any ledger row is written the job records an immutable input snapshot (decision row hash, confirmation binding hash, quote row hash, prior ledger state and its hash, protocol hash) in streams/ps1/execution_states.jsonl, then writes all six rows (3 arms x 2 scenarios) in one atomic file replacement and records 'completed' with the rows' hash. States: pending, running, completed, failed, partially_written, recovered. Only completed and recovered sets enter the ledger and every metric.",
-  "recovery": "an execution left pending or running is rebuilt from its snapshot (never from a new quote, never at another price): with no rows written it is completed under its own id and marked 'recovered'; with some rows written those rows stay where they are, the execution is marked 'partially_written', and the full set is rebuilt under <id>~r1 and marked 'recovered'. If the snapshot cannot be verified (quote or decision row changed, or the ledger moved on) the execution is 'failed', its decision is a missed execution, and nothing is rebuilt. A decision with a completed, recovered, running or pending execution is never executed again.",
-  "confirmation_binding": "each confirmation stores a binding - record_sha256 (canonical hash of the decision row), decision_utc, version (protocol version, protocol hash, job), input_snapshot (RC1D frozen-record hash and snapshot hash), contract (the RC1D contract id) - and binding_sha256. Execution and reporting recompute both; any mismatch is an integrity failure: the decision is excluded, the original rows are left untouched, and the failure is recorded in streams/ps1/integrity.jsonl."
+  "book_validation": "best bid < best ask; prices and sizes positive; bids descending, asks ascending; at least 5 levels per side",
+  "fill_model": "buy: walk the captured asks for the quantity (VWAP), times (1 + slippage); sell: walk the bids, times (1 - slippage); quantity beyond the captured 20 levels fills at the last level with an extra 50 bp. Fee on the filled notional. These are simulated fills, not executions."
  },
  "costs": {
   "version": "ps1-costs-1",
-  "ordinary": {
-   "taker_fee_bp": 10.0,
-   "slippage_bp": 1.0
-  },
-  "stressed": {
-   "taker_fee_bp": 10.0,
-   "slippage_bp": 10.0
-  },
+  "ordinary": {"taker_fee_bp": 10.0, "slippage_bp": 1.0},
+  "stressed": {"taker_fee_bp": 10.0, "slippage_bp": 10.0},
   "spread": "paid in full by the bid/ask fill model in both scenarios",
   "source": "Binance spot VIP 0 taker fee 0.1000%, as published in Binance's fee schedule and reported by secondary sources on 2026-09-30 (the primary page was not retrievable from the build container). Slippage values are assumptions. Fixed for PS1 v1.",
   "funding": "not applicable (spot)"
@@ -115,43 +91,18 @@
   "retries": "decision ids are ps1-<decision>; a decision is executed at most once; records are append-only and idempotent"
  },
  "metrics": {
-  "interval_return": "net log return of an arm between consecutive executed rebalances, ln(pre-trade equity at fill n / pre-trade equity at fill n-1) (costs of a trade fall in the interval it opens); the simple return is recorded beside it",
-  "primary": "difference in annualized after-cost Sharpe ratio, SR(B2) - SR(VOL), ordinary costs, from the duration-weighted estimators in time_accounting",
-  "secondary": [
-   "net return per arm",
-   "maximum drawdown on execution marks",
-   "turnover (traded notional / mean equity, annualized)",
-   "time-weighted exposure",
-   "realized annualized volatility vs the 15% target",
-   "worst interval and 5% expected shortfall",
-   "paired per-interval return differences B2-VOL and B2-FIXED",
-   "all of the above under stressed costs"
-  ],
-  "not_improvements": "lower exposure, lower volatility or lower return alone is never reported as an improvement; realized risk and exposure are printed beside every return",
-  "time_accounting": {
-   "elapsed": "dt_h = (fill time n - fill time n-1) in hours, from the recorded quote receipt times; a skipped or missed decision lengthens the interval, nothing is interpolated and no intermediate return is created",
-   "annualization_basis": "8760 hours per year (BTC trades continuously)",
-   "mean": "mu_h = sum(r) / sum(dt_h); annualized return = 8760 mu_h",
-   "variance": "s2_h = sum((r - mu_h dt_h)^2) / (sum(dt_h) (n-1)/n); annualized volatility = sqrt(8760 s2_h). With equal 4h intervals this equals the sample variance of r times 2190",
-   "sharpe": "annualized return / annualized volatility (cash yield 0)",
-   "exposure": "sum(w_held dt_h) / sum(dt_h), w_held = the weight set at the previous fill (no intra-interval marks)",
-   "turnover": "traded notional / mean execution-mark equity / (sum(dt_h) / 8760)",
-   "flags": "each interval records the decisions it spans; an interval spanning more than one 4H step is 'extended' and listed with its length"
-  }
+  "interval_return": "net simple return of an arm between consecutive executions, from pre-trade equity to pre-trade equity (costs of a trade fall in the interval it opens)",
+  "primary": "difference in annualized after-cost Sharpe ratio, SR(B2) - SR(VOL), ordinary costs, SR = mean / sd of interval net returns x sqrt(2190), cash yield 0",
+  "secondary": ["net return per arm", "maximum drawdown on execution marks", "turnover (traded notional / mean equity, annualized)", "time-weighted exposure", "realized annualized volatility vs the 15% target", "worst interval and 5% expected shortfall", "paired per-interval return differences B2-VOL and B2-FIXED", "all of the above under stressed costs"],
+  "not_improvements": "lower exposure, lower volatility or lower return alone is never reported as an improvement; realized risk and exposure are printed beside every return"
  },
  "uncertainty": {
-  "method": "moving-block bootstrap of paired intervals (B2 and VOL (log return, dt_h) pairs resampled together), blocks of 42 intervals, 5,000 resamples, seed 20261003; 90% percentile interval of the duration-weighted Sharpe difference",
+  "method": "moving-block bootstrap of paired intervals (B2 and VOL returns resampled together), blocks of 42 intervals (7 days), 5,000 resamples, seed 20261003; 90% percentile interval of the Sharpe difference",
   "minimum": "no interval is reported below 10 complete blocks (420 executed intervals, about 70 days at full coverage)",
   "dependence_note": "consecutive intervals are adjacent, not overlapping; that does not make them independent (volatility clusters), hence blocks"
  },
  "evidence": {
-  "status_vocabulary": [
-   "not launched",
-   "collecting (descriptive)",
-   "paper-inconclusive",
-   "paper-unfavourable",
-   "paper-supported (sizing, simulated)"
-  ],
+  "status_vocabulary": ["not launched", "collecting (descriptive)", "paper-inconclusive", "paper-unfavourable", "paper-supported (sizing, simulated)"],
   "checkpoints": {
    "C1": "180 days after launch and >= 10 blocks: descriptive report with the interval; no status change beyond 'collecting'",
    "C2": "365 days after launch and >= 20 blocks: first review at which a status other than 'collecting' may be assigned"
@@ -162,27 +113,9 @@
   "never": "No PS1 status is a trading edge, a live decision record or an entry endorsement. A paper-supported result would justify only a separately authorized, separately registered live test."
  },
  "pause_terminate": {
-  "pause_automatic": "see lifecycle.paused",
+  "pause_automatic": "the report shows 'paused' when the last 6 scheduled decisions (24h) all failed for the same infrastructure reason (forecast unavailable, no eligible quote, or no run); holdings are unchanged throughout and it resumes by itself when the cause clears",
   "refuse": "the job refuses to decide or execute if this file's hash, the calibration file's hash or the calibration script's hash differs from the values the job was frozen with; refused decisions are missed",
-  "terminate": "see lifecycle.terminated; also when the RC1D contract is retired or the quote sources are unavailable for 14 days (recorded by the operator). PS1 v2 never restarts under the same protocol hash."
- },
- "lifecycle": {
-  "states": [
-   "proposed",
-   "approved",
-   "active",
-   "paused",
-   "terminated",
-   "archived"
-  ],
-  "record": "streams/ps1/lifecycle.jsonl, append-only, keyed by this protocol's sha256",
-  "approved": "the protocol is on main: the first production run records the transition, citing the commit",
-  "active": "set at the first completed execution",
-  "paused": "automatic (by the job) when the last 6 scheduled decisions all failed to execute; the job keeps trying and returns to active at the next completed execution. An operator pause (by the operator) stops decisions and executions until the operator resumes.",
-  "terminated": "operator only: a lifecycle row by the operator, or streams/ps1/terminated.json. Decisions and executions stop at once - an execution in progress is recorded failed and writes no ledger row - and the open interval stays pending. Reports keep running on the retained history.",
-  "archived": "operator only, after termination; reports are labelled archived",
-  "restart": "never under the same protocol hash; a new protocol version is a new stream with a new clock",
-  "history": "no lifecycle change deletes or rewrites a record"
+  "terminate": "by an operator decision recorded in streams/ps1/terminated.json, or when the RC1D contract is retired or the quote sources are unavailable for 14 days. After termination the last open interval stays pending; PS1 v1 never restarts under the same id."
  },
  "claims_boundary": "PS1 can show whether B2 sizing improved simulated after-cost risk-adjusted returns over trailing-volatility sizing for one synthetic spot policy. It cannot show a directional edge, real fill quality, capacity, or live decision performance."
 }
