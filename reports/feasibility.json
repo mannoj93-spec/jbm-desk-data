@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-10-01T17:02:48Z",
+ "generated_utc": "2026-10-01T20:16:01Z",
  "job": "feasibility-1.0.0",
  "lab": [
   {
@@ -11,18 +11,18 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 139,
-    "hours_elapsed": 139.4,
-    "share": 0.997
+    "hourly_controls_selected": 145,
+    "hours_elapsed": 145.3,
+    "share": 0.998
    },
    "data_reasons": [],
    "data_state": "available",
    "eligible_observation": {
-    "days": 5.81,
+    "days": 6.05,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-01T12:55Z"
+    "to": "2026-10-01T18:52Z"
    },
-   "episodes_prospective": 3,
+   "episodes_prospective": 4,
    "exclusions_named": [
     "middle response group",
     "windows with missing bars",
@@ -37,17 +37,17 @@
     "test_episodes": 0.0,
     "test_retained": 0.0
    },
-   "raw_candidates_prospective": 6,
+   "raw_candidates_prospective": 7,
    "recorded_counters": {
-    "events": 6,
+    "events": 7,
     "late_inputs": 132,
     "skipped_history": 144,
     "skipped_missing": 0,
-    "spot_not_yet_available": 2356,
-    "steps": 2500
+    "spot_not_yet_available": 2426,
+    "steps": 2570
    },
    "reference_evaluation_phase": {
-    "episodes": 2,
+    "episodes": 3,
     "retained": 1
    },
    "status": "exploratory",
@@ -59,7 +59,7 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.8 days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 6.1 days; an ETA needs >= 5",
    "version": "ev-c368833b5ae6",
    "zero_interpretation": "observed zero test episodes with data available"
   },
@@ -72,18 +72,18 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 139,
-    "hours_elapsed": 139.4,
-    "share": 0.997
+    "hourly_controls_selected": 145,
+    "hours_elapsed": 145.3,
+    "share": 0.998
    },
    "data_reasons": [
-    "708 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)"
+    "729 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)"
    ],
    "data_state": "insufficient_data",
    "eligible_observation": {
-    "days": 5.81,
+    "days": 6.05,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-01T12:55Z"
+    "to": "2026-10-01T18:52Z"
    },
    "episodes_prospective": 0,
    "exclusions_named": [
@@ -102,16 +102,16 @@
    "raw_candidates_prospective": 0,
    "recorded_counters": {
     "behaviour_counts": {
-     "drawdown:hold": 3929,
+     "drawdown:hold": 4067,
      "drawdown:reduce": 5,
-     "neutral:add": 530,
-     "neutral:flat": 63012,
-     "neutral:hold": 2613,
-     "neutral:reduce": 565,
-     "neutral:reverse": 146
+     "neutral:add": 548,
+     "neutral:flat": 64881,
+     "neutral:hold": 2654,
+     "neutral:reduce": 594,
+     "neutral:reverse": 151
     },
-    "snapshots": 708,
-    "transitions": 70800
+    "snapshots": 729,
+    "transitions": 72900
    },
    "reference_evaluation_phase": {
     "episodes": 0,
@@ -126,14 +126,14 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.8 days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 6.1 days; an ETA needs >= 5",
    "version": "ev-125c86066f05",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
-    "days_to_complete_at_observed_rate": 7.7,
-    "have": 708.0,
+    "days_to_complete_at_observed_rate": 7.4,
+    "have": 729.0,
     "need": 1344.0,
-    "observed_accumulation_per_day": 82.65,
+    "observed_accumulation_per_day": 82.7,
     "unit": "snapshot transitions for the fixed cohort"
    },
    "zero_interpretation": "design warm-up not complete: events cannot yet qualify"
@@ -147,18 +147,18 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 139,
-    "hours_elapsed": 139.4,
-    "share": 0.997
+    "hourly_controls_selected": 145,
+    "hours_elapsed": 145.3,
+    "share": 0.998
    },
    "data_reasons": [
-    "712 sampled snapshots; the design needs 1344"
+    "733 sampled snapshots; the design needs 1344"
    ],
    "data_state": "insufficient_data",
    "eligible_observation": {
-    "days": 5.81,
+    "days": 6.05,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-01T12:55Z"
+    "to": "2026-10-01T18:52Z"
    },
    "episodes_prospective": 1,
    "exclusions_named": [
@@ -176,12 +176,12 @@
    },
    "raw_candidates_prospective": 1,
    "recorded_counters": {
-    "snapshots": 712,
-    "with_mark": 712
+    "snapshots": 733,
+    "with_mark": 733
    },
    "reference_evaluation_phase": {
-    "episodes": 139,
-    "retained": 31
+    "episodes": 145,
+    "retained": 32
    },
    "status": "exploratory",
    "test_evaluation_phase": {
@@ -192,14 +192,14 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.8 days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 6.1 days; an ETA needs >= 5",
    "version": "ev-eb20553bce1c",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
-    "days_to_complete_at_observed_rate": 7.6,
-    "have": 712.0,
+    "days_to_complete_at_observed_rate": 7.3,
+    "have": 733.0,
     "need": 1344.0,
-    "observed_accumulation_per_day": 83.11,
+    "observed_accumulation_per_day": 83.16,
     "unit": "sampled snapshots"
    },
    "zero_interpretation": "design warm-up not complete: events cannot yet qualify"
@@ -214,18 +214,18 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 139,
-    "hours_elapsed": 139.4,
-    "share": 0.997
+    "hourly_controls_selected": 145,
+    "hours_elapsed": 145.3,
+    "share": 0.998
    },
    "data_reasons": [
-    "5901 twapHistory checks, 272 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs"
+    "6066 twapHistory checks, 275 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs"
    ],
    "data_state": "insufficient_data",
    "eligible_observation": {
-    "days": 5.81,
+    "days": 6.05,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-01T12:55Z"
+    "to": "2026-10-01T18:52Z"
    },
    "episodes_prospective": 0,
    "exclusions_named": [
@@ -245,14 +245,14 @@
    "recorded_counters": {
     "btc_programs": 2,
     "btc_programs_not_qualifying": 2,
-    "excluded_non_btc": 270,
+    "excluded_non_btc": 273,
     "per_reason_note": "lab-2.2 does not record which of the BTC programs failed which rule (first observed after finishing vs below the notional floor)",
-    "programs_observed": 272,
-    "twap_checks": 5901
+    "programs_observed": 275,
+    "twap_checks": 6066
    },
    "reference_evaluation_phase": {
-    "episodes": 139,
-    "retained": 31
+    "episodes": 145,
+    "retained": 32
    },
    "status": "exploratory",
    "test_evaluation_phase": {
@@ -263,7 +263,7 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.8 days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 6.1 days; an ETA needs >= 5",
    "version": "ev-2b023a90293f",
    "zero_interpretation": "observed zero qualifying events while the detector ran (see capability note)"
   },
@@ -278,7 +278,7 @@
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
     "hourly_controls_selected": 0,
-    "hours_elapsed": 139.4,
+    "hours_elapsed": 145.3,
     "share": 0.0
    },
    "data_reasons": [
@@ -286,9 +286,9 @@
    ],
    "data_state": "unavailable",
    "eligible_observation": {
-    "days": 5.81,
+    "days": 6.05,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-01T12:55Z"
+    "to": "2026-10-01T18:52Z"
    },
    "episodes_prospective": 0,
    "exclusions_named": [
@@ -321,7 +321,7 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.8 days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 6.1 days; an ETA needs >= 5",
    "version": "ev-6f279983100b",
    "zero_interpretation": "not observable: the collection cannot see these events"
   },
@@ -334,18 +334,18 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 139,
-    "hours_elapsed": 139.4,
-    "share": 0.997
+    "hourly_controls_selected": 145,
+    "hours_elapsed": 145.3,
+    "share": 0.998
    },
    "data_reasons": [
-    "749 option records (278 with a trailing z-score); the design needs 1344"
+    "770 option records (299 with a trailing z-score); the design needs 1344"
    ],
    "data_state": "insufficient_data",
    "eligible_observation": {
-    "days": 5.81,
+    "days": 6.05,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-01T12:55Z"
+    "to": "2026-10-01T18:52Z"
    },
    "episodes_prospective": 0,
    "exclusions_named": [
@@ -365,12 +365,12 @@
    "raw_candidates_prospective": 0,
    "recorded_counters": {
     "quote_policy": "qualified",
-    "records": 749,
-    "with_z": 278
+    "records": 770,
+    "with_z": 299
    },
    "reference_evaluation_phase": {
-    "episodes": 139,
-    "retained": 16
+    "episodes": 145,
+    "retained": 17
    },
    "status": "exploratory",
    "test_evaluation_phase": {
@@ -381,14 +381,14 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.8 days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 6.1 days; an ETA needs >= 5",
    "version": "ev-1c53cfe81c9f",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
-    "days_to_complete_at_observed_rate": 6.8,
-    "have": 749.0,
+    "days_to_complete_at_observed_rate": 6.6,
+    "have": 770.0,
     "need": 1344.0,
-    "observed_accumulation_per_day": 87.43,
+    "observed_accumulation_per_day": 87.36,
     "unit": "option records"
    },
    "zero_interpretation": "design warm-up not complete: events cannot yet qualify"
@@ -402,18 +402,18 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 139,
-    "hours_elapsed": 139.4,
-    "share": 0.997
+    "hourly_controls_selected": 145,
+    "hours_elapsed": 145.3,
+    "share": 0.998
    },
    "data_reasons": [
-    "8.7 days of stored bars; the design needs 14"
+    "9.0 days of stored bars; the design needs 14"
    ],
    "data_state": "insufficient_data",
    "eligible_observation": {
-    "days": 5.81,
+    "days": 6.05,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-01T12:55Z"
+    "to": "2026-10-01T18:52Z"
    },
    "episodes_prospective": 1,
    "exclusions_named": [
@@ -426,18 +426,18 @@
    "primary_horizon_min": 60,
    "question": "After an ETH/SOL 5-minute shock with BTC calm, does BTC follow the alt more than scheduled entries do?",
    "rates_per_day": {
-    "test_episodes": 0.172,
-    "test_retained": 0.172
+    "test_episodes": 0.165,
+    "test_retained": 0.165
    },
    "raw_candidates_prospective": 1,
    "recorded_counters": {
     "late_inputs": 276,
     "skipped_missing": 0,
-    "steps": 2500
+    "steps": 2570
    },
    "reference_evaluation_phase": {
-    "episodes": 139,
-    "retained": 88
+    "episodes": 145,
+    "retained": 92
    },
    "status": "under prospective evaluation",
    "test_evaluation_phase": {
@@ -448,12 +448,12 @@
     "scorable": 1
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 1 retained test observation(s) in 5.8 days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 1 retained test observation(s) in 6.1 days; an ETA needs >= 5",
    "version": "ev-5cbc55c34b6d",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
-    "days_to_complete_at_observed_rate": 5.2,
-    "have": 8.7,
+    "days_to_complete_at_observed_rate": 4.9,
+    "have": 9.0,
     "need": 14.0,
     "observed_accumulation_per_day": 1.02,
     "unit": "days of stored bars"
@@ -469,18 +469,18 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 139,
-    "hours_elapsed": 139.4,
-    "share": 0.997
+    "hourly_controls_selected": 145,
+    "hours_elapsed": 145.3,
+    "share": 0.998
    },
    "data_reasons": [],
    "data_state": "available",
    "eligible_observation": {
-    "days": 5.81,
+    "days": 6.05,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-01T12:55Z"
+    "to": "2026-10-01T18:52Z"
    },
-   "episodes_prospective": 9,
+   "episodes_prospective": 10,
    "exclusions_named": [
     "buckets before 7 days of collected liquidation history",
     "other venues' deleveraging data (unavailable)"
@@ -494,10 +494,10 @@
     "test_episodes": 0.0,
     "test_retained": 0.0
    },
-   "raw_candidates_prospective": 14,
+   "raw_candidates_prospective": 18,
    "recorded_counters": {
-    "buckets": 660,
-    "liquidation_orders": 13439,
+    "buckets": 690,
+    "liquidation_orders": 14036,
     "stress_rows": 0,
     "unavailable_sources": [
      "bybit (HTTP 403 here)",
@@ -506,8 +506,8 @@
     ]
    },
    "reference_evaluation_phase": {
-    "episodes": 9,
-    "retained": 9
+    "episodes": 10,
+    "retained": 10
    },
    "status": "exploratory",
    "test_evaluation_phase": {
@@ -518,7 +518,7 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.8 days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 6.1 days; an ETA needs >= 5",
    "version": "ev-02fcecefd1bf",
    "zero_interpretation": "observed zero test episodes with data available"
   }
@@ -536,7 +536,7 @@
     "need_blocks": 10
    },
    "eligible_observation": {
-    "days": 5.54,
+    "days": 5.68,
     "from": "2026-09-26T04:00:00Z"
    },
    "id": "RC1D B2 vs B0 (24h)",
@@ -544,9 +544,9 @@
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
    "paired_scored": 26,
-   "rate_per_day": 4.69,
+   "rate_per_day": 4.58,
    "time_to_checkpoint": {
-    "central": 84.0070353618465
+    "central": 86.04040017576924
    }
   },
   {
@@ -556,7 +556,7 @@
     "need_blocks": 10
    },
    "eligible_observation": {
-    "days": 5.54,
+    "days": 5.68,
     "from": "2026-09-26T04:00:00Z"
    },
    "id": "RC1D B2 vs B0 (4h)",
@@ -564,9 +564,9 @@
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
    "paired_scored": 31,
-   "rate_per_day": 5.59,
+   "rate_per_day": 5.46,
    "time_to_checkpoint": {
-    "central": 69.56338264693922
+    "central": 71.24714322725806
    }
   },
   {
@@ -576,7 +576,7 @@
     "need_blocks": 10
    },
    "eligible_observation": {
-    "days": 5.54,
+    "days": 5.68,
     "from": "2026-09-26T04:00:00Z"
    },
    "id": "RC1D B2 vs B0 (72h)",
@@ -584,9 +584,9 @@
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
    "paired_scored": 15,
-   "rate_per_day": 2.71,
+   "rate_per_day": 2.64,
    "time_to_checkpoint": {
-    "central": 149.677509705625
+    "central": 153.300408435
    }
   },
   {
