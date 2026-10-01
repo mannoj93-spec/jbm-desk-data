@@ -19,6 +19,12 @@ window, in a separate registry, and never touches registry/, the manifest or the
             with the realized range that record carries (identical window, identical loss function).
   report    reports/companion_b1.{json,md}: B2 vs B1 beside B2 vs B0 on the same paired set (rc1d-eval-1 rules).
 
+1.1.0 (repo 2.21): confirmations carry an integrity binding (forecast hash, decision time, version, input snapshot,
+contract, confirmation time and commit); scoring and reporting verify it and exclude anything changed, recording the
+failure and leaving the original in place; the stream has an explicit lifecycle (streams/rc1d-b1/lifecycle.jsonl):
+termination is the operator's, stops new forecasts at once, and never deletes history. Forecast values, fits, the
+loss function and the evaluation method are unchanged.
+
 Stdlib only. Network: git only (confirmation). Records: streams/rc1d-b1/.
 """
 from __future__ import annotations
@@ -40,7 +46,7 @@ import range_model as R          # noqa: E402
 import range_contract as C       # noqa: E402
 import stream_util as U          # noqa: E402
 
-VERSION = "companion-1.0.0"
+VERSION = "companion-1.1.0"
 STREAM = "rc1d-b1"
 MODEL = "B1"
 ROOT = "streams/rc1d-b1"
@@ -51,6 +57,9 @@ RC1D_PREFIX = "range-rc1d-"
 HORIZONS = ("4h", "24h", "72h")
 MIN_MARGIN_S = C.MIN_MARGIN_S            # 120 s, the RC1D freezing margin
 EVAL_METHOD = "companion-eval-1 (2026-09-30): rc1d-eval-1 applied to B2 vs B1 on eligible paired windows"
+LIFECYCLE_KEY = "rc1d-b1/companion-1"       # the stream; it has been active since its first registration (2026-10-01)
+LIFECYCLE_DEFAULT = "active"
+OVERLAP = {"4h": 1, "24h": 6, "72h": 18}     # decisions per window: consecutive windows overlap for 24h and 72h
 
 
 def _say(msg):
@@ -62,6 +71,71 @@ def _say(msg):
 def _attempt(base, row):
     U.append(Path(base) / ATTEMPTS, row, key=lambda r: (r["id"], r["state"], r["t_ms"]))
     _say(f"companion {row['id']}: {row['state']}" + (f" ({row['reason']})" if row.get("reason") else ""))
+
+
+def lifecycle(base) -> tuple:
+    rows = U.lifecycle_rows(base, ROOT, LIFECYCLE_KEY)
+    return U.lifecycle_state(base, ROOT, LIFECYCLE_KEY, LIFECYCLE_DEFAULT), (rows[-1] if rows else None)
+
+
+def terminated_ms(base):
+    """When the operator terminated the stream (lifecycle row time, or the marker file's recorded time), else None."""
+    for r in U.lifecycle_rows(base, ROOT, LIFECYCLE_KEY):
+        if r.get("state") == "terminated":
+            return r["t_ms"]
+    marker = Path(base) / ROOT / "terminated.json"
+    if marker.exists():                                # a marker without a time: forecasting already refuses, so
+        try:                                           # nothing registered after it exists to exclude
+            t = json.loads(marker.read_text()).get("t_ms")
+            return int(t) if isinstance(t, int) else None
+        except (ValueError, AttributeError):
+            return None
+    return None
+
+
+def operator_lifecycle(new: str, reason: str, base=BASE) -> dict:
+    return U.transition(base, ROOT, LIFECYCLE_KEY, new, by="operator", reason=reason, default=LIFECYCLE_DEFAULT)
+
+
+# --------------------------------------------------------------------------------------------
+# Integrity binding
+# --------------------------------------------------------------------------------------------
+def binding(reg: dict, cdoc: dict, confirmed_ms: int, commit: str) -> dict:
+    return {"record_sha256": reg["sha256"], "id": reg["id"], "decision_utc": reg["decision_utc"],
+            "prepared_ms": reg["prepared_ms"], "start_ms": reg["start_ms"],
+            "version": {"stream": cdoc.get("stream"), "job": cdoc.get("version"), "model": cdoc.get("model"),
+                        "fit": cdoc.get("fit")},
+            "input_snapshot": {"rc1d_id": cdoc.get("rc1d_id"), "rc1d_frozen_sha256": cdoc.get("rc1d_frozen_sha256"),
+                               "snapshot_hash": cdoc.get("snapshot_hash")},
+            "contract": cdoc.get("contract"), "confirmed_ms": confirmed_ms, "commit": commit}
+
+
+def verify(base, reg: dict, conf: dict) -> tuple:
+    """(ok, reason, forecast doc). The forecast bytes must hash to the registry row; a bound confirmation must
+    match its binding; a legacy (1.0.0) confirmation is checked against the registry hash and its own fields."""
+    base = Path(base)
+    path = base / reg["path"]
+    if not path.exists():
+        return False, "forecast file missing", None
+    raw = path.read_bytes()
+    if hashlib.sha256(raw).hexdigest() != reg["sha256"]:
+        return False, "forecast file changed after registration", None
+    cdoc = json.loads(raw)
+    if cdoc.get("id") != reg["id"] or cdoc.get("rc1d_id") != reg["rc1d_id"] or cdoc.get("decision_utc") != reg["decision_utc"]:
+        return False, "forecast identity differs from the registry row", None
+    eligible = reg["prepared_ms"] < reg["start_ms"] and conf.get("confirmed_ms", 1 << 62) < reg["start_ms"]
+    if conf.get("start_ms") != reg["start_ms"] or bool(conf.get("eligible")) != eligible:
+        return False, "confirmation times or eligibility differ from the registry row", None
+    b = conf.get("binding")
+    if b is None:
+        return True, "legacy confirmation (companion-1.0.0): verified against the registry hash", cdoc
+    if conf.get("binding_sha256") != U.sha(b):
+        return False, "confirmation binding altered", None
+    want = binding(reg, cdoc, conf.get("confirmed_ms"), conf.get("commit"))
+    for k in want:
+        if want[k] != b.get(k):
+            return False, f"record differs from its confirmation binding ({k})", None
+    return True, "verified", cdoc
 
 
 # --------------------------------------------------------------------------------------------
@@ -164,6 +238,10 @@ def forecast(base=BASE, now=None, clock=U.clock_ms, run=None) -> list:
     base = Path(base)
     now = now or dt.datetime.now(U.UTC)
     run = run or U.run_meta()
+    st, last = lifecycle(base)
+    if not (st in ("approved", "active") or (st == "paused" and (last or {}).get("by") == "job")):
+        _say(f"companion forecast refused: lifecycle {st}")
+        return []
     decision = U.boundary(now)
     done = registered(base)
     closed = {r["id"] for r in U.rows(base / ATTEMPTS) if r["state"] in ("missed", "abandoned", "refused")}
@@ -201,7 +279,8 @@ def forecast(base=BASE, now=None, clock=U.clock_ms, run=None) -> list:
         fdoc_raw = fpath.read_bytes()
         cdoc = {"id": cid, "stream": STREAM, "version": VERSION, "model": f"B1 HAR/calendar ({R.VERSION} terms, no DVOL)",
                 "rc1d_id": rid, "rc1d_frozen_sha256": entry["sha256"], "decision_utc": doc["decision_utc"],
-                "snapshot_hash": doc["snapshot_hash"], "start_utc": doc["start_utc"], "horizon_utc": doc["horizon_utc"],
+                "snapshot_hash": doc["snapshot_hash"], "contract": entry.get("contract") or doc.get("contract"),
+                "start_utc": doc["start_utc"], "horizon_utc": doc["horizon_utc"],
                 "instrument": doc["instrument"], "fit": {"month": month, "sha256": hashlib.sha256(fdoc_raw).hexdigest()},
                 "point": round(math.exp(v["point"]), C.ROUND), "q10": q[0], "q50": q[1], "q90": q[2],
                 "made_utc": U.iso_ms(prepared),
@@ -243,9 +322,15 @@ def confirm(base=BASE, clock=U.clock_ms, remote=U.remote_sha) -> list:
         if got != r["sha256"]:
             _say(f"companion confirm: {cid} not on the remote yet")
             continue
+        try:
+            cdoc = json.loads((base / r["path"]).read_bytes())
+        except (OSError, ValueError):
+            continue
+        b = binding(r, cdoc, t, commit)
         row = {"id": cid, "commit": commit, "confirmed_ms": t, "start_ms": r["start_ms"],
                "eligible": r["prepared_ms"] < r["start_ms"] and t < r["start_ms"],
-               "method": "git fetch origin; file sha256 matches the registry row"}
+               "method": "git fetch origin; file sha256 matches the registry row; bound",
+               "binding": b, "binding_sha256": U.sha(b)}
         U.append(base / CONFIRMS, row, key=lambda x: (x["id"],))
         out.append(row)
     return out
@@ -269,9 +354,12 @@ def score(base=BASE, now_ms=None) -> list:
     conf = {r["id"]: r for r in U.rows(base / CONFIRMS)}
     rc = _rc1d_scores(base)
     out = []
+    t_end = terminated_ms(base)
     for cid, reg in registered(base).items():
         if cid in have or cid not in conf:
             continue
+        if t_end is not None and reg["frozen_ms"] >= t_end:
+            continue                                   # registered at or after termination: never scored
         s = rc.get(reg["rc1d_id"])
         if not s:
             continue
@@ -279,7 +367,11 @@ def score(base=BASE, now_ms=None) -> list:
         realized = (ev.get("B2") or {}).get("realized_ln_range")
         if realized is None:
             continue
-        cdoc = json.loads((base / reg["path"]).read_bytes())
+        ok, why, cdoc = verify(base, reg, conf[cid])
+        if not ok:
+            U.integrity_failure(base, ROOT, f"companion {cid}", why, expected=reg["sha256"],
+                                found=U.file_sha(base / reg["path"]) if (base / reg["path"]).exists() else None)
+            continue
         loss = C.losses(cdoc["point"], [cdoc["q10"], cdoc["q50"], cdoc["q90"]], realized)
         row = {"id": cid, "rc1d_id": reg["rc1d_id"], "decision_utc": reg["decision_utc"], "horizon": reg["horizon"],
                "companion_eligible": conf[cid]["eligible"],
@@ -287,7 +379,8 @@ def score(base=BASE, now_ms=None) -> list:
                "realized_ln_range": realized, "B1": loss,
                "B2_abs_error_log_lr": (ev.get("B2") or {}).get("abs_error_log_lr"),
                "B0_abs_error_log_lr": (ev.get("B0") or {}).get("abs_error_log_lr"),
-               "loss_function": "range_contract.losses (the RC1D scorer's function)", "job": VERSION}
+               "loss_function": "range_contract.losses (the RC1D scorer's function)", "job": VERSION,
+               "forecast_sha256": reg["sha256"], "verification": why}
         U.append(base / SCORES, row, key=lambda x: (x["id"],))
         out.append(row)
     return out
@@ -308,7 +401,7 @@ def evaluation(base=BASE) -> dict:
         rc_h = {k: v for k, v in rc.items() if k.startswith(f"{RC1D_PREFIX}{h}-")
                 and (v.get("publication") or {}).get("eligible") and first and k[len(RC1D_PREFIX) + len(h) + 1:] >=
                 U.parse(first).strftime("%Y%m%dT%H%MZ")}
-        pairs, missing, late = [], 0, 0
+        pairs, missing, late, excluded = [], 0, 0, 0
         for rid in sorted(rc_h):
             cid = ID_PREFIX + rid[len(RC1D_PREFIX):]
             if cid not in reg:
@@ -320,12 +413,24 @@ def evaluation(base=BASE) -> dict:
             s = sc.get(cid)
             if not s or s["B1"].get("abs_error_log_lr") is None or s.get("B2_abs_error_log_lr") is None:
                 continue
+            fpath = base / reg[cid]["path"]
+            if not fpath.exists() or U.file_sha(fpath) != s.get("forecast_sha256", reg[cid]["sha256"]) \
+                    or reg[cid]["sha256"] != s.get("forecast_sha256", reg[cid]["sha256"]):
+                excluded += 1
+                U.integrity_failure(base, ROOT, f"companion {cid}", "forecast changed after scoring",
+                                    expected=s.get("forecast_sha256", reg[cid]["sha256"]),
+                                    found=U.file_sha(fpath) if fpath.exists() else None)
+                continue
             pairs.append((s["decision_utc"], s["B2_abs_error_log_lr"], s["B1"]["abs_error_log_lr"], s["B0_abs_error_log_lr"]))
         entry = {"rc1d_scored_eligible_since_start": len(rc_h), "paired": len(pairs), "missing_companion": missing,
-                 "late_companion": late,
-                 "metric": "absolute error of ln range (log units); negative difference favours B2"}
-        for name, j in (("B2_vs_B1", 2), ("B2_vs_B0", 3)):
-            d = [p[1] - p[j] for p in pairs]
+                 "late_companion": late, "excluded_integrity": excluded,
+                 "non_overlapping_windows": len(pairs) // OVERLAP[h],
+                 "overlap_warning": None if OVERLAP[h] == 1 else
+                 f"{h} windows start every 4h and overlap {OVERLAP[h]}-fold; consecutive pairs are dependent "
+                 f"(about {len(pairs) // OVERLAP[h]} non-overlapping windows)",
+                 "metric": "absolute error of ln range (log units); negative difference favours the first model"}
+        for name, i, j in (("B2_vs_B1", 1, 2), ("B2_vs_B0", 1, 3), ("B1_vs_B0", 2, 3)):
+            d = [p[i] - p[j] for p in pairs]
             n = len(d)
             if not n:
                 entry[name] = {"n": 0}
@@ -334,6 +439,11 @@ def evaluation(base=BASE) -> dict:
             e = {"n": n, "diff_mean": round(sum(d) / n, 5), "diff_median": round(RR._quantile(d, 0.5), 5),
                  "b2_better": sum(x < -1e-12 for x in d), "ties": sum(abs(x) <= 1e-12 for x in d),
                  "b2_worse": sum(x > 1e-12 for x in d), "blocks": blocks}
+            mi, mj = sum(p[i] for p in pairs) / n, sum(p[j] for p in pairs) / n
+            sd = math.sqrt(sum((x - sum(d) / n) ** 2 for x in d) / (n - 1)) if n > 1 else None
+            e["effect"] = {"mae_first": round(mi, 5), "mae_second": round(mj, 5),
+                           "relative_mae_reduction": round(1 - mi / mj, 4) if mj > 0 else None,
+                           "standardized_mean_diff": round(sum(d) / n / sd, 4) if sd else None}
             if blocks >= RR.EVAL_MIN_BLOCKS:
                 e["diff_mean_ci95"] = [round(x, 5) for x in RR._bootstrap_mean(d, RR.EVAL_BLOCK, RR.EVAL_RESAMPLES, RR.EVAL_SEED)]
             else:
@@ -342,6 +452,11 @@ def evaluation(base=BASE) -> dict:
             entry[name] = e
         out[h] = entry
     return {"method": EVAL_METHOD, "stream_start_decision_utc": first, "horizons": out,
+            "uncertainty_method": f"moving-block bootstrap of paired differences, blocks of {RR.EVAL_BLOCK} decisions, "
+                                  f"{RR.EVAL_RESAMPLES} resamples, seed {RR.EVAL_SEED}, 95% interval; reported only from "
+                                  f"{RR.EVAL_MIN_BLOCKS} blocks",
+            "baselines": {"B2_vs_B1": "does DVOL add to HAR/calendar", "B2_vs_B0": "B2 vs persistence on the same windows",
+                          "B1_vs_B0": "HAR/calendar vs persistence"},
             "note": "Descriptive. B2 vs B0 here is restricted to windows with an eligible companion, so it can differ "
                     "from reports/range_status.json (all eligible RC1D windows). Overlapping windows are dependent."}
 
@@ -356,7 +471,19 @@ def report(base=BASE, now_ms=None) -> dict:
         if r["state"] in ("missed", "abandoned", "refused"):
             key = r.get("code") or r["state"]
             missed[key] = missed.get(key, 0) + 1
+    life, last = lifecycle(base)
+    integrity = U.rows(base / ROOT / "integrity.jsonl")
+    any_ci = any((e.get("B2_vs_B1") or {}).get("diff_mean_ci95") for e in ev["horizons"].values())
+    any_pair = any(e.get("paired") for e in ev["horizons"].values())
+    klass = ("retired" if life in ("terminated", "archived") else
+             "exploratory" if any_ci else "descriptive" if any_pair else "unavailable")
     doc = {"generated_utc": U.iso_ms(now_ms), "stream": STREAM, "job": VERSION, "evaluation": ev,
+           "lifecycle": {"state": life, "last": last, "authority": "termination and archiving: operator only"},
+           "integrity_failures": len(integrity),
+           "evidence_class": klass,
+           "evidence_class_rule": "no pre-registered success threshold exists for the companion, so its ceiling is "
+                                  "'exploratory' (an interval with no decision rule); 'descriptive' below the block minimum; "
+                                  "'unavailable' with no scored pair; 'retired' once terminated",
            "registered": len(registered(base)), "confirmed": len(U.rows(base / CONFIRMS)),
            "eligible": sum(1 for r in U.rows(base / CONFIRMS) if r["eligible"]), "not_registered_by_reason": missed,
            "status": "prospective record only; descriptive until rc1d-eval-1 block minimums are met"}
@@ -370,21 +497,30 @@ def markdown(doc: dict) -> str:
     ev = doc["evaluation"]
     lines = [f"# RC1D companion benchmark: B2 vs B1 (HAR/calendar without DVOL)", "",
              f"Generated {doc['generated_utc']} by {doc['job']}. Stream start: {ev['stream_start_decision_utc'] or 'not started'}. "
-             f"Registered {doc['registered']}, confirmed {doc['confirmed']}, eligible {doc['eligible']}.", "",
+             f"Registered {doc['registered']}, confirmed {doc['confirmed']}, eligible {doc['eligible']}. "
+             f"Lifecycle {doc['lifecycle']['state']}. Evidence class: **{doc['evidence_class']}**. "
+             f"Integrity failures recorded: {doc['integrity_failures']}.", "",
              "> Descriptive forecast-accuracy evidence only. It says whether DVOL adds to B1's range forecast; it says "
              "nothing about direction, sizing or trading returns. Late or missing companions stay late or missing.", "",
-             "| horizon | RC1D scored (eligible) | paired | missing | late | B2−B1 mean | median | B2 better/tie/worse | 95% (blocks) | B2−B0 mean (same windows) |",
-             "|---|---|---|---|---|---|---|---|---|---|"]
+             "| horizon | RC1D scored (eligible) | paired | non-overlapping | missing | late | excluded (integrity) | B2−B1 mean | median | B2 better/tie/worse | rel. MAE reduction | standardized | 95% (blocks) | B2−B0 mean (same windows) | B1−B0 mean |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for h, e in ev["horizons"].items():
-        a, b = e.get("B2_vs_B1", {}), e.get("B2_vs_B0", {})
+        a, b, c = e.get("B2_vs_B1", {}), e.get("B2_vs_B0", {}), e.get("B1_vs_B0", {})
         ci = a.get("diff_mean_ci95")
-        lines.append(f"| {h} | {e['rc1d_scored_eligible_since_start']} | {e['paired']} | {e['missing_companion']} | "
-                     f"{e['late_companion']} | {a.get('diff_mean', '—')} | {a.get('diff_median', '—')} | "
+        eff = a.get("effect") or {}
+        lines.append(f"| {h} | {e['rc1d_scored_eligible_since_start']} | {e['paired']} | {e.get('non_overlapping_windows', '—')} | "
+                     f"{e['missing_companion']} | {e['late_companion']} | {e.get('excluded_integrity', 0)} | "
+                     f"{a.get('diff_mean', '—')} | {a.get('diff_median', '—')} | "
                      f"{a.get('b2_better', '—')}/{a.get('ties', '—')}/{a.get('b2_worse', '—')} | "
-                     f"{ci if ci else 'unavailable'} ({a.get('blocks', 0)}) | {b.get('diff_mean', '—')} |")
+                     f"{eff.get('relative_mae_reduction', '—')} | {eff.get('standardized_mean_diff', '—')} | "
+                     f"{ci if ci else 'unavailable'} ({a.get('blocks', 0)}) | {b.get('diff_mean', '—')} | {c.get('diff_mean', '—')} |")
+    warn = [e["overlap_warning"] for e in ev["horizons"].values() if e.get("overlap_warning")]
+    if warn:
+        lines += ["", "Overlap: " + " ".join(warn)]
     if doc["not_registered_by_reason"]:
         lines += ["", "Not registered, by reason: " + "; ".join(f"{k} ({v})" for k, v in sorted(doc["not_registered_by_reason"].items()))]
-    lines += ["", f"Method: {ev['method']}. {ev['note']}", ""]
+    lines += ["", f"Method: {ev['method']}. Uncertainty: {ev.get('uncertainty_method')}. {ev['note']}",
+              f"Evidence class rule: {doc['evidence_class_rule']}.", ""]
     return "\n".join(lines)
 
 
@@ -400,5 +536,7 @@ if __name__ == "__main__":
         score()
     elif cmd == "report":
         report()
+    elif cmd == "lifecycle" and len(sys.argv) >= 4:
+        print(operator_lifecycle(sys.argv[2], " ".join(sys.argv[3:])))
     else:
-        raise SystemExit("usage: companion_job.py fit|forecast|confirm|score|report")
+        raise SystemExit("usage: companion_job.py fit|forecast|confirm|score|report | lifecycle <state> <reason>")

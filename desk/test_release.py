@@ -78,7 +78,8 @@ class TestGenerationIdentity(unittest.TestCase):
 @unittest.skipUnless((DESK / "check_package.py").exists(), "the startup runner ships in the skill folder")
 class TestStartupRunner(unittest.TestCase):
     """12.4: an early failing test file followed by a passing one leaves the startup result nonzero (the 12.3
-    shell loop exited 0); counts are reported separately."""
+    shell loop exited 0); counts are reported separately (12.4.4: ran, executed, passed, failed, errors, skipped,
+    unavailable)."""
 
     def test_early_failure_then_success_stays_failed(self):
         import shutil
@@ -93,10 +94,13 @@ class TestStartupRunner(unittest.TestCase):
                                            "        pass\nunittest.main()\n")
             (tmp / "test_b.py").write_text("import unittest\nclass T(unittest.TestCase):\n    def test_z(self):\n"
                                            "        pass\nunittest.main()\n")
-            res = P.run_tests(tmp, ["test_a.py", "test_b.py"])
-            self.assertEqual([r["passed"] for r in res], [False, True])
-            self.assertEqual(P.totals(res), "tests: 2 files, 1 passed; executed 3, failed 1, errors 0, skipped 1; "
-                                            "failing files: test_a.py")
+            (tmp / "test_a2.py").write_text("import a_module_that_does_not_exist\n")
+            res = P.run_tests(tmp, ["test_a.py", "test_b.py", "test_a2.py"])
+            self.assertEqual([r["passed"] for r in res], [False, True, False])
+            # 12.4.4: unittest's "Ran" includes skipped tests; executed excludes them; a file with no result is unavailable
+            self.assertEqual(P.totals(res), "tests: 3 files, 1 passed; ran 3 (includes skipped); executed 2, passed 1, "
+                                            "failed 1, errors 0, skipped 1, unavailable 1 file(s); "
+                                            "failing files: test_a.py, test_a2.py")
             loop = subprocess.run(["bash", "-c", "for t in test_*.py; do python3 $t; done"], cwd=tmp,
                                   capture_output=True)
             self.assertEqual(loop.returncode, 0)          # the 12.3 documented loop hides the failure
