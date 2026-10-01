@@ -29,22 +29,64 @@
    },
    "4h": {
     "B1_vs_B0": {
-     "n": 0
+     "b2_better": 1,
+     "b2_worse": 0,
+     "blocks": 0,
+     "diff_mean": -0.05952,
+     "diff_mean_ci95": null,
+     "diff_median": -0.05952,
+     "effect": {
+      "mae_first": 0.24499,
+      "mae_second": 0.30451,
+      "relative_mae_reduction": 0.1955,
+      "standardized_mean_diff": null
+     },
+     "n": 1,
+     "ties": 0,
+     "uncertainty": "unavailable: 0 complete block(s) of 42; needs 10"
     },
     "B2_vs_B0": {
-     "n": 0
+     "b2_better": 1,
+     "b2_worse": 0,
+     "blocks": 0,
+     "diff_mean": -0.11072,
+     "diff_mean_ci95": null,
+     "diff_median": -0.11072,
+     "effect": {
+      "mae_first": 0.19379,
+      "mae_second": 0.30451,
+      "relative_mae_reduction": 0.3636,
+      "standardized_mean_diff": null
+     },
+     "n": 1,
+     "ties": 0,
+     "uncertainty": "unavailable: 0 complete block(s) of 42; needs 10"
     },
     "B2_vs_B1": {
-     "n": 0
+     "b2_better": 1,
+     "b2_worse": 0,
+     "blocks": 0,
+     "diff_mean": -0.0512,
+     "diff_mean_ci95": null,
+     "diff_median": -0.0512,
+     "effect": {
+      "mae_first": 0.19379,
+      "mae_second": 0.24499,
+      "relative_mae_reduction": 0.209,
+      "standardized_mean_diff": null
+     },
+     "n": 1,
+     "ties": 0,
+     "uncertainty": "unavailable: 0 complete block(s) of 42; needs 10"
     },
     "excluded_integrity": 0,
     "late_companion": 0,
     "metric": "absolute error of ln range (log units); negative difference favours the first model",
     "missing_companion": 0,
-    "non_overlapping_windows": 0,
+    "non_overlapping_windows": 1,
     "overlap_warning": null,
-    "paired": 0,
-    "rc1d_scored_eligible_since_start": 0
+    "paired": 1,
+    "rc1d_scored_eligible_since_start": 1
    },
    "72h": {
     "B1_vs_B0": {
@@ -71,9 +113,9 @@
   "stream_start_decision_utc": "2026-10-01T00:00:00Z",
   "uncertainty_method": "moving-block bootstrap of paired differences, blocks of 42 decisions, 2000 resamples, seed 20260930, 95% interval; reported only from 10 blocks"
  },
- "evidence_class": "unavailable",
+ "evidence_class": "descriptive",
  "evidence_class_rule": "no pre-registered success threshold exists for the companion, so its ceiling is 'exploratory' (an interval with no decision rule); 'descriptive' below the block minimum; 'unavailable' with no scored pair; 'retired' once terminated",
- "generated_utc": "2026-10-01T04:16:21.558Z",
+ "generated_utc": "2026-10-01T05:02:00.219Z",
  "integrity_failures": 0,
  "job": "companion-1.1.0",
  "lifecycle": {
