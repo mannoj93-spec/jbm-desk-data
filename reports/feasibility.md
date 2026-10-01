@@ -1,6 +1,6 @@
 # Research feasibility
 
-Generated 2026-09-30T22:45:09Z by feasibility-1.0.0. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
+Generated 2026-10-01T00:23:06Z by feasibility-1.0.0. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
 
 ## Lab designs
 
@@ -35,7 +35,7 @@ Coverage = hourly controls selected in the evaluation phase ÷ hours elapsed sin
 - Rates per day: test episodes 0.0, retained 0.0
 - Exclusions (named in the design): rotating cohort (membership changes); transitions more than 30 minutes apart
 - Recorded counters: {"behaviour_counts": {"drawdown:hold": 3579, "drawdown:reduce": 5, "neutral:add": 482, "neutral:flat": 56960, "neutral:hold": 2329, "neutral:reduce": 508, "neutral:reverse": 137}, "snapshots": 640, "transitions": 64000}
-- Warm-up: 640 of 1344 snapshot transitions for the fixed cohort; observed 81.89/day → 8.6 more days at that rate (accumulation since the collector started (cadence.json); warm-up only - it says nothing about event rates after)
+- Warm-up: 640 of 1344 snapshot transitions for the fixed cohort; observed 81.89/day → 8.6 more days at that rate (averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after)
 - Checkpoint 1: no ETA: 0 retained test observation(s) in 5.1 days; an ETA needs >= 5
 
 ### C1-liquidation-cluster (ev-eb20553bce1c)
@@ -46,7 +46,7 @@ Coverage = hourly controls selected in the evaluation phase ÷ hours elapsed sin
 - Rates per day: test episodes 0.0, retained 0.0
 - Exclusions (named in the design): sampled accounts only; never market inventory; snapshots without a same-run mark
 - Recorded counters: {"snapshots": 643, "with_mark": 643}
-- Warm-up: 643 of 1344 sampled snapshots; observed 82.27/day → 8.5 more days at that rate (accumulation since the collector started (cadence.json); warm-up only - it says nothing about event rates after)
+- Warm-up: 643 of 1344 sampled snapshots; observed 82.27/day → 8.5 more days at that rate (averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after)
 - Checkpoint 1: no ETA: 0 retained test observation(s) in 5.1 days; an ETA needs >= 5
 
 ### D1-active-twap (ev-2b023a90293f)
@@ -79,7 +79,7 @@ Coverage = hourly controls selected in the evaluation phase ÷ hours elapsed sin
 - Rates per day: test episodes 0.0, retained 0.0
 - Exclusions (named in the design): records before 7 days of z history; panel quotes failing quality checks; events whose rr25_7d quotes are not qualified (regrouped *_ineligible; unknown quality stays unknown)
 - Recorded counters: {"quote_policy": "qualified", "records": 680, "with_z": 209}
-- Warm-up: 680 of 1344 option records; observed 87.01/day → 7.6 more days at that rate (accumulation since the collector started (cadence.json); warm-up only - it says nothing about event rates after)
+- Warm-up: 680 of 1344 option records; observed 87.01/day → 7.6 more days at that rate (averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after)
 - Checkpoint 1: no ETA: 0 retained test observation(s) in 5.1 days; an ETA needs >= 5
 
 ### G1-alt-stress-propagation (ev-5cbc55c34b6d)
@@ -90,7 +90,7 @@ Coverage = hourly controls selected in the evaluation phase ÷ hours elapsed sin
 - Rates per day: test episodes 0.198, retained 0.198
 - Exclusions (named in the design): same-minute co-movement is not leadership; windows with missing bars in any of the three assets
 - Recorded counters: {"late_inputs": 276, "skipped_missing": 0, "steps": 2281}
-- Warm-up: 8 of 14 days of stored bars; observed 1.02/day → 5.9 more days at that rate (accumulation since the collector started (cadence.json); warm-up only - it says nothing about event rates after)
+- Warm-up: 8 of 14 days of stored bars; observed 1.02/day → 5.9 more days at that rate (averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after)
 - Checkpoint 1: no ETA: 1 retained test observation(s) in 5.1 days; an ETA needs >= 5
 
 ### H1-deleveraging-stress (ev-02fcecefd1bf)
@@ -107,10 +107,12 @@ Coverage = hourly controls selected in the evaluation phase ÷ hours elapsed sin
 
 | stream | limiting factor | detail |
 |---|---|---|
-| RC1D B2 vs B0 (24h) | time (accumulation) | {"blocks": 0, "checkpoint": {"block": 42, "need_blocks": 10}, "eligible_observation": {"days": 4.78, "from": "2026-09-26T04:00:00Z"}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 21, "rate_per_day": 4.39, "time_to_checkpoint": "~91 d"} |
-| RC1D B2 vs B0 (4h) | time (accumulation) | {"blocks": 0, "checkpoint": {"block": 42, "need_blocks": 10}, "eligible_observation": {"days": 4.78, "from": "2026-09-26T04:00:00Z"}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 26, "rate_per_day": 5.44, "time_to_checkpoint": "~72 d"} |
-| RC1D B2 vs B0 (72h) | time (accumulation) | {"blocks": 0, "checkpoint": {"block": 42, "need_blocks": 10}, "eligible_observation": {"days": 4.78, "from": "2026-09-26T04:00:00Z"}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 10, "rate_per_day": 2.09, "time_to_checkpoint": "~196 d"} |
-| Companion B2 vs B1 | not started | {"note": "reports/companion_b1.json not written yet (workflow not deployed or no run)"} |
-| PS1 paper sizing | not started | {"note": "reports/paper_ps1.json not written yet"} |
+| RC1D B2 vs B0 (24h) | time (accumulation) | {"blocks": 0, "checkpoint": {"block": 42, "need_blocks": 10}, "eligible_observation": {"days": 4.85, "from": "2026-09-26T04:00:00Z"}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 21, "rate_per_day": 4.33, "time_to_checkpoint": "~92 d"} |
+| RC1D B2 vs B0 (4h) | time (accumulation) | {"blocks": 0, "checkpoint": {"block": 42, "need_blocks": 10}, "eligible_observation": {"days": 4.85, "from": "2026-09-26T04:00:00Z"}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 26, "rate_per_day": 5.36, "time_to_checkpoint": "~73 d"} |
+| RC1D B2 vs B0 (72h) | time (accumulation) | {"blocks": 0, "checkpoint": {"block": 42, "need_blocks": 10}, "eligible_observation": {"days": 4.85, "from": "2026-09-26T04:00:00Z"}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 10, "rate_per_day": 2.06, "time_to_checkpoint": "~199 d"} |
+| Companion B2 vs B1 (24h) | not started | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 0, "paired": 0} |
+| Companion B2 vs B1 (4h) | not started | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 0, "paired": 0} |
+| Companion B2 vs B1 (72h) | not started | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 0, "paired": 0} |
+| PS1 paper sizing | not started | {"note": "no executed decision yet (not before 2026-10-03T00:00:00Z)"} |
 
 Rules: only with >= 5 qualifying observations; 90% Garwood interval on the rate. observed zero (collection capable) is reported separately from not observable. no design, threshold or evaluation version is changed by this report.

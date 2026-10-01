@@ -1,5 +1,5 @@
 {
- "generated_utc": "2026-09-30T22:45:09Z",
+ "generated_utc": "2026-10-01T00:23:06Z",
  "job": "feasibility-1.0.0",
  "lab": [
   {
@@ -129,7 +129,7 @@
    "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.1 days; an ETA needs >= 5",
    "version": "ev-125c86066f05",
    "warmup": {
-    "basis": "accumulation since the collector started (cadence.json); warm-up only - it says nothing about event rates after",
+    "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
     "days_to_complete_at_observed_rate": 8.6,
     "have": 640.0,
     "need": 1344.0,
@@ -195,7 +195,7 @@
    "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.1 days; an ETA needs >= 5",
    "version": "ev-eb20553bce1c",
    "warmup": {
-    "basis": "accumulation since the collector started (cadence.json); warm-up only - it says nothing about event rates after",
+    "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
     "days_to_complete_at_observed_rate": 8.5,
     "have": 643.0,
     "need": 1344.0,
@@ -384,7 +384,7 @@
    "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 5.1 days; an ETA needs >= 5",
    "version": "ev-1c53cfe81c9f",
    "warmup": {
-    "basis": "accumulation since the collector started (cadence.json); warm-up only - it says nothing about event rates after",
+    "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
     "days_to_complete_at_observed_rate": 7.6,
     "have": 680.0,
     "need": 1344.0,
@@ -451,7 +451,7 @@
    "time_to_checkpoint_note": "no ETA: 1 retained test observation(s) in 5.1 days; an ETA needs >= 5",
    "version": "ev-5cbc55c34b6d",
    "warmup": {
-    "basis": "accumulation since the collector started (cadence.json); warm-up only - it says nothing about event rates after",
+    "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
     "days_to_complete_at_observed_rate": 5.9,
     "have": 8.0,
     "need": 14.0,
@@ -536,7 +536,7 @@
     "need_blocks": 10
    },
    "eligible_observation": {
-    "days": 4.78,
+    "days": 4.85,
     "from": "2026-09-26T04:00:00Z"
    },
    "id": "RC1D B2 vs B0 (24h)",
@@ -544,9 +544,9 @@
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
    "paired_scored": 21,
-   "rate_per_day": 4.39,
+   "rate_per_day": 4.33,
    "time_to_checkpoint": {
-    "central": 90.84576673630788
+    "central": 92.13819834571761
    }
   },
   {
@@ -556,7 +556,7 @@
     "need_blocks": 10
    },
    "eligible_observation": {
-    "days": 4.78,
+    "days": 4.85,
     "from": "2026-09-26T04:00:00Z"
    },
    "id": "RC1D B2 vs B0 (4h)",
@@ -564,9 +564,9 @@
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
    "paired_scored": 26,
-   "rate_per_day": 5.44,
+   "rate_per_day": 5.36,
    "time_to_checkpoint": {
-    "central": 72.45593541316863
+    "central": 73.48674119071403
    }
   },
   {
@@ -576,7 +576,7 @@
     "need_blocks": 10
    },
    "eligible_observation": {
-    "days": 4.78,
+    "days": 4.85,
     "from": "2026-09-26T04:00:00Z"
    },
    "id": "RC1D B2 vs B0 (72h)",
@@ -584,22 +584,52 @@
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
    "paired_scored": 10,
-   "rate_per_day": 2.09,
+   "rate_per_day": 2.06,
    "time_to_checkpoint": {
-    "central": 196.03560190466436
+    "central": 198.824533272338
    }
   },
   {
-   "id": "Companion B2 vs B1",
+   "checkpoint": {
+    "block": 42,
+    "need_blocks": 10
+   },
+   "id": "Companion B2 vs B1 (24h)",
    "kind": "companion stream",
+   "late": 0,
    "limiting_factor": "not started",
-   "note": "reports/companion_b1.json not written yet (workflow not deployed or no run)"
+   "missing": 0,
+   "paired": 0
+  },
+  {
+   "checkpoint": {
+    "block": 42,
+    "need_blocks": 10
+   },
+   "id": "Companion B2 vs B1 (4h)",
+   "kind": "companion stream",
+   "late": 0,
+   "limiting_factor": "not started",
+   "missing": 0,
+   "paired": 0
+  },
+  {
+   "checkpoint": {
+    "block": 42,
+    "need_blocks": 10
+   },
+   "id": "Companion B2 vs B1 (72h)",
+   "kind": "companion stream",
+   "late": 0,
+   "limiting_factor": "not started",
+   "missing": 0,
+   "paired": 0
   },
   {
    "id": "PS1 paper sizing",
    "kind": "paper experiment",
    "limiting_factor": "not started",
-   "note": "reports/paper_ps1.json not written yet"
+   "note": "no executed decision yet (not before 2026-10-03T00:00:00Z)"
   }
  ]
 }
