@@ -1,56 +1,88 @@
 {
- "confirmed": 3,
- "eligible": 3,
+ "confirmed": 6,
+ "eligible": 6,
  "evaluation": {
+  "baselines": {
+   "B1_vs_B0": "HAR/calendar vs persistence",
+   "B2_vs_B0": "B2 vs persistence on the same windows",
+   "B2_vs_B1": "does DVOL add to HAR/calendar"
+  },
   "horizons": {
    "24h": {
+    "B1_vs_B0": {
+     "n": 0
+    },
     "B2_vs_B0": {
      "n": 0
     },
     "B2_vs_B1": {
      "n": 0
     },
+    "excluded_integrity": 0,
     "late_companion": 0,
-    "metric": "absolute error of ln range (log units); negative difference favours B2",
+    "metric": "absolute error of ln range (log units); negative difference favours the first model",
     "missing_companion": 0,
+    "non_overlapping_windows": 0,
+    "overlap_warning": "24h windows start every 4h and overlap 6-fold; consecutive pairs are dependent (about 0 non-overlapping windows)",
     "paired": 0,
     "rc1d_scored_eligible_since_start": 0
    },
    "4h": {
+    "B1_vs_B0": {
+     "n": 0
+    },
     "B2_vs_B0": {
      "n": 0
     },
     "B2_vs_B1": {
      "n": 0
     },
+    "excluded_integrity": 0,
     "late_companion": 0,
-    "metric": "absolute error of ln range (log units); negative difference favours B2",
+    "metric": "absolute error of ln range (log units); negative difference favours the first model",
     "missing_companion": 0,
+    "non_overlapping_windows": 0,
+    "overlap_warning": null,
     "paired": 0,
     "rc1d_scored_eligible_since_start": 0
    },
    "72h": {
+    "B1_vs_B0": {
+     "n": 0
+    },
     "B2_vs_B0": {
      "n": 0
     },
     "B2_vs_B1": {
      "n": 0
     },
+    "excluded_integrity": 0,
     "late_companion": 0,
-    "metric": "absolute error of ln range (log units); negative difference favours B2",
+    "metric": "absolute error of ln range (log units); negative difference favours the first model",
     "missing_companion": 0,
+    "non_overlapping_windows": 0,
+    "overlap_warning": "72h windows start every 4h and overlap 18-fold; consecutive pairs are dependent (about 0 non-overlapping windows)",
     "paired": 0,
     "rc1d_scored_eligible_since_start": 0
    }
   },
   "method": "companion-eval-1 (2026-09-30): rc1d-eval-1 applied to B2 vs B1 on eligible paired windows",
   "note": "Descriptive. B2 vs B0 here is restricted to windows with an eligible companion, so it can differ from reports/range_status.json (all eligible RC1D windows). Overlapping windows are dependent.",
-  "stream_start_decision_utc": "2026-10-01T00:00:00Z"
+  "stream_start_decision_utc": "2026-10-01T00:00:00Z",
+  "uncertainty_method": "moving-block bootstrap of paired differences, blocks of 42 decisions, 2000 resamples, seed 20260930, 95% interval; reported only from 10 blocks"
  },
- "generated_utc": "2026-10-01T01:05:53.050Z",
- "job": "companion-1.0.0",
+ "evidence_class": "unavailable",
+ "evidence_class_rule": "no pre-registered success threshold exists for the companion, so its ceiling is 'exploratory' (an interval with no decision rule); 'descriptive' below the block minimum; 'unavailable' with no scored pair; 'retired' once terminated",
+ "generated_utc": "2026-10-01T04:16:21.558Z",
+ "integrity_failures": 0,
+ "job": "companion-1.1.0",
+ "lifecycle": {
+  "authority": "termination and archiving: operator only",
+  "last": null,
+  "state": "active"
+ },
  "not_registered_by_reason": {},
- "registered": 3,
+ "registered": 6,
  "status": "prospective record only; descriptive until rc1d-eval-1 block minimums are met",
  "stream": "rc1d-b1"
 }

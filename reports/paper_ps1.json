@@ -1,11 +1,44 @@
 {
  "decisions_recorded": 0,
- "generated_utc": "2026-10-01T01:05:53.130Z",
- "job": "ps1-job-1.0.0",
+ "evidence_class": "hypothesis",
+ "evidence_vocabulary": [
+  "descriptive",
+  "hypothesis",
+  "exploratory",
+  "prospectively supported",
+  "inconclusive",
+  "unavailable",
+  "retired"
+ ],
+ "execution_states": {},
+ "generated_utc": "2026-10-01T04:16:21.669Z",
+ "integrity": {
+  "failures": 0,
+  "ok": true,
+  "recent": []
+ },
+ "job": "ps1-job-2.0.0",
  "label": "PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.",
  "launch": null,
- "protocol": "PS1 v1",
- "protocol_sha256": "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f",
+ "lifecycle": {
+  "authority": "termination and archiving: operator only; pause: operator or job (infrastructure)",
+  "last": {
+   "by": "job",
+   "from": "proposed",
+   "key": "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560",
+   "reason": "protocol on main at b46263b8903504f9539bf54d09ac62fd343a1c65 (the operator's merge)",
+   "state": "approved",
+   "t_ms": 1790828177490
+  },
+  "state": "approved"
+ },
+ "protocol": "PS1 v2",
+ "protocol_sha256": "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560",
  "reason": "no executed decision yet (not before 2026-10-03T00:00:00Z)",
+ "retired_protocol": {
+  "file": "desk/research/ps1/protocol_v1_retired.json",
+  "sha256": "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f",
+  "state": "retired before launch, zero observations"
+ },
  "status": "not launched"
 }

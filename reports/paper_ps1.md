@@ -1,10 +1,12 @@
 # Paper sizing experiment PS1
 
-Generated 2026-10-01T01:05:53.130Z by ps1-job-1.0.0 (PS1 v1, protocol sha256 00acb5bcf3e8).
+Generated 2026-10-01T04:16:21.669Z by ps1-job-2.0.0 (PS1 v2, protocol sha256 be015545540d).
 
 > PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.
 
-**Status: not launched**
+**Status: not launched** · lifecycle approved · evidence class: hypothesis
+
+PS1 v1 (00acb5bcf3e8) was retired before launch, zero observations; preserved at `desk/research/ps1/protocol_v1_retired.json`.
 
 no executed decision yet (not before 2026-10-03T00:00:00Z)
 
