@@ -1,12 +1,12 @@
 # RC1D companion benchmark: B2 vs B1 (HAR/calendar without DVOL)
 
-Generated 2026-10-01T20:16:01.081Z by companion-1.1.0. Stream start: 2026-10-01T00:00:00Z. Registered 18, confirmed 18, eligible 18. Lifecycle active. Evidence class: **descriptive**. Integrity failures recorded: 0.
+Generated 2026-10-01T20:59:44.408Z by companion-1.1.0. Stream start: 2026-10-01T00:00:00Z. Registered 18, confirmed 18, eligible 18. Lifecycle active. Evidence class: **descriptive**. Integrity failures recorded: 0.
 
 > Descriptive forecast-accuracy evidence only. It says whether DVOL adds to B1's range forecast; it says nothing about direction, sizing or trading returns. Late or missing companions stay late or missing.
 
 | horizon | RC1D scored (eligible) | paired | non-overlapping | missing | late | excluded (integrity) | B2−B1 mean | median | B2 better/tie/worse | rel. MAE reduction | standardized | 95% (blocks) | B2−B0 mean (same windows) | B1−B0 mean |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 4h | 4 | 4 | 4 | 0 | 0 | 0 | 0.02326 | 0.04679 | 1/0/3 | -0.1053 | 0.4681 | unavailable (0) | -0.09107 | -0.11433 |
+| 4h | 5 | 5 | 5 | 0 | 0 | 0 | 0.02546 | 0.04553 | 1/0/4 | -0.0956 | 0.5879 | unavailable (0) | -0.08738 | -0.11284 |
 | 24h | 0 | 0 | 0 | 0 | 0 | 0 | — | — | —/—/— | — | — | unavailable (0) | — | — |
 | 72h | 0 | 0 | 0 | 0 | 0 | 0 | — | — | —/—/— | — | — | unavailable (0) | — | — |
 
