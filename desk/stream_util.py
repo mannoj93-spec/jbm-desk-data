@@ -10,6 +10,9 @@ the research lab reads: their records live under streams/ and their reports unde
   remote_sha(path)              sha256 of a file on origin/main after `git fetch` (publication confirmation)
   rc1d_record(base, fid)        a registered RC1D forecast, verified: manifest entry, frozen bytes, publication row
   rc1d_bundle(base, doc)        its retained input bundle, verified against its content hash
+  lifecycle_state / transition  a stream's lifecycle (repo 2.21): proposed, approved, active, paused, terminated,
+                                archived - append-only, with the allowed transitions enforced
+  integrity_failure(...)        append a fail-closed integrity record (the changed object is never overwritten)
 Stdlib only.
 """
 from __future__ import annotations
@@ -24,7 +27,7 @@ import sys
 import time
 from pathlib import Path
 
-VERSION = "stream-util-1.0.0"
+VERSION = "stream-util-1.1.0"
 DESK = Path(__file__).resolve().parent
 BASE = DESK.parent
 for p in (str(DESK), str(BASE)):
@@ -152,3 +155,78 @@ def rc1d_bundle(base, doc: dict) -> dict:
     if hashlib.sha256(raw).hexdigest() != bsha:
         raise RecordUnavailable(f"input bundle {str(bsha)[:12]} altered")
     return json.loads(raw)
+
+
+# --------------------------------------------------------------------------------------------
+# Lifecycle (repo 2.21)
+# --------------------------------------------------------------------------------------------
+LIFECYCLE_STATES = ("proposed", "approved", "active", "paused", "terminated", "archived")
+TRANSITIONS = {
+    "proposed": {"approved", "terminated"},
+    "approved": {"active", "paused", "terminated"},
+    "active": {"paused", "terminated"},
+    "paused": {"active", "terminated"},
+    "terminated": {"archived"},
+    "archived": set(),
+}
+OPERATOR_ONLY = {"terminated", "archived"}          # never set by a job
+
+
+class LifecycleError(RuntimeError):
+    """A stage was asked to run, or a transition was asked for, that the lifecycle does not allow."""
+
+
+def lifecycle_rows(base, root: str, key: str) -> list:
+    return [r for r in rows(Path(base) / root / "lifecycle.jsonl") if r.get("key") == key]
+
+
+def lifecycle_state(base, root: str, key: str, default: str = "proposed") -> str:
+    """The current state for `key` (a protocol hash or stream version): the last valid transition. A legacy
+    terminated.json marker in the stream root counts as an operator termination."""
+    state = default
+    for r in lifecycle_rows(base, root, key):
+        if r.get("state") in TRANSITIONS.get(state, set()):
+            state = r["state"]
+    if (Path(base) / root / "terminated.json").exists() and state not in ("terminated", "archived"):
+        state = "terminated"
+    return state
+
+
+def transition(base, root: str, key: str, new: str, by: str, reason: str, t_ms: int | None = None,
+               default: str = "proposed", **extra) -> dict:
+    """Append a lifecycle transition. Jobs may only approve, activate and pause/resume; termination and archiving
+    are the operator's (by="operator"). Terminated and archived streams never restart under the same key."""
+    if new not in LIFECYCLE_STATES:
+        raise LifecycleError(f"unknown state {new!r}")
+    if new in OPERATOR_ONLY and by != "operator":
+        raise LifecycleError(f"{new} is an operator decision; a job cannot set it")
+    cur = lifecycle_state(base, root, key, default)
+    if new == cur:
+        return {"key": key, "state": cur, "unchanged": True}
+    if new not in TRANSITIONS[cur]:
+        raise LifecycleError(f"{cur} -> {new} is not allowed" + (" (a new protocol version is a new stream)"
+                                                                  if cur in ("terminated", "archived") else ""))
+    row = dict({"key": key, "from": cur, "state": new, "by": by, "reason": reason,
+                "t_ms": clock_ms() if t_ms is None else t_ms}, **extra)
+    append(Path(base) / root / "lifecycle.jsonl", row, key=lambda r: (r["key"], r["from"], r["state"], r["t_ms"]))
+    return row
+
+
+def require(base, root: str, key: str, allowed: tuple, stage: str, default: str = "proposed") -> str:
+    """Raise LifecycleError unless the stream is in one of `allowed` states for this stage."""
+    st = lifecycle_state(base, root, key, default)
+    if st not in allowed:
+        raise LifecycleError(f"{stage} refused: lifecycle state is {st}")
+    return st
+
+
+# --------------------------------------------------------------------------------------------
+# Integrity (repo 2.21)
+# --------------------------------------------------------------------------------------------
+def integrity_failure(base, root: str, obj: str, reason: str, expected=None, found=None, t_ms=None) -> dict:
+    """Record a fail-closed integrity failure. The changed object stays where it is, untouched; consumers
+    exclude it. Idempotent per (object, reason, expected, found)."""
+    row = {"object": obj, "reason": reason, "expected": expected, "found": found,
+           "t_ms": clock_ms() if t_ms is None else t_ms, "action": "excluded; original record preserved"}
+    append(Path(base) / root / "integrity.jsonl", row, key=lambda r: (r["object"], r["reason"], r["expected"], r["found"]))
+    return row

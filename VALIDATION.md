@@ -1,3 +1,19 @@
+# Validation record — maintenance, revision 2.21 (crypto-desk 12.4.4 on the 12.4 release family)
+
+Validated 2026-10-01 00:30–02:00Z on branch `maint-2-21` from `main` at `8e8e3c14` (container; Python 3.11.15 and 3.12.11). Earlier blocks below are kept as recorded; test counts in them are restated in the last row.
+
+| Check (2.21) | Result |
+|---|---|
+| Baseline | `main` 8e8e3c14; 2.20 deployed. Before any change: 84 RC1D forecasts replay, 57 of 57 scores reproduce from retained evidence; findings 1–8 reproduced on the deployed code (`CHANGELOG.md` 2.21) |
+| Regression suite (`python -m unittest discover -s regression`) | 3.12.11: ran 656, executed 655, passed 655, failed 0, errors 0, skipped 1. 3.11.15: ran 656, executed 654, passed 654, failed 0, errors 0, skipped 2 (lab evaluation versions hash the 3.12 AST). Unavailable: none. One earlier full 3.11 run had 1 failure in `test_rev26.test_one_hung_venue_cannot_cost_every_venue_its_snapshot` (collector stage budget 243.6 s against a 241 s bound); collector code is untouched, the test passed 5 of 5 in isolation, 3 of 3 on unmodified `main`, and on the full rerun - recorded as a pre-existing timing-sensitive test, not fixed here |
+| Stream tests (`desk/test_streams.py`) | ran 97 (41 earlier + 56 new: atomic execution 7, time accounting 8, quote validation 12, PS1 integrity 6, companion integrity 6, lifecycle 7, workflow stages 8, retired protocol 2); 3.12 executed 97, passed 97; 3.11 executed 96, passed 96, skipped 1 |
+| Numerical fixtures | duration-weighted Sharpe on (0.02, −0.01, 0.03) over (4, 8, 4) h = 21.9/√1.14975; equal 4h spacing reduces to v1's √2190 formula to 1e-9 |
+| Preserved | after the build: 84 RC1D forecasts replay, 57 of 57 scores reproduce; `registry/`, `state/`, `desk/fits/`, `streams/` and `reports/` unchanged by the build; PS1 v1 protocol byte-identical (`00acb5bc…`); calibration and script unchanged, `calibrate.py verify` PASS on both Pythons; lab code hash and 3.12 evaluation versions unchanged |
+| Fixtures, release, checksums, O21 verify | `test_fixtures.py` all pass; `make_release.py check` OK (release 2.21 manifest); `SHA256SUMS` verifies; O21 `verify` PASS |
+| Dry run on a copy of `main` | every stage through `stream_ops.py`; companion fit validates; PS1 `decide`/`execute` refused at lifecycle `proposed` (approval is recorded only by a production run on `main`); reports written with evidence class and lifecycle; verdict `completed` |
+| Not executed | the workflow on GitHub with 2.21; any PS1 v2 decision or execution; the PS1 launch (not before 2026-10-03T00:00Z) |
+| Restated counts (unittest "Ran" includes skipped) | 2.20 regression "600 run": executed 599 (3.12) and 598 (3.11). Package 12.4 `check_package.py` "executed 173 … skipped 42": ran 173, executed 131 |
+
 # Validation record — research upgrade, revision 2.20 (crypto-desk 12.4.3 on the 12.4 release family)
 
 Validated 2026-09-30 22:30–23:30Z on branch `research-ps1` from `main` at `89fde1a7` (container; Python 3.11.15 and 3.12.11). Earlier blocks below are kept as recorded.

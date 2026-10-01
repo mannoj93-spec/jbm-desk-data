@@ -1,3 +1,22 @@
+# Maintenance, revision 2.21 (crypto-desk 12.4.4 on the 12.4 release family) — 2026-10-01
+
+**Base.** `main` at `8e8e3c14` (2.20 deployed: PR #24 merged Sep 30 23:47:50Z; first research-streams run 36795851380; first eligible companion registrations Oct 1 00:23Z).
+
+**Purpose.** Make the evidence the research streams collect from now on trustworthy. Each item was reproduced on the deployed code before it was changed. Nothing here changes the range model, contracts RC1D/RC1, `range_job.py`, any registered forecast, score, fit or bundle, the lab, or the PS1 calibration. Shared modules are byte-identical, so the release family stays 12.4.
+
+| Finding (reproduced on 2.20) | Change | Tests |
+|---|---|---|
+| **PS1 execution not atomic.** Six rows appended one at a time; an interruption after the first left 1 of 6 and the retry skipped the decision | ps1-job-2.0.0: an immutable snapshot, explicit states (`streams/ps1/execution_states.jsonl`: pending, running, completed, failed, partially_written, recovered), all six rows in one atomic replacement, a completion hash; recovery rebuilds from the snapshot only; partial rows stay as a record; duplicates refused | `TestAtomicExecution` |
+| **PS1 time accounting.** Annualization assumed 4h per interval | PS1 protocol v2, frozen before launch (v1 never recorded an observation and is kept byte-identical as `protocol_v1_retired.json`): elapsed hours between fills, duration-weighted estimators on log returns, 8760 h/yr, hour-weighted exposure, extended intervals flagged, nothing interpolated | `TestTimeAccounting` |
+| **Confirmations not bound.** A tampered confirmed companion was scored; a tampered PS1 weight was executed | integrity bindings (record hash, decision time, version, input snapshot, contract, confirmation time, commit) verified before execution, scoring and reporting; failures excluded and written to `integrity.jsonl`; originals untouched; companion-1.1.0 | `TestConfirmationIntegrity`, `TestCompanionIntegrity` |
+| **Quote validation.** NaN size passed and filled | finite positive decimal strings, ordering, crossing, depth, update id, symbol, request/receipt and HTTP Date timing; the fill model refuses an invalid book | `TestQuoteValidation` |
+| **No lifecycle.** `execute` and `report` ignored termination | `stream_util` lifecycle: proposed, approved, active, paused, terminated, archived; operator-only termination (CLI, or `terminated.json` committed from a phone); every stage checks it; no restart under the same key | `TestLifecycle` |
+| **Workflow green with failed steps.** Steps were continue-on-error; only preflight failed the job | `desk/stream_ops.py` stage log (`streams/ops/stages-YYYY-MM.jsonl`) and a verdict step that fails on any failed, skipped, missing or artifact-less required stage or an unpersisted run | `TestWorkflowStages` |
+| **Test counts.** "Executed" included skipped tests | ran, executed, passed, failed, errors, skipped and unavailable reported separately (`stream_ops.parse_counts`; the package's `check_package.py`; this record) | `TestStartupRunner` (package), `test_test_counts_are_reported_separately` |
+| **Reports.** No independent-sample count, effect size or evidence class | companion: non-overlapping windows, overlap warning, relative MAE reduction, standardized difference, B1−B0, uncertainty method, class; PS1: block unit, dependence warning, Sharpe/return/standardized differences, baselines, class | report and dry-run checks |
+
+Release tooling: `make_release.py` repo 2.21, base `8e8e3c14`, `stream_ops.py` repo-only, `protocol_v1_retired.json` an artifact; `release.json` rewritten.
+
 # Research upgrade, revision 2.20 (crypto-desk 12.4.3 on the 12.4 release family) — 2026-09-30
 
 **Base.** `main` at `89fde1a7` (2.19 deployed: PR #23 merged Sep 30 17:34Z; deployment rows `921264da`).

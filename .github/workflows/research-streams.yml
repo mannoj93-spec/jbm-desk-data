@@ -10,6 +10,9 @@ name: Research streams
 # cannot move, alter or delay an RC1D forecast, a score, a lab result or a collection (it never runs inside those
 # jobs, and it does not wait while holding the repository-write queue). Late or missing registrations and quotes
 # are recorded as such; nothing is reconstructed later.
+# Repo 2.21: every stage runs through desk/stream_ops.py, which records started/completed times, status, the error
+# and each artifact in streams/ops/; the final verdict fails the workflow when any required stage failed, was not
+# run, or lost its artifact, or when the records were not persisted. Optional stages are labelled, never counted.
 on:
   workflow_run:
     workflows: ["Range forecasts"]
@@ -42,55 +45,64 @@ jobs:
       - name: Stream tests and the PS1 calibration check (refuse to register from untested code)
         id: preflight
         continue-on-error: true
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
         run: |
-          set -o pipefail
-          cd desk
-          PYTHONDONTWRITEBYTECODE=1 python test_streams.py
-          python research/ps1/calibrate.py verify
+          set -e
+          python desk/stream_ops.py run --stage preflight-tests --required --tests -- python desk/test_streams.py
+          python desk/stream_ops.py run --stage preflight-calibration --required -- python desk/research/ps1/calibrate.py verify
       - name: Companion fit (once per month, after the RC1D fit exists)
-        id: fit
         if: steps.preflight.outcome == 'success'
         continue-on-error: true
-        run: python desk/companion_job.py fit
+        run: python desk/stream_ops.py run --stage companion-fit --required -- python desk/companion_job.py fit
       - name: Companion forecasts for the latest decision (only before the window start margin)
         if: steps.preflight.outcome == 'success'
         continue-on-error: true
-        run: python desk/companion_job.py forecast
+        run: python desk/stream_ops.py run --stage companion-forecast --required -- python desk/companion_job.py forecast
       - name: PS1 decision for the latest decision
         if: steps.preflight.outcome == 'success'
         continue-on-error: true
-        run: python desk/paper_ps1.py decide
+        run: python desk/stream_ops.py run --stage ps1-decide --required -- python desk/paper_ps1.py decide
       - name: Publish the registrations
         id: publish
         if: always()
+        continue-on-error: true
         env:
           COMMIT_MESSAGE: Research streams registered
           PERSIST_BUDGET_S: '90'
-        run: bash scripts/commit_push.sh streams
+        run: python desk/stream_ops.py run --stage publish --required -- bash scripts/commit_push.sh streams
       - name: Confirm the registrations on the remote
         if: steps.publish.outcome == 'success' && steps.preflight.outcome == 'success'
         continue-on-error: true
         run: |
-          python desk/companion_job.py confirm
-          python desk/paper_ps1.py confirm
+          s=0
+          python desk/stream_ops.py run --stage companion-confirm --required --needs publish -- python desk/companion_job.py confirm || s=1
+          python desk/stream_ops.py run --stage ps1-confirm --required --needs publish -- python desk/paper_ps1.py confirm || s=1
+          exit $s
       - name: PS1 execution on a quote captured after confirmation (simulated fills)
         if: steps.publish.outcome == 'success' && steps.preflight.outcome == 'success'
         continue-on-error: true
-        run: python desk/paper_ps1.py execute
+        run: python desk/stream_ops.py run --stage ps1-execute --required --needs ps1-confirm -- python desk/paper_ps1.py execute
       - name: Scores and reports
         if: always()
         continue-on-error: true
         run: |
-          python desk/companion_job.py score
-          python desk/companion_job.py report
-          python desk/paper_ps1.py report
-          python feasibility.py
+          s=0
+          python desk/stream_ops.py run --stage companion-score --required -- python desk/companion_job.py score || s=1
+          python desk/stream_ops.py run --stage companion-report --required --artifact reports/companion_b1.json --artifact reports/companion_b1.md -- python desk/companion_job.py report || s=1
+          python desk/stream_ops.py run --stage ps1-report --required --artifact reports/paper_ps1.json --artifact reports/paper_ps1.md -- python desk/paper_ps1.py report || s=1
+          python desk/stream_ops.py run --stage feasibility-report --optional --artifact reports/feasibility.json --artifact reports/feasibility.md -- python feasibility.py || true
+          exit $s
       - name: Persist
+        id: persist
         if: always()
         env:
           COMMIT_MESSAGE: Research streams
           PERSIST_BUDGET_S: '90'
         run: bash scripts/commit_push.sh streams reports/companion_b1.json reports/companion_b1.md reports/paper_ps1.json reports/paper_ps1.md reports/feasibility.json reports/feasibility.md
-      - name: Fail if the stream tests failed
-        if: steps.preflight.outcome == 'failure'
-        run: exit 1
+      - name: Verdict (fails unless every required stage completed with its artifacts and the records persisted)
+        if: always()
+        run: >-
+          python desk/stream_ops.py verdict
+          --expect preflight-tests,preflight-calibration,companion-fit,companion-forecast,ps1-decide,publish,companion-confirm,ps1-confirm,ps1-execute,companion-score,companion-report,ps1-report,feasibility-report
+          --persist-outcome ${{ steps.persist.outcome }}
