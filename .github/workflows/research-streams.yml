@@ -7,12 +7,15 @@ name: Research streams
 #   feasibility    feasibility.py         - read-only report on whether each hypothesis can accumulate evidence
 # It starts after a "Range forecasts" run completes (so the RC1D batch is confirmed before it reads it) and on a
 # fallback schedule 50 minutes after each 4H close. It writes only streams/** and its own reports; a failure here
-# cannot move, alter or delay an RC1D forecast, a score, a lab result or a collection (it never runs inside those
-# jobs, and it does not wait while holding the repository-write queue). Late or missing registrations and quotes
-# are recorded as such; nothing is reconstructed later.
+# cannot move or alter an RC1D forecast, a score, a lab result or a collection (it never runs inside those jobs).
+# It holds the repository-write queue (repo-write) for the whole job, so while it runs other writers wait: the
+# logged stage span was 15-24 s on its first twelve production runs (Oct 1-2); queue wait is not logged. Late or
+# missing registrations and quotes are recorded as such; nothing is reconstructed later.
 # Repo 2.21: every stage runs through desk/stream_ops.py, which records started/completed times, status, the error
 # and each artifact in streams/ops/; the final verdict fails the workflow when any required stage failed, was not
 # run, or lost its artifact, or when the records were not persisted. Optional stages are labelled, never counted.
+# Repo 2.22: the stream jobs report a machine-readable OUTCOME (done / expected / error) and --semantic stages fail on
+# class error even at exit 0; the verdict re-checks artifact hashes and that the records are committed and on main.
 on:
   workflow_run:
     workflows: ["Range forecasts"]
@@ -54,15 +57,15 @@ jobs:
       - name: Companion fit (once per month, after the RC1D fit exists)
         if: steps.preflight.outcome == 'success'
         continue-on-error: true
-        run: python desk/stream_ops.py run --stage companion-fit --required -- python desk/companion_job.py fit
+        run: python desk/stream_ops.py run --stage companion-fit --required --semantic -- python desk/companion_job.py fit
       - name: Companion forecasts for the latest decision (only before the window start margin)
         if: steps.preflight.outcome == 'success'
         continue-on-error: true
-        run: python desk/stream_ops.py run --stage companion-forecast --required -- python desk/companion_job.py forecast
+        run: python desk/stream_ops.py run --stage companion-forecast --required --semantic -- python desk/companion_job.py forecast
       - name: PS1 decision for the latest decision
         if: steps.preflight.outcome == 'success'
         continue-on-error: true
-        run: python desk/stream_ops.py run --stage ps1-decide --required -- python desk/paper_ps1.py decide
+        run: python desk/stream_ops.py run --stage ps1-decide --required --semantic -- python desk/paper_ps1.py decide
       - name: Publish the registrations
         id: publish
         if: always()
@@ -76,21 +79,21 @@ jobs:
         continue-on-error: true
         run: |
           s=0
-          python desk/stream_ops.py run --stage companion-confirm --required --needs publish -- python desk/companion_job.py confirm || s=1
-          python desk/stream_ops.py run --stage ps1-confirm --required --needs publish -- python desk/paper_ps1.py confirm || s=1
+          python desk/stream_ops.py run --stage companion-confirm --required --semantic --needs publish -- python desk/companion_job.py confirm || s=1
+          python desk/stream_ops.py run --stage ps1-confirm --required --semantic --needs publish -- python desk/paper_ps1.py confirm || s=1
           exit $s
       - name: PS1 execution on a quote captured after confirmation (simulated fills)
         if: steps.publish.outcome == 'success' && steps.preflight.outcome == 'success'
         continue-on-error: true
-        run: python desk/stream_ops.py run --stage ps1-execute --required --needs ps1-confirm -- python desk/paper_ps1.py execute
+        run: python desk/stream_ops.py run --stage ps1-execute --required --semantic --needs ps1-confirm -- python desk/paper_ps1.py execute
       - name: Scores and reports
         if: always()
         continue-on-error: true
         run: |
           s=0
-          python desk/stream_ops.py run --stage companion-score --required -- python desk/companion_job.py score || s=1
-          python desk/stream_ops.py run --stage companion-report --required --artifact reports/companion_b1.json --artifact reports/companion_b1.md -- python desk/companion_job.py report || s=1
-          python desk/stream_ops.py run --stage ps1-report --required --artifact reports/paper_ps1.json --artifact reports/paper_ps1.md -- python desk/paper_ps1.py report || s=1
+          python desk/stream_ops.py run --stage companion-score --required --semantic -- python desk/companion_job.py score || s=1
+          python desk/stream_ops.py run --stage companion-report --required --semantic --artifact reports/companion_b1.json --artifact reports/companion_b1.md -- python desk/companion_job.py report || s=1
+          python desk/stream_ops.py run --stage ps1-report --required --semantic --artifact reports/paper_ps1.json --artifact reports/paper_ps1.md -- python desk/paper_ps1.py report || s=1
           python desk/stream_ops.py run --stage feasibility-report --optional --artifact reports/feasibility.json --artifact reports/feasibility.md -- python feasibility.py || true
           exit $s
       - name: Persist
@@ -106,3 +109,5 @@ jobs:
           python desk/stream_ops.py verdict
           --expect preflight-tests,preflight-calibration,companion-fit,companion-forecast,ps1-decide,publish,companion-confirm,ps1-confirm,ps1-execute,companion-score,companion-report,ps1-report,feasibility-report
           --persist-outcome ${{ steps.persist.outcome }}
+          --check-persisted streams --check-persisted reports/companion_b1.json --check-persisted reports/companion_b1.md
+          --check-persisted reports/paper_ps1.json --check-persisted reports/paper_ps1.md
