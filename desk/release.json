@@ -6,11 +6,12 @@
   "research/o21/reanalysis_12.0_rows.json.gz": "4a3f9cc41449d471b6748122748372634386fed97881c410b2cf2a8e7b3dd842",
   "research/ps1/calibrate.py": "28c5586bfc9bb4b7a15d0365e9c59f3e5aafb57c9e8152966e558b6842f7f245",
   "research/ps1/calibration.json": "e29bee967c88b29385b67ecfb48ebd58d8aaeeb6e25cfec03c462ecc1471b01a",
-  "research/ps1/protocol.json": "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560",
-  "research/ps1/protocol_v1_retired.json": "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f"
+  "research/ps1/protocol.json": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
+  "research/ps1/protocol_v1_retired.json": "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f",
+  "research/ps1/protocol_v2_retired.json": "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560"
  },
  "audited_snapshot": "eb776d52a2d66563b6dad188d1b899c4efdf9134 (package 12.2, repo 2.17.1; after PR #19)",
- "base_commit": "8e8e3c14dcddfcfd0504a9f486ef85ca354ff4c5",
+ "base_commit": "dea476035e9e198f791dcfbd7f0dd4b29f6aabc6",
  "calendar": {
   "file": "releases_2020_2026.csv",
   "last_event_utc": "2026-12-15T13:30:00Z",
@@ -27,9 +28,9 @@
  },
  "modules": {
   "companion_job.py": {
-   "sha256": "f0b1fc5767523290bbfc2879ef2f20008db80f0e6910ee26397d160155323aa0",
+   "sha256": "65f0ca4216b4a2a85e9505fdc3033da7fdbb676720713b6570a8cbe1be62ccaa",
    "shared_with_skill": false,
-   "version": "companion-1.1.0"
+   "version": "companion-1.2.0"
   },
   "jbm_archive.py": {
    "sha256": "35966ae62f21ad4ceee3020dd3792c19c20b803afa37e8dd5dd4dd359a8b0428",
@@ -42,9 +43,9 @@
    "version": "measure-11.1.0"
   },
   "paper_ps1.py": {
-   "sha256": "c052b1b2b2f38822c9bdda3ba0c2d68304caf946b802d4881ae0b4485bea6fc6",
+   "sha256": "508190b620b02fb2222a71b17aacece31754d2d44b11d291958f42c16b602af4",
    "shared_with_skill": false,
-   "version": "ps1-job-2.0.0"
+   "version": "ps1-job-3.0.0"
   },
   "range_contract.py": {
    "sha256": "83a24eff32dd267f367224133c8072a9898cf78be0cc5c058bbbc4869db1d1e5",
@@ -82,14 +83,14 @@
    "version": "retained-12.1.0"
   },
   "stream_ops.py": {
-   "sha256": "6637763b5dc7a277012059e4c9f189036aa5abd56b6aedebcb77a8ba76ee3454",
+   "sha256": "70fa406a0cacd5526b3302499cf7640ccc5588f17a386fdddc4542afc1b37f70",
    "shared_with_skill": false,
-   "version": "stream-ops-1.0.0"
+   "version": "stream-ops-1.1.0"
   },
   "stream_util.py": {
-   "sha256": "a87ee8beb5cad20c9b28af1f0d64163988f6f2a58a8dc961e2dc5b8b79ee96ae",
+   "sha256": "bd9df9806a2ceb6796aa02597d474a04b1f60b5919216e692e9260a0405ba1a9",
    "shared_with_skill": false,
-   "version": "stream-util-1.1.0"
+   "version": "stream-util-1.2.0"
   }
  },
  "package": "crypto-desk 12.4",
@@ -99,10 +100,10 @@
   "feasibility (repo 2.20)": "reports/feasibility.{json,md}, feasibility.py (read-only)",
   "in-thread forecasts": "artifact registry https://claude.ai/artifact/8QyreLBMA2aT3BCkT6atkR",
   "legacy": "range-b2-* (repo 2.14, q50 contract, pre-12.0): scored as registered, never cited as current",
-  "paper sizing PS1 (repo 2.20; protocol v2 in 2.21)": "streams/ps1/, protocol desk/research/ps1/protocol.json (v2; v1 retired before launch: protocol_v1_retired.json), desk/paper_ps1.py; simulated fills; report reports/paper_ps1.{json,md}",
+  "paper sizing PS1 (repo 2.20; protocol v3 in 2.22)": "streams/ps1/, protocol desk/research/ps1/protocol.json (v3; v1 and v2 retired before launch: protocol_v1_retired.json, protocol_v2_retired.json), desk/paper_ps1.py; simulated fills; report reports/paper_ps1.{json,md}",
   "range stream (automatic)": "GitHub registry/, ids range-rc1d-{4h,24h,72h}-<decision>, desk/range_job.py; read through desk/range_reader.py or reports/range_status.json",
   "stage log (repo 2.21)": "streams/ops/stages-YYYY-MM.jsonl, desk/stream_ops.py; the research-streams verdict"
  },
- "release_sha256": "70e990d2f58b238c46d546649aac13f1dd5707b65bff9f22a48a7b24bd995f68",
- "repo_revision": "2.21"
+ "release_sha256": "962370281aa4cd614b8d73c5944f18c009e3264da159c6cad223008161276209",
+ "repo_revision": "2.22"
 }

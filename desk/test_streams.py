@@ -49,7 +49,8 @@ START_MS = U.ms(dt.datetime(2026, 9, 30, 20, 25, tzinfo=UTC))
 def _have_fixture():
     try:
         m = json.loads((BASE / "state/forecast_manifest.json").read_text())
-        return all(i in m for i in IDS)
+        scored = {json.loads(l).get("id") for l in (BASE / "registry/scores.jsonl").read_text().splitlines() if l.strip()}
+        return all(i in m for i in IDS) and IDS[0] in scored
     except (OSError, ValueError):
         return False
 
@@ -71,6 +72,14 @@ def make_base(tmp: Path) -> Path:
     b = f"desk/inputs/2026-09/{doc['input_bundle']}.json.gz"
     (tmp / b).parent.mkdir(parents=True, exist_ok=True)
     shutil.copy(BASE / b, tmp / b)
+    # 2.22: the batch's real RC1D score rows and their retained evidence (the companion verifies outcomes against them)
+    scored = [l for l in (BASE / "registry/scores.jsonl").read_text().splitlines() if l.strip() and json.loads(l).get("id") in IDS]
+    (tmp / "registry").mkdir(exist_ok=True)
+    (tmp / "registry/scores.jsonl").write_text("".join(l + "\n" for l in scored))
+    for l in scored:
+        ev = json.loads(l)["evidence"]
+        (tmp / ev).parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy(BASE / ev, tmp / ev)
     U.transition(tmp, P.ROOT, P.PROTOCOL_SHA256, "approved", by="operator", reason="test fixture: protocol approved")
     return tmp
 
@@ -204,11 +213,6 @@ class TestLateRegistration(unittest.TestCase):
         CJ.forecast(self.base, now=DEC + dt.timedelta(minutes=17), clock=Clock(START_MS - 600_000), run={})
         reg = CJ.registered(self.base)
         CJ.confirm(self.base, clock=Clock(START_MS + 1000), remote=lambda p: ("c", reg[Path(p).stem]["sha256"]))
-        score = {"id": IDS[0], "publication": {"eligible": True}, "events": [
-            {"name": "B2 range model", "realized_ln_range": 0.01, "abs_error_log_lr": 0.2},
-            {"name": "B0 persistence baseline", "realized_ln_range": 0.01, "abs_error_log_lr": 0.3}]}
-        (self.base / "registry").mkdir(exist_ok=True)
-        (self.base / "registry/scores.jsonl").write_text(json.dumps(score) + "\n")
         CJ.score(self.base)
         ev = CJ.evaluation(self.base)["horizons"]["4h"]
         self.assertEqual((ev["paired"], ev["late_companion"]), (0, 1))
@@ -266,8 +270,8 @@ class TestJointMissingData(unittest.TestCase):
                            read_current=lambda b, n, h: {"state": "missing", "reason": "none"})
             self.assertEqual(rec["action"], "no-rebalance")
             self.assertNotIn("w_target", rec)
-            self.assertIsNone(P.execute(base, clock=Clock(START_MS), fetch=quote_fetcher(Clock(START_MS)),
-                                        proto=proto_for_tests(), run={}, pause=lambda s: None))
+            self.assertEqual(P.execute(base, clock=Clock(START_MS), fetch=quote_fetcher(Clock(START_MS)),
+                                       proto=proto_for_tests(), run={}, pause=lambda s: None)["outcome"], "nothing to execute")
 
     def test_missing_bundle_holds_every_arm(self):
         with tempfile.TemporaryDirectory() as d:
@@ -356,13 +360,16 @@ class TestAccounting(unittest.TestCase):
                 {"equity_pre": 99.0, "interval_log_return": math.log(0.9), "elapsed_h": 4.0, "notional": 10.0, "w_after": 0.4,
                  "w_held": 0.5, "cost_vs_mid": 0.02, "interval_flag": "scheduled"}]
         s = P.arm_stats(rows)
-        self.assertAlmostEqual(s["net_return"], -0.01)
+        self.assertAlmostEqual(s["net_return_closed"], -0.01)
         self.assertAlmostEqual(s["max_drawdown_marks"], 99 / 110 - 1)
         self.assertAlmostEqual(s["exposure_mean"], 0.5)
         r = [math.log(1.1), math.log(0.9)]
         m, sd = sum(r) / 2, math.sqrt(sum((x - sum(r) / 2) ** 2 for x in r))
         self.assertAlmostEqual(s["sharpe_ann"], m / sd * math.sqrt(2190), places=9)
-        self.assertAlmostEqual(s["turnover_ann"], 60 / (309 / 3) / (8 / 8760))
+        # closed scope: the two trades that opened closed intervals (rows 0 and 1), mean equity over those marks
+        self.assertAlmostEqual(s["turnover_ann_closed"], 50 / (210 / 2) / (8 / 8760))
+        self.assertAlmostEqual(s["costs_usdt_closed"], 0.1)
+        self.assertAlmostEqual(s["costs_usdt_incl_open_trade"], 0.12)
 
     def test_bootstrap_is_deterministic_and_gated_by_blocks(self):
         import random
@@ -583,7 +590,8 @@ class TestAtomicExecution(unittest.TestCase):
         self.assertEqual(set(_final_states(self.base).values()), {"running"})
         self.assertEqual(P.ledger(self.base)[0], [])                    # nothing in progress enters the ledger
         n = fetch.n
-        self.assertIsNone(P.execute(self.base, clock=self.clk, fetch=fetch, proto=self.proto, run={}, pause=lambda s: None))
+        self.assertEqual(P.execute(self.base, clock=self.clk, fetch=fetch, proto=self.proto, run={}, pause=lambda s: None)["outcome"],
+                         "recovered")
         self.assertEqual(fetch.n, n)                                    # recovery never captures a quote
         self.assertEqual(set(_final_states(self.base).values()), {"recovered"})
         self.assertEqual(P.ledger_state(self.base, self.proto), _clean_ledger())
@@ -621,8 +629,8 @@ class TestAtomicExecution(unittest.TestCase):
         self.assertEqual(U.rows(self.base / P.EXECUTIONS), [])
         self.assertEqual((self.base / P.QUOTES).read_bytes(), before)  # the changed record stays as found
         self.assertTrue(any(r.get("outcome") == "missed-execution" for r in U.rows(self.base / P.RUNS)))
-        self.assertIsNone(P.execute(self.base, clock=self.clk, fetch=quote_fetcher(self.clk), proto=self.proto, run={},
-                                    pause=lambda s: None))
+        self.assertEqual(P.execute(self.base, clock=self.clk, fetch=quote_fetcher(self.clk), proto=self.proto, run={},
+                                   pause=lambda s: None)["class"], "expected")
         self.assertEqual(len(P.exec_states(self.base)), 1)
 
     def test_duplicate_execution_attempts_are_refused(self):
@@ -632,8 +640,8 @@ class TestAtomicExecution(unittest.TestCase):
         q = [r for r in U.rows(self.base / P.QUOTES) if r["eligible"]][0]
         with self.assertRaises(P.DuplicateExecution):
             P.start_execution(self.base, d, conf, q, self.proto, self.clk, {})
-        self.assertIsNone(P.execute(self.base, clock=self.clk, fetch=quote_fetcher(self.clk), proto=self.proto, run={},
-                                    pause=lambda s: None))
+        self.assertEqual(P.execute(self.base, clock=self.clk, fetch=quote_fetcher(self.clk), proto=self.proto, run={},
+                                   pause=lambda s: None)["class"], "expected")
         self.assertEqual(len(U.rows(self.base / P.EXECUTIONS)), 6)
 
     def test_an_execution_in_progress_blocks_a_second_one(self):
@@ -688,19 +696,21 @@ class TestTimeAccounting(unittest.TestCase):
         r = self._rows(self.T0, 20)[0]
         self.assertEqual((r["interval_flag"], r["interval_log_return"], r["elapsed_h"]), ("entry", None, None))
         s = P.arm_stats([dict(r, notional=0.0)])
-        self.assertEqual((s["intervals"], s["sharpe_ann"], s["return_ann"], s["exposure_mean"]), (0, None, None, None))
+        self.assertEqual((s["intervals"], s["sharpe_ann"], s["log_return_ann"], s["exposure_mean"]), (0, None, None, None))
 
     def test_duration_weighting_numerical_fixture(self):
+        # v3: residuals (0.01, -0.03, 0.02) over (4, 8, 4) h; var_h = (0.01^2/4 + 0.03^2/8 + 0.02^2/4) / 2
         rs, dts = [0.02, -0.01, 0.03], [4.0, 8.0, 4.0]
         mu = 0.04 / 16
-        var = (0.01 ** 2 + 0.03 ** 2 + 0.02 ** 2) / (16 * 2 / 3)
+        var = (0.01 ** 2 / 4 + 0.03 ** 2 / 8 + 0.02 ** 2 / 4) / 2
         st = P.dw_stats(rs, dts)
         self.assertAlmostEqual(st["mu_h"], mu, places=15)
-        self.assertAlmostEqual(st["var_h"], var, places=15)
-        self.assertAlmostEqual(P.sharpe_dw(rs, dts), mu * 8760 / math.sqrt(var * 8760), places=10)
-        self.assertAlmostEqual(P.sharpe_dw(rs, dts), 21.9 / math.sqrt(1.14975), places=9)
+        self.assertAlmostEqual(st["var_h"], 0.00011875, places=15)
+        self.assertAlmostEqual(P.sharpe_dw(rs, dts), 21.9 / math.sqrt(0.00011875 * 8760), places=9)
 
-    def test_equal_4h_intervals_reduce_to_the_v1_formula(self):
+    def test_equal_4h_intervals_reduce_to_the_sample_variance_formula(self):
+        # equal durations: v3 equals the sample-variance Sharpe of the LOG returns x sqrt(2190); v1 used simple
+        # returns, so no equivalence to v1's figures is claimed
         import random
         rnd = random.Random(3)
         r = [rnd.gauss(0.0002, 0.01) for _ in range(200)]
@@ -716,7 +726,7 @@ class TestTimeAccounting(unittest.TestCase):
                 {"equity_pre": 120.0, "interval_log_return": 0.17, "elapsed_h": 72.0, "notional": 0.0, "w_after": 0.2,
                  "w_held": 0.2, "cost_vs_mid": 0.0, "interval_flag": "extended (18 decision steps)"}]
         s = P.arm_stats(rows)
-        self.assertAlmostEqual(s["return_ann"], 0.18 / 76 * 8760)
+        self.assertAlmostEqual(s["log_return_ann"], 0.18 / 76 * 8760)
         self.assertAlmostEqual(s["exposure_mean"], (0.5 * 4 + 0.2 * 72) / 76)
         self.assertEqual((s["extended_intervals"], s["longest_interval_h"], s["elapsed_hours"]), (1, 72.0, 76.0))
 
@@ -816,7 +826,8 @@ class TestConfirmationIntegrity(unittest.TestCase):
 
     def _excluded(self, reason_part):
         before = {f: (self.base / f).read_bytes() for f in (P.DECISIONS, P.CONFIRMS)}
-        self.assertIsNone(self._exec())
+        res = self._exec()
+        self.assertEqual((res["outcome"], res["class"]), ("refused: confirmation integrity failure", "error"))
         self.assertEqual(U.rows(self.base / P.EXECUTIONS), [])
         fails = U.rows(self.base / P.ROOT / "integrity.jsonl")
         self.assertTrue(any(reason_part in f["reason"] for f in fails), fails)
@@ -854,7 +865,7 @@ class TestConfirmationIntegrity(unittest.TestCase):
         self.assertEqual(doc["evidence_class"], "unavailable")
         self.assertEqual(P.ledger(self.base)[0], [])
         self.assertEqual(P.execute(self.base, clock=self.clk, fetch=quote_fetcher(self.clk), proto=self.proto, run={},
-                                   pause=lambda s: None)["outcome"], "refused")
+                                   pause=lambda s: None)["outcome"], "refused: ledger integrity failure")
 
 
 @unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
@@ -868,11 +879,6 @@ class TestCompanionIntegrity(unittest.TestCase):
         CJ.forecast(self.base, now=DEC + dt.timedelta(minutes=17), clock=Clock(START_MS - 600_000), run={})
         reg = CJ.registered(self.base)
         CJ.confirm(self.base, clock=Clock(START_MS - 300_000), remote=lambda p: ("c", reg[Path(p).stem]["sha256"]))
-        score = {"id": IDS[0], "publication": {"eligible": True}, "events": [
-            {"name": "B2 range model", "realized_ln_range": 0.01, "abs_error_log_lr": 0.2},
-            {"name": "B0 persistence baseline", "realized_ln_range": 0.01, "abs_error_log_lr": 0.3}]}
-        (self.base / "registry").mkdir(exist_ok=True)
-        (self.base / "registry/scores.jsonl").write_text(json.dumps(score) + "\n")
         self.cid = "rc1d-b1-4h-20260930T2000Z"
         self.fpath = self.base / CJ.registered(self.base)[self.cid]["path"]
 
@@ -880,7 +886,7 @@ class TestCompanionIntegrity(unittest.TestCase):
         self.tmp.cleanup()
 
     def test_unchanged_record_is_scored_with_its_hash(self):
-        rows = CJ.score(self.base)
+        rows = [r for r in CJ.score(self.base)["scored"] if r["id"] == self.cid]
         self.assertEqual(len(rows), 1)
         self.assertEqual(rows[0]["forecast_sha256"], CJ.registered(self.base)[self.cid]["sha256"])
         self.assertEqual(rows[0]["verification"], "verified")
@@ -891,17 +897,17 @@ class TestCompanionIntegrity(unittest.TestCase):
         doc["point"] = doc["point"] * 1.5
         self.fpath.write_bytes(U.canonical(doc) + b"\n")
         raw = self.fpath.read_bytes()
-        self.assertEqual(CJ.score(self.base), [])
+        self.assertNotIn(self.cid, [r["id"] for r in CJ.score(self.base)["scored"]])
         self.assertEqual(self.fpath.read_bytes(), raw)
         self.assertTrue(U.rows(self.base / CJ.ROOT / "integrity.jsonl"))
 
     def test_changed_confirmation_timestamp_is_not_scored(self):
         _rewrite(self.base / CJ.CONFIRMS, lambda c: dict(c, confirmed_ms=c["confirmed_ms"] - 1))
-        self.assertEqual(CJ.score(self.base), [])
+        self.assertNotIn(self.cid, [r["id"] for r in CJ.score(self.base)["scored"]])
 
     def test_changed_binding_metadata_is_not_scored(self):
         _rewrite(self.base / CJ.CONFIRMS, lambda c: dict(c, binding=dict(c["binding"], version={"job": "x"})))
-        self.assertEqual(CJ.score(self.base), [])
+        self.assertNotIn(self.cid, [r["id"] for r in CJ.score(self.base)["scored"]])
 
     def test_change_after_scoring_is_excluded_from_the_evaluation(self):
         CJ.score(self.base)
@@ -911,7 +917,7 @@ class TestCompanionIntegrity(unittest.TestCase):
 
     def test_legacy_confirmation_is_verified_against_the_registry_hash(self):
         _rewrite(self.base / CJ.CONFIRMS, lambda c: {k: v for k, v in c.items() if k not in ("binding", "binding_sha256")})
-        rows = CJ.score(self.base)
+        rows = [r for r in CJ.score(self.base)["scored"] if r["id"] == self.cid]
         self.assertEqual(len(rows), 1)
         self.assertTrue(rows[0]["verification"].startswith("legacy confirmation"))
 
@@ -940,7 +946,7 @@ class TestLifecycle(unittest.TestCase):
         _ps1_ready(self.base, self.clk, self.proto)
         P.operator_lifecycle("terminated", "test", base=self.base)
         before = (self.base / P.DECISIONS).read_bytes()
-        self.assertEqual(self._exec()["outcome"], "refused")
+        self.assertEqual(self._exec()["outcome"], "refused: lifecycle terminated")
         self.assertEqual(U.rows(self.base / P.EXECUTIONS), [])
         self.assertEqual((self.base / P.DECISIONS).read_bytes(), before)
         self.assertIsNone(P.decide(self.base, now=DEC + dt.timedelta(hours=4, minutes=40), clock=self.clk, proto=self.proto, run={}))
@@ -1088,26 +1094,585 @@ class TestWorkflowStages(unittest.TestCase):
 
 
 class TestRetiredProtocol(unittest.TestCase):
-    def test_v2_never_continues_a_ledger_launched_under_v1(self):
+    def test_v1_and_v2_are_preserved_byte_identical_and_v3_names_v2(self):
+        for path, sha in P.PROTOCOLS_RETIRED:
+            self.assertEqual(U.file_sha(BASE / path), sha)
+        v3 = json.loads(P.PROTOCOL.read_text())
+        self.assertEqual((v3["version"], v3["supersedes"]["sha256"]), (3, P.PROTOCOL_V2_RETIRED[1]))
+        v1 = json.loads((BASE / P.PROTOCOL_V1_RETIRED[0]).read_text())
+        for k in ("question", "instrument", "policy", "calibration", "capital", "costs", "missing_data", "start"):
+            self.assertEqual(v1[k], v3[k], k)
+        for k in ("status_vocabulary", "checkpoints", "paper_supported_if", "paper_unfavourable_if", "otherwise", "never"):
+            self.assertEqual(v1["evidence"][k], v3["evidence"][k], k)
+
+    def test_v3_never_continues_a_ledger_launched_under_an_earlier_protocol(self):
+        for _, sha in P.PROTOCOLS_RETIRED:
+            with tempfile.TemporaryDirectory() as d:
+                base = Path(d)
+                (base / P.ROOT).mkdir(parents=True)
+                (base / P.LAUNCH).write_text(json.dumps({"protocol_sha256": sha}))
+                for call in (lambda: P.report(base, proto=proto_for_tests()),
+                             lambda: P.decide(base, now=DEC, proto=proto_for_tests(), run={}),
+                             lambda: P.execute(base, proto=proto_for_tests(), run={})):
+                    with self.assertRaises(P.Refused):
+                        call()
+
+
+# =============================================================================================
+# Repo 2.22 maintenance regressions
+# =============================================================================================
+def _second_decision(base, clk, hours=4):
+    """Append a second rebalance decision (a copy of the fixture decision moved `hours` later) and confirm it."""
+    d1 = P.decisions(base)["ps1-20260930T2000Z"]
+    t = U.parse(d1["decision_utc"]) + dt.timedelta(hours=hours)
+    d2 = dict(d1, decision_id=f"ps1-{t:%Y%m%dT%H%MZ}", decision_utc=U.iso(t),
+              rc1d_available_ms=d1["rc1d_available_ms"] + hours * 3600_000,
+              computed_start_ms=d1["computed_start_ms"] + hours * 3600_000, computed_end_ms=d1["computed_end_ms"] + hours * 3600_000)
+    U.append(base / P.DECISIONS, d2, key=lambda r: (r["decision_id"],))
+    P.confirm(base, clock=clk, remote=lambda p: ("c", U.rows(base / P.DECISIONS)))
+    return d2
+
+
+def _two_executions(base, proto):
+    clk = Clock(START_MS)
+    _ps1_ready(base, clk, proto)
+    P.execute(base, clock=clk, fetch=quote_fetcher(clk), proto=proto, run={}, pause=lambda s: None)
+    clk2 = Clock(START_MS + 4 * 3600_000)
+    _second_decision(base, clk2)
+    r = P.execute(base, clock=clk2, fetch=quote_fetcher(clk2, bid=84000.0, ask=84000.5), proto=proto, run={}, pause=lambda s: None)
+    assert r["outcome"] == "executed", r
+    return clk2
+
+
+def _all_withheld(doc):
+    txt = json.dumps({"arms": doc.get("arms"), "paired": doc.get("paired")})
+    return "sharpe" not in txt and "B2_better" not in txt and "ci90" not in txt and "withheld" in txt
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestPS1VerifiedConsumption(unittest.TestCase):
+    """Finding 1 (PS1): one verified path for execution, recovery and reporting; missing evidence fails."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = make_base(Path(self.tmp.name))
+        self.clk, self.proto = Clock(START_MS), proto_for_tests()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _exec(self, **kw):
+        return P.execute(self.base, clock=self.clk, fetch=quote_fetcher(self.clk), proto=self.proto, run={},
+                         pause=lambda s: None, **kw)
+
+    def _interrupted(self):
+        _ps1_ready(self.base, self.clk, self.proto)
+        with self.assertRaises(Interrupted):
+            self._exec(writer=crash_after(0))
+
+    def test_recovery_validates_the_confirmation_before_writing(self):
+        self._interrupted()
+        _rewrite(self.base / P.CONFIRMS, lambda c: dict(c, confirmed_ms=c["confirmed_ms"] - 600_000))
+        res = self._exec()
+        self.assertEqual(res["class"], "error")
+        self.assertEqual(U.rows(self.base / P.EXECUTIONS), [])
+        self.assertFalse((self.base / P.LAUNCH).exists())
+        self.assertEqual(list(P.exec_states(self.base).values())[0][-1]["state"], "failed")
+        self.assertTrue(U.rows(self.base / P.ROOT / "integrity.jsonl"))
+
+    def test_recovery_with_a_missing_confirmation_writes_nothing(self):
+        self._interrupted()
+        (self.base / P.CONFIRMS).write_text("")
+        self.assertEqual(self._exec()["class"], "error")
+        self.assertEqual(U.rows(self.base / P.EXECUTIONS), [])
+        self.assertFalse((self.base / P.LAUNCH).exists())
+
+    def test_quote_changed_after_completion_withholds_every_figure(self):
+        _ps1_ready(self.base, self.clk, self.proto)
+        self._exec()
+        before = (self.base / P.QUOTES).read_bytes()
+        _rewrite(self.base / P.QUOTES, lambda q: dict(q, asks=[[str(float(p) + 100), z] for p, z in q["asks"]]))
+        doc = P.report(self.base, now=DEC + dt.timedelta(hours=1), proto=self.proto)
+        self.assertFalse(doc["integrity"]["ok"])
+        self.assertTrue(_all_withheld(doc))
+        self.assertEqual(self._exec()["class"], "error")
+        self.assertNotEqual((self.base / P.QUOTES).read_bytes(), before)        # left as found, not repaired
+
+    def test_confirmation_deleted_after_completion_fails_integrity(self):
+        _ps1_ready(self.base, self.clk, self.proto)
+        self._exec()
+        (self.base / P.CONFIRMS).write_text("")
+        doc = P.report(self.base, now=DEC + dt.timedelta(hours=1), proto=self.proto)
+        self.assertFalse(doc["integrity"]["ok"])
+        self.assertIn("confirmation missing", " ".join(doc["integrity"]["failures"]))
+
+    def test_corrupted_first_confirmation_invalidates_descendants_and_paired_figures(self):
+        _two_executions(self.base, self.proto)
+        ok = P.report(self.base, now=DEC + dt.timedelta(hours=5), proto=self.proto)
+        self.assertTrue(ok["integrity"]["ok"])
+        self.assertEqual(ok["paired"]["ordinary"]["n_intervals"], 1)
+        self.assertIsNotNone(ok["paired"]["ordinary"]["mean_log_diff_B2_minus_VOL"])
+        first = sorted(P.confirmations(self.base))[0]
+        _rewrite(self.base / P.CONFIRMS, lambda c: dict(c, commit="tampered") if c["decision_id"] == first else c)
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertEqual(len(ch["failures"]), 2)
+        self.assertIn("depends on", ch["failures"][1]["reason"])
+        doc = P.report(self.base, now=DEC + dt.timedelta(hours=5), proto=self.proto)
+        self.assertFalse(doc["integrity"]["ok"])
+        self.assertTrue(_all_withheld(doc))
+        self.assertEqual(doc["evidence_class"], "unavailable")
+
+    def test_corrupted_second_execution_withholds_the_whole_report(self):
+        _two_executions(self.base, self.proto)
+        second = sorted(P.confirmations(self.base))[-1]
+        _rewrite(self.base / P.CONFIRMS, lambda c: dict(c, commit="tampered") if c["decision_id"] == second else c)
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertEqual((len(ch["verified"]), len(ch["failures"])), (1, 1))
+        self.assertTrue(_all_withheld(P.report(self.base, now=DEC + dt.timedelta(hours=5), proto=self.proto)))
+
+    def test_missing_snapshot_or_wrong_identities_fail(self):
+        _ps1_ready(self.base, self.clk, self.proto)
+        self._exec()
+        rows = U.rows(self.base / P.EXECUTIONS)
+        (self.base / P.EXECUTIONS).write_text("".join(json.dumps(dict(r, arm="B2") if i == 0 else r) + "\n" for i, r in enumerate(rows)))
+        self.assertIn("six arm/scenario", P.verify_chain(self.base, self.proto)["failures"][0]["reason"])
+        (self.base / P.EXECUTIONS).write_text("".join(json.dumps(r) + "\n" for r in rows))
+        self.assertTrue(P.verify_chain(self.base, self.proto)["ok"])
+        _rewrite(self.base / P.EXEC_STATES, lambda r: {k: v for k, v in r.items() if k != "snapshot"})
+        self.assertFalse(P.verify_chain(self.base, self.proto)["ok"])
+
+    def test_rows_must_reproduce_from_the_snapshot(self):
+        _ps1_ready(self.base, self.clk, self.proto)
+        self._exec()
+        st = [r for r in U.rows(self.base / P.EXEC_STATES) if r["state"] == "completed"][0]
+        rows = [dict(r, fee=r["fee"] + 1.0) for r in U.rows(self.base / P.EXECUTIONS)]
+        (self.base / P.EXECUTIONS).write_text("".join(json.dumps(r) + "\n" for r in rows))
+        _rewrite(self.base / P.EXEC_STATES, lambda r: dict(r, rows_sha256=P.rows_sha(rows)) if r["state"] == "completed" else r)
+        self.assertIn("not reproducible", P.verify_chain(self.base, self.proto)["failures"][0]["reason"])
+        self.assertNotEqual(st["rows_sha256"], P.rows_sha(rows))
+
+
+def _state_signature(base, proto):
+    launch = json.loads((base / P.LAUNCH).read_text()) if (base / P.LAUNCH).exists() else None
+    life = [(r["state"], r["by"], r["t_ms"]) for r in U.lifecycle_rows(base, P.ROOT, P.PROTOCOL_SHA256)
+            if r["state"] != "approved"]                    # the fixture's approval row carries wall-clock time
+    rows = [{k: v for k, v in r.items()} for r in P.verify_chain(base, proto)["rows"]]
+    doc = P.report(base, now=DEC + dt.timedelta(hours=3), proto=proto)
+    return launch, life, U.sha(rows), (doc.get("days_since_launch"), doc.get("scheduled_decisions"), doc.get("coverage"))
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestLaunchReconciliation(unittest.TestCase):
+    """Finding 2: completion, launch and lifecycle converge to a clean run after any interruption."""
+    def run_case(self, interrupt=None):
+        with tempfile.TemporaryDirectory() as d:
+            base = make_base(Path(d))
+            clk, proto = Clock(START_MS), proto_for_tests()
+            _ps1_ready(base, clk, proto)
+            fetch = CountingFetch(clk)
+            if interrupt:
+                interrupt(base, clk, proto, fetch)
+            P.execute(base, clock=clk, fetch=fetch, proto=proto, run={}, pause=lambda s: None)
+            n = fetch.n
+            P.execute(base, clock=clk, fetch=fetch, proto=proto, run={}, pause=lambda s: None)
+            self.assertEqual(fetch.n, n)                    # no retry ever fetches a replacement quote
+            return _state_signature(base, proto)
+
+    def setUp(self):
+        self.clean = self.run_case()
+        self.assertIsNotNone(self.clean[0])
+
+    def _crash(self, patch_target, attr, after=None):
+        def interrupt(base, clk, proto, fetch):
+            real = getattr(patch_target, attr)
+            calls = {"n": 0}
+
+            def boom(*a, **k):
+                calls["n"] += 1
+                if after is not None:
+                    out = real(*a, **k)
+                    raise Interrupted(f"after {attr}")
+                raise Interrupted(f"at {attr}")
+            setattr(patch_target, attr, boom)
+            try:
+                with self.assertRaises(Interrupted):
+                    P.execute(base, clock=clk, fetch=fetch, proto=proto, run={}, pause=lambda s: None)
+            finally:
+                setattr(patch_target, attr, real)
+        return interrupt
+
+    def test_crash_after_the_atomic_row_write(self):
+        def interrupt(base, clk, proto, fetch):
+            def writer(b, rows):
+                P._write_rows(b, rows)
+                raise Interrupted("after the row write")
+            with self.assertRaises(Interrupted):
+                P.execute(base, clock=clk, fetch=fetch, proto=proto, run={}, pause=lambda s: None, writer=writer)
+        self.assertEqual(self.run_case(interrupt), self.clean)
+
+    def test_crash_after_completion_before_reconcile(self):
+        self.assertEqual(self.run_case(self._crash(P, "reconcile")), self.clean)
+
+    def test_crash_around_the_launch_write(self):
+        import storage
+        self.assertEqual(self.run_case(self._crash(storage, "atomic_json")), self.clean)          # before it lands
+        self.assertEqual(self.run_case(self._crash(storage, "atomic_json", after=True)), self.clean)  # after it lands
+
+    def test_crash_after_activation_before_launch(self):
+        def interrupt(base, clk, proto, fetch):
+            P.execute(base, clock=clk, fetch=fetch, proto=proto, run={}, pause=lambda s: None)
+            (base / P.LAUNCH).unlink()                      # activation recorded, launch never written
+            self.assertEqual(P.lifecycle(base)[0], "active")
+        self.assertEqual(self.run_case(interrupt), self.clean)
+
+    def test_activation_crash_converges(self):
+        self.assertEqual(self.run_case(self._crash(U, "transition")), self.clean)
+
+    def test_a_later_decision_never_becomes_the_launch(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = make_base(Path(d))
+            proto = proto_for_tests()
+            _two_executions(base, proto)
+            (base / P.LAUNCH).unlink()
+            P.report(base, now=DEC + dt.timedelta(hours=5), proto=proto)
+            self.assertEqual(json.loads((base / P.LAUNCH).read_text())["first_decision_utc"], "2026-09-30T20:00:00Z")
+
+    def test_a_conflicting_launch_is_flagged_not_overwritten(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = make_base(Path(d))
+            clk, proto = Clock(START_MS), proto_for_tests()
+            _ps1_ready(base, clk, proto)
+            P.execute(base, clock=clk, fetch=quote_fetcher(clk), proto=proto, run={}, pause=lambda s: None)
+            bad = dict(json.loads((base / P.LAUNCH).read_text()), first_decision_utc="2026-10-01T00:00:00Z")
+            (base / P.LAUNCH).write_text(json.dumps(bad))
+            doc = P.report(base, now=DEC + dt.timedelta(hours=1), proto=proto)
+            self.assertFalse(doc["integrity"]["ok"])
+            self.assertEqual(json.loads((base / P.LAUNCH).read_text()), bad)
+            self.assertEqual(P.execute(base, clock=clk, fetch=quote_fetcher(clk), proto=proto, run={},
+                                       pause=lambda s: None)["class"], "error")
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestAutoPauseCadence(unittest.TestCase):
+    """Finding 4: only decisions whose 90-minute deadline has passed count toward the six misses."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = make_base(Path(self.tmp.name))
+        self.clk, self.proto = Clock(START_MS), proto_for_tests()
+        _ps1_ready(self.base, self.clk, self.proto)
+        P.execute(self.base, clock=self.clk, fetch=quote_fetcher(self.clk), proto=self.proto, run={}, pause=lambda s: None)
+        self.assertEqual(P.lifecycle(self.base)[0], "active")
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def at(self, hours, minutes):
+        P.report(self.base, now=DEC + dt.timedelta(hours=hours, minutes=minutes), proto=self.proto)
+        return P.lifecycle(self.base)
+
+    def test_six_expired_misses_pause_at_every_run_minute_while_the_next_decision_is_pending(self):
+        for m in (20, 50, 65, 91):
+            with self.subTest(minute=m):
+                with tempfile.TemporaryDirectory() as d:
+                    base = make_base(Path(d))
+                    clk = Clock(START_MS)
+                    _ps1_ready(base, clk, self.proto)
+                    P.execute(base, clock=clk, fetch=quote_fetcher(clk), proto=self.proto, run={}, pause=lambda s: None)
+                    P.report(base, now=DEC + dt.timedelta(hours=28, minutes=m), proto=self.proto)
+                    st, last = P.lifecycle(base)
+                    self.assertEqual((st, last["by"]), ("paused", "job"))
+                    newest_expired = 28 if m > 90 else 24
+                    self.assertEqual(last["t_ms"], U.ms(DEC + dt.timedelta(hours=newest_expired, minutes=90)))
+
+    def test_no_pause_before_six_deadlines_have_passed(self):
+        self.assertEqual(self.at(24, 89)[0], "active")       # the 24h decision is still inside its window
+        self.assertEqual(self.at(25, 31)[0], "paused")
+
+    def test_a_job_pause_resumes_at_the_next_verified_execution(self):
+        self.at(28, 20)
+        clk2 = Clock(START_MS + 32 * 3600_000)
+        _second_decision(self.base, clk2, hours=32)
+        res = P.execute(self.base, clock=clk2, fetch=quote_fetcher(clk2), proto=self.proto, run={}, pause=lambda s: None)
+        self.assertEqual(res["outcome"], "executed")
+        st, last = P.lifecycle(self.base)
+        self.assertEqual((st, last["reason"]), ("active", "verified execution after a job pause"))
+
+    def test_an_operator_pause_is_never_resumed_or_relabelled_by_the_job(self):
+        P.operator_lifecycle("paused", "operator hold", base=self.base)
+        self.at(28, 20)
+        st, last = P.lifecycle(self.base)
+        self.assertEqual((st, last["by"]), ("paused", "operator"))
+        clk2 = Clock(START_MS + 32 * 3600_000)
+        _second_decision(self.base, clk2, hours=32)
+        self.assertEqual(P.execute(self.base, clock=clk2, fetch=quote_fetcher(clk2), proto=self.proto, run={},
+                                   pause=lambda s: None)["outcome"], "refused: lifecycle paused")
+        self.assertEqual(P.lifecycle(self.base)[1]["by"], "operator")
+
+
+class TestUnequalDurationStatistics(unittest.TestCase):
+    """Finding 5: the v3 variance-rate estimator is unbiased for unequal durations under the stated model."""
+    def exact_expectation(self, hs):
+        import itertools
+        vals = []
+        for signs in itertools.product((1, -1), repeat=len(hs)):
+            vals.append(P.dw_stats([s * math.sqrt(h) for s, h in zip(signs, hs)], hs)["var_h"])
+        return sum(vals) / len(vals)
+
+    def test_exact_four_outcome_fixture(self):
+        self.assertAlmostEqual(self.exact_expectation([4, 4]), 1.0, places=12)
+        self.assertAlmostEqual(self.exact_expectation([4, 24]), 1.0, places=12)
+        self.assertAlmostEqual(self.exact_expectation([4, 8, 72]), 1.0, places=12)
+
+    def test_v2_estimator_was_biased_for_unequal_durations(self):
+        import itertools
+        hs = [4, 24]
+        T = sum(hs)
+        v2 = []
+        for signs in itertools.product((1, -1), repeat=2):
+            rs = [s * math.sqrt(h) for s, h in zip(signs, hs)]
+            mu = sum(rs) / T
+            v2.append(sum((r - mu * h) ** 2 for r, h in zip(rs, hs)) / (T * (len(hs) - 1) / len(hs)))
+        self.assertAlmostEqual(sum(v2) / len(v2), 0.4897959184, places=9)
+
+    def test_simulation_with_drift_and_long_gaps(self):
+        import random
+        rnd = random.Random(11)
+        hs = [4, 4, 4, 8, 4, 72, 4, 4, 12, 4]
+        mu, sigma = 0.0004, 0.006
+        est = []
+        for _ in range(4000):
+            rs = [mu * h + sigma * math.sqrt(h) * rnd.gauss(0, 1) for h in hs]
+            est.append(P.dw_stats(rs, hs)["var_h"])
+        mean = sum(est) / len(est)
+        self.assertLess(abs(mean / sigma ** 2 - 1), 0.03)
+
+    def test_invalid_or_insufficient_durations(self):
+        for hs in ([4, 0], [4, -4], [4, float("nan")], [4, float("inf")]):
+            self.assertIsNone(P.dw_stats([0.01, 0.02], hs)["var_h"])
+        self.assertIsNone(P.dw_stats([0.01], [4])["var_h"])
+        self.assertIsNone(P.sharpe_dw([0.01], [4]))
+        self.assertIsNone(P.dw_stats([0.01, float("nan")], [4, 4])["var_h"])
+
+    def test_bootstrap_resamples_returns_and_durations_together(self):
+        import random
+        rnd = random.Random(5)
+        a = [rnd.gauss(0.001, 0.01) for _ in range(430)]
+        b = [x - 0.0004 for x in a]
+        equal = P.bootstrap_sharpe_diff(a, b, [4.0] * 430, reps=100)
+        uneven = P.bootstrap_sharpe_diff(a, b, [4.0 if i % 7 else 24.0 for i in range(430)], reps=100)
+        self.assertNotEqual(equal, uneven)
+
+    def test_costs_and_turnover_scope_is_closed_with_the_open_trade_separate(self):
+        rows = [{"equity_pre": 100.0, "interval_log_return": None, "elapsed_h": None, "notional": 50.0, "w_after": 0.5,
+                 "w_held": None, "cost_vs_mid": 0.1, "interval_flag": "entry"},
+                {"equity_pre": 101.0, "interval_log_return": math.log(1.01), "elapsed_h": 4.0, "notional": 30.0,
+                 "w_after": 0.2, "w_held": 0.5, "cost_vs_mid": 0.05, "interval_flag": "scheduled"}]
+        s = P.arm_stats(rows)
+        self.assertAlmostEqual(s["costs_usdt_closed"], 0.1)
+        self.assertAlmostEqual(s["costs_usdt_incl_open_trade"], 0.15)
+        self.assertAlmostEqual(s["turnover_ann_closed"], 50 / 100 / (4 / 8760))
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestCompanionVerifiedConsumption(unittest.TestCase):
+    """Finding 1 (companion): scoring and evaluation share verified_pair; cached scores are re-validated."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = make_base(Path(self.tmp.name))
+        f = CJ.fit_path(self.base, "2026-09")
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(synthetic_fit()))
+        CJ.forecast(self.base, now=DEC + dt.timedelta(minutes=17), clock=Clock(START_MS - 600_000), run={})
+        reg = CJ.registered(self.base)
+        CJ.confirm(self.base, clock=Clock(START_MS - 300_000), remote=lambda p: ("c", reg[Path(p).stem]["sha256"]))
+        self.assertTrue(CJ.score(self.base)["scored"])
+        self.cid = "rc1d-b1-4h-20260930T2000Z"
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def h4(self):
+        return CJ.evaluation(self.base)["horizons"]["4h"]
+
+    def test_verified_pairs_report_generic_comparison_keys(self):
+        e = self.h4()
+        self.assertEqual((e["paired"], e["excluded_integrity"]), (1, 0))
+        self.assertEqual((e["B1_vs_B0"]["first"], e["B1_vs_B0"]["second"]), ("B1", "B0"))
+        self.assertIn("first_better", e["B1_vs_B0"])
+        self.assertNotIn("b2_better", json.dumps(e))
+
+    def test_confirmation_altered_after_scoring_is_excluded_and_withheld(self):
+        _rewrite(self.base / CJ.CONFIRMS, lambda c: dict(c, confirmed_ms=c["confirmed_ms"] - 1))
+        e = self.h4()
+        self.assertEqual((e["paired"], e["excluded_integrity"]), (0, 1))
+        self.assertIn("withheld", e["B2_vs_B1"])
+        doc = CJ.report(self.base)
+        self.assertFalse(doc["integrity"]["ok"])
+        self.assertEqual(doc["evidence_class"], "unavailable")
+
+    def test_cached_score_changed_to_zero_error_is_rejected(self):
+        _rewrite(self.base / CJ.SCORES, lambda s: dict(s, B2_abs_error_log_lr=0.0))
+        e = self.h4()
+        self.assertEqual(e["excluded_integrity"], 1)
+        self.assertNotIn("effect", json.dumps(e))
+
+    def test_rc1d_outcome_evidence_or_score_row_altered_is_rejected(self):
+        sc = [r for r in U.rows(self.base / "registry/scores.jsonl") if r["id"] == IDS[0]]
+        evp = self.base / sc[0]["evidence"]
+        ev = json.loads(evp.read_bytes())
+        ev["price_bars"][0][1] = ev["price_bars"][0][1] * 1.01
+        evp.write_text(json.dumps(ev))
+        self.assertEqual(self.h4()["excluded_integrity"], 1)
+
+    def test_rc1d_score_row_altered_is_rejected(self):
+        _rewrite(self.base / "registry/scores.jsonl",
+                 lambda r: dict(r, events=[dict(r["events"][0], abs_error_log_lr=0.0)] + r["events"][1:]) if r["id"] == IDS[0] else r)
+        self.assertEqual(self.h4()["excluded_integrity"], 1)
+
+    def test_legacy_confirmation_keeps_its_label_and_no_binding_is_fabricated(self):
+        _rewrite(self.base / CJ.CONFIRMS, lambda c: {k: v for k, v in c.items() if k not in ("binding", "binding_sha256")})
+        e = self.h4()
+        self.assertEqual(e["paired"], 1)
+        self.assertNotIn("binding", (self.base / CJ.CONFIRMS).read_text())
+
+
+class TestActualWindowOverlap(unittest.TestCase):
+    """Finding 6: overlap and disjoint counts come from the windows themselves."""
+    def test_first_three_production_4h_windows(self):
+        t = lambda s: U.ms(U.parse(s))                                                     # noqa: E731
+        w = [(t("2026-10-01T00:30:00Z"), t("2026-10-01T04:30:00Z")), (t("2026-10-01T04:25:00Z"), t("2026-10-01T08:25:00Z")),
+             (t("2026-10-01T08:25:00Z"), t("2026-10-01T12:25:00Z"))]
+        self.assertEqual(CJ.disjoint_windows(w), 2)
+        self.assertEqual(CJ.overlapping_windows(w), 2)
+
+    def test_missing_and_irregular_windows(self):
+        self.assertEqual(CJ.disjoint_windows([]), 0)
+        w = [(0, 24), (4, 28), (30, 54), (100, 124), (110, 112)]
+        self.assertEqual(CJ.disjoint_windows(w), 3)
+        self.assertEqual(CJ.overlapping_windows(w), 4)
+        self.assertEqual(CJ.disjoint_windows([(0, 4), (4, 8), (8, 12)]), 3)
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestSemanticOutcomesThroughTheWrapper(unittest.TestCase):
+    """Finding 3: the real CLIs, run through stream_ops, fail on integrity errors and pass expected states."""
+    ID = {"run_id": "cli", "run_attempt": "1", "event": "test", "triggering_run": None, "code_commit": "x"}
+
+    def setUp(self):
+        import stream_ops
+        self.O = stream_ops
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = make_base(Path(self.tmp.name))
+        self.env = os.environ.get("JBM_DESK_BASE")
+        os.environ["JBM_DESK_BASE"] = str(self.base)
+
+    def tearDown(self):
+        if self.env is None:
+            os.environ.pop("JBM_DESK_BASE", None)
+        else:
+            os.environ["JBM_DESK_BASE"] = self.env
+        self.tmp.cleanup()
+
+    def stage(self, name, script, *args, artifacts=()):
+        return self.O.run_stage(self.base, name, True, [sys.executable, str(DESK / script), *args], artifacts,
+                                ident=self.ID, semantic=True)
+
+    def test_corrupted_ps1_ledger_fails_the_stage_and_the_verdict(self):
+        clk, proto = Clock(START_MS), proto_for_tests()
+        _ps1_ready(self.base, clk, proto)
+        P.execute(self.base, clock=clk, fetch=quote_fetcher(clk), proto=proto, run={}, pause=lambda s: None)
+        _rewrite(self.base / P.QUOTES, lambda q: dict(q, last_update_id=2))
+        r = self.stage("ps1-execute", "paper_ps1.py", "execute")
+        self.assertEqual((r["status"], r["exit_code"], r["outcome"]["class"]), ("failed", 3, "error"))
+        r2 = self.stage("ps1-report", "paper_ps1.py", "report", artifacts=["reports/paper_ps1.json"])
+        self.assertEqual(r2["status"], "failed")
+        self.assertTrue((self.base / "reports/paper_ps1.json").exists())          # diagnostics retained
+        self.assertEqual(self.O.verdict(self.base, ["ps1-execute", "ps1-report"], "success", ident=self.ID)["status"], "failed")
+
+    def test_expected_states_pass_and_are_distinguished(self):
+        r = self.stage("ps1-execute", "paper_ps1.py", "execute")
+        self.assertEqual((r["status"], r["outcome"]["class"], r["outcome"]["outcome"]), ("completed", "expected", "nothing to execute"))
+        r = self.stage("companion-score", "companion_job.py", "score")
+        self.assertEqual((r["status"], r["outcome"]["class"]), ("completed", "expected"))
+        r = self.stage("ps1-decide", "paper_ps1.py", "decide")
+        self.assertEqual(r["status"], "completed")
+        self.assertIn(r["outcome"]["class"], ("expected", "done"))
+
+    def test_corrupted_companion_evidence_fails_the_report_stage(self):
+        f = CJ.fit_path(self.base, "2026-09")
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(synthetic_fit()))
+        CJ.forecast(self.base, now=DEC + dt.timedelta(minutes=17), clock=Clock(START_MS - 600_000), run={})
+        reg = CJ.registered(self.base)
+        CJ.confirm(self.base, clock=Clock(START_MS - 300_000), remote=lambda p: ("c", reg[Path(p).stem]["sha256"]))
+        CJ.score(self.base)
+        _rewrite(self.base / CJ.SCORES, lambda s: dict(s, B2_abs_error_log_lr=0.0))
+        r = self.stage("companion-report", "companion_job.py", "report", artifacts=["reports/companion_b1.json"])
+        self.assertEqual((r["status"], r["outcome"]["class"]), ("failed", "error"))
+
+    def test_a_missing_outcome_line_fails_a_semantic_stage(self):
+        r = self.O.run_stage(self.base, "x", True, [sys.executable, "-c", "print('ok')"], ident=self.ID, semantic=True)
+        self.assertEqual(r["status"], "failed")
+
+    def test_final_gate_rechecks_artifacts(self):
+        for change in ("delete", "modify"):
+            ident = dict(self.ID, run_id=change)
+            self.O.run_stage(self.base, "rep", True, [sys.executable, "-c", "open('a.json','w').write('{}')"], ["a.json"], ident=ident)
+            if change == "delete":
+                (self.base / "a.json").unlink()
+            else:
+                (self.base / "a.json").write_text('{"x": 1}')
+            doc = self.O.verdict(self.base, ["rep"], "success", ident=ident)
+            self.assertEqual(doc["status"], "failed", change)
+            self.assertIn("after the stage completed", " ".join(doc["required_problems"]))
+
+    def test_publication_failure_is_detected(self):
+        import subprocess as sp
+        with tempfile.TemporaryDirectory() as d:
+            d = Path(d)
+            sp.run(["git", "init", "-q", "--bare", "-b", "main", str(d / "remote.git")], check=True)
+            sp.run(["git", "clone", "-q", str(d / "remote.git"), str(d / "work")], check=True, capture_output=True)
+            w = d / "work"
+            git = lambda *a: sp.run(["git", "-C", str(w), "-c", "user.email=t@t", "-c", "user.name=t", *a],   # noqa: E731
+                                    check=True, capture_output=True)
+            (w / "streams").mkdir()
+            (w / "streams/a.jsonl").write_text("{}\n")
+            git("checkout", "-q", "-b", "main")
+            git("add", ".")
+            git("commit", "-q", "-m", "a")
+            git("push", "-q", "origin", "main")
+            self.assertEqual(self.O.check_persisted(w, ["streams"]), [])
+            (w / "streams/b.jsonl").write_text("{}\n")
+            self.assertTrue(any("not committed" in p for p in self.O.check_persisted(w, ["streams"])))
+            git("add", ".")
+            git("commit", "-q", "-m", "b")
+            self.assertTrue(any("not on origin/main" in p for p in self.O.check_persisted(w, ["streams"])))
+            ident = dict(self.ID, run_id="pub")
+            self.O.run_stage(w, "s", True, [sys.executable, "-c", "pass"], ident=ident)
+            git("add", ".")
+            git("commit", "-q", "-m", "log")
+            self.assertEqual(self.O.verdict(w, ["s"], "success", ident=ident, persisted=["streams"])["status"], "failed")
+            git("push", "-q", "origin", "main")
+            self.assertEqual(self.O.verdict(w, ["s"], "success", ident=ident, persisted=["streams"])["status"], "completed")
+
+
+class TestCheckpointRecords(unittest.TestCase):
+    """Finding 9: checkpoints are operator-reviewed immutable records, refused before their conditions."""
+    def test_refused_for_a_job_or_before_launch(self):
         with tempfile.TemporaryDirectory() as d:
             base = Path(d)
-            (base / P.ROOT).mkdir(parents=True)
-            (base / P.LAUNCH).write_text(json.dumps({"protocol_sha256": P.PROTOCOL_V1_RETIRED[1]}))
-            for call in (lambda: P.report(base, proto=proto_for_tests()),
-                         lambda: P.decide(base, now=DEC, proto=proto_for_tests(), run={}),
-                         lambda: P.execute(base, proto=proto_for_tests(), run={})):
-                with self.assertRaises(P.Refused):
-                    call()
+            with self.assertRaises(U.LifecycleError):
+                P.record_checkpoint("C1", "job", "x", base=base, proto=proto_for_tests())
+            with self.assertRaises(ValueError):
+                P.record_checkpoint("C1", "operator", "x", base=base, proto=proto_for_tests())
+            self.assertFalse((base / P.CHECKPOINTS).exists())
 
-
-    def test_v1_is_preserved_byte_identical_and_v2_names_it(self):
-        path, sha = P.PROTOCOL_V1_RETIRED
-        self.assertEqual(U.file_sha(BASE / path), sha)
-        v2 = json.loads(P.PROTOCOL.read_text())
-        self.assertEqual((v2["version"], v2["supersedes"]["sha256"]), (2, sha))
-        v1 = json.loads((BASE / path).read_text())
-        for k in ("question", "instrument", "policy", "calibration", "capital", "costs", "missing_data", "evidence", "start"):
-            self.assertEqual(v1[k], v2[k], k)
+    def test_c2_rule_is_applied_mechanically(self):
+        arms = {"ordinary": {a: {"vol_ann": 0.15} for a in P.ARMS}}
+        good = {"ordinary": {"sharpe_diff_ci90": [0.1, 0.5]}, "stressed": {"sharpe_diff_B2_minus_VOL": 0.2}}
+        self.assertEqual(P.c2_status(good, arms, 0.9)[0], "paper-supported (sizing, simulated)")
+        self.assertEqual(P.c2_status(good, arms, 0.7)[0], "paper-inconclusive")
+        bad = {"ordinary": {"sharpe_diff_ci90": [-0.5, -0.1]}, "stressed": {"sharpe_diff_B2_minus_VOL": -0.2}}
+        self.assertEqual(P.c2_status(bad, arms, 0.9)[0], "paper-unfavourable")
 
 
 if __name__ == "__main__":

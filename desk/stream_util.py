@@ -13,6 +13,7 @@ the research lab reads: their records live under streams/ and their reports unde
   lifecycle_state / transition  a stream's lifecycle (repo 2.21): proposed, approved, active, paused, terminated,
                                 archived - append-only, with the allowed transitions enforced
   integrity_failure(...)        append a fail-closed integrity record (the changed object is never overwritten)
+  emit(result)                  print the OUTCOME line a stage reports to stream_ops; exit 3 on class "error"
 Stdlib only.
 """
 from __future__ import annotations
@@ -27,7 +28,7 @@ import sys
 import time
 from pathlib import Path
 
-VERSION = "stream-util-1.1.0"
+VERSION = "stream-util-1.2.0"
 DESK = Path(__file__).resolve().parent
 BASE = DESK.parent
 for p in (str(DESK), str(BASE)):
@@ -230,3 +231,20 @@ def integrity_failure(base, root: str, obj: str, reason: str, expected=None, fou
            "t_ms": clock_ms() if t_ms is None else t_ms, "action": "excluded; original record preserved"}
     append(Path(base) / root / "integrity.jsonl", row, key=lambda r: (r["object"], r["reason"], r["expected"], r["found"]))
     return row
+
+
+# --------------------------------------------------------------------------------------------
+# Machine-readable stage outcomes (repo 2.22)
+# --------------------------------------------------------------------------------------------
+OUTCOME_CLASSES = ("done", "expected", "error")
+
+
+def emit(result: dict) -> int:
+    """Print one OUTCOME line for desk/stream_ops.py and return the exit status: 3 for class 'error', else 0.
+    'done' = work performed; 'expected' = a protocol state (pre-launch, pause, nothing new, missing market data
+    under the protocol); 'error' = an integrity failure or refusal the run must surface."""
+    klass = result.get("class")
+    if klass not in OUTCOME_CLASSES:
+        result = dict(result, **{"class": "error", "outcome": f"invalid outcome class {klass!r}: {result.get('outcome')}"})
+    print("OUTCOME " + json.dumps(result, sort_keys=True, default=str))
+    return 3 if result["class"] == "error" else 0
