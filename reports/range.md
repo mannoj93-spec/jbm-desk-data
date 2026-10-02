@@ -4,7 +4,7 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-10-02T08:15:46.181Z by reader-12.4.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-02T12:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-10-02T08:53:53.427Z by reader-12.4.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-02T12:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
@@ -14,7 +14,7 @@ Generated 2026-10-02T08:15:46.181Z by reader-12.4.0; contract `RC1D/contract-12.
 | 24h | valid-current | range-rc1d-24h-20261002T0800Z | 2026-10-02T08:25:00Z → 2026-10-03T08:25:00Z | 2026-10-02T13:15:00Z | eligible and current |
 | 72h | valid-current | range-rc1d-72h-20261002T0800Z | 2026-10-02T08:25:00Z → 2026-10-05T08:25:00Z | 2026-10-02T13:15:00Z | eligible and current |
 
-Current decision 2026-10-02T08:00:00Z: registered-pending (eligible; 0/3 scored). Due production decisions: 37; outcomes: failed 1, missing 1, registered-pending 18, scored 17.
+Current decision 2026-10-02T08:00:00Z: registered-pending (eligible; 0/3 scored). Due production decisions: 37; outcomes: failed 1, missing 1, registered-pending 17, scored 18.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
@@ -26,9 +26,9 @@ Mean absolute error of the ln-range forecast, B2 against B0 persistence, on scor
 
 | horizon | n | MAE B2 | MAE B0 | reduction | mean d | median d | B2 better/tie/worse | coverage B2 / B0 | mean 10–90 width B2 / B0 (log) | blocks | 95% interval of mean d | overlap |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 4h | 34 | 0.40066 | 0.47416 | 15.5% | -0.0735 | -0.04539 | 21/0/13 | 74% / 79% | 1.2455 / 1.4438 | 0 | unavailable: 0 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 4h, one per 4H decision; each overlaps up to 0 earlier and 0 later windows |
-| 24h | 29 | 0.23136 | 0.30246 | 23.5% | -0.07111 | -0.06062 | 15/0/14 | 97% / 90% | 1.1139 / 1.3025 | 0 | unavailable: 0 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 24h, one per 4H decision; each overlaps up to 5 earlier and 5 later windows |
-| 72h | 17 | 0.30049 | 0.3862 | 22.2% | -0.08572 | -0.0614 | 15/0/2 | 100% / 100% | 1.0381 / 1.1975 | 0 | unavailable: 0 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 72h, one per 4H decision; each overlaps up to 17 earlier and 17 later windows |
+| 4h | 35 | 0.39749 | 0.47377 | 16.1% | -0.07628 | -0.0494 | 22/0/13 | 74% / 80% | 1.2454 / 1.4438 | 0 | unavailable: 0 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 4h, one per 4H decision; each overlaps up to 0 earlier and 0 later windows |
+| 24h | 30 | 0.23853 | 0.31461 | 24.2% | -0.07608 | -0.07726 | 16/0/14 | 97% / 87% | 1.1139 / 1.3026 | 0 | unavailable: 0 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 24h, one per 4H decision; each overlaps up to 5 earlier and 5 later windows |
+| 72h | 18 | 0.28801 | 0.36996 | 22.1% | -0.08195 | -0.05958 | 16/0/2 | 100% / 100% | 1.0381 / 1.1975 | 0 | unavailable: 0 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 72h, one per 4H decision; each overlaps up to 17 earlier and 17 later windows |
 
 ## Scoring pipeline (RC1D)
 
@@ -36,15 +36,15 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 
 | horizon | waiting maturity | ready | overdue | scoring failed | scored | ineligible |
 |---|---|---|---|---|---|---|
-| 4h | 2 | 0 | 0 | 0 | 34 | 0 |
-| 24h | 7 | 0 | 0 | 0 | 29 | 0 |
-| 72h | 19 | 0 | 0 | 0 | 17 | 0 |
+| 4h | 1 | 0 | 0 | 0 | 35 | 0 |
+| 24h | 6 | 0 | 0 | 0 | 30 | 0 |
+| 72h | 18 | 0 | 0 | 0 | 18 | 0 |
 
 ## Recent decisions (history)
 
 | decision | outcome | reason |
 |---|---|---|
-| 2026-09-29T08:00:00Z | registered-pending | eligible; 2/3 scored |
+| 2026-09-29T08:00:00Z | scored | all horizons scored |
 | 2026-09-29T12:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-09-29T16:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-09-29T20:00:00Z | registered-pending | eligible; 2/3 scored |
@@ -56,9 +56,9 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 | 2026-09-30T20:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-10-01T00:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-10-01T04:00:00Z | registered-pending | eligible; 2/3 scored |
-| 2026-10-01T08:00:00Z | registered-pending | eligible; 1/3 scored |
+| 2026-10-01T08:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-10-01T12:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-10-01T16:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-10-01T20:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-10-02T00:00:00Z | registered-pending | eligible; 1/3 scored |
-| 2026-10-02T04:00:00Z | registered-pending | eligible; 0/3 scored |
+| 2026-10-02T04:00:00Z | registered-pending | eligible; 1/3 scored |
