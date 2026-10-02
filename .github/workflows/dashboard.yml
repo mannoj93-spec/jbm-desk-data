@@ -1,0 +1,61 @@
+name: Research dashboard
+on:
+  push:
+    branches: [main]
+    paths: ['dashboard/**', 'scripts/build_dashboard.py', 'regression/test_dashboard.py', '.github/workflows/dashboard.yml']
+  pull_request:
+    paths: ['dashboard/**', 'scripts/build_dashboard.py', 'regression/test_dashboard.py', '.github/workflows/dashboard.yml']
+  # Data commits made with GITHUB_TOKEN do not trigger push workflows.
+  # Completion events and the fallback schedule keep the snapshot refreshed.
+  workflow_run:
+    workflows: ['Research lab', 'Range scoring', 'Research streams']
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '12,42 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: dashboard-${{ github.event.pull_request.number || 'production' }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          # A workflow_run build always reads trusted main, never its trigger's artifacts/code.
+          ref: ${{ github.event_name == 'workflow_run' && 'main' || github.ref }}
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate snapshot and expiry semantics
+        run: |
+          python -m unittest regression.test_dashboard -v
+          node --test dashboard/model.test.mjs
+          node --check dashboard/app.js
+      - name: Build immutable source snapshot
+        run: python scripts/build_dashboard.py
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: .dashboard-build
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy research desk
+        id: deployment
+        uses: actions/deploy-pages@v4
