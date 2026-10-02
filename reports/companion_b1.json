@@ -10,13 +10,55 @@
   "horizons": {
    "24h": {
     "B1_vs_B0": {
-     "n": 0
+     "b2_better": 1,
+     "b2_worse": 0,
+     "blocks": 0,
+     "diff_mean": -0.19231,
+     "diff_mean_ci95": null,
+     "diff_median": -0.19231,
+     "effect": {
+      "mae_first": 0.03237,
+      "mae_second": 0.22467,
+      "relative_mae_reduction": 0.8559,
+      "standardized_mean_diff": null
+     },
+     "n": 1,
+     "ties": 0,
+     "uncertainty": "unavailable: 0 complete block(s) of 42; needs 10"
     },
     "B2_vs_B0": {
-     "n": 0
+     "b2_better": 1,
+     "b2_worse": 0,
+     "blocks": 0,
+     "diff_mean": -0.20134,
+     "diff_mean_ci95": null,
+     "diff_median": -0.20134,
+     "effect": {
+      "mae_first": 0.02333,
+      "mae_second": 0.22467,
+      "relative_mae_reduction": 0.8961,
+      "standardized_mean_diff": null
+     },
+     "n": 1,
+     "ties": 0,
+     "uncertainty": "unavailable: 0 complete block(s) of 42; needs 10"
     },
     "B2_vs_B1": {
-     "n": 0
+     "b2_better": 1,
+     "b2_worse": 0,
+     "blocks": 0,
+     "diff_mean": -0.00903,
+     "diff_mean_ci95": null,
+     "diff_median": -0.00903,
+     "effect": {
+      "mae_first": 0.02333,
+      "mae_second": 0.03237,
+      "relative_mae_reduction": 0.2791,
+      "standardized_mean_diff": null
+     },
+     "n": 1,
+     "ties": 0,
+     "uncertainty": "unavailable: 0 complete block(s) of 42; needs 10"
     },
     "excluded_integrity": 0,
     "late_companion": 0,
@@ -24,58 +66,58 @@
     "missing_companion": 0,
     "non_overlapping_windows": 0,
     "overlap_warning": "24h windows start every 4h and overlap 6-fold; consecutive pairs are dependent (about 0 non-overlapping windows)",
-    "paired": 0,
-    "rc1d_scored_eligible_since_start": 0
+    "paired": 1,
+    "rc1d_scored_eligible_since_start": 1
    },
    "4h": {
     "B1_vs_B0": {
      "b2_better": 4,
-     "b2_worse": 1,
+     "b2_worse": 2,
      "blocks": 0,
-     "diff_mean": -0.11284,
+     "diff_mean": -0.06224,
      "diff_mean_ci95": null,
-     "diff_median": -0.10686,
+     "diff_median": -0.08319,
      "effect": {
-      "mae_first": 0.26646,
-      "mae_second": 0.37929,
-      "relative_mae_reduction": 0.2975,
-      "standardized_mean_diff": -1.093
+      "mae_first": 0.3263,
+      "mae_second": 0.38854,
+      "relative_mae_reduction": 0.1602,
+      "standardized_mean_diff": -0.4027
      },
-     "n": 5,
+     "n": 6,
      "ties": 0,
      "uncertainty": "unavailable: 0 complete block(s) of 42; needs 10"
     },
     "B2_vs_B0": {
      "b2_better": 4,
-     "b2_worse": 1,
+     "b2_worse": 2,
      "blocks": 0,
-     "diff_mean": -0.08738,
+     "diff_mean": -0.04649,
      "diff_mean_ci95": null,
-     "diff_median": -0.11072,
+     "diff_median": -0.09166,
      "effect": {
-      "mae_first": 0.29192,
-      "mae_second": 0.37929,
-      "relative_mae_reduction": 0.2304,
-      "standardized_mean_diff": -0.8827
+      "mae_first": 0.34205,
+      "mae_second": 0.38854,
+      "relative_mae_reduction": 0.1196,
+      "standardized_mean_diff": -0.3478
      },
-     "n": 5,
+     "n": 6,
      "ties": 0,
      "uncertainty": "unavailable: 0 complete block(s) of 42; needs 10"
     },
     "B2_vs_B1": {
-     "b2_better": 1,
+     "b2_better": 2,
      "b2_worse": 4,
      "blocks": 0,
-     "diff_mean": 0.02546,
+     "diff_mean": 0.01575,
      "diff_mean_ci95": null,
-     "diff_median": 0.04553,
+     "diff_median": 0.0399,
      "effect": {
-      "mae_first": 0.29192,
-      "mae_second": 0.26646,
-      "relative_mae_reduction": -0.0956,
-      "standardized_mean_diff": 0.5879
+      "mae_first": 0.34205,
+      "mae_second": 0.3263,
+      "relative_mae_reduction": -0.0483,
+      "standardized_mean_diff": 0.3464
      },
-     "n": 5,
+     "n": 6,
      "ties": 0,
      "uncertainty": "unavailable: 0 complete block(s) of 42; needs 10"
     },
@@ -83,10 +125,10 @@
     "late_companion": 0,
     "metric": "absolute error of ln range (log units); negative difference favours the first model",
     "missing_companion": 0,
-    "non_overlapping_windows": 5,
+    "non_overlapping_windows": 6,
     "overlap_warning": null,
-    "paired": 5,
-    "rc1d_scored_eligible_since_start": 5
+    "paired": 6,
+    "rc1d_scored_eligible_since_start": 6
    },
    "72h": {
     "B1_vs_B0": {
@@ -115,7 +157,7 @@
  },
  "evidence_class": "descriptive",
  "evidence_class_rule": "no pre-registered success threshold exists for the companion, so its ceiling is 'exploratory' (an interval with no decision rule); 'descriptive' below the block minimum; 'unavailable' with no scored pair; 'retired' once terminated",
- "generated_utc": "2026-10-02T00:20:47.831Z",
+ "generated_utc": "2026-10-02T01:03:54.528Z",
  "integrity_failures": 0,
  "job": "companion-1.1.0",
  "lifecycle": {
