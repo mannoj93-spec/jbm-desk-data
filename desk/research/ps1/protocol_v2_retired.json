@@ -1,25 +1,24 @@
 {
  "id": "PS1",
- "version": 3,
+ "version": 2,
  "title": "Prospective paper sizing experiment: does sizing by the B2 4h range forecast beat simple volatility sizing after costs?",
  "label": "PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.",
- "frozen_utc": "2026-10-02T03:00:00Z",
- "frozen_by": "repo 2.22 maintenance build (crypto-desk package 12.4.5). Written before any PS1 observation existed: v2 was approved on main but never launched (not_before 2026-10-03T00:00Z) and recorded no decision, quote or execution.",
+ "frozen_utc": "2026-10-01T01:00:00Z",
+ "frozen_by": "repo 2.21 maintenance build (crypto-desk package 12.4.4). Written before any PS1 observation existed: v1 never launched (not_before 2026-10-03T00:00Z) and recorded no decision, quote or execution.",
  "supersedes": {
-  "version": 2,
-  "file": "desk/research/ps1/protocol_v2_retired.json",
-  "sha256": "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560",
-  "state": "retired before launch; zero observations; preserved byte-identical (v1 is protocol_v1_retired.json, 00acb5bc...)",
+  "version": 1,
+  "file": "desk/research/ps1/protocol_v1_retired.json",
+  "sha256": "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f",
+  "state": "retired before launch; zero observations; preserved byte-identical",
   "changed": [
-   "variance estimator: unbiased for unequal durations under the stated working model (v2's was unbiased only for equal durations)",
-   "Sharpe stated as an annualized log-return Sharpe; no claim of numerical equivalence to v1 (v1 used simple returns)",
-   "cost and turnover scope aligned to closed intervals, with the open trade's cost reported separately",
-   "one verified consumption path for execution, recovery and reporting; a failure withholds every performance figure",
-   "launch and lifecycle reconciled idempotently from the earliest verified execution",
-   "automatic pause counts only decisions whose execution deadline has passed",
-   "checkpoints recorded as immutable operator-reviewed records"
+   "time accounting: elapsed holding time between fills, duration-weighted estimators, 8760 h/yr basis (v1 assumed 4h per interval)",
+   "interval return: log net return (v1 simple); simple return still recorded",
+   "execution: atomic execution sets with explicit states and recovery from an immutable input snapshot",
+   "confirmation: integrity binding verified before execution and reporting",
+   "quote validation: finite numeric strings, timestamp and symbol checks",
+   "lifecycle: explicit states, operator-only termination, no restart under the same protocol"
   ],
-  "unchanged": "question, instrument, arms, formulas, calibration constants and files, band, cap, costs, capital, start rule, missing-data rules, primary comparison, checkpoints' timing and evidence thresholds"
+  "unchanged": "question, instrument, arms, formulas, calibration constants and files, band, cap, costs, capital, start rule, missing-data rules, primary comparison, checkpoints and evidence thresholds"
  },
  "question": "Holding the same synthetic, unlevered BTC spot long, with the same decisions and the same entry/exit/rebalance rules, does sizing each 4H interval by the registered RC1D B2 4h range forecast produce a higher after-cost Sharpe ratio than sizing by a trailing Parkinson volatility estimate at the same ex-ante risk target?",
  "instrument": {
@@ -87,9 +86,7 @@
   "fill_model": "buy: walk the captured asks for the quantity (VWAP), times (1 + slippage); sell: walk the bids, times (1 - slippage); quantity beyond the captured 20 levels fills at the last level with an extra 50 bp. Fee on the filled notional. These are simulated fills, not executions.",
   "atomicity": "an execution has id <decision_id>#<quote_id>. Before any ledger row is written the job records an immutable input snapshot (decision row hash, confirmation binding hash, quote row hash, prior ledger state and its hash, protocol hash) in streams/ps1/execution_states.jsonl, then writes all six rows (3 arms x 2 scenarios) in one atomic file replacement and records 'completed' with the rows' hash. States: pending, running, completed, failed, partially_written, recovered. Only completed and recovered sets enter the ledger and every metric.",
   "recovery": "an execution left pending or running is rebuilt from its snapshot (never from a new quote, never at another price): with no rows written it is completed under its own id and marked 'recovered'; with some rows written those rows stay where they are, the execution is marked 'partially_written', and the full set is rebuilt under <id>~r1 and marked 'recovered'. If the snapshot cannot be verified (quote or decision row changed, or the ledger moved on) the execution is 'failed', its decision is a missed execution, and nothing is rebuilt. A decision with a completed, recovered, running or pending execution is never executed again.",
-  "confirmation_binding": "each confirmation stores a binding - record_sha256 (canonical hash of the decision row), decision_utc, version (protocol version, protocol hash, job), input_snapshot (RC1D frozen-record hash and snapshot hash), contract (the RC1D contract id) - and binding_sha256. Execution and reporting recompute both; any mismatch is an integrity failure: the decision is excluded, the original rows are left untouched, and the failure is recorded in streams/ps1/integrity.jsonl.",
-  "verification": "one verified consumption path serves execution, recovery and reporting. An execution counts only if its snapshot is intact; the protocol hash matches; the decision row hashes to the snapshot; the decision's confirmation is present, its binding intact and reproduced by the decision row, and it is the confirmation the snapshot bound; the quote row hashes to the snapshot and re-validates as eligible; the predecessor state equals the verified ledger before it; the rows are exactly the six arm/scenario identities; and the rows reproduce from the snapshot. Missing evidence is a failure. A failed execution invalidates every later one. Recovery runs the same checks before writing anything.",
-  "completion": "after the six rows and the 'completed' state, the launch record and the lifecycle activation are derived from the earliest verified execution (its decision and its fill time), idempotently, on every pass; a retry never trades again, fetches a replacement quote or uses its own time. A conflicting launch record is flagged and never overwritten."
+  "confirmation_binding": "each confirmation stores a binding - record_sha256 (canonical hash of the decision row), decision_utc, version (protocol version, protocol hash, job), input_snapshot (RC1D frozen-record hash and snapshot hash), contract (the RC1D contract id) - and binding_sha256. Execution and reporting recompute both; any mismatch is an integrity failure: the decision is excluded, the original rows are left untouched, and the failure is recorded in streams/ps1/integrity.jsonl."
  },
  "costs": {
   "version": "ps1-costs-1",
@@ -119,7 +116,7 @@
  },
  "metrics": {
   "interval_return": "net log return of an arm between consecutive executed rebalances, ln(pre-trade equity at fill n / pre-trade equity at fill n-1) (costs of a trade fall in the interval it opens); the simple return is recorded beside it",
-  "primary": "difference in annualized log-return Sharpe, SR(B2) - SR(VOL), ordinary costs, from the estimators in time_accounting",
+  "primary": "difference in annualized after-cost Sharpe ratio, SR(B2) - SR(VOL), ordinary costs, from the duration-weighted estimators in time_accounting",
   "secondary": [
    "net return per arm",
    "maximum drawdown on execution marks",
@@ -134,19 +131,18 @@
   "time_accounting": {
    "elapsed": "dt_h = (fill time n - fill time n-1) in hours, from the recorded quote receipt times; a skipped or missed decision lengthens the interval, nothing is interpolated and no intermediate return is created",
    "annualization_basis": "8760 hours per year (BTC trades continuously)",
-   "mean": "drift rate mu_h = sum(r) / sum(h) (weighted least squares under the working model); annualized log return = 8760 mu_h",
-   "variance": "variance rate s2_h = sum((r - mu_h h)^2 / h) / (n - 1); annualized volatility of log returns = sqrt(8760 s2_h). Working model: independent increments r_i = mu h_i + sigma sqrt(h_i) e_i with E[e]=0, Var[e]=1; s2_h is unbiased for sigma^2 under it for any durations. Serial dependence is handled by the block bootstrap, not by this estimator. Durations must be finite and positive.",
-   "sharpe": "annualized log-return Sharpe = 8760 mu_h / sqrt(8760 s2_h) (cash yield 0) - a drift/volatility ratio of log returns, not a simple-return Sharpe; no numerical equivalence to v1 (simple returns) is claimed",
+   "mean": "mu_h = sum(r) / sum(dt_h); annualized return = 8760 mu_h",
+   "variance": "s2_h = sum((r - mu_h dt_h)^2) / (sum(dt_h) (n-1)/n); annualized volatility = sqrt(8760 s2_h). With equal 4h intervals this equals the sample variance of r times 2190",
+   "sharpe": "annualized return / annualized volatility (cash yield 0)",
    "exposure": "sum(w_held dt_h) / sum(dt_h), w_held = the weight set at the previous fill (no intra-interval marks)",
    "turnover": "traded notional / mean execution-mark equity / (sum(dt_h) / 8760)",
-   "flags": "each interval records the decisions it spans; an interval spanning more than one 4H step is 'extended' and listed with its length",
-   "costs_and_turnover": "closed scope: the trades that opened closed intervals (costs of a trade fall in the interval it opens); the latest trade, which opened the still-open interval, is reported separately and never given a terminal fill"
+   "flags": "each interval records the decisions it spans; an interval spanning more than one 4H step is 'extended' and listed with its length"
   }
  },
  "uncertainty": {
   "method": "moving-block bootstrap of paired intervals (B2 and VOL (log return, dt_h) pairs resampled together), blocks of 42 intervals, 5,000 resamples, seed 20261003; 90% percentile interval of the duration-weighted Sharpe difference",
   "minimum": "no interval is reported below 10 complete blocks (420 executed intervals, about 70 days at full coverage)",
-  "dependence_note": "consecutive intervals are adjacent, not overlapping; that does not make them independent (volatility clusters), hence blocks. The 42-interval block is a resampling device, not a measured effective sample size."
+  "dependence_note": "consecutive intervals are adjacent, not overlapping; that does not make them independent (volatility clusters), hence blocks"
  },
  "evidence": {
   "status_vocabulary": [
@@ -163,8 +159,7 @@
   "paper_supported_if": "at C2 or later, all of: (a) the 90% interval of SR(B2)-SR(VOL) lies above 0 under ordinary costs; (b) the point estimate is above 0 under stressed costs; (c) at least 80% of scheduled decisions executed; (d) realized annualized volatility of both arms within 10%-20%",
   "paper_unfavourable_if": "at C2 or later, the 90% interval lies below 0 under ordinary costs",
   "otherwise": "paper-inconclusive. Failure to find a difference is not evidence that none exists.",
-  "never": "No PS1 status is a trading edge, a live decision record or an entry endorsement. A paper-supported result would justify only a separately authorized, separately registered live test.",
-  "checkpoint_records": "C1 and C2 are recorded by the operator after review (paper_ps1.py checkpoint C1|C2), as immutable rows in streams/ps1/checkpoints.jsonl, refused unless the days, block and integrity conditions are met; C2 applies the rule above mechanically for that review. The job never records a checkpoint or changes the status on its own."
+  "never": "No PS1 status is a trading edge, a live decision record or an entry endorsement. A paper-supported result would justify only a separately authorized, separately registered live test."
  },
  "pause_terminate": {
   "pause_automatic": "see lifecycle.paused",
@@ -183,7 +178,7 @@
   "record": "streams/ps1/lifecycle.jsonl, append-only, keyed by this protocol's sha256",
   "approved": "the protocol is on main: the first production run records the transition, citing the commit",
   "active": "set at the first completed execution",
-  "paused": "automatic (by the job) when the last six scheduled decisions whose execution deadline (close + 90 min) has passed were all unexecuted - a decision still inside its window is pending and never counts; the job keeps trying and returns to active at the next verified execution. An operator pause (by the operator) stops decisions and executions until the operator resumes.",
+  "paused": "automatic (by the job) when the last 6 scheduled decisions all failed to execute; the job keeps trying and returns to active at the next completed execution. An operator pause (by the operator) stops decisions and executions until the operator resumes.",
   "terminated": "operator only: a lifecycle row by the operator, or streams/ps1/terminated.json. Decisions and executions stop at once - an execution in progress is recorded failed and writes no ledger row - and the open interval stays pending. Reports keep running on the retained history.",
   "archived": "operator only, after termination; reports are labelled archived",
   "restart": "never under the same protocol hash; a new protocol version is a new stream with a new clock",
