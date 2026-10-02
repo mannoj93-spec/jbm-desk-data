@@ -1,4 +1,5 @@
 {
+ "checkpoints": {},
  "decisions_recorded": 0,
  "evidence_class": "hypothesis",
  "evidence_vocabulary": [
@@ -11,13 +12,15 @@
   "retired"
  ],
  "execution_states": {},
- "generated_utc": "2026-10-02T01:03:54.670Z",
+ "generated_utc": "2026-10-02T04:15:50.458Z",
  "integrity": {
-  "failures": 0,
+  "failed_executions": [],
+  "failures": [],
   "ok": true,
-  "recent": []
+  "recorded_failures": 0,
+  "verified_executions": 0
  },
- "job": "ps1-job-2.0.0",
+ "job": "ps1-job-3.0.0",
  "label": "PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.",
  "launch": null,
  "lifecycle": {
@@ -25,20 +28,31 @@
   "last": {
    "by": "job",
    "from": "proposed",
-   "key": "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560",
-   "reason": "protocol on main at b46263b8903504f9539bf54d09ac62fd343a1c65 (the operator's merge)",
+   "key": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
+   "reason": "protocol on main at b373d1c5f2f0b4f3c2992a61612c4eb827ec5d6f (the operator's merge)",
    "state": "approved",
-   "t_ms": 1790828177490
+   "t_ms": 1790914547534
   },
+  "paused_by": null,
   "state": "approved"
  },
- "protocol": "PS1 v2",
- "protocol_sha256": "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560",
- "reason": "no executed decision yet (not before 2026-10-03T00:00:00Z)",
- "retired_protocol": {
-  "file": "desk/research/ps1/protocol_v1_retired.json",
-  "sha256": "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f",
-  "state": "retired before launch, zero observations"
- },
+ "protocol": "PS1 v3",
+ "protocol_sha256": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
+ "reason": "no verified execution yet (not before 2026-10-03T00:00:00Z)",
+ "report": "paper_ps1",
+ "retired_protocols": [
+  {
+   "file": "desk/research/ps1/protocol_v2_retired.json",
+   "sha256": "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560",
+   "state": "retired before launch, zero observations"
+  },
+  {
+   "file": "desk/research/ps1/protocol_v1_retired.json",
+   "sha256": "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f",
+   "state": "retired before launch, zero observations"
+  }
+ ],
+ "schema": "ps1-report-3",
+ "source_cutoff_utc": null,
  "status": "not launched"
 }
