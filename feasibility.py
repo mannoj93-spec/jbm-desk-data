@@ -28,7 +28,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "feasibility-1.0.0"
+VERSION = "feasibility-1.1.0"
 BASE = Path(__file__).resolve().parent
 UTC = dt.timezone.utc
 MIN_EVENTS_FOR_ETA = 5
@@ -126,8 +126,9 @@ def lab_designs(base, now) -> list:
         row = {"id": design, "kind": "lab", "version": card["evaluation_version"], "status": card["status"],
                "question": card["condition"], "primary_horizon_min": int(prim),
                "data_state": state, "data_reasons": reasons,
-               "eligible_observation": {"from": card["registered_at"], "to": card["attempt"]["cutoff"],
-                                        "days": round(eligible_days, 2)},
+               "calendar_exposure": {"from": card["registered_at"], "to": card["attempt"]["cutoff"],
+                                     "days": round(eligible_days, 2),
+                                     "basis": "calendar time since registration - not the time the collection could observe"},
                "collection_coverage": {"hourly_controls_selected": cc.get("selected"), "hours_elapsed": round(hours, 1),
                                        "share": round(cc["selected"] / hours, 3) if cc.get("selected") is not None and hours > 0 else None,
                                        "collector_running_since": started.strftime("%Y-%m-%dT%H:%MZ") if started else None},
@@ -140,8 +141,20 @@ def lab_designs(base, now) -> list:
                               "min_dependence_blocks": card.get("min_dependence_blocks")}}
         retained = test.get("retained") or 0
         episodes = test.get("episodes") or 0
-        row["rates_per_day"] = {"test_episodes": round(episodes / eligible_days, 3) if eligible_days else None,
-                                "test_retained": round(retained / eligible_days, 3) if eligible_days else None}
+        observable = state != "unavailable"
+        sel = cc.get("selected")
+        obs_days = (sel / 24.0) if (observable and isinstance(sel, (int, float)) and sel > 0) else None
+        row["capability"] = "observable" if observable else "not observable (the collection cannot see these events)"
+        row["observable_exposure"] = {
+            "days": round(obs_days, 2) if obs_days is not None else None,
+            "basis": "hours with a selected hourly control in the evaluation phase (the lab's own coverage count) / 24"
+                     if obs_days is not None else ("not observable" if not observable else "no recorded coverage count")}
+        if obs_days:
+            row["rates_per_observable_day"] = {"test_episodes": round(episodes / obs_days, 3),
+                                               "test_retained": round(retained / obs_days, 3)}
+        else:
+            row["rates_per_observable_day"] = {"test_episodes": None, "test_retained": None,
+                                               "why": row["observable_exposure"]["basis"]}
         # limiting factor
         if state == "unavailable":
             lim, obs = "infrastructure capability", "not observable: the collection cannot see these events"
@@ -150,7 +163,10 @@ def lab_designs(base, now) -> list:
             if m and int(m.group("have")) == 0:
                 lim, obs = "absent events", "observed zero qualifying events while the detector ran (see capability note)"
             else:
-                lim, obs = "time (warm-up)", "design warm-up not complete: events cannot yet qualify"
+                lim = "time (warm-up)"
+                obs = (f"warm-up not complete per the lab ({'; '.join(reasons)}); {retained} retained test observation(s) "
+                       f"in {test.get('blocks') or 0} block(s) are already recorded" if retained else
+                       f"warm-up not complete per the lab ({'; '.join(reasons)}); no retained test observation yet")
                 w = WARMUP.search(" ".join(reasons))
                 if w and started:
                     have, need = float(w.group("have")), float(w.group("need"))
@@ -165,11 +181,18 @@ def lab_designs(base, now) -> list:
         else:
             lim, obs = "time (accumulation)", "events occur; evidence accumulates with time"
         row["limiting_factor"], row["zero_interpretation"] = lim, obs
+        if lim == "time (warm-up)" and not retained:          # a warm-up zero is not an observed event rate
+            row["rates_per_observable_day"] = {"test_episodes": None, "test_retained": None,
+                                               "why": "warm-up incomplete per the lab; a zero here is not an observed rate"}
         need = pending.get("need") or card.get("min_retained_observations")
-        row["time_to_checkpoint"] = eta_days(need or 0, retained, retained, eligible_days) if need else None
+        row["time_to_checkpoint"] = eta_days(need or 0, retained, retained, obs_days) if (need and obs_days) else None
         if row["time_to_checkpoint"] is None:
-            row["time_to_checkpoint_note"] = (f"no ETA: {retained} retained test observation(s) in {eligible_days:.1f} days; "
-                                              f"an ETA needs >= {MIN_EVENTS_FOR_ETA}")
+            row["time_to_checkpoint_note"] = (
+                "no ETA: not observable" if not observable else
+                "no ETA: no observable-exposure denominator recorded" if not obs_days else
+                f"no ETA: {retained} retained test observation(s) in {obs_days:.1f} observable days; "
+                f"an ETA needs >= {MIN_EVENTS_FOR_ETA}")
+            
         out.append(row)
     return out
 
@@ -206,7 +229,7 @@ def desk_streams(base, now) -> list:
         rate = n / days if days > 0 else 0
         need = 10 * 42
         out.append({"id": f"RC1D B2 vs B0 ({h})", "kind": "range stream", "limiting_factor": "time (accumulation)",
-                    "eligible_observation": {"from": first, "days": round(days, 2)}, "paired_scored": n,
+                    "calendar_exposure": {"from": first, "days": round(days, 2), "basis": "calendar days since the stream start (one window per 4H decision)"}, "paired_scored": n,
                     "blocks": blocks, "checkpoint": {"need_blocks": 10, "block": 42},
                     "rate_per_day": round(rate, 2),
                     "time_to_checkpoint": {"central": (need - n) / rate} if rate > 0 and n >= MIN_EVENTS_FOR_ETA else None,
@@ -252,10 +275,19 @@ def build(base=BASE, now=None) -> dict:
     for r in lab:
         if r["id"] in INFRA:
             r["capability_note"] = INFRA[r["id"]]
-    return {"generated_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"), "job": VERSION, "lab": lab,
+    cut = [r["calendar_exposure"]["to"] for r in lab if r.get("calendar_exposure")]
+    return {"report": "feasibility", "schema": "feasibility-report-2", "generated_utc": now.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "source_cutoff_utc": max(cut) if cut else None, "job": VERSION,
+            "evidence_class": "not applicable (an operations report: it restates counts and carries no hypothesis evidence)",
+            "lifecycle": "not applicable",
+            "integrity": "not verified here: inputs are the lab's evidence cards and the stream reports as written",
+            "lab": lab,
             "streams": desk_streams(base, now),
             "rules": {"eta": f"only with >= {MIN_EVENTS_FOR_ETA} qualifying observations; 90% Garwood interval on the rate",
-                      "zeros": "observed zero (collection capable) is reported separately from not observable",
+                      "zeros": "observed zero (collection capable) is reported separately from not observable; "
+                               "an unobservable rate is null, never 0.0",
+                      "denominators": "rates and ETAs use observable exposure (the lab's coverage count); calendar time "
+                                      "since registration is shown separately and is never a rate denominator",
                       "definitions": "no design, threshold or evaluation version is changed by this report"}}
 
 
@@ -270,30 +302,33 @@ def _fmt_eta(e):
 
 def markdown(doc) -> str:
     L = ["# Research feasibility", "",
-         f"Generated {doc['generated_utc']} by {doc['job']}. Read-only: it restates what the lab and the streams recorded "
+         f"Generated {doc['generated_utc']} by {doc['job']}; source cutoff {doc.get('source_cutoff_utc')}. Read-only: it restates what the lab and the streams recorded "
          "and changes no definition. A zero the collection could not observe is marked **not observable**.", "",
          "## Lab designs", "",
-         "| design | status | eligible days | coverage | raw / episodes (prospective) | test retained / need | limiting factor | time to checkpoint 1 |",
-         "|---|---|---|---|---|---|---|---|"]
+         "| design | status | capability | calendar days | observable days | raw / episodes (prospective) | test retained / need | limiting factor | time to checkpoint 1 |",
+         "|---|---|---|---|---|---|---|---|---|"]
     for r in doc["lab"]:
-        if "eligible_observation" not in r:
-            L.append(f"| {r['id']} | — | — | — | — | — | {r['limiting']} | — |")
+        if "calendar_exposure" not in r:
+            L.append(f"| {r['id']} | — | — | — | — | — | — | {r['limiting']} | — |")
             continue
-        cov = r["collection_coverage"]["share"]
+        od = r["observable_exposure"]["days"]
         ck = r["checkpoint"]
-        L.append(f"| {r['id']} | {r['status']} | {r['eligible_observation']['days']} | "
-                 f"{'—' if cov is None else f'{cov:.0%}'} | {r['raw_candidates_prospective']} / {r['episodes_prospective']} | "
+        L.append(f"| {r['id']} | {r['status']} | {r['capability'].split(' (')[0]} | {r['calendar_exposure']['days']} | "
+                 f"{'unavailable' if od is None else od} | {r['raw_candidates_prospective']} / {r['episodes_prospective']} | "
                  f"{ck['retained']} / {ck['need']} | {r['limiting_factor']} | {_fmt_eta(r['time_to_checkpoint'])} |")
-    L += ["", "Coverage = hourly controls selected in the evaluation phase ÷ hours elapsed since registration.", ""]
+    L += ["", "Observable days = hours with a selected hourly control (the lab's coverage count) ÷ 24; calendar days are "
+          "shown for reference only and never divide a count.", ""]
     for r in doc["lab"]:
-        if "eligible_observation" not in r:
+        if "calendar_exposure" not in r:
             continue
         L += [f"### {r['id']} ({r['version']})", "",
               f"- Data: {r['data_state']}" + (f" — {'; '.join(r['data_reasons'])}" if r['data_reasons'] else ""),
               f"- Zeros: {r['zero_interpretation']}",
               f"- Test (evaluation phase, primary {r['primary_horizon_min']} min): " +
               ", ".join(f"{k} {v}" for k, v in r["test_evaluation_phase"].items()),
-              f"- Rates per day: test episodes {r['rates_per_day']['test_episodes']}, retained {r['rates_per_day']['test_retained']}",
+              f"- Rates per observable day: test episodes {r['rates_per_observable_day']['test_episodes'] if r['rates_per_observable_day']['test_episodes'] is not None else 'unavailable'}, "
+              f"retained {r['rates_per_observable_day']['test_retained'] if r['rates_per_observable_day']['test_retained'] is not None else 'unavailable'}"
+              + (f" ({r['rates_per_observable_day']['why']})" if r['rates_per_observable_day'].get('why') else ""),
               f"- Exclusions (named in the design): {'; '.join(r['exclusions_named']) or '—'}",
               f"- Recorded counters: {json.dumps(r['recorded_counters'], sort_keys=True)}"]
         if r.get("warmup"):

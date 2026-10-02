@@ -61,7 +61,8 @@ Counts, ages and statuses change every run, so they live only in the generated r
 6. **Research streams** (after each range run; 2.20) register a B1 companion forecast for every RC1D window,
    run the paper sizing experiment PS1 on quotes captured after each decision is confirmed, and refresh the
    feasibility report ([docs/RESEARCH_STREAMS.md](docs/RESEARCH_STREAMS.md)). Paper results are simulations.
-   Since 2.21 each run logs every stage and fails when a required stage or output fails; PS1 runs protocol v2.
+   Each run logs every stage and fails when a required stage, its output or an integrity check fails (2.21–2.22);
+   PS1 runs protocol v3.
 
 <details>
 <summary>Repository map</summary>

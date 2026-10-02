@@ -1,3 +1,24 @@
+# Maintenance, revision 2.22 (crypto-desk 12.4.5 on the 12.4 release family) — 2026-10-02
+
+**Base.** `main` at `dea47603` (2.21 merged Oct 1 01:26:51Z as `c805152d`; twelve production research-streams runs on
+2.21 logged in `streams/ops/`, all stages completed). PS1 v2 approved on main, not launched (no decision, quote or
+execution). Each item below was reproduced on 2.21 with an offline fixture before it was changed. Nothing here
+changes the range model, contracts RC1D/RC1, `range_job.py`, any registered forecast, score, fit or bundle, the lab,
+the collector or the PS1 calibration.
+
+| Finding (reproduced on 2.21) | Change | Tests |
+|---|---|---|
+| **Integrity not verified on every consuming path.** Recovery wrote six rows and the launch before noticing an altered confirmation; an altered quote or a deleted confirmation after completion left `integrity.ok: true`; after corrupted confirmations the paired figures stayed; an altered companion confirmation and a cached companion B2 error of 0 were still paired (100% "improvement") | PS1: one verified path (`verify_chain`) for execution, recovery and reporting - snapshot, protocol, decision, present bound confirmation, quote re-validation, predecessor, six identities, reproducible rows; descendants of a failure fail; recovery validates before writing. Companion: one path (`verified_pair`) for scoring and evaluation, verifying the RC1D outcome against its evidence and re-validating cached scores. Any failure withholds every performance figure | `TestPS1VerifiedConsumption`, `TestCompanionVerifiedConsumption` |
+| **Launch lost after a crash.** A crash at the launch write left rows, an active lifecycle and no launch; the report said "not launched" | `reconcile` derives launch and activation from the earliest verified execution, idempotently; a conflicting launch is flagged, not overwritten | `TestLaunchReconciliation` (interruptions after the row write, after completion, around the launch write, after activation) |
+| **Green runs with failed semantics.** `execute` printed a refusal and exited 0; a deleted report after its stage still passed | machine-readable `OUTCOME` (done/expected/error), exit 3 on error; `--semantic` stages; the verdict re-checks artifact hashes and that the records reached `origin/main` | `TestSemanticOutcomesThroughTheWrapper` (real CLIs) |
+| **Auto-pause never fired at the real cadence** (active at +28h50m after six expired misses) | only decisions past their deadline count | `TestAutoPauseCadence` (+20/+50/+65/+91 min, job resume, operator pause) |
+| **Variance estimator biased for unequal durations** (expected 0.49σ² for 4h and 24h) | PS1 protocol v3 frozen before launch (v2 kept byte-identical): σ̂² = Σ((r−μ̂h)²/h)/(n−1); log-return Sharpe labelled; closed-scope costs/turnover | `TestUnequalDurationStatistics` (exact, simulation, invalid durations) |
+| **Overlap from fixed ratios** (`n//1` said 3 disjoint 4h windows where the actual windows give 2) | overlap and largest disjoint subset from the verified windows; generic comparison keys (schema `companion-eval-2`) | `TestActualWindowOverlap` |
+| **Feasibility semantics** (E1 rate 0.0; G1 "cannot qualify" beside a retained episode; calendar days as observable time) | capability, calendar and observable exposure separated; unobservable and warm-up rates null; G1 evidence reported with its limitation | report check |
+| **Checkpoint ownership and the repo-write claim** | operator-reviewed immutable C1/C2 records; the "never waits while holding repo-write" claim removed and the logged span reported | `TestCheckpointRecords` |
+
+Release tooling: `make_release.py` repo 2.22, base `dea47603`, `protocol_v2_retired.json` an artifact; `release.json` rewritten.
+
 # Maintenance, revision 2.21 (crypto-desk 12.4.4 on the 12.4 release family) — 2026-10-01
 
 **Base.** `main` at `8e8e3c14` (2.20 deployed: PR #24 merged Sep 30 23:47:50Z; first research-streams run 36795851380; first eligible companion registrations Oct 1 00:23Z).
