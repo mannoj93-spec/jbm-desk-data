@@ -1,4 +1,15 @@
-# JBM desk data
+# JBM Research Desk
+
+**A research terminal for digital assets.** Recorded market data, registered range forecasts,
+and auditable research evidence in one finance-themed workspace.
+
+[**Open dashboard ↗**](https://mannoj93-spec.github.io/jbm-desk-data/) ·
+[Run locally / deployment setup](dashboard/README.md) · [Research evidence](reports/research.md)
+
+> The dashboard URL becomes available after the dashboard workflow is merged and GitHub Pages
+> is configured to use GitHub Actions. The preview below is a dated snapshot, not live market data.
+
+![JBM Research Desk — terminal-inspired dashboard preview, October 2, 2026](docs/dashboard-preview.png)
 
 [![Collector](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/collect.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/collect.yml)
 [![Research lab](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research.yml)
@@ -15,6 +26,27 @@ review of trading skill files; nothing here trades, holds credentials, or edits 
 
 > **A green badge means a workflow ran and its checks passed. It is not evidence of a trading
 > edge.** Whether any research design is supported is stated only in the generated research report.
+
+## The desk at a glance
+
+| Workspace | Purpose |
+|---|---|
+| Overview | Recorded BTC price history, model comparisons, forecast availability, and research watchlist |
+| Range forecasts | Full-window range quantiles, expiry, scoring, and descriptive evidence |
+| Research lab | Current evidence cards, integrity, checkpoint progress, and publication status |
+| Data health | Source coverage, dataset timestamps, filters, and recorded collection observations |
+| Paper desk | PS1 lifecycle and paired B2/B1 comparisons, clearly labeled as research |
+| Reports & audit | Commit-pinned reports, data snapshot, and exportable source hashes |
+
+```mermaid
+flowchart LR
+    A[Public market sources] --> B[Python collectors]
+    B --> C[Recorded history]
+    C --> D[Registered forecasts & research]
+    D --> E[Reports & evidence cards]
+    E --> F[Read-only dashboard snapshot]
+    F --> G[JBM Research Desk]
+```
 
 ## Start here
 
