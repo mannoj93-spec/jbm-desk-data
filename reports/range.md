@@ -4,17 +4,17 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-10-02T00:20:13.187Z by reader-12.4.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-02T00:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-10-02T00:20:15.081Z by reader-12.4.0; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-02T04:30:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
 | horizon | state | id | window | valid until | reason |
 |---|---|---|---|---|---|
-| 4h | valid-current | range-rc1d-4h-20261001T2000Z | 2026-10-01T20:25:00Z → 2026-10-02T00:25:00Z | 2026-10-02T00:25:00Z | eligible and current |
-| 24h | valid-current | range-rc1d-24h-20261001T2000Z | 2026-10-01T20:25:00Z → 2026-10-02T20:25:00Z | 2026-10-02T01:15:00Z | eligible and current |
-| 72h | valid-current | range-rc1d-72h-20261001T2000Z | 2026-10-01T20:25:00Z → 2026-10-04T20:25:00Z | 2026-10-02T01:15:00Z | eligible and current |
+| 4h | valid-current | range-rc1d-4h-20261002T0000Z | 2026-10-02T00:30:00Z → 2026-10-02T04:30:00Z | 2026-10-02T04:30:00Z | eligible and current |
+| 24h | valid-current | range-rc1d-24h-20261002T0000Z | 2026-10-02T00:30:00Z → 2026-10-03T00:30:00Z | 2026-10-02T05:15:00Z | eligible and current |
+| 72h | valid-current | range-rc1d-72h-20261002T0000Z | 2026-10-02T00:30:00Z → 2026-10-05T00:30:00Z | 2026-10-02T05:15:00Z | eligible and current |
 
-Current decision 2026-10-02T00:00:00Z: registered-pending (frozen; publication confirmation pending). Due production decisions: 35; outcomes: failed 1, missing 1, registered-pending 17, scored 16.
+Current decision 2026-10-02T00:00:00Z: registered-pending (eligible; 0/3 scored). Due production decisions: 35; outcomes: failed 1, missing 1, registered-pending 17, scored 16.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
