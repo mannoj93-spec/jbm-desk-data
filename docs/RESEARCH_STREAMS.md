@@ -1,4 +1,4 @@
-# Prospective research streams (repo 2.20; maintained in 2.21)
+# Prospective research streams (repo 2.20; maintained in 2.21 and 2.22)
 
 Three additions, each separately versioned and prospective from its first registration. None changes the range
 model, contract RC1D, any registered forecast, score, fit, lab design, evaluation version or research clock.
@@ -7,14 +7,18 @@ Workflow: [`.github/workflows/research-streams.yml`](../.github/workflows/resear
 
 | Stream | What it asks | Code | Records | Report |
 |---|---|---|---|---|
-| Companion B1 (`rc1d-b1`, companion-1.1.0) | How much of B2's range accuracy comes from DVOL? B2 vs B1 (same model without the DVOL term) beside B2 vs B0 | `desk/companion_job.py` | `streams/rc1d-b1/` | [`reports/companion_b1.md`](../reports/companion_b1.md) |
-| Paper sizing PS1 (protocol PS1 v2, ps1-job-2.0.0) | Does sizing a synthetic BTC spot long by the B2 4h forecast beat trailing-volatility sizing after costs? | `desk/paper_ps1.py` | `streams/ps1/` | [`reports/paper_ps1.md`](../reports/paper_ps1.md) |
-| Stage log (stream-ops-1.0.0) | Did every required stage of this run complete with its outputs? | `desk/stream_ops.py` | `streams/ops/` | the workflow verdict and step summary |
-| Feasibility (feasibility-1.0.0) | Can each active hypothesis realistically accumulate evidence, and what limits it? | `feasibility.py` | none (read-only) | [`reports/feasibility.md`](../reports/feasibility.md) |
+| Companion B1 (`rc1d-b1`, companion-1.2.0) | How much of B2's range accuracy comes from DVOL? B2 vs B1 (same model without the DVOL term) beside B2 vs B0 | `desk/companion_job.py` | `streams/rc1d-b1/` | [`reports/companion_b1.md`](../reports/companion_b1.md) |
+| Paper sizing PS1 (protocol PS1 v3, ps1-job-3.0.0) | Does sizing a synthetic BTC spot long by the B2 4h forecast beat trailing-volatility sizing after costs? | `desk/paper_ps1.py` | `streams/ps1/` | [`reports/paper_ps1.md`](../reports/paper_ps1.md) |
+| Stage log (stream-ops-1.1.0) | Did every required stage of this run complete with its outputs? | `desk/stream_ops.py` | `streams/ops/` | the workflow verdict and step summary |
+| Feasibility (feasibility-1.1.0) | Can each active hypothesis realistically accumulate evidence, and what limits it? | `feasibility.py` | none (read-only) | [`reports/feasibility.md`](../reports/feasibility.md) |
 
 Forecast accuracy (RC1D, companion), simulated sizing performance (PS1) and demonstrated live decision
 performance are three different things. The first two are measured here; the third is not measured anywhere in
 this repository, and no status in these reports is a trading edge or an entry endorsement.
+
+**Common report fields (2.22).** Every report carries `report`, `schema`, `generated_utc`, `source_cutoff_utc` (the
+latest observation it is built from), `evidence_class`, `integrity` and `lifecycle` (feasibility: "not applicable").
+Freshness is judged by `source_cutoff_utc`: a new generation time never makes old inputs fresh.
 
 ## Companion B1
 
@@ -39,22 +43,35 @@ this repository, and no status in these reports is a trading edge or an entry en
   contract, confirmation time and commit, and the binding's own hash. Scoring verifies the file against the registry
   and the binding; reporting re-verifies every scored file. A mismatch is recorded in `streams/rc1d-b1/integrity.jsonl`
   and the record is excluded; nothing is overwritten. The three 2026-10-01T00:00Z confirmations predate bindings and
-  are verified against the registry hash and their own fields (labelled "legacy confirmation").
-- **Report.** Per horizon: RC1D windows scored since the stream started, paired eligible windows, non-overlapping
-  windows (n, n/6, n/18 for 4h, 24h, 72h) with an overlap warning, missing, late and integrity-excluded companions,
-  B2−B1, B2−B0 and B1−B0 on the same windows (mean, median, better/tie/worse, relative MAE reduction, standardized
-  difference), the uncertainty method, and the rc1d-eval-1 bootstrap interval only from 10 blocks of 42 decisions.
+  are verified against the registry hash and their own fields (labelled "legacy confirmation"; no binding is
+  fabricated for them).
+- **One verified path (1.2.0).** Scoring and evaluation both go through `verified_pair`: the forecast against the
+  hash recorded at registration and the confirmation binding; the RC1D outcome against original records (the score
+  row names the manifest's frozen forecast, its evidence file hashes to the value recorded at scoring, the realized
+  range recomputes from that evidence, the B2/B0 losses recompute from the frozen forecast); and the B1 loss
+  recomputed from both. A cached score row is re-validated on every consumption (`inputs_sha256` binds new rows to
+  their inputs). Any failure in a horizon withholds every performance figure for that horizon - differences,
+  win counts, effect sizes and intervals - while counts and diagnostics stay visible; the report stage then fails.
+- **Report.** Per horizon: RC1D windows scored since the stream started, verified pairs, missing, late, unscored and
+  integrity-excluded companions; overlap from the actual `[start, end)` windows of the verified pairs (how many
+  overlap another, and the largest disjoint subset - a description of dependence that selects nothing; every valid
+  pair stays in the registered analysis); B2−B1, B2−B0 and B1−B0 on the same windows with generic keys (`first`,
+  `second`, `first_better`, `ties`, `first_worse`; schema `companion-eval-2`), relative MAE reduction, standardized
+  difference, the uncertainty method, and the rc1d-eval-1 bootstrap interval only from 10 resampling blocks of 42
+  decisions (a device for dependence, not a measured effective sample size).
   Evidence class: `descriptive` below the block minimum, at most `exploratory` above it (no pre-registered decision
   threshold exists), `unavailable` with no scored pair, `retired` once terminated.
 
 ## Paper sizing experiment PS1
 
-The frozen protocol is [`desk/research/ps1/protocol.json`](../desk/research/ps1/protocol.json), PS1 v2 (sha256
-recorded in `paper_ps1.py`; the job refuses to run on any drift). PS1 v1 was retired before launch with no decision,
-quote or execution recorded and is preserved byte-identical as `protocol_v1_retired.json` (`00acb5bc…`). v2 changes
-time accounting, execution atomicity, confirmation binding, quote validation and the lifecycle; the question, arms,
-formulas, calibration, costs, start rule, missing-data rules, checkpoints and evidence thresholds are v1's.
-Summary:
+The frozen protocol is [`desk/research/ps1/protocol.json`](../desk/research/ps1/protocol.json), PS1 v3 (sha256
+`d0e8c837…`, recorded in `paper_ps1.py`; the job refuses to run on any drift). v1 (`00acb5bc…`) and v2 (`be015545…`)
+were retired before launch with no decision, quote or execution recorded and are preserved byte-identical as
+`protocol_v1_retired.json` and `protocol_v2_retired.json`; v2 had been approved on main (Oct 1) and never launched.
+v3 changes the unequal-duration variance estimator and the cost/turnover scope, states the Sharpe as a log-return
+Sharpe, and adds the verified consumption path, launch reconciliation, the expired-deadline pause rule and checkpoint
+records. The question, arms, formulas, calibration, costs, start rule, missing-data rules, checkpoint timing and
+evidence thresholds are v1's. Summary:
 
 - **Instrument and policy.** A synthetic, unlevered BTCUSDT spot long on Binance. At every 4H decision three arms
   set a target weight - FIXED (constant), VOL (trailing 42-bar Parkinson sigma) and B2 (the registered RC1D 4h
@@ -89,6 +106,17 @@ Summary:
   `recovered` under its own id; some rows written → those rows stay in place, the execution is `partially_written`,
   and the full set is rebuilt under `<id>~r1`; a snapshot that no longer verifies → `failed`, the decision is a missed
   execution. A decision with any execution state is never executed again.
+- **Verified consumption (v3).** Execution, recovery and reporting read the ledger only through `verify_chain`: per
+  execution, in fill order - intact snapshot, protocol hash, decision row as snapshotted, present confirmation whose
+  binding the decision reproduces and which the snapshot bound, quote as snapshotted and still eligible on
+  re-validation, predecessor state equal to the verified ledger before it, exactly the six arm/scenario rows, and
+  rows reproducible from the snapshot. Missing evidence is a failure, and a failed execution invalidates every later
+  one. Recovery runs the same checks before writing. Any failure withholds every performance figure (arms, paired
+  differences, win counts, intervals) and makes `execute` and `report` exit with class `error`.
+- **Launch reconciliation (v3).** After the six rows and `completed`, `reconcile` derives `launch.json` and the
+  lifecycle activation from the earliest verified execution (its decision and its fill time), idempotently on every
+  pass; an interruption anywhere after the row write converges to what a clean run writes. A retry never trades
+  again, fetches a replacement quote or uses its own time; a conflicting launch record is flagged, not overwritten.
 - **Fills and costs.** Bid/ask walked through 20 captured levels, plus slippage; fee on the filled notional.
   Ordinary 10 bp fee + 1 bp slippage; stressed 10 bp + 10 bp; spread paid in both. Funding: not applicable (spot).
   Cash is USDT at 0%; equity marked at mid before each trade; costs charged on the actual change in holdings.
@@ -96,12 +124,16 @@ Summary:
 - **Missing data.** Every rule applies to all arms together: no eligible forecast, no bundle, a stale decision
   (after close + 90 min) or no eligible quote means no arm rebalances. An interval stays open until the next
   executed rebalance; an open interval is pending and never marked with an invented price.
-- **Time accounting (v2).** An interval runs from one fill to the next. Elapsed hours come from the recorded quote
+- **Time accounting (v3).** An interval runs from one fill to the next. Elapsed hours come from the recorded quote
   receipt times; a skipped or missed decision lengthens the interval (flagged `extended`, with its decision steps);
-  nothing is interpolated and no intermediate return is created. Annualization basis 8760 h/yr. Duration-weighted
-  estimators on log net returns: mean per hour = Σr / Σh; variance per hour = Σ(r − μh)² / (Σh·(n−1)/n);
-  annualized return 8760μ, volatility √(8760σ²), Sharpe their ratio (equal 4h intervals reduce exactly to v1's
-  √2190 formula). Exposure = Σ(weight held × hours) / Σhours; turnover = traded notional / mean equity / years.
+  nothing is interpolated and no intermediate return is created. Working model: independent increments
+  r = μh + σ√h·e. Drift rate μ̂ = Σr / Σh; variance rate σ̂² = Σ((r − μ̂h)² / h) / (n − 1), unbiased for σ² under
+  the model for any durations (v2's Σ(r − μ̂h)² / (Σh·(n−1)/n) was unbiased only for equal durations: 0.49σ² for
+  4h and 24h). Annualized log return 8760μ̂, volatility √(8760σ̂²); the Sharpe is their ratio - a log-return
+  Sharpe, with no numerical equivalence to v1 (simple returns) claimed. Serial dependence is left to the block
+  bootstrap. Exposure = Σ(weight held × hours) / Σhours. Costs and turnover use the same closed scope (the trades
+  that opened closed intervals); the latest trade's cost is shown separately and the open interval is never given a
+  terminal fill.
 - **Metrics.** Primary: SR(B2) − SR(VOL), duration-weighted annualized after-cost Sharpe, ordinary costs. Also net
   returns, annualized return, drawdown, turnover, exposure, realized volatility, worst interval and 5% expected
   shortfall (log), paired differences (Sharpe, annualized return, mean log return, standardized), all under stressed
@@ -112,10 +144,15 @@ Summary:
   reported only from 10 blocks. Checkpoint C1 at 180 days (descriptive), C2 at 365 days: the first review at which
   "paper-supported (sizing, simulated)", "paper-unfavourable" or "paper-inconclusive" can be assigned. No status is
   a trading edge.
+- **Checkpoints (v3).** C1 and C2 are owned by the operator: `python desk/paper_ps1.py checkpoint C1|C2 "<note>"`
+  writes an immutable row to `streams/ps1/checkpoints.jsonl`, refused unless the days, blocks and integrity
+  conditions are met; C2 applies the protocol's rule mechanically for that review. The job prints progress only and
+  never records a checkpoint or changes the status by itself.
 - **Start.** The first decision at or after 2026-10-03T00:00Z that the deployed workflow executes
-  (`streams/ps1/launch.json`, written once). v2 keeps v1's start rule; v1 recorded nothing, so no clock moves.
-  ps1-job-2.0.0 refuses to decide, execute or report on a ledger launched under another protocol: if v1 were to
-  launch before v2 is deployed, the operator terminates v1 and v2 starts as a new stream with a new clock.
+  (`streams/ps1/launch.json`, derived from the earliest verified execution). v3 keeps the start rule; v1 and v2
+  recorded nothing, so no clock moves. ps1-job-3.0.0 refuses to decide, execute or report on a ledger launched under
+  another protocol: if v2 were to launch before v3 is deployed, the operator terminates v2 and v3 starts as a new
+  stream with a new clock.
 
 ## Lifecycle (both streams)
 
@@ -127,7 +164,7 @@ since its first registration).
 |---|---|---|
 | approved | the first production run after the protocol is on `main` records it (the operator's merge) | — (already active) |
 | active | the first completed execution | since 2026-10-01 |
-| paused | by the job when the last 6 scheduled decisions are all past their deadline unexecuted (it keeps trying and resumes itself), or by the operator (stops decisions and executions until the operator resumes) | by the operator |
+| paused | by the job when the last six scheduled decisions whose 90-minute deadline has passed were all unexecuted (a decision still in its window is pending and never counts; it keeps trying and resumes at the next verified execution), or by the operator (stops decisions and executions until the operator resumes) | by the operator |
 | terminated | **operator only**: `python desk/paper_ps1.py lifecycle terminated "<reason>"`, or, from a phone, a file `streams/ps1/terminated.json` committed on GitHub | **operator only**: `companion_job.py lifecycle terminated "<reason>"` or `streams/rc1d-b1/terminated.json` |
 | archived | operator only, after termination | operator only, after termination |
 
@@ -146,6 +183,15 @@ sha256) and, for the test stage, test counts. A stage whose needed stage did not
 command is not run. The final `verdict` step fails the workflow if any required stage failed, was skipped, was not
 run, lost its artifact, or if the persist step failed. The only optional stage is the feasibility report; when it
 does not complete the verdict says so and does not count it.
+
+2.22: the stream jobs print one machine-readable line, `OUTCOME {"outcome", "class"}`, with class `done` (work
+performed), `expected` (pre-launch, operator pause, nothing new, no newly matured observation, missing market data
+under the protocol) or `error` (integrity failure or refusal); they exit 3 on `error`. Stages run with `--semantic`
+fail on class `error` even at exit 0 and on a missing OUTCOME line. The verdict re-checks every recorded artifact
+(present, same sha256) and, with `--check-persisted`, that the record paths are committed and the run's commit is on
+`origin/main`. The job holds the `repo-write` queue for its whole run, so other writers wait meanwhile; the logged
+stage span was 15-24 s on the first twelve production runs of 2.21 (queue wait is not logged). No narrowing of the
+critical section is justified by that measurement.
 
 Test counts are reported as ran (unittest's "Ran N", which includes skipped tests), executed (ran − skipped), passed,
 failed, errors and skipped; "unavailable" means the suite produced no result (did not run or could not load).
@@ -168,6 +214,11 @@ printed only from five qualifying observations with a 90% Poisson interval; zero
 collection cannot observe is "not observable". lab-2.2 records exclusion reasons by name; per-reason counts are
 shown only where a module recorded a counter, and adding them elsewhere would change evaluation versions, so it
 is not done here. The report also covers the RC1D, companion and PS1 streams.
+
+2.22: exposure is reported twice - calendar time since registration (reference only) and observable exposure (hours
+with a selected hourly control, the lab's own coverage count, ÷ 24). Rates and ETAs use observable exposure only;
+an unobservable design (E1) and a warm-up zero get a null rate, never 0.0; a design with recorded evidence during
+warm-up (G1) reports that evidence beside its limitation.
 
 TWAP (D1) and liquidity (E1) are addressed explicitly: D1 polls fixed-cohort `twapHistory` every 15 minutes, so
 programs that start and finish between polls are first seen finished and excluded; observing starts would need an
