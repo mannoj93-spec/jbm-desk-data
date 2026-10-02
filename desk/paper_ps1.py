@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""paper_ps1 — the prospective paper sizing experiment PS1 (protocol desk/research/ps1/protocol.json, PS1 v2).
+"""paper_ps1 — the prospective paper sizing experiment PS1 (protocol desk/research/ps1/protocol.json, PS1 v3).
 
 A SIMULATION on captured quotes. It tests whether sizing a synthetic, unlevered BTC spot long by the registered
 RC1D B2 4h range forecast beats sizing by trailing Parkinson volatility (primary) and a fixed weight (control),
@@ -13,11 +13,16 @@ after costs. It places no order, holds no credential, and its results are never 
   execute   recover any interrupted execution from its immutable snapshot; verify the binding; capture a Binance
             spot depth quote AFTER the decision became executable; validate it; record the snapshot; write all six
             execution rows (3 arms x 2 scenarios) in one atomic replacement; record the execution state.
-  report    reports/paper_ps1.{json,md}: lifecycle, coverage, delays, execution states, integrity, duration-weighted
-            per-arm statistics, paired differences, evidence block. Open intervals are pending, never marked.
+  report    reports/paper_ps1.{json,md}: lifecycle, coverage, delays, execution states, integrity, per-arm statistics
+            and paired differences from the VERIFIED ledger only; any integrity failure withholds every performance
+            figure. Open intervals are pending, never marked.
   lifecycle <state> <reason>   operator command (pause, resume, terminate, archive)
+  checkpoint C1|C2 <note>      operator command after review: the immutable checkpoint record
 
-v2 (repo 2.21) replaces v1, which was retired before launch with no observation (protocol_v1_retired.json).
+Every command prints one machine-readable line, OUTCOME {"outcome", "class": done|expected|error, ...}, and exits 3
+on class "error" (integrity failures, refusals the run must surface), 0 otherwise.
+v3 (repo 2.22) replaces v2 and v1, both retired before launch with no observation (protocol_v2_retired.json,
+protocol_v1_retired.json). Data root: $JBM_DESK_BASE if set (tests), else the repository.
 The job refuses to run if the protocol, calibration or calibration script differ from the frozen hashes below.
 Stdlib only. Network: Binance spot depth (www.binance.com, data-api.binance.vision), git. Records: streams/ps1/.
 """
@@ -28,6 +33,7 @@ import email.utils
 import hashlib
 import json
 import math
+import os
 import random
 import sys
 import time
@@ -35,22 +41,26 @@ import urllib.request
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parent
-BASE = DESK.parent
-for p in (str(DESK), str(BASE)):
+CODE = DESK.parent                                   # code and frozen research artifacts
+BASE = Path(os.environ.get("JBM_DESK_BASE") or CODE)  # records (streams/, registry/, state/)
+for p in (str(DESK), str(CODE)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
 import stream_util as U          # noqa: E402
 
-VERSION = "ps1-job-2.0.0"
+VERSION = "ps1-job-3.0.0"
 PROTOCOL = DESK / "research/ps1/protocol.json"
-PROTOCOL_SHA256 = "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560"
+PROTOCOL_SHA256 = "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952"
 PROTOCOL_V1_RETIRED = ("desk/research/ps1/protocol_v1_retired.json",
                        "00acb5bcf3e868e9d2023ff963c256f2fed23d6d2302552f109dab2193a48e8f")
+PROTOCOL_V2_RETIRED = ("desk/research/ps1/protocol_v2_retired.json",
+                       "be015545540d85ae8b9e0733167b9160704e4c8a743c810467cac57af377e560")
+PROTOCOLS_RETIRED = (PROTOCOL_V2_RETIRED, PROTOCOL_V1_RETIRED)
 ROOT = "streams/ps1"
 DECISIONS, CONFIRMS, QUOTES = f"{ROOT}/decisions.jsonl", f"{ROOT}/confirmations.jsonl", f"{ROOT}/quotes.jsonl"
 EXECUTIONS, RUNS, LAUNCH, TERMINATED = f"{ROOT}/executions.jsonl", f"{ROOT}/runs.jsonl", f"{ROOT}/launch.json", f"{ROOT}/terminated.json"
-EXEC_STATES = f"{ROOT}/execution_states.jsonl"
+EXEC_STATES, CHECKPOINTS = f"{ROOT}/execution_states.jsonl", f"{ROOT}/checkpoints.jsonl"
 ARMS = ("FIXED", "VOL", "B2")
 SCENARIOS = ("ordinary", "stressed")
 HOURS_PER_YEAR = 8760.0
@@ -82,10 +92,10 @@ def load_protocol(path=PROTOCOL, want=None) -> dict:
         raise Refused(f"protocol hash {got[:12]} != frozen {str(want or PROTOCOL_SHA256)[:12]}")
     doc = json.loads(raw)
     for key, rel in (("file_sha256", doc["calibration"]["file"]), ("script_sha256", doc["calibration"]["script"])):
-        f = BASE / rel
+        f = CODE / rel
         if not f.exists() or U.file_sha(f) != doc["calibration"][key]:
             raise Refused(f"calibration artifact {rel} missing or altered")
-    cal = json.loads((BASE / doc["calibration"]["file"]).read_text())
+    cal = json.loads((CODE / doc["calibration"]["file"]).read_text())
     if cal["constants"] != doc["calibration"]["constants"]:
         raise Refused("calibration constants differ from the protocol's")
     return doc
@@ -124,12 +134,6 @@ def stage_allowed(base, stage: str) -> tuple:
         ok = st in ("approved", "active") or (st == "paused" and (last or {}).get("by") == "job")
         return ok, st
     return True, st
-
-
-def _activate(base, reason: str, t_ms: int) -> None:
-    st, last = lifecycle(base)
-    if st == "approved" or (st == "paused" and (last or {}).get("by") == "job"):
-        U.transition(base, ROOT, PROTOCOL_SHA256, "active", by="job", reason=reason, t_ms=t_ms)
 
 
 # --------------------------------------------------------------------------------------------
@@ -339,7 +343,7 @@ def _safe_quote_row(q: dict) -> dict:
 
 
 # --------------------------------------------------------------------------------------------
-# Records, bindings and the ledger
+# Records and bindings
 # --------------------------------------------------------------------------------------------
 def _run_row(base, run, stage, outcome, **extra):
     U.append(Path(base) / RUNS, dict({"run": run, "stage": stage, "outcome": outcome, "t_ms": U.clock_ms(), "job": VERSION}, **extra),
@@ -361,8 +365,11 @@ def binding(d: dict, confirmed_ms: int, commit: str) -> dict:
             "contract": d.get("rc1d_contract"), "confirmed_ms": confirmed_ms, "commit": commit}
 
 
-def verify_confirmation(conf: dict, d: dict | None) -> tuple:
-    """(ok, reason). Recompute the binding from the decision row as it stands now."""
+def verify_confirmation(conf: dict | None, d: dict | None) -> tuple:
+    """(ok, reason). The confirmation must be present, its binding intact, and the decision row as it stands
+    now must reproduce the binding recorded at confirmation (not merely hash to something)."""
+    if not isinstance(conf, dict):
+        return False, "confirmation missing"
     b = conf.get("binding")
     if not isinstance(b, dict) or conf.get("binding_sha256") != U.sha(b):
         return False, "confirmation binding missing or altered"
@@ -379,21 +386,26 @@ def verify_confirmation(conf: dict, d: dict | None) -> tuple:
     return True, "verified"
 
 
+def confirmations(base) -> dict:
+    out = {}
+    for c in U.rows(Path(base) / CONFIRMS):
+        out.setdefault(c.get("decision_id"), c)
+    return out
+
+
 def verified_confirmations(base, record=True) -> dict:
     """decision_id -> confirmation row, for bindings that verify; failures are recorded and excluded."""
     base = Path(base)
     decs = decisions(base)
     out = {}
-    for c in U.rows(base / CONFIRMS):
-        if c["decision_id"] in out:
-            continue
-        ok, why = verify_confirmation(c, decs.get(c["decision_id"]))
+    for did, c in confirmations(base).items():
+        ok, why = verify_confirmation(c, decs.get(did))
         if ok:
-            out[c["decision_id"]] = c
+            out[did] = c
         elif record:
-            U.integrity_failure(base, ROOT, f"decision {c['decision_id']}", why,
+            U.integrity_failure(base, ROOT, f"decision {did}", why,
                                 expected=(c.get("binding") or {}).get("record_sha256"),
-                                found=U.sha(decs[c["decision_id"]]) if c["decision_id"] in decs else None)
+                                found=U.sha(decs[did]) if did in decs else None)
     return out
 
 
@@ -416,37 +428,6 @@ def rows_sha(rows: list) -> str:
     return U.sha(sorted(rows, key=lambda r: (r["scenario"], r["arm"])))
 
 
-def ledger(base) -> tuple:
-    """(execution rows of completed/recovered sets in fill order, integrity failures). A set whose rows do not
-    match the hash its final state recorded is a failure; nothing else is read."""
-    base = Path(base)
-    states = exec_states(base)
-    by = {}
-    for r in U.rows(base / EXECUTIONS):
-        by.setdefault(r.get("execution_id"), []).append(r)
-    good, bad = [], []
-    for eid, st in states.items():
-        fin = st[-1]
-        if fin["state"] not in FINAL_OK:
-            continue
-        rs = by.get(eid, [])
-        if len(rs) != len(ARMS) * len(SCENARIOS) or rows_sha(rs) != fin.get("rows_sha256"):
-            bad.append({"execution_id": eid, "reason": "execution rows differ from the hash recorded at completion",
-                        "expected": fin.get("rows_sha256"), "found": rows_sha(rs) if rs else None})
-            continue
-        good.extend(rs)
-    good.sort(key=lambda r: (r["fill_time_ms"], r["scenario"], r["arm"]))
-    return good, bad
-
-
-def ledger_state(base, proto) -> dict:
-    """(scenario, arm) -> {cash, btc} after the last completed execution; start equity otherwise."""
-    st = {(s, a): {"cash": float(proto["capital"]["start_equity_usdt"]), "btc": 0.0} for s in SCENARIOS for a in ARMS}
-    for r in ledger(base)[0]:
-        st[(r["scenario"], r["arm"])] = {"cash": r["cash_after"], "btc": r["btc_after"]}
-    return st
-
-
 def snap_sha(snap: dict) -> str:
     """Hash of a snapshot without its own 'sha256' field."""
     return U.sha({k: v for k, v in snap.items() if k != "sha256"})
@@ -455,6 +436,170 @@ def snap_sha(snap: dict) -> str:
 def _last_ok_execution(rows: list):
     return rows[-1]["execution_id"] if rows else None
 
+
+def _quotes(base) -> dict:
+    out = {}
+    for r in U.rows(Path(base) / QUOTES):
+        out.setdefault(r.get("quote_id"), r)
+    return out
+
+
+def _proto_unchecked() -> dict:
+    """The protocol as frozen in this checkout (the job's own load_protocol() checks the hash)."""
+    return json.loads(PROTOCOL.read_text())
+
+
+# --------------------------------------------------------------------------------------------
+# The one verified consumption path: execution, recovery and reporting all read the ledger through it
+# --------------------------------------------------------------------------------------------
+def verify_inputs(snap: dict, first_state: dict, decs: dict, confs: dict, quotes: dict, proto: dict,
+                  prev_rows: list) -> tuple:
+    """(ok, reason, decision, quote) for one execution's immutable inputs, before or after its rows exist:
+    snapshot, protocol, decision, present and verified confirmation bound into the snapshot, quote and its
+    eligibility, and the predecessor state it was built on. Missing evidence is a failure."""
+    if not isinstance(snap, dict) or not snap:
+        return False, "snapshot missing", None, None
+    if snap_sha(snap) != first_state.get("snapshot_sha256") or snap.get("sha256") != first_state.get("snapshot_sha256"):
+        return False, "snapshot altered", None, None
+    if snap.get("protocol_sha256") != PROTOCOL_SHA256:
+        return False, "snapshot made under another protocol", None, None
+    d = decs.get(snap.get("decision_id"))
+    if d is None or U.sha(d) != snap.get("decision_sha256"):
+        return False, "decision row missing or changed since the snapshot", None, None
+    conf = confs.get(snap.get("decision_id"))
+    ok, why = verify_confirmation(conf, d)
+    if not ok:
+        return False, why, None, None
+    if conf.get("binding_sha256") != snap.get("binding_sha256"):
+        return False, "confirmation differs from the one the execution was bound to", None, None
+    q = quotes.get(snap.get("quote_id"))
+    if q is None or U.sha(q) != snap.get("quote_sha256"):
+        return False, "quote row missing or changed since the snapshot", None, None
+    executable = max(conf["confirmed_ms"], d["rc1d_available_ms"], d["computed_end_ms"])
+    if executable != snap.get("executable_ms"):
+        return False, "executable time differs from the snapshot", None, None
+    deadline = U.ms(U.parse(d["decision_utc"])) + constants(proto)["max_delay_ms"]
+    ok_q, why_q = eligible_quote(q, executable, deadline)
+    if not ok_q or q.get("eligible") is not True:
+        return False, f"quote not eligible on re-validation ({why_q})", None, None
+    if snap.get("prior_execution_id") != _last_ok_execution(prev_rows) or snap.get("prior_sha256") != U.sha(_prior(prev_rows)):
+        return False, "predecessor state differs from the snapshot", None, None
+    return True, "verified", d, q
+
+
+def verify_chain(base, proto=None) -> dict:
+    """Verify every completed or recovered execution in fill order. A failed execution invalidates every later
+    one (their balances derive from it). Returns {rows, verified, failures, ok}."""
+    base = Path(base)
+    proto = proto or _proto_unchecked()
+    states, decs, confs, quotes = exec_states(base), decisions(base), confirmations(base), _quotes(base)
+    by = {}
+    for r in U.rows(base / EXECUTIONS):
+        by.setdefault(r.get("execution_id"), []).append(r)
+    finals = [(eid, st) for eid, st in states.items() if st[-1]["state"] in FINAL_OK]
+
+    def order(item):
+        snap = item[1][0].get("snapshot") or {}
+        return ((quotes.get(snap.get("quote_id")) or {}).get("t_received_ms") or 0, item[0])
+    good, verified, failures, broken = [], [], [], None
+    expected = {(s, a) for s in SCENARIOS for a in ARMS}
+    for eid, st in sorted(finals, key=order):
+        fin, rows = st[-1], by.get(eid, [])
+        if broken:
+            failures.append({"execution_id": eid, "reason": f"depends on {broken}, which failed verification",
+                             "expected": None, "found": None})
+            continue
+        why = None
+        if st[0].get("state") != "pending" or (st[0].get("snapshot") or {}).get("execution_id") != eid:
+            why = "pending state with its snapshot missing"
+        else:
+            ok, why_in, d, q = verify_inputs(st[0]["snapshot"], st[0], decs, confs, quotes, proto, good)
+            if not ok:
+                why = why_in
+            elif len(rows) != len(expected) or {(r.get("scenario"), r.get("arm")) for r in rows} != expected \
+                    or any(r.get("execution_id") != eid for r in rows):
+                why = "execution rows are not exactly the six arm/scenario identities"
+            elif rows_sha(rows) != fin.get("rows_sha256"):
+                why = "execution rows differ from the hash recorded at completion"
+            elif rows_sha(build_rows(st[0]["snapshot"], d, q, proto)) != fin.get("rows_sha256"):
+                why = "execution rows are not reproducible from the snapshot"
+        if why:
+            failures.append({"execution_id": eid, "reason": why, "expected": fin.get("rows_sha256"),
+                             "found": rows_sha(rows) if rows else None})
+            broken = eid
+            continue
+        good.extend(sorted(rows, key=lambda r: (r["scenario"], r["arm"])))
+        verified.append(eid)
+    return {"rows": good, "verified": verified, "failures": failures, "ok": not failures}
+
+
+def ledger(base, proto=None) -> tuple:
+    """(verified execution rows in fill order, failures) - the verified chain, in the 2.21 call shape."""
+    ch = verify_chain(base, proto)
+    return ch["rows"], ch["failures"]
+
+
+def ledger_state(base, proto) -> dict:
+    """(scenario, arm) -> {cash, btc} after the last verified execution; start equity otherwise."""
+    st = {(s, a): {"cash": float(proto["capital"]["start_equity_usdt"]), "btc": 0.0} for s in SCENARIOS for a in ARMS}
+    for r in ledger(base, proto)[0]:
+        st[(r["scenario"], r["arm"])] = {"cash": r["cash_after"], "btc": r["btc_after"]}
+    return st
+
+
+def record_failures(base, failures: list) -> None:
+    for f in failures:
+        U.integrity_failure(base, ROOT, f"execution {f['execution_id']}", f["reason"], f.get("expected"), f.get("found"))
+
+
+def expected_launch(chain: dict) -> dict | None:
+    """The launch record the earliest verified execution implies: its own decision and fill time, never a retry
+    time and never a later decision."""
+    if not chain["verified"]:
+        return None
+    first = [r for r in chain["rows"] if r["execution_id"] == chain["verified"][0]][0]
+    return {"first_decision_utc": first["decision_utc"], "first_execution_ms": first["fill_time_ms"],
+            "protocol_sha256": PROTOCOL_SHA256, "job": VERSION}
+
+
+def reconcile(base, chain: dict) -> dict:
+    """Idempotent completion bookkeeping from the verified ledger: the launch record and the lifecycle
+    activation. Safe to run on every pass; converges to what a clean run writes. A launch record that conflicts
+    with the earliest verified execution is flagged, never overwritten."""
+    base = Path(base)
+    want = expected_launch(chain)
+    out = {"launch": "none", "conflict": None}
+    if want is None:
+        if (base / LAUNCH).exists():
+            have = json.loads((base / LAUNCH).read_text())
+            if have.get("protocol_sha256") == PROTOCOL_SHA256:
+                out.update(launch="conflict", conflict="launch record exists but no execution verifies")
+        return out
+    if (base / LAUNCH).exists():
+        have = json.loads((base / LAUNCH).read_text())
+        keys = ("first_decision_utc", "first_execution_ms", "protocol_sha256")
+        if any(have.get(k) != want[k] for k in keys):
+            out.update(launch="conflict", conflict=f"launch record {[have.get(k) for k in keys]} conflicts with the "
+                                                   f"earliest verified execution {[want[k] for k in keys]}")
+            U.integrity_failure(base, ROOT, "launch.json", "launch record conflicts with the earliest verified execution",
+                                expected=want["first_decision_utc"], found=have.get("first_decision_utc"))
+            return out
+        out["launch"] = "present"
+    else:
+        from storage import atomic_json
+        atomic_json(base / LAUNCH, want)
+        out["launch"] = "written"
+    # lifecycle: active from the first verified fill; a job pause ends at the first verified fill after it
+    st, last = lifecycle(base)
+    fills = sorted({r["fill_time_ms"] for r in chain["rows"]})
+    if st == "approved":
+        U.transition(base, ROOT, PROTOCOL_SHA256, "active", by="job", reason="first verified execution", t_ms=fills[0])
+    elif st == "paused" and (last or {}).get("by") == "job":
+        later = [f for f in fills if f > last["t_ms"]]
+        if later:
+            U.transition(base, ROOT, PROTOCOL_SHA256, "active", by="job", reason="verified execution after a job pause",
+                         t_ms=later[0])
+    return out
 
 # --------------------------------------------------------------------------------------------
 # Decide and confirm
@@ -590,37 +735,17 @@ def build_rows(snap: dict, d: dict, quote: dict, proto: dict) -> list:
     return out
 
 
+
 def _write_rows(base, rows) -> int:
     """All rows of one execution in one atomic file replacement (storage.append_unique)."""
     from storage import append_unique
     return append_unique(Path(base) / EXECUTIONS, rows, key=lambda x: (x["execution_id"], x["scenario"], x["arm"]))
 
 
-def _quote_row(base, qid):
-    for r in U.rows(Path(base) / QUOTES):
-        if r.get("quote_id") == qid:
-            return r
-    return None
-
-
-def verify_snapshot(base, snap: dict, ledger_rows: list) -> tuple:
-    """(ok, reason, decision, quote). The snapshot's inputs must be exactly as recorded."""
-    base = Path(base)
-    d = decisions(base).get(snap.get("decision_id"))
-    if d is None or U.sha(d) != snap.get("decision_sha256"):
-        return False, "decision row missing or changed since the snapshot", None, None
-    q = _quote_row(base, snap.get("quote_id"))
-    if q is None or U.sha(q) != snap.get("quote_sha256"):
-        return False, "quote row missing or changed since the snapshot", None, None
-    if _last_ok_execution(ledger_rows) != snap.get("prior_execution_id"):
-        return False, "ledger moved on since the snapshot", None, None
-    if U.sha(_prior(ledger_rows)) != snap.get("prior_sha256"):
-        return False, "prior ledger state differs from the snapshot", None, None
-    return True, "verified", d, q
-
-
 def recover(base=BASE, proto=None, clock=U.clock_ms, run=None, writer=None) -> list:
-    """Finish or close every execution left pending or running. Never captures a quote."""
+    """Finish or close every execution left pending or running, from its snapshot only (never a new quote).
+    Every input is verified BEFORE anything is written; a failure writes no ledger row and marks the execution
+    failed (its decision becomes a missed execution)."""
     base = Path(base)
     proto = proto or load_protocol()
     run = run if run is not None else U.run_meta()
@@ -633,19 +758,23 @@ def recover(base=BASE, proto=None, clock=U.clock_ms, run=None, writer=None) -> l
         snap = first.get("snapshot") or {}
         written = [r for r in U.rows(base / EXECUTIONS) if r.get("execution_id") == eid]
         t = clock()
-        if snap_sha(snap) != first.get("snapshot_sha256") or snap.get("sha256") != first.get("snapshot_sha256"):
-            out.append(_state(base, eid, "failed", t, reason="snapshot altered", rows_written=len(written)))
-            _run_row(base, run, "execute", "missed-execution", decision_id=snap.get("decision_id"), reason="recovery failed: snapshot altered")
-            continue
         if U.lifecycle_state(base, ROOT, PROTOCOL_SHA256) in ("terminated", "archived"):
-            out.append(_state(base, eid, "failed", t, reason="terminated before recovery", rows_written=len(written)))
-            _run_row(base, run, "execute", "missed-execution", decision_id=snap["decision_id"], reason="terminated")
+            out.append(_state(base, eid, "failed", t, reason="terminated before recovery", rows_written=len(written),
+                              integrity=False))
+            _run_row(base, run, "execute", "missed-execution", decision_id=snap.get("decision_id"), reason="terminated")
             continue
-        good, _ = ledger(base)
-        ok, why, d, q = verify_snapshot(base, snap, good)
-        if not ok:
-            out.append(_state(base, eid, "failed", t, reason=f"recovery impossible: {why}", rows_written=len(written)))
-            _run_row(base, run, "execute", "missed-execution", decision_id=snap["decision_id"], reason=f"recovery failed: {why}")
+        chain = verify_chain(base, proto)
+        if not chain["ok"]:
+            why = "the verified ledger has failures; nothing is rebuilt on it"
+        else:
+            ok, why, d, q = verify_inputs(snap, first, decisions(base), confirmations(base), _quotes(base), proto,
+                                          chain["rows"])
+            why = None if ok else why
+        if why:
+            out.append(_state(base, eid, "failed", t, reason=f"recovery impossible: {why}", rows_written=len(written),
+                              integrity=True))
+            U.integrity_failure(base, ROOT, f"execution {eid}", f"recovery refused: {why}")
+            _run_row(base, run, "execute", "missed-execution", decision_id=snap.get("decision_id"), reason=f"recovery failed: {why}")
             continue
         rows = build_rows(snap, d, q, proto)
         if not written:
@@ -667,30 +796,24 @@ def recover(base=BASE, proto=None, clock=U.clock_ms, run=None, writer=None) -> l
             writer(base, rows2)
             out.append(_state(base, eid2, "recovered", clock(), rows_sha256=rows_sha(rows2), n_rows=len(rows2),
                               recovered_from=eid, note="rebuilt from the original snapshot under a new id"))
-        _activate(base, f"execution {eid} recovered", clock())
-        _launch(base, d, q)
+        reconcile(base, verify_chain(base, proto))
         _run_row(base, run, "execute", "recovered", decision_id=snap["decision_id"], execution_id=eid)
     return out
 
 
-def _launch(base, d, quote):
-    if not (Path(base) / LAUNCH).exists():
-        from storage import atomic_json
-        atomic_json(Path(base) / LAUNCH, {"first_decision_utc": d["decision_utc"], "first_execution_ms": quote["t_received_ms"],
-                                          "protocol_sha256": PROTOCOL_SHA256, "job": VERSION})
-
-
 def start_execution(base, d, conf, quote, proto, clock, run, writer=None) -> dict:
     """Execute one verified decision on one eligible, recorded quote. Raises DuplicateExecution if the decision
-    already has any execution state."""
+    already has any execution state. Order: snapshot -> six rows (one atomic write) -> completed -> reconcile
+    (launch, lifecycle); every step after the write is idempotent and repaired by the next pass."""
     base = Path(base)
     writer = writer or _write_rows
     states = exec_states(base)
     if any((st[0].get("decision_id") == d["decision_id"]) for st in states.values()):
         raise DuplicateExecution(f"{d['decision_id']} already has an execution")
-    good, bad = ledger(base)
-    if bad:
+    chain = verify_chain(base, proto)
+    if not chain["ok"]:
         raise RuntimeError("ledger integrity failure; execution refused")
+    good = chain["rows"]
     eid = f"{d['decision_id']}#x{quote['t_sent_ms']}"
     executable = max(conf["confirmed_ms"], d["rc1d_available_ms"], d["computed_end_ms"])
     prior = _prior(good)
@@ -704,41 +827,61 @@ def start_execution(base, d, conf, quote, proto, clock, run, writer=None) -> dic
     rows = build_rows(snap, d, quote, proto)
     ok, st = stage_allowed(base, "execute")
     if not ok:
-        return _state(base, eid, "failed", clock(), reason=f"lifecycle {st} during execution; no ledger row written", rows_written=0)
+        return _state(base, eid, "failed", clock(), reason=f"lifecycle {st} during execution; no ledger row written",
+                      rows_written=0, integrity=False)
     writer(base, rows)
     done = _state(base, eid, "completed", clock(), rows_sha256=rows_sha(rows), n_rows=len(rows))
-    _activate(base, f"execution {eid} completed", clock())
-    _launch(base, d, quote)
+    reconcile(base, verify_chain(base, proto))
     return done
 
 
-def execute(base=BASE, clock=U.clock_ms, fetch=fetch_depth, proto=None, run=None, pause=time.sleep, writer=None) -> dict | None:
-    """Recover interrupted executions, then execute the newest confirmed, unexecuted decision on a quote captured
-    now. Returns the outcome."""
+def _result(outcome: str, klass: str, **extra) -> dict:
+    """A machine-readable stage outcome: class 'done' (work performed), 'expected' (a protocol state such as
+    pre-launch, pause, nothing new, missing market data) or 'error' (integrity or refusal the run must surface)."""
+    return dict({"outcome": outcome, "class": klass, "job": VERSION}, **extra)
+
+
+def execute(base=BASE, clock=U.clock_ms, fetch=fetch_depth, proto=None, run=None, pause=time.sleep, writer=None) -> dict:
+    """Recover interrupted executions, verify the ledger, reconcile launch/lifecycle, then execute the newest
+    confirmed, unexecuted decision on a quote captured now. Returns a machine-readable outcome."""
     base = Path(base)
     proto = proto or load_protocol()
     run = run if run is not None else U.run_meta()
     c = constants(proto)
     check_launch(base)
+    rec = recover(base, proto, clock, run, writer)
+    failed_rec = [r for r in rec if r["state"] == "failed" and r.get("integrity")]
+    chain = verify_chain(base, proto)
+    if not chain["ok"] or failed_rec:
+        record_failures(base, chain["failures"])
+        _run_row(base, run, "execute", "refused: ledger integrity failure")
+        return _result("refused: ledger integrity failure", "error",
+                       failures=[f["reason"] for f in chain["failures"]] + [r["reason"] for r in failed_rec])
+    rc = reconcile(base, chain)
+    if rc["launch"] == "conflict":
+        _run_row(base, run, "execute", "refused: launch record conflict")
+        return _result("refused: launch record conflict", "error", reason=rc["conflict"])
     ok, st = stage_allowed(base, "execute")
     if not ok:
         _run_row(base, run, "execute", f"refused: lifecycle {st}")
-        return {"outcome": "refused", "reason": f"lifecycle {st}"}
-    recover(base, proto, clock, run, writer)
-    good, bad = ledger(base)
-    for b in bad:
-        U.integrity_failure(base, ROOT, f"execution {b['execution_id']}", b["reason"], b["expected"], b["found"])
-    if bad:
-        _run_row(base, run, "execute", "refused: ledger integrity failure")
-        return {"outcome": "refused", "reason": "ledger integrity failure"}
+        return _result(f"refused: lifecycle {st}", "expected")
+    if rec:
+        recovered = [r["execution_id"] for r in rec if r["state"] == "recovered"]
+    else:
+        recovered = []
     conf = verified_confirmations(base)
+    bad_conf = set(confirmations(base)) - set(conf)
+    if bad_conf:
+        _run_row(base, run, "execute", "refused: confirmation integrity failure")
+        return _result("refused: confirmation integrity failure", "error", decisions=sorted(bad_conf))
     started = {st_[0].get("decision_id") for st_ in exec_states(base).values()}
     done = started | {r["decision_id"] for r in U.rows(base / RUNS)
                       if r.get("stage") == "execute" and r.get("outcome") == "missed-execution" and r.get("decision_id")}
     cands = sorted((d for d in decisions(base).values() if d.get("action") == "rebalance" and d["decision_id"] in conf
                     and d["decision_id"] not in done), key=lambda d: d["decision_utc"])
     if not cands:
-        return None
+        return _result("recovered" if recovered else "nothing to execute", "done" if recovered else "expected",
+                       recovered=recovered)
     d = cands[-1]
     for older in cands[:-1]:                             # superseded before execution: never executed late
         _run_row(base, run, "execute", "missed-execution", decision_id=older["decision_id"], reason="superseded by a newer decision")
@@ -770,38 +913,49 @@ def execute(base=BASE, clock=U.clock_ms, fetch=fetch_depth, proto=None, run=None
             _run_row(base, run, "execute", "missed-execution", decision_id=d["decision_id"], reason=why)
         else:
             _run_row(base, run, "execute", "no-quote-yet", decision_id=d["decision_id"], reason=why)
-        return {"decision_id": d["decision_id"], "outcome": "no eligible quote", "reason": why}
+        return _result("no eligible quote", "expected", decision_id=d["decision_id"], reason=why)
     try:
         res = start_execution(base, d, conf[d["decision_id"]], quote, proto, clock, run, writer)
     except DuplicateExecution as exc:
         _run_row(base, run, "execute", "refused: duplicate", decision_id=d["decision_id"], reason=str(exc))
-        return {"decision_id": d["decision_id"], "outcome": "refused", "reason": str(exc)}
+        return _result("refused: duplicate execution", "error", decision_id=d["decision_id"], reason=str(exc))
     if res["state"] != "completed":
         _run_row(base, run, "execute", "missed-execution", decision_id=d["decision_id"], reason=res.get("reason"))
-        return {"decision_id": d["decision_id"], "outcome": res["state"], "reason": res.get("reason")}
+        return _result(res["state"], "expected", decision_id=d["decision_id"], reason=res.get("reason"))
     _run_row(base, run, "execute", "executed", decision_id=d["decision_id"], quote_id=quote["quote_id"],
              execution_id=res["execution_id"])
-    return {"decision_id": d["decision_id"], "outcome": "executed", "rows": res["n_rows"], "execution_id": res["execution_id"]}
+    return _result("executed", "done", decision_id=d["decision_id"], rows=res["n_rows"], execution_id=res["execution_id"])
 
 
 # --------------------------------------------------------------------------------------------
-# Statistics (duration-weighted; protocol v2 metrics.time_accounting)
+# Statistics (protocol v3 metrics.time_accounting)
 # --------------------------------------------------------------------------------------------
 def dw_stats(rs: list, dts: list) -> dict:
-    """Duration-weighted mean and variance of interval log returns rs over elapsed hours dts."""
-    n, T = len(rs), sum(dts)
-    if n == 0 or T <= 0:
+    """Drift and variance RATES (per hour) of interval log returns under the protocol's working model:
+    independent increments r_i = mu*h_i + sigma*sqrt(h_i)*e_i, E[e]=0, Var[e]=1.
+      mu_h  = sum(r_i) / sum(h_i)                          (weighted least squares with weights 1/h_i)
+      var_h = sum((r_i - mu_h*h_i)^2 / h_i) / (n - 1)       (unbiased for sigma^2 under the model, any h_i)
+    v2's var_h = sum((r_i - mu_h*h_i)^2) / (T*(n-1)/n) is unbiased only for equal durations (its expectation is
+    sigma^2 * (T - sum(h^2)/T) / (T*(n-1)/n)). Durations must be finite and > 0."""
+    n = len(rs)
+    if n != len(dts) or any((not isinstance(h, (int, float))) or not math.isfinite(h) or h <= 0 for h in dts) \
+            or any(not math.isfinite(r) for r in rs):
+        return {"mu_h": None, "var_h": None, "invalid": True}
+    T = sum(dts)
+    if n == 0:
         return {"mu_h": None, "var_h": None}
     mu = sum(rs) / T
     if n < 2:
         return {"mu_h": mu, "var_h": None}
-    var = sum((r - mu * h) ** 2 for r, h in zip(rs, dts)) / (T * (n - 1) / n)
+    var = sum((r - mu * h) ** 2 / h for r, h in zip(rs, dts)) / (n - 1)
     return {"mu_h": mu, "var_h": var}
 
 
 def sharpe_dw(rs: list, dts: list):
+    """Annualized log-return Sharpe: (8760*mu_h) / sqrt(8760*var_h) = sqrt(8760)*mu_h/sigma_h (cash yield 0).
+    A ratio of log-return drift to log-return volatility, not a simple-return Sharpe."""
     s = dw_stats(rs, dts)
-    if s["var_h"] is None or s["var_h"] <= 0:
+    if s.get("var_h") is None or s["var_h"] <= 0:
         return None
     return (s["mu_h"] * HOURS_PER_YEAR) / math.sqrt(s["var_h"] * HOURS_PER_YEAR)
 
@@ -816,8 +970,8 @@ def _quantile(xs, q):
 
 
 def bootstrap_sharpe_diff(a: list, b: list, dts: list = None, block=42, reps=5000, seed=20261003) -> list:
-    """Moving-block bootstrap of paired intervals ((a, b, dt) resampled together): 90% interval of
-    SR_dw(a) - SR_dw(b). dts defaults to equal 4h intervals."""
+    """Moving-block bootstrap of paired intervals ((a, b, h) resampled together; blocks are a resampling device
+    for serial dependence, not a measured effective sample size): 90% interval of SR(a) - SR(b)."""
     n = len(a)
     dts = dts or [STEP_H] * n
     rng = random.Random(seed)
@@ -838,7 +992,9 @@ def bootstrap_sharpe_diff(a: list, b: list, dts: list = None, block=42, reps=500
 
 
 def arm_stats(rows: list) -> dict:
-    """rows: one arm's completed executions in fill order."""
+    """One arm's verified executions in fill order. Returns and risk use CLOSED intervals only (the interval
+    opened by the latest trade is pending). Costs and turnover are reported for the same closed scope - the
+    trades that opened closed intervals, rows[:-1] - and separately including the latest (open) trade."""
     iv = [r for r in rows if r.get("interval_log_return") is not None]
     rs, dts = [r["interval_log_return"] for r in iv], [r["elapsed_h"] for r in iv]
     T = sum(dts)
@@ -848,21 +1004,24 @@ def arm_stats(rows: list) -> dict:
     for m in marks:
         peak = max(peak, m)
         mdd = min(mdd, m / peak - 1)
-    mean_eq = sum(marks) / len(marks) if marks else None
+    closed = rows[:-1] if len(rows) > 1 else []
+    closed_marks = marks[:len(closed)] or []
+    mean_eq = sum(closed_marks) / len(closed_marks) if closed_marks else None
     years = T / HOURS_PER_YEAR if T > 0 else None
     srt = sorted(rs)
     k = max(1, len(srt) // 20)
     return {"intervals": len(iv), "elapsed_hours": T if iv else 0.0,
             "extended_intervals": sum(1 for r in iv if r.get("interval_flag", "").startswith("extended")),
             "longest_interval_h": max(dts) if dts else None,
-            "net_return": (marks[-1] / marks[0] - 1) if len(marks) > 1 else None,
-            "return_ann": s["mu_h"] * HOURS_PER_YEAR if s["mu_h"] is not None else None,
-            "vol_ann": math.sqrt(s["var_h"] * HOURS_PER_YEAR) if s["var_h"] is not None else None,
+            "net_return_closed": (marks[-1] / marks[0] - 1) if len(marks) > 1 else None,
+            "log_return_ann": s["mu_h"] * HOURS_PER_YEAR if s.get("mu_h") is not None else None,
+            "vol_ann": math.sqrt(s["var_h"] * HOURS_PER_YEAR) if s.get("var_h") is not None else None,
             "sharpe_ann": sharpe_dw(rs, dts),
             "max_drawdown_marks": mdd,
-            "turnover_ann": (sum(abs(r["notional"]) for r in rows) / mean_eq / years) if mean_eq and years else None,
+            "turnover_ann_closed": (sum(abs(r["notional"]) for r in closed) / mean_eq / years) if mean_eq and years else None,
             "exposure_mean": (sum(r["w_held"] * r["elapsed_h"] for r in iv) / T) if T > 0 else None,
-            "fees_and_costs_usdt": sum(r["cost_vs_mid"] for r in rows),
+            "costs_usdt_closed": sum(r["cost_vs_mid"] for r in closed),
+            "costs_usdt_incl_open_trade": sum(r["cost_vs_mid"] for r in rows),
             "worst_interval_log": min(rs) if rs else None,
             "es5_log": (sum(srt[:k]) / k) if rs else None}
 
@@ -890,61 +1049,141 @@ def evidence_class(status: str, life: str, integrity_ok: bool) -> str:
 
 
 def auto_pause(base, sched: list, executed: set, now_ms: int, max_delay_ms: int) -> None:
-    """Job pause when the last 6 scheduled decisions are all past their deadline with none executed."""
+    """Job pause when the last six scheduled decisions WHOSE DEADLINES HAVE PASSED were all unexecuted.
+    Decisions still inside their execution window are pending and never count as misses. Only an active stream
+    is paused; an operator pause is never touched."""
     st, _ = lifecycle(base)
-    tail = sched[-6:]
-    if st == "active" and len(tail) == 6 and not any(f"ps1-{t:%Y%m%dT%H%MZ}" in executed for t in tail) \
-            and now_ms > U.ms(tail[-1]) + max_delay_ms:
-        U.transition(base, ROOT, PROTOCOL_SHA256, "paused", by="job", reason="last 6 scheduled decisions not executed", t_ms=now_ms)
+    expired = [t for t in sched if U.ms(t) + max_delay_ms < now_ms]
+    tail = expired[-6:]
+    if st == "active" and len(tail) == 6 and not any(f"ps1-{t:%Y%m%dT%H%MZ}" in executed for t in tail):
+        U.transition(base, ROOT, PROTOCOL_SHA256, "paused", by="job",
+                     reason=f"six expired scheduled decisions not executed ({U.iso(tail[0])} .. {U.iso(tail[-1])})",
+                     t_ms=U.ms(tail[-1]) + max_delay_ms)
+
+
+# --------------------------------------------------------------------------------------------
+# Checkpoints (C1, C2): operator-reviewed, immutable records
+# --------------------------------------------------------------------------------------------
+def c2_status(paired: dict, arms: dict, coverage) -> tuple:
+    """The protocol's C2 rule applied mechanically, for the operator's review: (status, criteria)."""
+    o, s = paired["ordinary"], paired["stressed"]
+    ci = o.get("sharpe_diff_ci90")
+    crit = {"a_ci90_above_0_ordinary": bool(ci and ci[0] > 0),
+            "b_point_above_0_stressed": bool(s.get("sharpe_diff_B2_minus_VOL") is not None and s["sharpe_diff_B2_minus_VOL"] > 0),
+            "c_coverage_at_least_80pct": bool(coverage is not None and coverage >= 0.8),
+            "d_vol_10_to_20pct_both_arms": all((arms["ordinary"][a].get("vol_ann") or -1) >= 0.10
+                                               and (arms["ordinary"][a].get("vol_ann") or 99) <= 0.20 for a in ("B2", "VOL"))}
+    if all(crit.values()):
+        return "paper-supported (sizing, simulated)", crit
+    if ci and ci[1] < 0:
+        return "paper-unfavourable", crit
+    return "paper-inconclusive", crit
+
+
+def checkpoints(base) -> dict:
+    out = {}
+    for r in U.rows(Path(base) / CHECKPOINTS):
+        out.setdefault(r.get("checkpoint"), r)
+    return out
+
+
+def record_checkpoint(name: str, by: str, note: str, base=BASE, now=None, proto=None) -> dict:
+    """Write the immutable C1 or C2 record after the operator's review. Refused unless the registered
+    conditions are met (days since launch, complete blocks, verified ledger). C1 never changes the status;
+    C2 applies the protocol's rule. The job never writes a checkpoint on its own."""
+    base = Path(base)
+    if by != "operator":
+        raise U.LifecycleError("checkpoints are recorded by the operator after review")
+    if name not in ("C1", "C2"):
+        raise ValueError("checkpoint must be C1 or C2")
+    if name in checkpoints(base):
+        raise ValueError(f"{name} already recorded; checkpoint records are immutable")
+    doc = report(base, now=now, proto=proto)
+    if not doc.get("launch"):
+        raise ValueError("not launched")
+    if not doc["integrity"]["ok"]:
+        raise ValueError("integrity failure: no checkpoint can be recorded")
+    need_days, need_blocks = {"C1": (180, 10), "C2": (365, 20)}[name]
+    blocks = doc["paired"]["ordinary"]["blocks"]
+    if doc["days_since_launch"] < need_days or blocks < need_blocks:
+        raise ValueError(f"{name} not due: {doc['days_since_launch']:.1f} days and {blocks} blocks "
+                         f"(needs {need_days} days and {need_blocks} blocks)")
+    if name == "C1":
+        status, crit = "collecting (descriptive)", {"note": "C1 is descriptive; no status change"}
+    else:
+        status, crit = c2_status(doc["paired"], doc["arms"], doc["coverage"])
+    row = {"checkpoint": name, "status": status, "criteria": crit, "by": by, "note": note, "t_ms": U.clock_ms(),
+           "protocol_sha256": PROTOCOL_SHA256, "days_since_launch": doc["days_since_launch"], "blocks": blocks,
+           "ledger_sha256": U.sha([r["execution_id"] for r in ledger(base, proto)[0]]),
+           "figures": {"paired": doc["paired"], "coverage": doc["coverage"]}}
+    U.append(base / CHECKPOINTS, row, key=lambda r: (r["checkpoint"],))
+    return row
+
+
+# --------------------------------------------------------------------------------------------
+# Report
+# --------------------------------------------------------------------------------------------
+WITHHELD = "withheld: integrity failure (records preserved; see integrity.failures)"
 
 
 def report(base=BASE, now=None, proto=None) -> dict:
     base = Path(base)
     now = now or dt.datetime.now(U.UTC)
-    proto = proto or json.loads(PROTOCOL.read_text())
+    proto = proto or _proto_unchecked()
     check_launch(base)
-    launch = json.loads((base / LAUNCH).read_text()) if (base / LAUNCH).exists() else None
-    ex, bad = ledger(base)
-    for b in bad:
-        U.integrity_failure(base, ROOT, f"execution {b['execution_id']}", b["reason"], b["expected"], b["found"])
+    chain = verify_chain(base, proto)
+    record_failures(base, chain["failures"])
+    rc = reconcile(base, chain)
     conf = verified_confirmations(base)
-    bad_conf = {r["decision_id"] for r in U.rows(base / CONFIRMS)} - set(conf)
+    bad_conf = sorted(set(confirmations(base)) - set(conf))
+    ex = chain["rows"]
+    launch = json.loads((base / LAUNCH).read_text()) if (base / LAUNCH).exists() else None
     decs = decisions(base)
     runs = U.rows(base / RUNS)
     states = exec_states(base)
-    integrity = U.rows(base / ROOT / "integrity.jsonl")
+    integrity_rows = U.rows(base / ROOT / "integrity.jsonl")
     final_states = {}
     for eid, st in states.items():
         final_states[st[-1]["state"]] = final_states.get(st[-1]["state"], 0) + 1
-    if launch:
+    integrity_ok = chain["ok"] and not bad_conf and rc["launch"] != "conflict"
+    if launch and integrity_ok:
         sched = schedule(U.parse(launch["first_decision_utc"]), now)
-        auto_pause(base, sched, {r["decision_id"] for r in ex},
-                   U.ms(now), proto["execution"]["max_delay_min"] * 60000)
+        auto_pause(base, sched, {r["decision_id"] for r in ex}, U.ms(now), proto["execution"]["max_delay_min"] * 60000)
     life, last = lifecycle(base)
-    integrity_ok = not bad and not (bad_conf & {r["decision_id"] for r in ex})
-    doc = {"generated_utc": U.iso_ms(U.ms(now)), "job": VERSION, "protocol": f"PS1 v{proto['version']}",
-           "protocol_sha256": PROTOCOL_SHA256, "label": proto["label"], "launch": launch,
-           "lifecycle": {"state": life, "last": last,
+    cps = checkpoints(base)
+    source_cutoff = max([r["fill_time_ms"] for r in ex] + [d.get("computed_end_ms") or 0 for d in decs.values()] or [0])
+    doc = {"report": "paper_ps1", "schema": "ps1-report-3", "generated_utc": U.iso_ms(U.ms(now)), "job": VERSION,
+           "protocol": f"PS1 v{proto['version']}", "protocol_sha256": PROTOCOL_SHA256, "label": proto["label"],
+           "source_cutoff_utc": U.iso_ms(source_cutoff) if source_cutoff else None,
+           "launch": launch,
+           "lifecycle": {"state": life, "paused_by": (last or {}).get("by") if life == "paused" else None, "last": last,
                          "authority": "termination and archiving: operator only; pause: operator or job (infrastructure)"},
-           "retired_protocol": {"file": PROTOCOL_V1_RETIRED[0], "sha256": PROTOCOL_V1_RETIRED[1],
-                                "state": "retired before launch, zero observations"},
+           "retired_protocols": [{"file": f, "sha256": h, "state": "retired before launch, zero observations"}
+                                 for f, h in PROTOCOLS_RETIRED],
            "execution_states": final_states,
-           "integrity": {"ok": integrity_ok, "failures": len(integrity), "recent": integrity[-5:]}}
+           "integrity": {"ok": integrity_ok, "verified_executions": len(chain["verified"]),
+                         "failed_executions": [f["execution_id"] for f in chain["failures"]],
+                         "failures": [f["reason"] for f in chain["failures"]] + [f"confirmation {d}" for d in bad_conf]
+                         + ([rc["conflict"]] if rc["launch"] == "conflict" else []),
+                         "recorded_failures": len(integrity_rows)},
+           "checkpoints": {k: {"status": v["status"], "t_ms": v["t_ms"], "by": v["by"]} for k, v in cps.items()}}
     if not launch:
         status = "not launched"
-        doc.update(status=status, reason=f"no executed decision yet (not before {proto['start']['not_before_utc']})",
+        doc.update(status=status, reason=f"no verified execution yet (not before {proto['start']['not_before_utc']})",
                    decisions_recorded=len(decs))
     else:
         executed = {r["decision_id"] for r in ex}
         missed_exec = {r["decision_id"]: r.get("reason") for r in runs if r.get("stage") == "execute" and r.get("outcome") == "missed-execution"}
         reasons = {}
+        sched = schedule(U.parse(launch["first_decision_utc"]), now)
         for t in sched:
             did = f"ps1-{t:%Y%m%dT%H%MZ}"
             d = decs.get(did)
+            pending = (now - t) <= dt.timedelta(minutes=proto["execution"]["max_delay_min"])
             if did in executed:
                 k = "executed"
             elif d is None:
-                k = "missed: no run" if (now - t) > dt.timedelta(minutes=proto["execution"]["max_delay_min"]) else "pending"
+                k = "pending" if pending else "missed: no run"
             elif d["action"] != "rebalance":
                 k = f"{d['action']}: {str(d.get('reason', '')).split(' (')[0]}"
             elif did in bad_conf:
@@ -952,11 +1191,9 @@ def report(base=BASE, now=None, proto=None) -> dict:
             elif did in missed_exec:
                 k = "missed-execution"
             else:
-                k = "confirmed, not yet executed"
+                k = "pending" if pending else "confirmed, not executed"
             reasons[k] = reasons.get(k, 0) + 1
-        per = {}
-        for s in SCENARIOS:
-            per[s] = {a: arm_stats([r for r in ex if r["scenario"] == s and r["arm"] == a]) for a in ARMS}
+        per = {s: {a: arm_stats([r for r in ex if r["scenario"] == s and r["arm"] == a]) for a in ARMS} for s in SCENARIOS}
         paired = {}
         for s in SCENARIOS:
             m = {a: {r["decision_utc"]: r for r in ex if r["scenario"] == s and r["arm"] == a} for a in ARMS}
@@ -970,46 +1207,49 @@ def report(base=BASE, now=None, proto=None) -> dict:
             diffs = [x - y for x, y in zip(b2, vol)]
             sd = math.sqrt(sum((x - sum(diffs) / n) ** 2 for x in diffs) / (n - 1)) if n > 1 else None
             sb, sv = per[s]["B2"]["sharpe_ann"], per[s]["VOL"]["sharpe_ann"]
-            rb, rv = per[s]["B2"]["return_ann"], per[s]["VOL"]["return_ann"]
+            rb, rv = per[s]["B2"]["log_return_ann"], per[s]["VOL"]["log_return_ann"]
             e = {"n_intervals": n, "blocks": blocks, "elapsed_hours": sum(dts),
-                 "independent_observations": f"{blocks} complete block(s) of 42 intervals (the dependence unit); "
-                                             f"{n} adjacent intervals are not independent",
-                 "overlap_warning": "intervals are adjacent, not overlapping, but serially dependent (volatility clusters)",
+                 "dependence": "adjacent, non-overlapping intervals that are serially dependent (volatility clusters); "
+                               "42-interval blocks are the bootstrap's resampling unit, not a measured effective sample size",
                  "baselines": {"primary": "VOL", "control": "FIXED"},
                  "sharpe_diff_B2_minus_VOL": (sb - sv) if sb is not None and sv is not None else None,
-                 "return_ann_diff_B2_minus_VOL": (rb - rv) if rb is not None and rv is not None else None,
+                 "log_return_ann_diff_B2_minus_VOL": (rb - rv) if rb is not None and rv is not None else None,
                  "mean_log_diff_B2_minus_VOL": (sum(diffs) / n) if n else None,
                  "standardized_diff_B2_minus_VOL": (sum(diffs) / n / sd) if sd else None,
                  "mean_log_diff_B2_minus_FIXED": (sum(x - y for x, y in zip(b2, fx)) / n) if n else None,
                  "B2_better_intervals_vs_VOL": sum(x > y for x, y in zip(b2, vol)),
                  "uncertainty_method": proto["uncertainty"]["method"]}
-            if blocks >= 10 and integrity_ok:
+            if blocks >= 10:
                 e["sharpe_diff_ci90"] = bootstrap_sharpe_diff(b2, vol, dts)
             else:
                 e["sharpe_diff_ci90"] = None
-                e["uncertainty"] = (f"unavailable: {blocks} complete block(s) of 42 intervals; PS1 needs 10"
-                                    if integrity_ok else "unavailable: integrity failure")
+                e["uncertainty"] = f"unavailable: {blocks} complete block(s) of 42 intervals; PS1 needs 10"
             paired[s] = e
-        if not integrity_ok:
-            per = {s: {a: {"withheld": "integrity failure; originals preserved"} for a in ARMS} for s in SCENARIOS}
+        if not integrity_ok:                                  # every affected performance figure, not just the arms
+            per = {s: {a: {"withheld": WITHHELD} for a in ARMS} for s in SCENARIOS}
+            paired = {s: {"withheld": WITHHELD, "n_intervals": paired[s]["n_intervals"], "blocks": paired[s]["blocks"]}
+                      for s in SCENARIOS}
         delays = sorted(r["delay_from_decision_ms"] / 60000 for r in ex if r["arm"] == "B2" and r["scenario"] == "ordinary")
         days = (now - U.parse(launch["first_decision_utc"])).total_seconds() / 86400
         ordered = sorted({r["decision_utc"] for r in ex})
-        status = "paused" if life == "paused" else "collecting (descriptive)"
+        status = cps["C2"]["status"] if "C2" in cps else ("paused" if life == "paused" else "collecting (descriptive)")
         doc.update(
             status=status,
             days_since_launch=round(days, 2), scheduled_decisions=len(sched), outcomes=reasons,
             coverage=round(reasons.get("executed", 0) / len(sched), 4) if sched else None,
             execution_delay_min={"median": _quantile(delays, 0.5), "max": delays[-1] if delays else None},
-            time_accounting={"basis": "elapsed hours between fills; 8760 h/yr; duration-weighted; no interpolation",
+            time_accounting={"basis": "elapsed hours between fills; 8760 h/yr; drift and variance rates per hour "
+                                      "(protocol v3); no interpolation; the interval opened by the latest trade is pending",
                              "intervals": paired["ordinary"]["n_intervals"],
-                             "elapsed_hours": paired["ordinary"]["elapsed_hours"],
-                             "extended_intervals": per["ordinary"]["B2"].get("extended_intervals") if integrity_ok else None},
+                             "elapsed_hours": paired["ordinary"].get("elapsed_hours"),
+                             "extended_intervals": per["ordinary"]["B2"].get("extended_intervals")},
             arms=per, paired=paired,
             open_interval={"since_decision_utc": ordered[-1] if ordered else None,
                            "state": "pending - not marked until the next executed rebalance"},
-            checkpoints={"C1": {"due_after_days": 180, "needs_blocks": 10}, "C2": {"due_after_days": 365, "needs_blocks": 20},
-                         "progress": f"{days:.1f} days, {paired['ordinary']['blocks']} complete block(s)"},
+            checkpoint_progress={"C1": {"due_after_days": 180, "needs_blocks": 10, "recorded": "C1" in cps},
+                                 "C2": {"due_after_days": 365, "needs_blocks": 20, "recorded": "C2" in cps},
+                                 "owner": "operator (paper_ps1.py checkpoint C1|C2 \"<note>\"); the job never records one",
+                                 "progress": f"{days:.1f} days, {paired['ordinary']['blocks']} complete block(s)"},
             note="Simulated fills on captured quotes; not executions. Sizing only - no direction is tested. "
                  "No status here is a trading edge or an entry endorsement.")
     doc["evidence_class"] = evidence_class(doc["status"], life, integrity_ok)
@@ -1026,14 +1266,16 @@ def _f(x, fmt="{:.4f}"):
 
 def markdown(doc: dict) -> str:
     L = ["# Paper sizing experiment PS1", "",
-         f"Generated {doc['generated_utc']} by {doc['job']} ({doc['protocol']}, protocol sha256 {doc['protocol_sha256'][:12]}).", "",
+         f"Generated {doc['generated_utc']} by {doc['job']} ({doc['protocol']}, protocol sha256 {doc['protocol_sha256'][:12]}); "
+         f"source cutoff {doc['source_cutoff_utc'] or '—'}.", "",
          f"> {doc['label']}", "",
-         f"**Status: {doc['status']}** · lifecycle {doc['lifecycle']['state']} · evidence class: {doc['evidence_class']}", "",
-         f"PS1 v1 ({doc['retired_protocol']['sha256'][:12]}) was {doc['retired_protocol']['state']}; preserved at "
-         f"`{doc['retired_protocol']['file']}`.", ""]
-    if not doc["integrity"]["ok"] or doc["integrity"]["failures"]:
-        L += [f"Integrity: {'FAILED - affected records excluded, metrics withheld' if not doc['integrity']['ok'] else 'ok'}; "
-              f"{doc['integrity']['failures']} failure record(s) in streams/ps1/integrity.jsonl (originals preserved).", ""]
+         f"**Status: {doc['status']}** · lifecycle {doc['lifecycle']['state']}"
+         + (f" (by {doc['lifecycle']['paused_by']})" if doc['lifecycle'].get('paused_by') else "")
+         + f" · evidence class: {doc['evidence_class']} · integrity: {'ok' if doc['integrity']['ok'] else 'FAILED'}", ""]
+    L += ["Retired before launch, zero observations: " + ", ".join(f"`{r['file']}` ({r['sha256'][:12]})" for r in doc["retired_protocols"]), ""]
+    if not doc["integrity"]["ok"]:
+        L += ["Integrity failed: every performance figure is withheld; the records stay as found. "
+              + "; ".join(doc["integrity"]["failures"][:5]), ""]
     if not doc.get("launch"):
         L += [doc.get("reason", ""), "", "Protocol: [desk/research/ps1/protocol.json](../desk/research/ps1/protocol.json)", ""]
         return "\n".join(L)
@@ -1042,32 +1284,34 @@ def markdown(doc: dict) -> str:
           f"{doc['scheduled_decisions']} scheduled decisions; coverage {_f(doc['coverage'], '{:.1%}')}; "
           f"execution delay after the 4H close: median {_f(doc['execution_delay_min']['median'], '{:.1f}')} min, "
           f"max {_f(doc['execution_delay_min']['max'], '{:.1f}')} min.", "",
-          f"Time accounting: {ta['basis']}. {ta['intervals']} intervals over {_f(ta['elapsed_hours'], '{:.1f}')} h; "
+          f"Time accounting: {ta['basis']}. {ta['intervals']} closed intervals over {_f(ta['elapsed_hours'], '{:.1f}')} h; "
           f"extended intervals {ta['extended_intervals'] if ta['extended_intervals'] is not None else '—'}.", "",
           "Outcomes: " + "; ".join(f"{k} {v}" for k, v in sorted(doc["outcomes"].items())), "",
           "Execution states: " + ("; ".join(f"{k} {v}" for k, v in sorted(doc["execution_states"].items())) or "none"), ""]
     if doc["integrity"]["ok"]:
-        L += ["| scenario | arm | intervals | hours | net return | return (ann.) | vol (ann.) | Sharpe (ann.) | exposure | turnover (ann.) | max DD | worst (log) | ES5% (log) |",
-              "|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+        L += ["| scenario | arm | closed intervals | hours | net return | log return (ann.) | vol (ann.) | log-return Sharpe (ann.) | exposure | turnover (ann., closed) | costs closed / incl. open trade | max DD | worst (log) | ES5% (log) |",
+              "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
         for s, arms in doc["arms"].items():
             for a, st in arms.items():
-                L.append(f"| {s} | {a} | {st['intervals']} | {_f(st['elapsed_hours'], '{:.0f}')} | {_f(st['net_return'], '{:.2%}')} | "
-                         f"{_f(st['return_ann'], '{:.1%}')} | {_f(st['vol_ann'], '{:.1%}')} | {_f(st['sharpe_ann'], '{:.2f}')} | "
-                         f"{_f(st['exposure_mean'], '{:.2f}')} | {_f(st['turnover_ann'], '{:.1f}')} | "
+                L.append(f"| {s} | {a} | {st['intervals']} | {_f(st['elapsed_hours'], '{:.0f}')} | {_f(st['net_return_closed'], '{:.2%}')} | "
+                         f"{_f(st['log_return_ann'], '{:.1%}')} | {_f(st['vol_ann'], '{:.1%}')} | {_f(st['sharpe_ann'], '{:.2f}')} | "
+                         f"{_f(st['exposure_mean'], '{:.2f}')} | {_f(st['turnover_ann_closed'], '{:.1f}')} | "
+                         f"{_f(st['costs_usdt_closed'], '{:.2f}')} / {_f(st['costs_usdt_incl_open_trade'], '{:.2f}')} | "
                          f"{_f(st['max_drawdown_marks'], '{:.2%}')} | {_f(st['worst_interval_log'], '{:.2%}')} | {_f(st['es5_log'], '{:.2%}')} |")
-    L += ["", "| scenario | paired intervals | blocks | Sharpe B2−VOL | 90% interval | ann. return B2−VOL | mean log diff B2−VOL | standardized | B2−FIXED |",
-          "|---|---|---|---|---|---|---|---|---|"]
-    for s, e in doc["paired"].items():
-        ci = e.get("sharpe_diff_ci90")
-        L.append(f"| {s} | {e['n_intervals']} | {e['blocks']} | {_f(e['sharpe_diff_B2_minus_VOL'], '{:.3f}')} | "
-                 f"{('[' + ', '.join(f'{x:.3f}' for x in ci) + ']') if ci else e.get('uncertainty')} | "
-                 f"{_f(e['return_ann_diff_B2_minus_VOL'], '{:.2%}')} | {_f(e['mean_log_diff_B2_minus_VOL'], '{:.5f}')} | "
-                 f"{_f(e['standardized_diff_B2_minus_VOL'], '{:.3f}')} | {_f(e['mean_log_diff_B2_minus_FIXED'], '{:.5f}')} |")
-    o = doc["paired"]["ordinary"]
-    L += ["", f"Independent observations: {o['independent_observations']}. {o['overlap_warning'].capitalize()}. "
-              f"Uncertainty: {o['uncertainty_method']}. Baseline: VOL (primary), FIXED (control).",
-          f"Open interval since {doc['open_interval']['since_decision_utc']}: {doc['open_interval']['state']}.",
-          f"Checkpoints: C1 after 180 days with ≥10 blocks; C2 after 365 days with ≥20 blocks. Progress: {doc['checkpoints']['progress']}.",
+        L += ["", "| scenario | paired intervals | resampling blocks | Sharpe B2−VOL | 90% interval | ann. log return B2−VOL | mean log diff | standardized | B2−FIXED |",
+              "|---|---|---|---|---|---|---|---|---|"]
+        for s, e in doc["paired"].items():
+            ci = e.get("sharpe_diff_ci90")
+            L.append(f"| {s} | {e['n_intervals']} | {e['blocks']} | {_f(e['sharpe_diff_B2_minus_VOL'], '{:.3f}')} | "
+                     f"{('[' + ', '.join(f'{x:.3f}' for x in ci) + ']') if ci else e.get('uncertainty')} | "
+                     f"{_f(e['log_return_ann_diff_B2_minus_VOL'], '{:.2%}')} | {_f(e['mean_log_diff_B2_minus_VOL'], '{:.5f}')} | "
+                     f"{_f(e['standardized_diff_B2_minus_VOL'], '{:.3f}')} | {_f(e['mean_log_diff_B2_minus_FIXED'], '{:.5f}')} |")
+        o = doc["paired"]["ordinary"]
+        L += ["", f"Dependence: {o['dependence']}. Uncertainty: {o['uncertainty_method']}. Baseline: VOL (primary), FIXED (control)."]
+    cp = doc["checkpoint_progress"]
+    L += [f"Open interval since {doc['open_interval']['since_decision_utc']}: {doc['open_interval']['state']}.",
+          f"Checkpoints: C1 after 180 days with ≥10 blocks (recorded: {cp['C1']['recorded']}); C2 after 365 days with ≥20 blocks "
+          f"(recorded: {cp['C2']['recorded']}). Owner: {cp['owner']}. Progress: {cp['progress']}.",
           "", doc["note"], ""]
     return "\n".join(L)
 
@@ -1077,24 +1321,42 @@ def operator_lifecycle(new: str, reason: str, base=BASE) -> dict:
     return U.transition(base, ROOT, PROTOCOL_SHA256, new, by="operator", reason=reason)
 
 
-if __name__ == "__main__":
-    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
+def main(argv) -> int:
+    cmd = argv[1] if len(argv) > 1 else ""
     try:
         if cmd == "decide":
-            decide()
+            rec = decide()
+            if rec is None:
+                last = (U.rows(BASE / RUNS) or [{}])[-1]
+                res = _result(last.get("outcome", "no decision"), "expected")
+            else:
+                res = _result(f"decided: {rec['action']}", "done", decision_id=rec["decision_id"])
         elif cmd == "confirm":
-            confirm()
+            rows = confirm()
+            res = _result(f"confirmed {len(rows)}", "done" if rows else "expected")
         elif cmd == "execute":
-            print(execute())
+            res = execute()
         elif cmd == "report":
-            report()
-        elif cmd == "lifecycle" and len(sys.argv) >= 4:
-            print(operator_lifecycle(sys.argv[2], " ".join(sys.argv[3:])))
+            doc = report()
+            res = _result(f"report: {doc['status']}", "done" if doc["integrity"]["ok"] else "error",
+                          integrity=doc["integrity"])
+        elif cmd == "checkpoint" and len(argv) >= 4:
+            row = record_checkpoint(argv[2], "operator", " ".join(argv[3:]))
+            res = _result(f"checkpoint {row['checkpoint']}: {row['status']}", "done")
+        elif cmd == "lifecycle" and len(argv) >= 4:
+            row = operator_lifecycle(argv[2], " ".join(argv[3:]))
+            res = _result(f"lifecycle {row['state']}", "done")
         else:
-            raise SystemExit("usage: paper_ps1.py decide|confirm|execute|report | lifecycle <state> <reason>")
+            print("usage: paper_ps1.py decide|confirm|execute|report | lifecycle <state> <reason> | checkpoint C1|C2 <note>")
+            return 2
     except Refused as exc:
         _run_row(BASE, U.run_meta(), cmd, "refused", reason=str(exc))
-        raise SystemExit(f"PS1 refused: {exc}")
-    except (U.LifecycleError, RuntimeError) as exc:
+        res = _result(f"refused: {exc}", "error")
+    except (U.LifecycleError, RuntimeError, ValueError) as exc:
         _run_row(BASE, U.run_meta(), cmd, "failed", reason=str(exc)[:300])
-        raise SystemExit(f"PS1 {cmd} failed: {exc}")
+        res = _result(f"failed: {exc}", "error")
+    return U.emit(res)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv))

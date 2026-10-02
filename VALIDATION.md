@@ -1,3 +1,18 @@
+# Validation record — maintenance, revision 2.22 (crypto-desk 12.4.5 on the 12.4 release family)
+
+Validated 2026-10-02 01:45–02:45Z on branch `maint-2-22` from `main` at `dea47603` (container; Python 3.11.15 and 3.12.11). Earlier blocks below are kept as recorded.
+
+| Check (2.22) | Result |
+|---|---|
+| Baseline | `main` dea47603 (2.21). 102 RC1D forecasts replay; 78 of 78 scores reproduce; 21 companions registered, 7 scored; 12 production research-streams runs on 2.21, every stage completed; PS1 approved under v2, not launched. Findings 1–7 reproduced offline on 2.21 (`CHANGELOG.md` 2.22) |
+| Regression suite (`python -m unittest discover -s regression`) | 3.12.11: ran 697, executed 696, passed 696, failed 0, errors 0, skipped 1. 3.11.15: ran 697, executed 695, passed 695, failed 0, errors 0, skipped 2. Unavailable: none |
+| Stream tests (`desk/test_streams.py`) | ran 138 (97 earlier, 41 new: PS1 verified consumption 8, launch reconciliation 7, auto-pause cadence 4, unequal-duration statistics 6, companion verified consumption 6, actual-window overlap 2, CLI semantics through the wrapper 6, checkpoints 2); 3.12 executed 138, passed 138; 3.11 executed 137, passed 137, skipped 1 |
+| Statistics | exact four-outcome fixture: E[σ̂²] = 1 for (4, 4), (4, 24) and (4, 8, 72) h (v2: 0.4897959184 for (4, 24)); simulation with drift and a 72 h gap within 3% |
+| Preserved | after the build: 102 forecasts replay, 78 of 78 scores reproduce; `registry/`, `state/`, `desk/fits/`, `streams/` and `reports/` unchanged by the build; PS1 v1 and v2 byte-identical; calibration and script unchanged, `calibrate.py verify` PASS on both Pythons |
+| Fixtures, release, checksums, O21 verify | `test_fixtures.py` all pass; `make_release.py check` OK (release 2.22); `SHA256SUMS` verifies; O21 `verify` PASS on both Pythons |
+| Dry run on a copy of `main` (real CLIs through `stream_ops --semantic`) | companion fit done; forecast/score expected (nothing new; 14 unscored); PS1 decide/execute expected (lifecycle proposed outside production); companion report done, integrity ok, 6 verified 4h pairs (largest disjoint subset 4); PS1 report "not launched"; verdict completed |
+| Not executed | any GitHub run on 2.22; any PS1 v3 decision or execution; fresh-thread Claude behaviour checks |
+
 # Validation record — maintenance, revision 2.21 (crypto-desk 12.4.4 on the 12.4 release family)
 
 Validated 2026-10-01 00:30–02:00Z on branch `maint-2-21` from `main` at `8e8e3c14` (container; Python 3.11.15 and 3.12.11). Earlier blocks below are kept as recorded; test counts in them are restated in the last row.

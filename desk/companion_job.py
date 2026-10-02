@@ -33,12 +33,14 @@ import datetime as dt
 import hashlib
 import json
 import math
+import os
 import sys
 from pathlib import Path
 
 DESK = Path(__file__).resolve().parent
-BASE = DESK.parent
-for p in (str(DESK), str(BASE)):
+CODE = DESK.parent
+BASE = Path(os.environ.get("JBM_DESK_BASE") or CODE)  # records root ($JBM_DESK_BASE in tests)
+for p in (str(DESK), str(CODE)):
     if p not in sys.path:
         sys.path.insert(0, p)
 
@@ -46,7 +48,7 @@ import range_model as R          # noqa: E402
 import range_contract as C       # noqa: E402
 import stream_util as U          # noqa: E402
 
-VERSION = "companion-1.1.0"
+VERSION = "companion-1.2.0"
 STREAM = "rc1d-b1"
 MODEL = "B1"
 ROOT = "streams/rc1d-b1"
@@ -59,7 +61,6 @@ MIN_MARGIN_S = C.MIN_MARGIN_S            # 120 s, the RC1D freezing margin
 EVAL_METHOD = "companion-eval-1 (2026-09-30): rc1d-eval-1 applied to B2 vs B1 on eligible paired windows"
 LIFECYCLE_KEY = "rc1d-b1/companion-1"       # the stream; it has been active since its first registration (2026-10-01)
 LIFECYCLE_DEFAULT = "active"
-OVERLAP = {"4h": 1, "24h": 6, "72h": 18}     # decisions per window: consecutive windows overlap for 24h and 72h
 
 
 def _say(msg):
@@ -347,99 +348,220 @@ def _rc1d_scores(base) -> dict:
     return out
 
 
-def score(base=BASE, now_ms=None) -> list:
-    """Score confirmed companions whose RC1D twin is scored; the realized range comes from that record."""
+class Unscored(Exception):
+    """The RC1D window has no score row yet (an expected state, not an integrity failure)."""
+
+
+def rc1d_outcome(base, rid: str, scores: dict) -> dict:
+    """The realized range and B2/B0 losses of one RC1D window, verified against original records: the score row
+    names the manifest's frozen forecast, its evidence file hashes to the hash recorded at scoring, the realized
+    range recomputes from that evidence, and the B2/B0 losses recompute from the frozen forecast. Raises
+    Unscored when there is no score row, U.RecordUnavailable on any mismatch."""
+    from storage import digest
+    s = scores.get(rid)
+    if not s or s.get("status") not in (None, "scored"):
+        raise Unscored(rid)
+    doc, entry, _ = U.rc1d_record(base, rid)
+    if s.get("forecast_sha256") != entry.get("sha256"):
+        raise U.RecordUnavailable(f"{rid}: score row names another forecast")
+    ev_path = Path(base) / str(s.get("evidence", ""))
+    if not s.get("evidence") or not ev_path.is_file():
+        raise U.RecordUnavailable(f"{rid}: score evidence missing")
+    raw = ev_path.read_bytes()
+    ev = json.loads(raw)
+    if s.get("evidence_sha256") not in (hashlib.sha256(raw).hexdigest(), digest(ev)):
+        raise U.RecordUnavailable(f"{rid}: score evidence does not hash to the recorded value")
+    realized = C.realized_lr(ev["price_bars"])
+    events = s.get("events") or []
+    if len(events) != len(doc.get("events") or []):
+        raise U.RecordUnavailable(f"{rid}: score events do not match the forecast")
+    errs = {}
+    for e, se in zip(doc["events"], events):
+        L = C.losses(e["point"], [e["q10"], e["q50"], e["q90"]], realized)
+        if se.get("realized_ln_range") != L["realized_ln_range"] or se.get("abs_error_log_lr") != L["abs_error_log_lr"]:
+            raise U.RecordUnavailable(f"{rid}: score row differs from the losses its evidence reproduces")
+        errs[str(e.get("name", ""))[:2]] = L["abs_error_log_lr"]
+        carried = L["realized_ln_range"]                # the realized range as the record carries it (rounded)
+    if "B2" not in errs or "B0" not in errs:
+        raise U.RecordUnavailable(f"{rid}: B2 or B0 event missing")
+    return {"realized": carried, "B2": errs["B2"], "B0": errs["B0"],
+            "eligible": bool((s.get("publication") or {}).get("eligible")), "score_sha256": U.sha(s),
+            "scored_ms": s.get("scored")}
+
+
+def verified_pair(base, cid: str, reg: dict, conf: dict | None, scores: dict) -> dict:
+    """The one consumption path for a companion: forecast + confirmation (verify), the RC1D outcome
+    (rc1d_outcome), and the B1 loss recomputed from both. Returns {state, ...}: 'ok' (with companion_eligible),
+    'unscored', or 'integrity' (reason)."""
+    if conf is None:
+        return {"state": "integrity", "reason": "confirmation missing"}
+    ok, why, cdoc = verify(base, reg, conf)
+    if not ok:
+        return {"state": "integrity", "reason": why}
+    try:
+        out = rc1d_outcome(base, reg["rc1d_id"], scores)
+    except Unscored:
+        return {"state": "unscored"}
+    except (U.RecordUnavailable, OSError, ValueError, KeyError) as exc:
+        return {"state": "integrity", "reason": f"RC1D outcome: {exc}"}
+    loss = C.losses(cdoc["point"], [cdoc["q10"], cdoc["q50"], cdoc["q90"]], out["realized"])
+    return {"state": "ok", "verification": why, "cdoc": cdoc, "outcome": out, "B1": loss,
+            "companion_eligible": bool(conf.get("eligible")),
+            "start_ms": reg["start_ms"], "end_ms": U.ms(U.parse(cdoc["horizon_utc"])),
+            "inputs_sha256": U.sha({"forecast_sha256": reg["sha256"], "rc1d_score_sha256": out["score_sha256"],
+                                    "realized_ln_range": out["realized"]})}
+
+
+def _score_matches(row: dict, vp: dict) -> bool:
+    return (row.get("inputs_sha256") in (None, vp["inputs_sha256"])
+            and row.get("realized_ln_range") == vp["outcome"]["realized"]
+            and (row.get("B1") or {}).get("abs_error_log_lr") == vp["B1"]["abs_error_log_lr"]
+            and row.get("B2_abs_error_log_lr") == vp["outcome"]["B2"]
+            and row.get("B0_abs_error_log_lr") == vp["outcome"]["B0"])
+
+
+def score(base=BASE, now_ms=None) -> dict:
+    """Score confirmed companions whose RC1D twin is scored, through verified_pair. Returns
+    {'scored': [...], 'integrity': [...], 'unscored': n}."""
     base = Path(base)
     have = {r["id"] for r in U.rows(base / SCORES)}
-    conf = {r["id"]: r for r in U.rows(base / CONFIRMS)}
+    conf = {}
+    for r in U.rows(base / CONFIRMS):
+        conf.setdefault(r["id"], r)
     rc = _rc1d_scores(base)
-    out = []
+    out = {"scored": [], "integrity": [], "unscored": 0}
     t_end = terminated_ms(base)
     for cid, reg in registered(base).items():
         if cid in have or cid not in conf:
             continue
         if t_end is not None and reg["frozen_ms"] >= t_end:
             continue                                   # registered at or after termination: never scored
-        s = rc.get(reg["rc1d_id"])
-        if not s:
+        vp = verified_pair(base, cid, reg, conf[cid], rc)
+        if vp["state"] == "unscored":
+            out["unscored"] += 1
             continue
-        ev = {e.get("name", "")[:2]: e for e in s.get("events", []) if isinstance(e, dict)}
-        realized = (ev.get("B2") or {}).get("realized_ln_range")
-        if realized is None:
+        if vp["state"] == "integrity":
+            U.integrity_failure(base, ROOT, f"companion {cid}", vp["reason"], expected=reg["sha256"])
+            out["integrity"].append({"id": cid, "reason": vp["reason"]})
             continue
-        ok, why, cdoc = verify(base, reg, conf[cid])
-        if not ok:
-            U.integrity_failure(base, ROOT, f"companion {cid}", why, expected=reg["sha256"],
-                                found=U.file_sha(base / reg["path"]) if (base / reg["path"]).exists() else None)
-            continue
-        loss = C.losses(cdoc["point"], [cdoc["q10"], cdoc["q50"], cdoc["q90"]], realized)
+        o = vp["outcome"]
         row = {"id": cid, "rc1d_id": reg["rc1d_id"], "decision_utc": reg["decision_utc"], "horizon": reg["horizon"],
-               "companion_eligible": conf[cid]["eligible"],
-               "rc1d_eligible": bool((s.get("publication") or {}).get("eligible")),
-               "realized_ln_range": realized, "B1": loss,
-               "B2_abs_error_log_lr": (ev.get("B2") or {}).get("abs_error_log_lr"),
-               "B0_abs_error_log_lr": (ev.get("B0") or {}).get("abs_error_log_lr"),
+               "companion_eligible": conf[cid]["eligible"], "rc1d_eligible": o["eligible"],
+               "realized_ln_range": o["realized"], "B1": vp["B1"],
+               "B2_abs_error_log_lr": o["B2"], "B0_abs_error_log_lr": o["B0"],
                "loss_function": "range_contract.losses (the RC1D scorer's function)", "job": VERSION,
-               "forecast_sha256": reg["sha256"], "verification": why}
+               "forecast_sha256": reg["sha256"], "rc1d_score_sha256": o["score_sha256"],
+               "inputs_sha256": vp["inputs_sha256"], "verification": vp["verification"]}
         U.append(base / SCORES, row, key=lambda x: (x["id"],))
-        out.append(row)
+        out["scored"].append(row)
     return out
 
 
+def disjoint_windows(windows: list) -> int:
+    """Size of the largest set of pairwise non-overlapping [start, end) windows (earliest-end greedy, exact)."""
+    n, end = 0, None
+    for s, e in sorted(windows, key=lambda w: (w[1], w[0])):
+        if end is None or s >= end:
+            n, end = n + 1, e
+    return n
+
+
+def overlapping_windows(windows: list) -> int:
+    """How many windows overlap at least one other window."""
+    ws = sorted(windows)
+    hit = set()
+    for i in range(len(ws)):
+        for j in range(i + 1, len(ws)):
+            if ws[j][0] >= ws[i][1]:
+                break
+            hit.update((i, j))
+    return len(hit)
+
+
+COMPARISONS = (("B2_vs_B1", "B2", "B1"), ("B2_vs_B0", "B2", "B0"), ("B1_vs_B0", "B1", "B0"))
+WITHHELD = "withheld: integrity failure in this horizon (records preserved; see integrity_failures)"
+
+
 def evaluation(base=BASE) -> dict:
-    """Per horizon: RC1D windows scored, companions registered/eligible/missing, and paired B2-vs-B1 and
-    B2-vs-B0 differences on the eligible pairs (rc1d-eval-1 block rules)."""
+    """Per horizon, through verified_pair only: RC1D windows scored, companions missing/late/unscored/excluded,
+    actual-window overlap, and paired differences on the eligible verified pairs (rc1d-eval-1 block rules).
+    A horizon with any integrity failure withholds every performance figure; counts stay visible."""
     import range_reader as RR
     base = Path(base)
     rc = _rc1d_scores(base)
     reg = registered(base)
-    conf = {r["id"]: r for r in U.rows(base / CONFIRMS)}
-    sc = {r["id"]: r for r in U.rows(base / SCORES)}
+    conf = {}
+    for r in U.rows(base / CONFIRMS):
+        conf.setdefault(r["id"], r)
+    cached = {}
+    for r in U.rows(base / SCORES):
+        cached.setdefault(r["id"], r)
     first = min((r["decision_utc"] for r in reg.values()), default=None)
-    out = {}
+    out, failures, cutoff = {}, [], 0
     for h in HORIZONS:
-        rc_h = {k: v for k, v in rc.items() if k.startswith(f"{RC1D_PREFIX}{h}-")
-                and (v.get("publication") or {}).get("eligible") and first and k[len(RC1D_PREFIX) + len(h) + 1:] >=
-                U.parse(first).strftime("%Y%m%dT%H%MZ")}
-        pairs, missing, late, excluded = [], 0, 0, 0
-        for rid in sorted(rc_h):
+        rids = sorted(k for k in rc if k.startswith(f"{RC1D_PREFIX}{h}-") and first
+                      and k[len(RC1D_PREFIX) + len(h) + 1:] >= U.parse(first).strftime("%Y%m%dT%H%MZ"))
+        pairs, cnt = [], {"rc1d_scored_since_start": len(rids), "rc1d_not_eligible": 0, "missing_companion": 0,
+                          "late_companion": 0, "unscored": 0, "excluded_integrity": 0}
+        for rid in rids:
             cid = ID_PREFIX + rid[len(RC1D_PREFIX):]
             if cid not in reg:
-                missing += 1
+                cnt["missing_companion"] += 1
                 continue
-            if not (conf.get(cid) or {}).get("eligible"):
-                late += 1
+            vp = verified_pair(base, cid, reg[cid], conf.get(cid), rc)
+            if vp["state"] == "integrity":
+                cnt["excluded_integrity"] += 1
+                failures.append({"id": cid, "reason": vp["reason"]})
+                U.integrity_failure(base, ROOT, f"companion {cid}", vp["reason"], expected=reg[cid]["sha256"])
                 continue
-            s = sc.get(cid)
-            if not s or s["B1"].get("abs_error_log_lr") is None or s.get("B2_abs_error_log_lr") is None:
+            if vp["state"] == "ok" and not vp["companion_eligible"]:
+                cnt["late_companion"] += 1
                 continue
-            fpath = base / reg[cid]["path"]
-            if not fpath.exists() or U.file_sha(fpath) != s.get("forecast_sha256", reg[cid]["sha256"]) \
-                    or reg[cid]["sha256"] != s.get("forecast_sha256", reg[cid]["sha256"]):
-                excluded += 1
-                U.integrity_failure(base, ROOT, f"companion {cid}", "forecast changed after scoring",
-                                    expected=s.get("forecast_sha256", reg[cid]["sha256"]),
-                                    found=U.file_sha(fpath) if fpath.exists() else None)
+            if vp["state"] == "unscored":
+                cnt["unscored"] += 1
                 continue
-            pairs.append((s["decision_utc"], s["B2_abs_error_log_lr"], s["B1"]["abs_error_log_lr"], s["B0_abs_error_log_lr"]))
-        entry = {"rc1d_scored_eligible_since_start": len(rc_h), "paired": len(pairs), "missing_companion": missing,
-                 "late_companion": late, "excluded_integrity": excluded,
-                 "non_overlapping_windows": len(pairs) // OVERLAP[h],
-                 "overlap_warning": None if OVERLAP[h] == 1 else
-                 f"{h} windows start every 4h and overlap {OVERLAP[h]}-fold; consecutive pairs are dependent "
-                 f"(about {len(pairs) // OVERLAP[h]} non-overlapping windows)",
-                 "metric": "absolute error of ln range (log units); negative difference favours the first model"}
-        for name, i, j in (("B2_vs_B1", 1, 2), ("B2_vs_B0", 1, 3), ("B1_vs_B0", 2, 3)):
-            d = [p[i] - p[j] for p in pairs]
+            if not vp["outcome"]["eligible"]:
+                cnt["rc1d_not_eligible"] += 1
+                continue
+            row = cached.get(cid)
+            if row is None:
+                cnt["unscored"] += 1
+                continue
+            if not _score_matches(row, vp):
+                cnt["excluded_integrity"] += 1
+                failures.append({"id": cid, "reason": "cached score differs from its verified inputs"})
+                U.integrity_failure(base, ROOT, f"companion {cid}", "cached score differs from its verified inputs",
+                                    expected=vp["inputs_sha256"], found=row.get("inputs_sha256"))
+                continue
+            cutoff = max(cutoff, vp["outcome"]["scored_ms"] or 0)
+            pairs.append({"decision_utc": reg[cid]["decision_utc"], "B2": vp["outcome"]["B2"], "B1": vp["B1"]["abs_error_log_lr"],
+                          "B0": vp["outcome"]["B0"], "window": (vp["start_ms"], vp["end_ms"])})
+        wins = [p["window"] for p in pairs]
+        entry = dict(cnt, paired=len(pairs),
+                     windows={"verified_pairs": len(pairs), "largest_disjoint_subset": disjoint_windows(wins),
+                              "overlapping_another": overlapping_windows(wins),
+                              "basis": "actual [start, end) windows of the verified pairs; all valid pairs stay in the "
+                                       "registered analysis - the disjoint count describes dependence, it selects nothing"},
+                     overlap_warning=(f"{overlapping_windows(wins)} of {len(pairs)} windows overlap another; the largest "
+                                      f"disjoint subset has {disjoint_windows(wins)}") if overlapping_windows(wins) else None,
+                     metric="absolute error of ln range (log units); a negative difference favours the first model")
+        if cnt["excluded_integrity"]:
+            for name, _, _ in COMPARISONS:
+                entry[name] = {"withheld": WITHHELD}
+            out[h] = entry
+            continue
+        for name, a, b in COMPARISONS:
+            d = [p[a] - p[b] for p in pairs]
             n = len(d)
             if not n:
-                entry[name] = {"n": 0}
+                entry[name] = {"first": a, "second": b, "n": 0}
                 continue
             blocks = n // RR.EVAL_BLOCK
-            e = {"n": n, "diff_mean": round(sum(d) / n, 5), "diff_median": round(RR._quantile(d, 0.5), 5),
-                 "b2_better": sum(x < -1e-12 for x in d), "ties": sum(abs(x) <= 1e-12 for x in d),
-                 "b2_worse": sum(x > 1e-12 for x in d), "blocks": blocks}
-            mi, mj = sum(p[i] for p in pairs) / n, sum(p[j] for p in pairs) / n
+            e = {"first": a, "second": b, "n": n, "diff_mean": round(sum(d) / n, 5),
+                 "diff_median": round(RR._quantile(d, 0.5), 5),
+                 "first_better": sum(x < -1e-12 for x in d), "ties": sum(abs(x) <= 1e-12 for x in d),
+                 "first_worse": sum(x > 1e-12 for x in d), "resampling_blocks": blocks}
+            mi, mj = sum(p[a] for p in pairs) / n, sum(p[b] for p in pairs) / n
             sd = math.sqrt(sum((x - sum(d) / n) ** 2 for x in d) / (n - 1)) if n > 1 else None
             e["effect"] = {"mae_first": round(mi, 5), "mae_second": round(mj, 5),
                            "relative_mae_reduction": round(1 - mi / mj, 4) if mj > 0 else None,
@@ -448,11 +570,13 @@ def evaluation(base=BASE) -> dict:
                 e["diff_mean_ci95"] = [round(x, 5) for x in RR._bootstrap_mean(d, RR.EVAL_BLOCK, RR.EVAL_RESAMPLES, RR.EVAL_SEED)]
             else:
                 e["diff_mean_ci95"] = None
-                e["uncertainty"] = f"unavailable: {blocks} complete block(s) of {RR.EVAL_BLOCK}; needs {RR.EVAL_MIN_BLOCKS}"
+                e["uncertainty"] = f"unavailable: {blocks} complete resampling block(s) of {RR.EVAL_BLOCK}; needs {RR.EVAL_MIN_BLOCKS}"
             entry[name] = e
         out[h] = entry
-    return {"method": EVAL_METHOD, "stream_start_decision_utc": first, "horizons": out,
-            "uncertainty_method": f"moving-block bootstrap of paired differences, blocks of {RR.EVAL_BLOCK} decisions, "
+    return {"method": EVAL_METHOD, "schema": "companion-eval-2", "stream_start_decision_utc": first, "horizons": out,
+            "integrity_failures_now": failures, "source_cutoff_ms": cutoff or None,
+            "uncertainty_method": f"moving-block bootstrap of paired differences, blocks of {RR.EVAL_BLOCK} decisions "
+                                  f"(a resampling device for dependence, not a measured effective sample size), "
                                   f"{RR.EVAL_RESAMPLES} resamples, seed {RR.EVAL_SEED}, 95% interval; reported only from "
                                   f"{RR.EVAL_MIN_BLOCKS} blocks",
             "baselines": {"B2_vs_B1": "does DVOL add to HAR/calendar", "B2_vs_B0": "B2 vs persistence on the same windows",
@@ -473,19 +597,26 @@ def report(base=BASE, now_ms=None) -> dict:
             missed[key] = missed.get(key, 0) + 1
     life, last = lifecycle(base)
     integrity = U.rows(base / ROOT / "integrity.jsonl")
-    any_ci = any((e.get("B2_vs_B1") or {}).get("diff_mean_ci95") for e in ev["horizons"].values())
-    any_pair = any(e.get("paired") for e in ev["horizons"].values())
-    klass = ("retired" if life in ("terminated", "archived") else
+    hz = ev["horizons"].values()
+    ok = not ev["integrity_failures_now"]
+    any_ci = any((e.get("B2_vs_B1") or {}).get("diff_mean_ci95") for e in hz)
+    any_pair = any(e.get("paired") for e in hz)
+    klass = ("unavailable" if not ok else "retired" if life in ("terminated", "archived") else
              "exploratory" if any_ci else "descriptive" if any_pair else "unavailable")
-    doc = {"generated_utc": U.iso_ms(now_ms), "stream": STREAM, "job": VERSION, "evaluation": ev,
+    confs = {}
+    for r in U.rows(base / CONFIRMS):
+        confs.setdefault(r["id"], r)
+    doc = {"report": "companion_b1", "schema": "companion-report-2", "generated_utc": U.iso_ms(now_ms),
+           "source_cutoff_utc": U.iso_ms(ev["source_cutoff_ms"]) if ev["source_cutoff_ms"] else None,
+           "stream": STREAM, "job": VERSION, "evaluation": ev,
            "lifecycle": {"state": life, "last": last, "authority": "termination and archiving: operator only"},
-           "integrity_failures": len(integrity),
+           "integrity": {"ok": ok, "failures_now": ev["integrity_failures_now"], "recorded_failures": len(integrity)},
            "evidence_class": klass,
            "evidence_class_rule": "no pre-registered success threshold exists for the companion, so its ceiling is "
                                   "'exploratory' (an interval with no decision rule); 'descriptive' below the block minimum; "
-                                  "'unavailable' with no scored pair; 'retired' once terminated",
-           "registered": len(registered(base)), "confirmed": len(U.rows(base / CONFIRMS)),
-           "eligible": sum(1 for r in U.rows(base / CONFIRMS) if r["eligible"]), "not_registered_by_reason": missed,
+                                  "'unavailable' with no scored pair or any integrity failure; 'retired' once terminated",
+           "registered": len(registered(base)), "confirmed": len(confs),
+           "eligible": sum(1 for r in confs.values() if r.get("eligible")), "not_registered_by_reason": missed,
            "status": "prospective record only; descriptive until rc1d-eval-1 block minimums are met"}
     from storage import atomic_bytes
     atomic_bytes(base / "reports/companion_b1.json", (json.dumps(doc, indent=1, sort_keys=True) + "\n").encode())
@@ -496,27 +627,33 @@ def report(base=BASE, now_ms=None) -> dict:
 def markdown(doc: dict) -> str:
     ev = doc["evaluation"]
     lines = [f"# RC1D companion benchmark: B2 vs B1 (HAR/calendar without DVOL)", "",
-             f"Generated {doc['generated_utc']} by {doc['job']}. Stream start: {ev['stream_start_decision_utc'] or 'not started'}. "
+             f"Generated {doc['generated_utc']} by {doc['job']}; source cutoff {doc['source_cutoff_utc'] or '—'}. "
+             f"Stream start: {ev['stream_start_decision_utc'] or 'not started'}. "
              f"Registered {doc['registered']}, confirmed {doc['confirmed']}, eligible {doc['eligible']}. "
              f"Lifecycle {doc['lifecycle']['state']}. Evidence class: **{doc['evidence_class']}**. "
-             f"Integrity failures recorded: {doc['integrity_failures']}.", "",
+             f"Integrity: {'ok' if doc['integrity']['ok'] else 'FAILED - affected horizons withheld'} "
+             f"({doc['integrity']['recorded_failures']} recorded failure rows).", "",
              "> Descriptive forecast-accuracy evidence only. It says whether DVOL adds to B1's range forecast; it says "
              "nothing about direction, sizing or trading returns. Late or missing companions stay late or missing.", "",
-             "| horizon | RC1D scored (eligible) | paired | non-overlapping | missing | late | excluded (integrity) | B2−B1 mean | median | B2 better/tie/worse | rel. MAE reduction | standardized | 95% (blocks) | B2−B0 mean (same windows) | B1−B0 mean |",
-             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
+             "| horizon | RC1D scored | paired | largest disjoint subset | overlapping | missing | late | unscored | excluded (integrity) | B2−B1 mean | median | B2 better/tie/worse | rel. MAE reduction | standardized | 95% (resampling blocks) | B2−B0 mean | B1−B0 mean |",
+             "|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|"]
     for h, e in ev["horizons"].items():
         a, b, c = e.get("B2_vs_B1", {}), e.get("B2_vs_B0", {}), e.get("B1_vs_B0", {})
-        ci = a.get("diff_mean_ci95")
-        eff = a.get("effect") or {}
-        lines.append(f"| {h} | {e['rc1d_scored_eligible_since_start']} | {e['paired']} | {e.get('non_overlapping_windows', '—')} | "
-                     f"{e['missing_companion']} | {e['late_companion']} | {e.get('excluded_integrity', 0)} | "
-                     f"{a.get('diff_mean', '—')} | {a.get('diff_median', '—')} | "
-                     f"{a.get('b2_better', '—')}/{a.get('ties', '—')}/{a.get('b2_worse', '—')} | "
-                     f"{eff.get('relative_mae_reduction', '—')} | {eff.get('standardized_mean_diff', '—')} | "
-                     f"{ci if ci else 'unavailable'} ({a.get('blocks', 0)}) | {b.get('diff_mean', '—')} | {c.get('diff_mean', '—')} |")
-    warn = [e["overlap_warning"] for e in ev["horizons"].values() if e.get("overlap_warning")]
+        w = e["windows"]
+        if a.get("withheld"):
+            perf = "withheld | — | — | — | — | — | — | —"
+        else:
+            ci = a.get("diff_mean_ci95")
+            eff = a.get("effect") or {}
+            perf = (f"{a.get('diff_mean', '—')} | {a.get('diff_median', '—')} | "
+                    f"{a.get('first_better', '—')}/{a.get('ties', '—')}/{a.get('first_worse', '—')} | "
+                    f"{eff.get('relative_mae_reduction', '—')} | {eff.get('standardized_mean_diff', '—')} | "
+                    f"{ci if ci else 'unavailable'} ({a.get('resampling_blocks', 0)}) | {b.get('diff_mean', '—')} | {c.get('diff_mean', '—')}")
+        lines.append(f"| {h} | {e['rc1d_scored_since_start']} | {e['paired']} | {w['largest_disjoint_subset']} | {w['overlapping_another']} | "
+                     f"{e['missing_companion']} | {e['late_companion']} | {e['unscored']} | {e['excluded_integrity']} | {perf} |")
+    warn = [f"{h}: {e['overlap_warning']}" for h, e in ev["horizons"].items() if e.get("overlap_warning")]
     if warn:
-        lines += ["", "Overlap: " + " ".join(warn)]
+        lines += ["", "Overlap (from actual windows): " + "; ".join(warn) + "."]
     if doc["not_registered_by_reason"]:
         lines += ["", "Not registered, by reason: " + "; ".join(f"{k} ({v})" for k, v in sorted(doc["not_registered_by_reason"].items()))]
     lines += ["", f"Method: {ev['method']}. Uncertainty: {ev.get('uncertainty_method')}. {ev['note']}",
@@ -524,19 +661,43 @@ def markdown(doc: dict) -> str:
     return "\n".join(lines)
 
 
+def main(argv) -> int:
+    cmd = argv[1] if len(argv) > 1 else ""
+    try:
+        if cmd == "fit":
+            p = fit()
+            res = {"outcome": "fit ready" if p else "waiting for the RC1D fit", "class": "done" if p else "expected"}
+        elif cmd == "forecast":
+            st, last = lifecycle(BASE)
+            ids = forecast()
+            res = {"outcome": f"registered {len(ids)}" if ids else (f"refused: lifecycle {st}" if st not in ("approved", "active") else "none registered"),
+                   "class": "done" if ids else "expected", "ids": ids}
+        elif cmd == "confirm":
+            rows = confirm()
+            res = {"outcome": f"confirmed {len(rows)}", "class": "done" if rows else "expected"}
+        elif cmd == "score":
+            r = score()
+            if r["integrity"]:
+                res = {"outcome": "integrity failure", "class": "error", "failures": r["integrity"],
+                       "scored": len(r["scored"])}
+            else:
+                res = {"outcome": f"scored {len(r['scored'])}" if r["scored"] else "no newly matured companion",
+                       "class": "done" if r["scored"] else "expected", "unscored": r["unscored"]}
+        elif cmd == "report":
+            doc = report()
+            res = {"outcome": f"report: {doc['evidence_class']}", "class": "done" if doc["integrity"]["ok"] else "error",
+                   "integrity": doc["integrity"]["failures_now"]}
+        elif cmd == "lifecycle" and len(argv) >= 4:
+            row = operator_lifecycle(argv[2], " ".join(argv[3:]))
+            res = {"outcome": f"lifecycle {row['state']}", "class": "done"}
+        else:
+            print("usage: companion_job.py fit|forecast|confirm|score|report | lifecycle <state> <reason>")
+            return 2
+    except (U.LifecycleError, RuntimeError, ValueError, OSError) as exc:
+        res = {"outcome": f"failed: {exc}"[:300], "class": "error"}
+    res["job"] = VERSION
+    return U.emit(res)
+
+
 if __name__ == "__main__":
-    cmd = sys.argv[1] if len(sys.argv) > 1 else ""
-    if cmd == "fit":
-        fit()
-    elif cmd == "forecast":
-        forecast()
-    elif cmd == "confirm":
-        confirm()
-    elif cmd == "score":
-        score()
-    elif cmd == "report":
-        report()
-    elif cmd == "lifecycle" and len(sys.argv) >= 4:
-        print(operator_lifecycle(sys.argv[2], " ".join(sys.argv[3:])))
-    else:
-        raise SystemExit("usage: companion_job.py fit|forecast|confirm|score|report | lifecycle <state> <reason>")
+    raise SystemExit(main(sys.argv))
