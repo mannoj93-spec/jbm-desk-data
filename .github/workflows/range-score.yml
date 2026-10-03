@@ -37,6 +37,7 @@ jobs:
       - name: Persist scores, evidence, the scoring log and the status
         if: always()
         env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           COMMIT_MESSAGE: Range scores
           PERSIST_BUDGET_S: '120'
         run: bash scripts/commit_push.sh registry/scores.jsonl registry/evidence state/range_scoring.jsonl reports/range.md reports/range_status.json

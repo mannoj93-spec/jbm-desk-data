@@ -72,6 +72,7 @@ jobs:
         id: publish
         if: always()
         env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           COMMIT_MESSAGE: Range forecasts
           PERSIST_BUDGET_S: '100'
         run: bash scripts/commit_push.sh registry state/forecast_manifest.json state/registered.json state/range_attempts.jsonl state/range_publications.jsonl state/range_runs.jsonl desk/fits desk/inputs desk/calendars reports/range.md reports/range_status.json
@@ -91,6 +92,7 @@ jobs:
       - name: Persist the confirmation and the lifecycle record
         if: always()
         env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           COMMIT_MESSAGE: Range publication confirmed
           PERSIST_BUDGET_S: '60'
         run: bash scripts/commit_push.sh state/range_attempts.jsonl state/range_publications.jsonl state/range_runs.jsonl reports/range.md reports/range_status.json
