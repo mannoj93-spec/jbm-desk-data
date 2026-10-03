@@ -1,6 +1,6 @@
 # RC1D companion benchmark: B2 vs B1 (HAR/calendar without DVOL)
 
-Generated 2026-10-03T01:02:17.430Z by companion-1.2.0; source cutoff 2026-10-03T00:56:21.285Z. Stream start: 2026-10-01T00:00:00Z. Registered 39, confirmed 39, eligible 39. Lifecycle active. Evidence class: **descriptive**. Integrity: ok (0 recorded failure rows).
+Generated 2026-10-03T04:17:44.395Z by companion-1.3.0; observation cutoff (latest included outcome-window end) 2026-10-03T00:30:00.000Z; last scored 2026-10-03T00:56:21.285Z. Stream start: 2026-10-01T00:00:00Z. Registered 42, confirmed 42, eligible 42. Lifecycle active. Evidence class: **descriptive**. Integrity: ok (0 recorded failure rows).
 
 > Descriptive forecast-accuracy evidence only. It says whether DVOL adds to B1's range forecast; it says nothing about direction, sizing or trading returns. Late or missing companions stay late or missing.
 
