@@ -49,7 +49,7 @@ for p in (str(DESK), str(CODE)):
 
 import stream_util as U          # noqa: E402
 
-VERSION = "ps1-job-3.1.0"
+VERSION = "ps1-job-3.2.0"
 PROTOCOL = DESK / "research/ps1/protocol.json"
 PROTOCOL_SHA256 = "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952"
 PROTOCOL_V1_RETIRED = ("desk/research/ps1/protocol_v1_retired.json",
@@ -414,10 +414,47 @@ def verified_confirmations(base, record=True) -> dict:
 
 
 def exec_states(base) -> dict:
+    """execution_id -> its journal rows in file order. A row that is not an object or has no string execution_id
+    is grouped under None, which account() treats as a malformed journal (repo 2.24: never dropped or crashed on)."""
     out = {}
     for r in U.rows(Path(base) / EXEC_STATES):
-        out.setdefault(r["execution_id"], []).append(r)
+        eid = r.get("execution_id") if isinstance(r, dict) else None
+        out.setdefault(eid if isinstance(eid, str) else None, []).append(r)
     return out
+
+
+# Allowed journal transitions (the writers: start_execution, recover). Terminal states take no later row.
+TRANSITIONS = {"pending": {"running", "recovered", "failed", "partially_written"},
+               "running": {"completed", "failed", "recovered", "partially_written"},
+               "completed": set(), "recovered": set(), "failed": set(), "partially_written": set()}
+
+
+def history_problem(st: list):
+    """Why one execution's journal history is invalid, else None (repo 2.24, validated on every read): every row an
+    object with a recognized state name and an integer time; the first row 'pending' carrying the snapshot; each
+    step an allowed transition; nothing after a terminal state; a failed or partial state records its row count."""
+    if not st:
+        return "empty state history"
+    for i, r in enumerate(st):
+        if not isinstance(r, dict):
+            return f"journal row {i} is not an object"
+        if r.get("state") not in EXEC_STATE_NAMES:
+            return f"unknown or missing state {r.get('state')!r} at journal row {i}"
+        if not isinstance(r.get("t_ms"), int) or isinstance(r.get("t_ms"), bool):
+            return f"journal row {i} ({r.get('state')}) has no integer time"
+    if st[0]["state"] != "pending":
+        return f"history starts at {st[0]['state']!r}, not pending"
+    for a, b in zip(st, st[1:]):
+        if b["state"] not in TRANSITIONS[a["state"]]:
+            return f"invalid transition {a['state']} -> {b['state']}"
+    last = st[-1]
+    if last["state"] in ("failed", "partially_written"):
+        n = last.get("rows_written", 0 if last["state"] == "failed" else None)
+        if not isinstance(n, int) or isinstance(n, bool) or n < 0:
+            return f"{last['state']} state without a valid rows_written count"
+    if last["state"] in FINAL_OK and not isinstance(last.get("rows_sha256"), str):
+        return f"{last['state']} state without its rows hash"
+    return None
 
 
 def _state(base, eid, state, t_ms, **extra) -> dict:
@@ -516,7 +553,15 @@ def account(states: dict, by: dict) -> dict:
     for eid in sorted(set(by) - set(states), key=str):
         fail(eid, f"{len(by[eid])} ledger row(s) with no execution state history (unknown execution id)", by[eid])
     for eid, st in states.items():
-        first, last, rows = st[0], st[-1], by.get(eid, [])
+        rows = by.get(eid, [])
+        if eid is None:
+            fail(None, f"{len(st)} malformed journal row(s) without an execution id", rows)
+            continue
+        why = history_problem(st)
+        if why:
+            fail(eid, f"execution state history invalid: {why}; {len(rows)} ledger row(s) unassigned", rows)
+            continue
+        first, last = st[0], st[-1]
         snap = first.get("snapshot") or {}
         did = first.get("decision_id")
         if first.get("state") != "pending" or snap.get("execution_id") != eid or snap.get("decision_id") != did:
@@ -563,7 +608,8 @@ def verify_chain(base, proto=None) -> dict:
     states, decs, confs, quotes = exec_states(base), decisions(base), confirmations(base), _quotes(base)
     by = _rows_by_execution(base)
     acc = account(states, by)
-    finals = [(eid, st) for eid, st in states.items() if st[-1]["state"] in FINAL_OK]
+    finals = [(eid, st) for eid, st in states.items()
+              if eid is not None and not history_problem(st) and st[-1]["state"] in FINAL_OK]
 
     def order(item):
         snap = item[1][0].get("snapshot") or {}
@@ -602,7 +648,11 @@ def verify_chain(base, proto=None) -> dict:
     counted = {"verified": len(good), "quarantined": sum(q["rows"] for q in acc["quarantined"]),
                "excluded": sum(x["rows_preserved"] for x in acc["exclusions"]),
                "in_progress": sum(p["rows"] for p in acc["in_progress"])}
-    ledger_rows = dict(counted, physical=physical, unaccounted=physical - sum(counted.values()) if not failures else None)
+    unaccounted = physical - sum(counted.values())
+    if not failures and unaccounted != 0:                     # conservation: every physical row exactly once
+        failures.append({"execution_id": None, "reason": f"ledger conservation failed: {physical} physical rows, "
+                         f"{sum(counted.values())} assigned ({counted})", "expected": physical, "found": sum(counted.values())})
+    ledger_rows = dict(counted, physical=physical, unaccounted=unaccounted if not failures else None)
     return {"rows": good, "verified": verified, "failures": failures, "ok": not failures,
             "exclusions": acc["exclusions"], "quarantined": acc["quarantined"], "in_progress": acc["in_progress"],
             "ledger_rows": ledger_rows}
@@ -855,8 +905,8 @@ def recover(base=BASE, proto=None, clock=U.clock_ms, run=None, writer=None) -> l
     writer = writer or _write_rows
     out = []
     for eid, st in exec_states(base).items():
-        if st[-1]["state"] not in ("pending", "running"):
-            continue
+        if eid is None or history_problem(st) or st[-1]["state"] not in ("pending", "running"):
+            continue                                   # invalid histories fail verify_chain; nothing is rebuilt
         first = st[0]
         snap = first.get("snapshot") or {}
         written = [r for r in U.rows(base / EXECUTIONS) if r.get("execution_id") == eid]
@@ -940,7 +990,7 @@ def start_execution(base, d, conf, quote, proto, clock, run, writer=None) -> dic
     base = Path(base)
     writer = writer or _write_rows
     states = exec_states(base)
-    if any((st[0].get("decision_id") == d["decision_id"]) for st in states.values()):
+    if any(isinstance(r, dict) and r.get("decision_id") == d["decision_id"] for st in states.values() for r in st):
         raise DuplicateExecution(f"{d['decision_id']} already has an execution")
     if any(r.get("decision_id") == d["decision_id"] for r in U.rows(base / EXECUTIONS)):
         raise DuplicateExecution(f"{d['decision_id']} already has ledger rows")
@@ -1008,7 +1058,7 @@ def execute(base=BASE, clock=U.clock_ms, fetch=fetch_depth, proto=None, run=None
     if bad_conf:
         _run_row(base, run, "execute", "refused: confirmation integrity failure")
         return _result("refused: confirmation integrity failure", "error", decisions=sorted(bad_conf))
-    started = {st_[0].get("decision_id") for st_ in exec_states(base).values()}
+    started = {r.get("decision_id") for st_ in exec_states(base).values() for r in st_ if isinstance(r, dict)}
     in_ledger = {r.get("decision_id") for r in U.rows(base / EXECUTIONS)}
     done = started | in_ledger | {r["decision_id"] for r in U.rows(base / RUNS)
                                   if r.get("stage") == "execute" and r.get("outcome") == "missed-execution" and r.get("decision_id")}
@@ -1280,7 +1330,8 @@ def report(base=BASE, now=None, proto=None) -> dict:
     integrity_rows = U.rows(base / ROOT / "integrity.jsonl")
     final_states = {}
     for eid, st in states.items():
-        final_states[st[-1]["state"]] = final_states.get(st[-1]["state"], 0) + 1
+        k = st[-1].get("state") if eid is not None and not history_problem(st) else "invalid history"
+        final_states[k] = final_states.get(k, 0) + 1
     integrity_ok = chain["ok"] and not bad_conf and rc["launch"] != "conflict"
     excluded = {x["decision_id"]: x for x in chain["exclusions"]}
     if launch and integrity_ok:

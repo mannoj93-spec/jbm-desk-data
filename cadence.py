@@ -111,6 +111,20 @@ def schedule_evidence(run):
                                 or (trigger(run) is None and run.get("runner") == "github"))
 
 
+def scheduled_gaps(runs, stale_min, since_ms=None, now_ms=None):
+    """Silences between consecutive scheduled runs longer than stale_min (repo 2.24). Each gap is
+    {start_ms, end_ms, minutes}: the record times of the run before and the run after (end_ms None while
+    ongoing at now_ms). Derived from the stored records every time, so a recovered gap stays visible."""
+    sched = sorted((r for r in runs if schedule_evidence(r)), key=lambda r: r["t"])
+    out = []
+    for a, b in zip(sched, sched[1:]):
+        if (b["t"] - a["t"]) / 60_000 > stale_min and (since_ms is None or b["t"] >= since_ms):
+            out.append({"start_ms": a["t"], "end_ms": b["t"], "minutes": round((b["t"] - a["t"]) / 60_000, 2)})
+    if sched and now_ms is not None and (now_ms - sched[-1]["t"]) / 60_000 > stale_min:
+        out.append({"start_ms": sched[-1]["t"], "end_ms": None, "minutes": round((now_ms - sched[-1]["t"]) / 60_000, 2)})
+    return out
+
+
 def failure_summary(run):
     """(critical, problems): critical when the run lost the critical Binance share series or the
     whole snapshot (the snapshot stage raised, or not one open-interest book succeeded - 2.6
