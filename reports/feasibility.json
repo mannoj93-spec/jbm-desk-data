@@ -1,6 +1,6 @@
 {
  "evidence_class": "not applicable (an operations report: it restates counts and carries no hypothesis evidence)",
- "generated_utc": "2026-10-03T09:03:10Z",
+ "generated_utc": "2026-10-03T15:01:04Z",
  "integrity": "not verified here: inputs are the lab's evidence cards and the stream reports as written",
  "job": "feasibility-1.1.0",
  "lab": [
@@ -591,7 +591,7 @@
    "blocks": 0,
    "calendar_exposure": {
     "basis": "calendar days since the stream start (one window per 4H decision)",
-    "days": 7.21,
+    "days": 7.46,
     "from": "2026-09-26T04:00:00Z"
    },
    "checkpoint": {
@@ -602,17 +602,17 @@
    "kind": "range stream",
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
-   "paired_scored": 36,
-   "rate_per_day": 4.99,
+   "paired_scored": 37,
+   "rate_per_day": 4.96,
    "time_to_checkpoint": {
-    "central": 76.91244305172839
+    "central": 77.21151557628941
    }
   },
   {
-   "blocks": 0,
+   "blocks": 1,
    "calendar_exposure": {
     "basis": "calendar days since the stream start (one window per 4H decision)",
-    "days": 7.21,
+    "days": 7.46,
     "from": "2026-09-26T04:00:00Z"
    },
    "checkpoint": {
@@ -623,17 +623,17 @@
    "kind": "range stream",
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
-   "paired_scored": 41,
-   "rate_per_day": 5.69,
+   "paired_scored": 42,
+   "rate_per_day": 5.63,
    "time_to_checkpoint": {
-    "central": 66.65354249223718
+    "central": 67.131683255625
    }
   },
   {
    "blocks": 0,
    "calendar_exposure": {
     "basis": "calendar days since the stream start (one window per 4H decision)",
-    "days": 7.21,
+    "days": 7.46,
     "from": "2026-09-26T04:00:00Z"
    },
    "checkpoint": {
@@ -644,10 +644,10 @@
    "kind": "range stream",
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
-   "paired_scored": 24,
-   "rate_per_day": 3.33,
+   "paired_scored": 25,
+   "rate_per_day": 3.35,
    "time_to_checkpoint": {
-    "central": 118.97393534564235
+    "central": 117.85339949320833
    }
   },
   {
@@ -660,7 +660,7 @@
    "late": 0,
    "limiting_factor": "time (accumulation)",
    "missing": 0,
-   "paired": 9
+   "paired": 10
   },
   {
    "checkpoint": {
@@ -672,7 +672,7 @@
    "late": 0,
    "limiting_factor": "time (accumulation)",
    "missing": 0,
-   "paired": 14
+   "paired": 15
   },
   {
    "checkpoint": {
@@ -688,13 +688,14 @@
   },
   {
    "checkpoint": {},
-   "coverage": 1.0,
+   "coverage": 0.75,
    "id": "PS1 paper sizing",
    "intervals": 2,
    "kind": "paper experiment",
    "limiting_factor": "time (accumulation)",
    "outcomes": {
-    "executed": 3
+    "executed": 3,
+    "missed: stale: processed after close + max_delay": 1
    }
   }
  ]
