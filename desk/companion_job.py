@@ -25,6 +25,12 @@ failure and leaving the original in place; the stream has an explicit lifecycle 
 termination is the operator's, stops new forecasts at once, and never deletes history. Forecast values, fits, the
 loss function and the evaluation method are unchanged.
 
+1.3.0 (repo 2.23): a missing binding no longer grants legacy status. Only the three confirmations written by
+companion-1.0.0 before bindings existed (LEGACY_UNBOUND: ids, row hashes and registry hashes as first committed in
+4ffe647d, 2026-10-01T00:23:06Z) verify without one, and only while byte-identical to that history; any other
+confirmation with an absent, null, malformed or inconsistent binding fails consumption. Report clocks are named
+(generated, processed, observation cutoff, latest outcome-window end); see report_clocks().
+
 Stdlib only. Network: git only (confirmation). Records: streams/rc1d-b1/.
 """
 from __future__ import annotations
@@ -48,7 +54,7 @@ import range_model as R          # noqa: E402
 import range_contract as C       # noqa: E402
 import stream_util as U          # noqa: E402
 
-VERSION = "companion-1.2.0"
+VERSION = "companion-1.3.0"
 STREAM = "rc1d-b1"
 MODEL = "B1"
 ROOT = "streams/rc1d-b1"
@@ -111,9 +117,26 @@ def binding(reg: dict, cdoc: dict, confirmed_ms: int, commit: str) -> dict:
             "contract": cdoc.get("contract"), "confirmed_ms": confirmed_ms, "commit": commit}
 
 
+# The genuine unbound cohort: confirmations written by companion-1.0.0 before bindings existed, pinned to their
+# first committed bytes (commit 4ffe647df588861c33bcd3e2431794b9c77f9341, streams/rc1d-b1/confirmations.jsonl lines
+# 1-3; U.sha of each row equals the sha256 of its canonical line). id -> (confirmation row sha, registry forecast sha).
+LEGACY_UNBOUND = {
+    "rc1d-b1-4h-20261001T0000Z": ("4f28e567660b7435bf3ac7b411a6d7e7677c14cc10a8af7a0b0dbd77d7621d2f",
+                                  "c0ccdd023f0ec0108215cad8a955e1f26054aea0f52a90b7de54fc8c1ae361df"),
+    "rc1d-b1-24h-20261001T0000Z": ("5c7c4e2d846604520872b0f413dcf08b4c7d1a457af917649558e26bbfc3a9f2",
+                                   "b68df6a9253bb7fa48524e0b5b700fa417afb38ba692c6ba2e822576427e5f03"),
+    "rc1d-b1-72h-20261001T0000Z": ("9b59270d1c971d24ce5ae9552bd41ef96200c6a5f97df924a7faefec70fdd702",
+                                   "cc5149aa1277a229860efb30324f904b2716d8c6714fc644140e86d6b6aed057"),
+}
+LEGACY_LIMITATION = ("legacy confirmation (companion-1.0.0, before integrity bindings): verified against its pinned "
+                     "first-committed bytes and the registry hash; its confirmation time carries no binding of its own")
+
+
 def verify(base, reg: dict, conf: dict) -> tuple:
-    """(ok, reason, forecast doc). The forecast bytes must hash to the registry row; a bound confirmation must
-    match its binding; a legacy (1.0.0) confirmation is checked against the registry hash and its own fields."""
+    """(ok, reason, forecast doc). The forecast bytes must hash to the registry row; every confirmation must carry
+    a well-formed binding that matches the record, except the pinned legacy cohort (LEGACY_UNBOUND), which must be
+    byte-identical to its first committed row and name the pinned registry hash and the 1.0.0 identity. A version
+    label alone, or a binding stripped from a modern confirmation, never grants legacy status."""
     base = Path(base)
     path = base / reg["path"]
     if not path.exists():
@@ -127,9 +150,19 @@ def verify(base, reg: dict, conf: dict) -> tuple:
     eligible = reg["prepared_ms"] < reg["start_ms"] and conf.get("confirmed_ms", 1 << 62) < reg["start_ms"]
     if conf.get("start_ms") != reg["start_ms"] or bool(conf.get("eligible")) != eligible:
         return False, "confirmation times or eligibility differ from the registry row", None
+    has_b, has_h = "binding" in conf, "binding_sha256" in conf
+    if not has_b and not has_h:
+        pin = LEGACY_UNBOUND.get(reg["id"])
+        if pin is None:
+            return False, "confirmation binding missing (only the pinned companion-1.0.0 cohort is unbound)", None
+        if U.sha(conf) != pin[0]:
+            return False, "unbound legacy confirmation differs from its first committed bytes", None
+        if reg["sha256"] != pin[1] or reg.get("job") != "companion-1.0.0" or cdoc.get("version") != "companion-1.0.0":
+            return False, "unbound legacy confirmation does not match its pinned registry identity", None
+        return True, LEGACY_LIMITATION, cdoc
     b = conf.get("binding")
-    if b is None:
-        return True, "legacy confirmation (companion-1.0.0): verified against the registry hash", cdoc
+    if not isinstance(b, dict) or not isinstance(conf.get("binding_sha256"), str):
+        return False, "confirmation binding missing, null or malformed", None
     if conf.get("binding_sha256") != U.sha(b):
         return False, "confirmation binding altered", None
     want = binding(reg, cdoc, conf.get("confirmed_ms"), conf.get("commit"))
@@ -458,26 +491,23 @@ def score(base=BASE, now_ms=None) -> dict:
 
 
 def disjoint_windows(windows: list) -> int:
-    """Size of the largest set of pairwise non-overlapping [start, end) windows (earliest-end greedy, exact)."""
-    n, end = 0, None
-    for s, e in sorted(windows, key=lambda w: (w[1], w[0])):
-        if end is None or s >= end:
-            n, end = n + 1, e
-    return n
+    """Largest set of pairwise non-overlapping [start, end) windows - range_reader's shared implementation."""
+    import range_reader as RR
+    return RR.disjoint_windows(windows)
 
 
 def overlapping_windows(windows: list) -> int:
-    """How many windows overlap at least one other window."""
-    ws = sorted(windows)
-    hit = set()
-    for i in range(len(ws)):
-        for j in range(i + 1, len(ws)):
-            if ws[j][0] >= ws[i][1]:
-                break
-            hit.update((i, j))
-    return len(hit)
+    """Windows overlapping at least one other - range_reader's shared implementation."""
+    import range_reader as RR
+    return RR.overlapping_windows(windows)
 
 
+REPORT_CLOCKS = {
+    "generated_utc": "when this report file was written",
+    "processed_utc": "latest scoring time of an included pair (processing, not observation)",
+    "source_cutoff_utc": "latest market observation the figures depend on: the latest outcome-window end of an included "
+                         "verified pair (repo 2.23; 2.20-2.22 put the scoring time here)",
+    "outcome_window_end_utc": "the same window end, named; null with no included pair (expected before maturity)"}
 COMPARISONS = (("B2_vs_B1", "B2", "B1"), ("B2_vs_B0", "B2", "B0"), ("B1_vs_B0", "B1", "B0"))
 WITHHELD = "withheld: integrity failure in this horizon (records preserved; see integrity_failures)"
 
@@ -497,7 +527,7 @@ def evaluation(base=BASE) -> dict:
     for r in U.rows(base / SCORES):
         cached.setdefault(r["id"], r)
     first = min((r["decision_utc"] for r in reg.values()), default=None)
-    out, failures, cutoff = {}, [], 0
+    out, failures, cutoff, window_end = {}, [], 0, 0
     for h in HORIZONS:
         rids = sorted(k for k in rc if k.startswith(f"{RC1D_PREFIX}{h}-") and first
                       and k[len(RC1D_PREFIX) + len(h) + 1:] >= U.parse(first).strftime("%Y%m%dT%H%MZ"))
@@ -534,6 +564,7 @@ def evaluation(base=BASE) -> dict:
                                     expected=vp["inputs_sha256"], found=row.get("inputs_sha256"))
                 continue
             cutoff = max(cutoff, vp["outcome"]["scored_ms"] or 0)
+            window_end = max(window_end, vp["end_ms"] or 0)
             pairs.append({"decision_utc": reg[cid]["decision_utc"], "B2": vp["outcome"]["B2"], "B1": vp["B1"]["abs_error_log_lr"],
                           "B0": vp["outcome"]["B0"], "window": (vp["start_ms"], vp["end_ms"])})
         wins = [p["window"] for p in pairs]
@@ -574,7 +605,8 @@ def evaluation(base=BASE) -> dict:
             entry[name] = e
         out[h] = entry
     return {"method": EVAL_METHOD, "schema": "companion-eval-2", "stream_start_decision_utc": first, "horizons": out,
-            "integrity_failures_now": failures, "source_cutoff_ms": cutoff or None,
+            "integrity_failures_now": failures, "processed_ms": cutoff or None,
+            "outcome_window_end_ms": window_end or None,
             "uncertainty_method": f"moving-block bootstrap of paired differences, blocks of {RR.EVAL_BLOCK} decisions "
                                   f"(a resampling device for dependence, not a measured effective sample size), "
                                   f"{RR.EVAL_RESAMPLES} resamples, seed {RR.EVAL_SEED}, 95% interval; reported only from "
@@ -606,8 +638,12 @@ def report(base=BASE, now_ms=None) -> dict:
     confs = {}
     for r in U.rows(base / CONFIRMS):
         confs.setdefault(r["id"], r)
-    doc = {"report": "companion_b1", "schema": "companion-report-2", "generated_utc": U.iso_ms(now_ms),
-           "source_cutoff_utc": U.iso_ms(ev["source_cutoff_ms"]) if ev["source_cutoff_ms"] else None,
+    iso = lambda ms: U.iso_ms(ms) if ms else None                                      # noqa: E731
+    doc = {"report": "companion_b1", "schema": "companion-report-3", "generated_utc": U.iso_ms(now_ms),
+           "processed_utc": iso(ev["processed_ms"]),
+           "source_cutoff_utc": iso(ev["outcome_window_end_ms"]),
+           "outcome_window_end_utc": iso(ev["outcome_window_end_ms"]),
+           "clocks": REPORT_CLOCKS,
            "stream": STREAM, "job": VERSION, "evaluation": ev,
            "lifecycle": {"state": life, "last": last, "authority": "termination and archiving: operator only"},
            "integrity": {"ok": ok, "failures_now": ev["integrity_failures_now"], "recorded_failures": len(integrity)},
@@ -627,7 +663,8 @@ def report(base=BASE, now_ms=None) -> dict:
 def markdown(doc: dict) -> str:
     ev = doc["evaluation"]
     lines = [f"# RC1D companion benchmark: B2 vs B1 (HAR/calendar without DVOL)", "",
-             f"Generated {doc['generated_utc']} by {doc['job']}; source cutoff {doc['source_cutoff_utc'] or '—'}. "
+             f"Generated {doc['generated_utc']} by {doc['job']}; observation cutoff (latest included outcome-window end) "
+             f"{doc['source_cutoff_utc'] or '—'}; last scored {doc['processed_utc'] or '—'}. "
              f"Stream start: {ev['stream_start_decision_utc'] or 'not started'}. "
              f"Registered {doc['registered']}, confirmed {doc['confirmed']}, eligible {doc['eligible']}. "
              f"Lifecycle {doc['lifecycle']['state']}. Evidence class: **{doc['evidence_class']}**. "

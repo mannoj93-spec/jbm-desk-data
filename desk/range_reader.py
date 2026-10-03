@@ -363,6 +363,38 @@ def _bootstrap_mean(d, block, resamples, seed):
     return [_quantile(means, 0.025), _quantile(means, 0.975)]
 
 
+def disjoint_windows(windows: list) -> int:
+    """Size of the largest set of pairwise non-overlapping [start, end) windows (earliest-end greedy, exact).
+    Endpoint-touching windows ([a, b) and [b, c)) do not overlap."""
+    n, end = 0, None
+    for s, e in sorted(windows, key=lambda w: (w[1], w[0])):
+        if end is None or s >= end:
+            n, end = n + 1, e
+    return n
+
+
+def overlapping_windows(windows: list) -> int:
+    """How many [start, end) windows overlap at least one other window."""
+    ws = sorted(windows)
+    hit = set()
+    for i in range(len(ws)):
+        for j in range(i + 1, len(ws)):
+            if ws[j][0] >= ws[i][1]:
+                break
+            hit.update((i, j))
+    return len(hit)
+
+
+def window_diagnostics(windows: list) -> dict:
+    """Actual-window dependence diagnostics (repo 2.23, shared with companion_job). Describes the registered
+    [start, end) windows as they are; it selects nothing, and the disjoint count is not an effective sample size."""
+    n, ov, dj = len(windows), overlapping_windows(windows), disjoint_windows(windows)
+    return {"windows": n, "overlapping_another": ov, "largest_disjoint_subset": dj,
+            "basis": "actual registered [start, end) windows of the scored pairs; every eligible pair stays in the "
+                     "analysis - the disjoint count describes dependence, it is not an effective sample size and "
+                     "selects nothing"}
+
+
 def evaluation(docs, scores) -> dict:
     """Paired B2-vs-B0 evidence per horizon on scored, eligible RC1D forecasts (RC1D-EVAL-1). The metric is the
     mean absolute error of the log range forecast (ln of the realised high/low range over the window) - not a
@@ -379,16 +411,20 @@ def evaluation(docs, scores) -> dict:
             fz = {e.get("name", "").split(" ")[0]: e for e in item[0].get("events", []) if isinstance(e, dict)}
             try:
                 width = {k: math.log(fz[k]["q90"] / fz[k]["q10"]) for k in ("B2", "B0")}
+                win = (_t(item[0]["start_utc"]), _t(item[0]["horizon_utc"]))
                 rows.append((item[0]["decision_utc"], ev["B2"]["abs_error_log_lr"], ev["B0"]["abs_error_log_lr"],
-                             bool(ev["B2"]["covered_80"]), bool(ev["B0"]["covered_80"]), width["B2"], width["B0"]))
+                             bool(ev["B2"]["covered_80"]), bool(ev["B0"]["covered_80"]), width["B2"], width["B0"], win))
             except (KeyError, TypeError, ValueError, ZeroDivisionError):
                 continue
         rows.sort()
         n = len(rows)
         hours = int(h[:-1])
+        diag = window_diagnostics([r[7] for r in rows])
         entry = {"n": n, "metric": "mean absolute error of ln range (log units), B2 vs B0 persistence",
-                 "windows": f"{hours}h, one per 4H decision; each overlaps up to {max(0, hours // 4 - 1)} earlier "
-                            f"and {max(0, hours // 4 - 1)} later windows"}
+                 "windows": (f"{hours}h windows, one per 4H decision; actual registered [start, end) windows: "
+                             f"{diag['overlapping_another']} of {n} overlap another, largest disjoint subset "
+                             f"{diag['largest_disjoint_subset']}"),
+                 "window_overlap": diag}
         if n:
             d = [r[1] - r[2] for r in rows]
             m2, m0 = sum(r[1] for r in rows) / n, sum(r[2] for r in rows) / n
