@@ -37,7 +37,7 @@ import sys
 import urllib.request
 from pathlib import Path
 
-VERSION = "monitor-12.3.0"
+VERSION = "monitor-12.3.1"
 UTC = dt.timezone.utc
 GRACE_MIN = 75            # a decision is due once its run window (grace) has passed
 LOOKBACK_H = 12            # due decisions checked for failed or absent runs (older ones: info only)
@@ -94,7 +94,7 @@ def boundary(now):
     return now.replace(minute=0, second=0, microsecond=0) - dt.timedelta(hours=now.hour % 4)
 
 
-def check(base, now, actions=None) -> tuple:
+def check(base, now, actions=None, lookback_h=LOOKBACK_H) -> tuple:
     """(problems, info). `actions`: optional list of range.yml runs [{run_id, event, created_utc, conclusion}]."""
     base = Path(base)
     problems, info = [], {"monitor": VERSION, "now_utc": _iso(now)}
@@ -108,7 +108,7 @@ def check(base, now, actions=None) -> tuple:
     stream_start = _t(release["range_stream_start_utc"]) if isinstance(release.get("range_stream_start_utc"), str) else None
     # runs
     last_due = boundary(now) if now - boundary(now) >= dt.timedelta(minutes=GRACE_MIN) else boundary(now) - dt.timedelta(hours=4)
-    d = max(last_due - dt.timedelta(hours=LOOKBACK_H), stream_start or last_due)
+    d = max(last_due - dt.timedelta(hours=lookback_h), stream_start or last_due)
     seen = {}
     while d <= last_due:
         key = _iso(d)

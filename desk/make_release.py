@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Write or check desk/release.json - the one place release identity lives (release family 12.4, repo 2.23).
+"""Write or check desk/release.json - the one place release identity lives (release family 12.4, repo 2.24).
 
 Identity only: package, commits, contract, module and artifact hashes, calendar, routing, stream start. Verified
 deployment events live in desk/deployments.jsonl (append-only); live operational health in reports/range_status.json.
@@ -59,7 +59,7 @@ def body(desk=HERE, previous=None):
     return {
         # "package" is the shared-module release family (range_job's PACKAGE); package documentation versions
         # (12.4.1, 12.4.2, 12.4.3) sit on this family without changing it.
-        "package": "crypto-desk 12.4", "repo_revision": "2.23",
+        "package": "crypto-desk 12.4", "repo_revision": "2.24",
         "base_commit": "dea476035e9e198f791dcfbd7f0dd4b29f6aabc6",
         "audited_snapshot": "eb776d52a2d66563b6dad188d1b899c4efdf9134 (package 12.2, repo 2.17.1; after PR #19)",
         "contract": C.contract_id("RC1D"), "evaluated_contract": C.contract_id("RC1"),
@@ -76,11 +76,13 @@ def body(desk=HERE, previous=None):
             "legacy": "range-b2-* (repo 2.14, q50 contract, pre-12.0): scored as registered, never cited as current",
             "companion B1 (repo 2.20)": "streams/rc1d-b1/, ids rc1d-b1-{4h,24h,72h}-<decision>, desk/companion_job.py; "
                                          "outside contract RC1D; report reports/companion_b1.{json,md}",
-            "paper sizing PS1 (repo 2.20; protocol v3 in 2.22; job 3.1.0 in 2.23)": "streams/ps1/, protocol desk/research/ps1/protocol.json "
+            "paper sizing PS1 (repo 2.20; protocol v3 in 2.22; job 3.1.0 in 2.23, 3.2.0 in 2.24)": "streams/ps1/, protocol desk/research/ps1/protocol.json "
                                             "(v3; v1 and v2 retired before launch: protocol_v1_retired.json, "
                                             "protocol_v2_retired.json), desk/paper_ps1.py; "
                                             "simulated fills; report reports/paper_ps1.{json,md}",
             "stage log (repo 2.21)": "streams/ops/stages-YYYY-MM.jsonl, desk/stream_ops.py; the research-streams verdict",
+            "operational health (repo 2.24)": "reports/health.{json,md} and state/incidents.jsonl, health.py (read-only "
+                                              "over research records), written by each collector run",
             "feasibility (repo 2.20)": "reports/feasibility.{json,md}, feasibility.py (read-only)"},
         "range_stream_start_utc": "2026-09-26T04:00:00Z",
         "deployment_log": "desk/deployments.jsonl (append-only, verified events); operational health (changes every run, not release identity): reports/range_status.json, state/range_runs.jsonl, state/range_scoring.jsonl, range-monitor.yml",

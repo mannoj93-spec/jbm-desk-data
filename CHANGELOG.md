@@ -1,3 +1,18 @@
+# Maintenance, revision 2.24 (crypto-desk 12.4.7 on the 12.4 release family) — 2026-10-03
+
+**Base.** `main` at `24e6dcaf` (2.23). Nothing here changes the range model, contracts RC1D/RC1, PS1 protocol v3, its
+calibration, statistical methods, promotion criteria, registered forecasts, scores, the launch clock or any recorded
+execution; earlier executions are reproduced under the job their snapshot records (3.0.0, 3.1.0).
+
+| Finding (reproduced) | Change | Tests |
+|---|---|---|
+| **Unknown journal state ignored.** With two executions, the second's final state edited `completed` → `completd`: `ok=true`, integrity `verified`, 6 verified and 6 unaccounted rows; a third decision executed on balances that skipped the second (fixture; production records verify) | `history_problem()` validates every history on read (recognized state names, integer times, start at pending, allowed transitions, nothing after a terminal state, row counts on failed/partial, rows hash on completion); malformed journal rows are grouped and fail; conservation: physical rows must equal assigned rows; every journal reader guarded (ps1-job-3.2.0) | `TestJournalValidationOnRead` (10) |
+| **Silence invisible after recovery.** No scheduled run of any workflow 11:17:56Z–13:26:49Z on Oct 3; the watchdog turned green on resumption; no record of the missed 12:00Z decisions survived | `health.py` (five separate questions, explicit clock, durable deduplicated `state/incidents.jsonl`, written by each collector run); `cadence.scheduled_gaps`; watchdog warns about recovered gaps for a day; range monitor lookback parameter (monitor-12.3.1); dashboard health panel; PS1 coverage as of its report plus later due decisions | `regression/test_health.py` (8), node tests |
+| **Dashboard refresh.** `market.bars = [null]` passed validation, replaced the good snapshot, threw in `drawMarket()` and left Refresh disabled | finite-bar and timestamp validation; chart geometry staged for every period; post-commit rollback; chart failures contained; controls restored in `finally`; legacy report schemas keep their clock meanings | node tests, browser acceptance |
+| **Required check could not be required.** `release-check.yml` skipped data-only pull requests | runs on every pull request | workflow review |
+| **A late stale skip hid a missed decision** (found while re-verifying: the 12:00Z Range schedule arrived 2 h 57 min late and recorded `skipped`, which the health check treated as resolved) | a stale-skipped range decision is `missed: skipped` and recorded once | `test_health` |
+| **Gate described as configured.** `release-check.yml` said a ruleset required it; none exists | comment corrected; `docs/OPERATIONS.md` "Release gate" gives the ruleset, its bot bypass, the probe procedure and the residual risk | review |
+
 # Maintenance, revision 2.23 (crypto-desk 12.4.6 on the 12.4 release family) — 2026-10-03
 
 **Base.** `main` at `dd5ca024` (reviewed snapshot), merged with `7444d65c`. 2.22 merged Oct 2 02:37Z (PR #26) and

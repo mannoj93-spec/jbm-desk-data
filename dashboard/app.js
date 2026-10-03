@@ -1,4 +1,4 @@
-import { numeric, ageLabel, freshness, forecastState, reportExpiry, csv, escapeHTML as esc, CLOCKS, companionClocks, paperClocks, pairedRow, stage } from './model.js';
+import { numeric, ageLabel, freshness, forecastState, reportExpiry, csv, escapeHTML as esc, CLOCKS, companionClocks, paperClocks, pairedRow, stage, chartPoints, opsRows } from './model.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
@@ -69,8 +69,8 @@ function drawMarket() {
   const box = $('#market-chart');
   if (!box) return;
   const svg = box.querySelector('svg'), tooltip = box.querySelector('.chart-tooltip');
-  const all = data.market.bars, days = parseInt(period, 10), end = all.at(-1)?.[0];
-  const points = all.filter(p => p[0] >= end - days * 86400000);
+  const days = parseInt(period, 10);
+  const points = chartPoints(data.market.bars, days);
   if (!points.length) return;
   const width = Math.max(240, box.clientWidth - 20), height = window.innerWidth < 521 ? 230 : window.innerWidth >= 1600 ? 290 : 250;
   const left = 12, right = 63, top = 28, bottom = 35;
@@ -185,8 +185,10 @@ function health() {
   const stats = `<div class="stats">${metric('Coverage report', currentAge(h.generated_utc), 'Refreshed by the six-hourly research lab', 'amber')}${metric('Sources observed', format(all.length), 'From the coverage report')}${metric('Latest status OK', `${all.filter(s => s.status === 'ok').length} / ${all.length}`, 'At report cutoff · not a live probe', 'positive')}${metric('Sources with failed calls', format(all.filter(s => s.ok < s.observed).length), 'Within this report window')}</div>`;
   const sources = table(['<button class="sort-button" data-sort="name">Source ↕</button>', 'OK / observed', '<button class="sort-button" data-sort="coverage">Availability ↕</button>', 'Latest reported status'], visible.map(s => `<tr><td class="mono">${esc(s.name)}</td><td class="numeric">${s.ok} / ${s.observed}</td><td class="numeric ${s.ok === s.observed ? 'source-good' : 'source-issue'}">${s.observed ? percent(s.ok / s.observed, 1) : '—'}</td><td>${esc(s.status)}</td></tr>`));
   const datasets = table(['Dataset', 'Latest observation written', 'Age now'], h.datasets.map(r => `<tr><td>${esc(r.name)}</td><td class="mono">${esc(stamp(r.observed_utc))}</td><td class="mono">${currentAge(r.observed_utc)}</td></tr>`));
-  exported = [['Source', 'OK observations', 'Total observations', 'Availability', 'Status at cutoff', 'Report generated UTC'], ...visible.map(s => [s.name, s.ok, s.observed, s.observed ? s.ok / s.observed : null, s.status, h.generated_utc])];
-  return stats + `<div class="notice">Collection figures describe the report cutoff, ${esc(stamp(h.input_cutoff_utc))}. Ages below use your current clock; they do not prove the collector has stopped since that cutoff.</div><div class="toolbar"><div class="filter-group"><label class="filter-label" for="health-search">SOURCE</label><input id="health-search" class="input" placeholder="Filter sources…" value="${esc(query)}"><label class="filter-label" for="health-filter">SHOW</label><select id="health-filter" class="select"><option value="all">All sources</option><option value="issues" ${filter === 'issues' ? 'selected' : ''}>Sources with issues</option></select></div><span class="mini-text">${visible.length} sources</span></div><div class="workspace-grid">${panel('01', 'Source availability', sources, reportTime(h.input_cutoff_utc, CLOCKS.research_observation_hours), source('reports/latest.md'))}<div class="stack" style="grid-template-columns:1fr">${panel('02', 'Dataset freshness', datasets)}${panel('03', 'Recorded observations', h.alerts.length ? h.alerts.map(a => `<div class="alert-row"><span class="alert-dot"></span><p>${esc(a)}</p></div>`).join('') : '<div class="empty">No recorded alerts.</div>')}</div></div>`;
+  exported = [['Source', 'OK observations', 'Total observations', 'Availability', 'Status at cutoff', 'Report generated UTC'], ...visible.map(s => [s.name, s.ok, s.observed, s.observed ? s.ok / s.observed : null, s.status, h.generated_utc]), [], ['Health area', 'State on export clock', 'Detail'], ...opsRows(data.ops).map(r => [r.area, r.state, r.detail])];
+  const ops = opsRows(data.ops);
+  const opsPanel = panel('00', 'Operational health', table(['Area', 'State on your clock', 'Detail'], ops.map(r => `<tr><td>${esc(r.area)}</td><td>${flag(r.state, tone(r.state))}</td><td class="mono">${esc(r.detail)}</td></tr>`)), '', `<span>Each row is judged separately; a green row says nothing about the others.</span>${source('reports/health.md')}`);
+  return opsPanel + `<div class="section-gap"></div>` + stats + `<div class="notice">Collection figures describe the report cutoff, ${esc(stamp(h.input_cutoff_utc))}. Ages below use your current clock; they do not prove the collector has stopped since that cutoff.</div><div class="toolbar"><div class="filter-group"><label class="filter-label" for="health-search">SOURCE</label><input id="health-search" class="input" placeholder="Filter sources…" value="${esc(query)}"><label class="filter-label" for="health-filter">SHOW</label><select id="health-filter" class="select"><option value="all">All sources</option><option value="issues" ${filter === 'issues' ? 'selected' : ''}>Sources with issues</option></select></div><span class="mini-text">${visible.length} sources</span></div><div class="workspace-grid">${panel('01', 'Source availability', sources, reportTime(h.input_cutoff_utc, CLOCKS.research_observation_hours), source('reports/latest.md'))}<div class="stack" style="grid-template-columns:1fr">${panel('02', 'Dataset freshness', datasets)}${panel('03', 'Recorded observations', h.alerts.length ? h.alerts.map(a => `<div class="alert-row"><span class="alert-dot"></span><p>${esc(a)}</p></div>`).join('') : '<div class="empty">No recorded alerts.</div>')}</div></div>`;
 }
 
 const clockRows = (kind, clocks) => table(['Clock', 'UTC', 'Age now', 'State'], clocks.map((c, i) => `<tr><td>${esc(c.label)}</td><td class="mono">${esc(stamp(c.value))}</td><td class="mono">${currentAge(c.value)}</td><td data-clock="${kind}:${i}">${flag(c.state, tone(c.state))}</td></tr>`));
@@ -199,7 +201,9 @@ function paper() {
   const ledger = numeric(lr.physical) ? `${format(lr.physical)} physical · ${format(lr.verified)} verified · ${format(lr.quarantined)} quarantined · ${format(lr.excluded)} excluded · ${format(lr.in_progress)} in progress${numeric(lr.unaccounted) && lr.unaccounted ? ` · ${format(lr.unaccounted)} unaccounted` : ''}` : 'Not reported';
   const exclusions = (pi.excluded_decisions || []).map(x => `<div class="alert-row"><span class="alert-dot"></span><div>${esc(x.decision_id)} · ${x.integrity ? 'integrity' : 'lifecycle'}<p>${esc(x.reason)} — ${esc(x.disposition)}</p></div></div>`).join('');
   const failures = (list, title) => list?.length ? `<h3 class="section-gap negative">${title}</h3>${list.slice(0, 5).map(f => `<p class="definition">${esc(typeof f === 'string' ? f : `${f.id}: ${f.reason}`)}</p>`).join('')}` : '';
-  const ps1 = `<div class="panel-body"><h3>${esc(p.reason || p.status)}</h3><p class="definition">${esc(p.label)}</p><dl class="detail-grid"><div class="detail-item"><dt>LIFECYCLE</dt><dd>${esc(p.lifecycle?.state)}${p.lifecycle?.paused_by ? ' · by ' + esc(p.lifecycle.paused_by) : ''}</dd></div><div class="detail-item"><dt>INTEGRITY</dt><dd>${flag(pi.state || (pi.ok === true ? 'verified' : 'failed / unknown'), tone(pi.state || (pi.ok === true ? 'verified' : 'failed')))}</dd></div><div class="detail-item"><dt>LEDGER ROWS</dt><dd>${esc(ledger)}</dd></div><div class="detail-item"><dt>RECORDED FAILURE ROWS</dt><dd>${format(pi.recorded_failures)} <span class="muted">(append-only history)</span></dd></div></dl>${failures(pi.failures, 'Unresolved — performance withheld')}${exclusions ? `<h3 class="section-gap">Excluded decisions</h3>${exclusions}` : ''}</div>${clockRows('paper', paperClocks(p))}`;
+  const nc = data.ops?.ps1_coverage?.not_covered;
+  const coverage = `<p class="definition">Coverage ${p.coverage == null ? '—' : esc(percent(p.coverage, 0))} as of this report (${esc(stamp(p.generated_utc))}). ${!data.ops ? 'Due decisions after it: unknown (no health report).' : nc?.length ? `Due since and not in it: ${esc(nc.map(x => `${x.decision_utc.slice(5, 16)} ${x.recorded_state}`).join('; '))}.` : 'No due decision since it.'}</p>`;
+  const ps1 = `<div class="panel-body"><h3>${esc(p.reason || p.status)}</h3>${coverage}<p class="definition">${esc(p.label)}</p><dl class="detail-grid"><div class="detail-item"><dt>LIFECYCLE</dt><dd>${esc(p.lifecycle?.state)}${p.lifecycle?.paused_by ? ' · by ' + esc(p.lifecycle.paused_by) : ''}</dd></div><div class="detail-item"><dt>INTEGRITY</dt><dd>${flag(pi.state || (pi.ok === true ? 'verified' : 'failed / unknown'), tone(pi.state || (pi.ok === true ? 'verified' : 'failed')))}</dd></div><div class="detail-item"><dt>LEDGER ROWS</dt><dd>${esc(ledger)}</dd></div><div class="detail-item"><dt>RECORDED FAILURE ROWS</dt><dd>${format(pi.recorded_failures)} <span class="muted">(append-only history)</span></dd></div></dl>${failures(pi.failures, 'Unresolved — performance withheld')}${exclusions ? `<h3 class="section-gap">Excluded decisions</h3>${exclusions}` : ''}</div>${clockRows('paper', paperClocks(p))}`;
   const b1 = `<div class="panel-body"><h3>Does DVOL add to the forecast?</h3><p class="definition">B2 compared with B1 (HAR/calendar without DVOL), on the same eligible windows.</p><dl class="detail-grid"><div class="detail-item"><dt>REGISTERED</dt><dd>${format(c.registered)}</dd></div><div class="detail-item"><dt>CONFIRMED</dt><dd>${format(c.confirmed)}</dd></div><div class="detail-item"><dt>EVIDENCE CLASS</dt><dd>${esc(c.evidence_class)}</dd></div><div class="detail-item"><dt>INTEGRITY</dt><dd>${flag(ci.ok === true ? 'ok' : 'failed / unknown', ci.ok === true ? 'good' : 'bad')}</dd></div></dl>${failures(ci.failures_now, 'Integrity exclusions now — affected horizons withheld')}</div>${clockRows('companion', companionClocks(c))}`;
   const paired = table(['Window', 'State', 'Pairs', 'Excluded (integrity)', 'MAE B2', 'MAE B1', 'Mean difference', 'Uncertainty'], rows.map(r => `<tr><td>${r.horizon}</td><td>${flag(r.state, tone(r.state))}</td><td class="numeric">${format(r.n)}</td><td class="numeric">${format(r.excluded)}</td><td class="numeric">${format(r.maeFirst, 5)}</td><td class="numeric">${format(r.maeSecond, 5)}</td><td class="numeric">${format(r.diff, 5)}</td><td>${esc(r.uncertainty)}</td></tr>`));
   return `<div class="notice"><strong>PAPER RESEARCH ONLY.</strong> ${esc(p.label)} Range-forecast accuracy (B1), simulated sizing (PS1) and live trading are different evidence; none is a trading edge.</div><div class="stats">${metric('PS1 status', esc(p.status), esc(p.protocol), 'amber')}${metric('Decisions', format(p.scheduled_decisions ?? p.decisions_recorded), p.launch ? 'Scheduled since launch' : 'Recorded before launch')}${metric('Verified executions', format(pi.verified_executions), 'Verified only; see ledger rows for completeness')}${metric('Evidence class', esc(p.evidence_class), 'Preserved from the experiment report')}</div><div class="workspace-grid">${panel('01', 'PS1 sizing experiment', ps1, '', source('reports/paper_ps1.md'))}${panel('02', 'Companion B1', b1, '', source('reports/companion_b1.md'))}</div><div class="section-gap">${panel('03', 'Paired B2 / B1 evidence', paired, flag('Descriptive', 'warn'), '<span>MAE of ln range · negative difference favors B2 · overlapping windows are dependent · withheld horizons show no figures.</span>')}</div>`;
@@ -235,15 +239,26 @@ function render() {
   $('#snapshot-bar').innerHTML = (refreshError ? `<span role="alert" class="negative">Refresh failed (${esc(refreshError)}). Showing the previous snapshot; its original timestamps still apply.</span>` : '') + `<span><strong>REPOSITORY SNAPSHOT</strong> <span class="divider">/</span> Built ${esc(stamp(data.built_utc))}</span><span>Research evidence ${reportTime(data.research.oldest_cutoff_utc, CLOCKS.research_observation_hours)} <span class="divider">/</span> Range report ${flag(reportExpiry(data.range), tone(reportExpiry(data.range)))}</span>`;
   $('#build-meta').textContent = `${data.commit?.slice(0, 8) || 'Unversioned'} · Read-only · UTC`;
   $$('[data-design]').forEach(b => b.addEventListener('click', () => openDesign(b.dataset.design)));
-  $$('[data-period]').forEach(b => b.addEventListener('click', () => {period = b.dataset.period;save('period', period);$$('[data-period]').forEach(v => v.setAttribute('aria-pressed', String(v.dataset.period === period)));drawMarket();}));
+  $$('[data-period]').forEach(b => b.addEventListener('click', () => {period = b.dataset.period;save('period', period);$$('[data-period]').forEach(v => v.setAttribute('aria-pressed', String(v.dataset.period === period)));safeDraw();}));
   for (const id of ['research-search', 'health-search']) {
     const input = $('#' + id);
     input?.addEventListener('input', () => {const pos = input.selectionStart;query = input.value;render();const next = $('#' + id);next.focus();next.setSelectionRange(pos, pos);});
   }
   for (const id of ['research-filter', 'health-filter']) $('#' + id)?.addEventListener('change', e => {filter = e.target.value;render();$('#' + id)?.focus();});
   $$('[data-sort]').forEach(b => b.addEventListener('click', () => {ascending = sort === b.dataset.sort ? !ascending : true;sort = b.dataset.sort;render();}));
-  if ($('#market-chart')) {drawMarket();chartObserver = new ResizeObserver(drawMarket);chartObserver.observe($('#market-chart'));}
+  let drawError = null;
+  if ($('#market-chart')) {drawError = safeDraw();chartObserver = new ResizeObserver(() => safeDraw());chartObserver.observe($('#market-chart'));}
   tick();
+  return drawError;
+}
+// A chart failure stays inside the chart box: the snapshot, navigation and every other view remain usable.
+function safeDraw() {
+  try { drawMarket(); return null; }
+  catch (err) {
+    const box = $('#market-chart');
+    if (box) box.innerHTML = `<div class="empty" role="alert">Chart unavailable: ${esc(err.message)}. Prices are not substituted.</div>`;
+    return err;
+  }
 }
 function route() {
   const next = location.hash.slice(1);
@@ -270,31 +285,48 @@ function renderAllWith(candidate) {
   try {
     data = candidate;
     for (const name of Object.keys(renderers)) { page = name; renderers[name](); }
+    for (const p of ['1D', '3D', '7D']) chartPoints(candidate.market.bars, parseInt(p, 10));
   } finally {
     ({data, exported, page} = saved);
   }
 }
 async function load() {
   $('#refresh').disabled = true;$('#refresh').textContent = 'Loading…';
-  let candidate, failure = null;
+  const previous = {data, page};
   try {
-    const response = await fetch('./data.json', {cache: 'no-store'});
-    if (!response.ok) throw new Error(`Snapshot request failed (${response.status})`);
-    candidate = await response.json();
-  } catch (err) { failure = err.message || String(err); }
-  const result = failure ? {data, error: failure} : stage(data, candidate, renderAllWith);
-  refreshError = result.error;
-  if (result.data !== data) {
-    data = result.data;
-    if (!location.hash) {const remembered = stored('page', 'overview');history.replaceState(null, '', '#' + (pages[remembered] ? remembered : 'overview'));}
-    page = pages[location.hash.slice(1)] ? location.hash.slice(1) : 'overview';
+    let candidate, failure = null;
+    try {
+      const response = await fetch('./data.json', {cache: 'no-store'});
+      if (!response.ok) throw new Error(`Snapshot request failed (${response.status})`);
+      candidate = await response.json();
+    } catch (err) { failure = err.message || String(err); }
+    const result = failure ? {data, error: failure} : stage(data, candidate, renderAllWith);
+    refreshError = result.error;
+    if (result.data !== data) {
+      data = result.data;
+      if (!location.hash) {const remembered = stored('page', 'overview');history.replaceState(null, '', '#' + (pages[remembered] ? remembered : 'overview'));}
+      page = pages[location.hash.slice(1)] ? location.hash.slice(1) : 'overview';
+    }
+    if (data) {
+      let failed = null;
+      try { failed = render(); } catch (err) { failed = err; }
+      if (failed && data !== previous.data) {
+        // The committed snapshot failed in the live DOM: return to the last good one (its own timestamps and
+        // provenance) and keep the failure on screen. If that one cannot draw its chart either, the chart box says so.
+        ({data, page} = previous);
+        refreshError = `Snapshot failed to render: ${failed.message}`;
+        if (data) render(); else throw failed;
+      } else if (failed instanceof Error && !$('#market-chart')) throw failed;
+    } else {
+      $('#view').innerHTML = `<div class="panel empty" role="alert"><h3>Snapshot unavailable</h3><p>${esc(refreshError)}</p><p class="section-gap">Use Refresh to retry, or <a class="amber" href="https://github.com/mannoj93-spec/jbm-desk-data/tree/main/reports">open the source reports ↗</a>.</p></div>`;
+      $('#snapshot-bar').textContent = 'DATA UNAVAILABLE · No values have been substituted.';$('#view').setAttribute('aria-busy', 'false');
+    }
+  } catch (err) {
+    $('#view').innerHTML = `<div class="panel empty" role="alert"><h3>Snapshot unavailable</h3><p>${esc(err.message || String(err))}</p></div>`;
+    $('#snapshot-bar').textContent = 'DATA UNAVAILABLE · No values have been substituted.';
+  } finally {
+    $('#refresh').disabled = false;$('#refresh').textContent = '↻ Refresh';
   }
-  if (data) render();
-  else {
-    $('#view').innerHTML = `<div class="panel empty" role="alert"><h3>Snapshot unavailable</h3><p>${esc(refreshError)}</p><p class="section-gap">Use Refresh to retry, or <a class="amber" href="https://github.com/mannoj93-spec/jbm-desk-data/tree/main/reports">open the source reports ↗</a>.</p></div>`;
-    $('#snapshot-bar').textContent = 'DATA UNAVAILABLE · No values have been substituted.';$('#view').setAttribute('aria-busy', 'false');
-  }
-  $('#refresh').disabled = false;$('#refresh').textContent = '↻ Refresh';
 }
 $('#refresh').addEventListener('click', load);
 load();

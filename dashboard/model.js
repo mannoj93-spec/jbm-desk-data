@@ -31,7 +31,27 @@ export function clockState(value, hours, now = Date.now(), whenNull = 'unknown')
   if (value == null) return whenNull;
   return freshness(value, hours, now);
 }
+// Report schemas whose clocks this view understands (repo 2.24). A legacy report keeps its own meanings: no new
+// clock is read into it and an absent field is "not in this schema", never "none yet".
+export const CLOCK_SCHEMAS = {companion: ['companion-report-3'], paper: ['ps1-report-4']};
+const LEGACY = {companion: ['companion-report-2'], paper: ['ps1-report-3']};
+export function schemaClass(kind, schema) {
+  if (CLOCK_SCHEMAS[kind].includes(schema)) return 'current';
+  if (LEGACY[kind].includes(schema)) return 'legacy';
+  return 'unknown';
+}
+function legacyClocks(r, kind, now) {
+  const cls = schemaClass(kind, r?.schema);
+  const note = cls === 'legacy' ? `not in this schema (${r.schema})` : `unknown schema ${r?.schema ?? '(none)'}`;
+  return [
+    {label: 'Report generated', value: r?.generated_utc, state: clockState(r?.generated_utc, CLOCKS.stream_report_hours, now)},
+    {label: 'Recorded source cutoff', value: r?.source_cutoff_utc,
+     state: kind === 'companion' && cls === 'legacy' ? 'scoring time in this schema, not an observation cutoff' : note},
+    {label: 'Observation cutoff', value: null, state: note},
+  ];
+}
 export function companionClocks(c, now = Date.now()) {
+  if (schemaClass('companion', c?.schema) !== 'current') return legacyClocks(c, 'companion', now);
   const paired = Object.values(c?.evaluation?.horizons || {}).some(h => numeric(h?.paired) && h.paired > 0);
   return [
     {label: 'Report generated', value: c?.generated_utc, state: clockState(c?.generated_utc, CLOCKS.stream_report_hours, now)},
@@ -42,6 +62,7 @@ export function companionClocks(c, now = Date.now()) {
   ];
 }
 export function paperClocks(p, now = Date.now()) {
+  if (schemaClass('paper', p?.schema) !== 'current') return legacyClocks(p, 'paper', now);
   const life = p?.lifecycle?.state;
   const collecting = life === 'active' || (life === 'paused' && p?.lifecycle?.paused_by === 'job');
   let observed;
@@ -85,12 +106,20 @@ export function validateSnapshot(s) {
   need(obj(s.health) && Array.isArray(s.health.sources) && Array.isArray(s.health.datasets) && Array.isArray(s.health.alerts),
        'health.sources/datasets/alerts');
   const list = v => Array.isArray(v) ? v : [];
+  const time = (v, nullable = false) => (nullable && v == null) || (typeof v === 'string' && Number.isFinite(Date.parse(v)));
   need(list(s.health?.sources).every(x => obj(x) && typeof x.name === 'string' && numeric(x.ok) && numeric(x.observed)),
        'health.sources rows');
   need(obj(s.research) && Array.isArray(s.research.designs), 'research.designs must be a list');
   need(list(s.research?.designs).every(d => obj(d) && typeof d.design === 'string'), 'research.designs rows');
   need(obj(s.range) && obj(s.range.current) && obj(s.range.evaluation), 'range.current/evaluation');
   need(obj(s.market) && Array.isArray(s.market.bars), 'market.bars');
+  need(list(s.market?.bars).every(validBar), 'market.bars rows must be [t, open, high, low, close, minutes] of finite numbers');
+  need(s.market?.latest == null || (obj(s.market.latest) && numeric(s.market.latest.t) && numeric(s.market.latest.close)),
+       'market.latest');
+  need(time(s.market?.observed_utc, true), 'market.observed_utc');
+  need(list(s.health?.datasets).every(r => obj(r) && typeof r.name === 'string' && time(r.observed_utc, true)), 'health.datasets rows');
+  need(time(s.built_utc) && time(s.range?.generated_utc) && time(s.range?.status_expires_utc, true), 'snapshot and range timestamps');
+  need(s.ops == null || (obj(s.ops) && time(s.ops.generated_utc) && obj(s.ops.source) && obj(s.ops.decisions)), 'ops (health report)');
   need(obj(s.paper) && typeof s.paper.status === 'string' && obj(s.paper.integrity) && obj(s.paper.lifecycle),
        'paper.status/integrity/lifecycle');
   need(obj(s.companion) && obj(s.companion.evaluation) && obj(s.companion.evaluation.horizons) && obj(s.companion.integrity),
@@ -98,6 +127,49 @@ export function validateSnapshot(s) {
   need(obj(s.feasibility), 'feasibility');
   need(obj(s.sources), 'sources');
   return problems;
+}
+
+export function validBar(b) {
+  return Array.isArray(b) && b.length >= 6 && b.slice(0, 6).every(numeric) && b[2] >= b[3];
+}
+// The market chart's geometry inputs (pure; app.js draws them). Throws on any row a validator should have caught.
+export function chartPoints(bars, days) {
+  if (!Array.isArray(bars) || !bars.length) return [];
+  if (!bars.every(validBar)) throw new Error('invalid market bar');
+  const end = bars.at(-1)[0];
+  return bars.filter(p => p[0] >= end - days * 86400000);
+}
+
+// Operational health rows (reports/health.json), each judged on the viewer's clock. A missing report is unknown.
+export const HEALTH_STALE_MIN = 90;
+export function opsRows(ops, now = Date.now()) {
+  if (!ops) return [{area: 'Health report', state: 'unknown', detail: 'reports/health.json not in this snapshot'}];
+  const age = (now - Date.parse(ops.generated_utc)) / 60000;
+  const reportState = !Number.isFinite(age) ? 'unknown' : age < -1 ? 'clock mismatch' : age > HEALTH_STALE_MIN ? 'stale' : 'within cadence';
+  const src = ops.source || {};
+  const srcAge = (now - Date.parse(src.last_scheduled_utc)) / 60000;
+  const srcState = !Number.isFinite(srcAge) ? 'unknown' : srcAge > (src.stale_limit_min || HEALTH_STALE_MIN) ? 'stale' : 'within cadence';
+  const gaps = (src.gaps || []).map(g => `${g.start_utc} → ${g.end_utc || 'ongoing at report'} (${Math.round(g.minutes)} min)`);
+  const last = obj => Object.entries(obj || {}).slice(-6).map(([k, v]) => `${k.slice(5, 16)} ${v}`).join(' · ') || 'none';
+  const problems = obj => Object.values(obj || {}).filter(v => /^(absent|failed|missed)/.test(v)).length;
+  const mon = ops.monitors || {};
+  const monRows = Object.entries(mon.workflows || {}).filter(([, v]) => v.stale_after_min).map(([k, v]) => {
+    const a = (now - Date.parse(v.last_success_utc)) / 60000;
+    const st = !Number.isFinite(a) ? 'unknown' : a > v.stale_after_min ? 'stale' : 'within cadence';
+    return {area: `Monitor ${k}`, state: st, detail: `last success ${v.last_success_utc || 'unknown'}`};
+  });
+  const cov = ops.ps1_coverage || {};
+  return [
+    {area: 'Health report', state: reportState, detail: `generated ${ops.generated_utc}; ${ops.clock}`},
+    {area: 'Collector schedule', state: srcState, detail: `last scheduled run ${src.last_scheduled_utc || 'unknown'}`},
+    {area: 'Recorded silences', state: gaps.length ? `${gaps.length} in ${72} h` : 'none', detail: gaps.join('; ') || '—'},
+    {area: 'Range decisions', state: problems(ops.decisions?.range) ? `${problems(ops.decisions.range)} missed or failed` : 'none missed', detail: last(ops.decisions?.range)},
+    {area: 'PS1 decisions', state: ops.decisions?.ps1_launched ? (problems(ops.decisions.ps1) ? `${problems(ops.decisions.ps1)} missed` : 'none missed') : 'not launched', detail: last(ops.decisions?.ps1)},
+    {area: 'PS1 report coverage', state: cov.not_covered?.length ? `${cov.not_covered.length} due decision(s) not in the report` : 'report covers all due decisions',
+     detail: `coverage ${cov.report_coverage ?? '—'} as of ${cov.report_generated_utc || '—'}`},
+    {area: 'Scoring backlog', state: Object.keys(ops.scoring_backlog || {}).length ? 'backlog' : 'none', detail: Object.entries(ops.scoring_backlog || {}).map(([h, v]) => `${h} ${v.length}`).join(' · ') || '—'},
+    ...(monRows.length ? monRows : [{area: 'Monitors', state: 'unknown', detail: mon.source || 'not reported'}]),
+  ];
 }
 
 // Stage a candidate: validate, then render every view with it; only a candidate that passes both is committed.

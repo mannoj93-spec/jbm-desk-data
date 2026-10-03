@@ -15,6 +15,7 @@ on:
         default: false
 permissions:
   contents: write
+  actions: read      # health.py reads scheduled-run times (repo 2.24); read-only
 # Backlog control. Scheduled runs share one group with GitHub's default queue: at most one
 # running and one pending, and a newer pending run cancels the older pending one. During an
 # outage or a long backfill, obsolete scheduled runs are therefore dropped instead of piling up;
@@ -59,12 +60,21 @@ jobs:
           args=()
           if [ "$BACKFILL" = true ]; then args+=(--backfill); fi
           python collector.py "${args[@]}"
+      # Repo 2.24: operational health on this run's clock. Read-only over every research and forecast record;
+      # writes only reports/health.{json,md} and new rows of state/incidents.jsonl. Never fails the collector.
+      - name: Record operational health
+        if: always()
+        continue-on-error: true
+        timeout-minutes: 2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python health.py --record
       - name: Persist completed series and failure diagnostics
         if: always()
         timeout-minutes: 2
         env:
           PERSIST_BUDGET_S: '100'
-        run: bash scripts/commit_push.sh data state registry/frozen
+        run: bash scripts/commit_push.sh data state registry/frozen reports/health.json reports/health.md
       - name: Fail after preserving a partial run
         if: steps.collect.outcome == 'failure'
         run: exit 1

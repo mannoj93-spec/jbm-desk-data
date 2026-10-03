@@ -2,13 +2,14 @@ name: Release check
 # Repo 2.23: SHA256SUMS must verify and list exactly the maintained scope (scripts/check_checksums.py), and the
 # release identity in desk/release.json must match the modules (desk/make_release.py check). Path filters cover every
 # maintained file and the manifest; collector and stream data are excluded (bot pushes do not trigger workflows
-# either). Mark "Release check / release" as a required status check in branch protection.
+# either). Intended as the required check of a main-branch ruleset (check context "release", GitHub Actions app,
+# integration 15368) - not configured yet; see docs/OPERATIONS.md "Release gate". Repo 2.24: pull requests always
+# run it - a required check that a path filter skips would leave a PR waiting forever.
 on:
   push:
     branches: [main]
     paths: ['**', '!data/**', '!streams/**', '!state/**', '!reports/**', '!research/**', '!desk/inputs/**', '!desk/fits/**']
   pull_request:
-    paths: ['**', '!data/**', '!streams/**', '!state/**', '!reports/**', '!research/**', '!desk/inputs/**', '!desk/fits/**']
   workflow_dispatch:
 permissions:
   contents: read

@@ -2166,5 +2166,154 @@ class TestOverlapAndClocks2_23(unittest.TestCase):
             self.assertEqual(doc["source_cutoff_utc"], U.iso_ms(fill))
             self.assertIsNotNone(doc["processed_utc"])
 
+
+# =============================================================================================
+# Repo 2.24 maintenance regressions
+# =============================================================================================
+def _set_state(base, eid, old, new):
+    _rewrite(base / P.EXEC_STATES, lambda r: dict(r, state=new) if r["execution_id"] == eid and r["state"] == old else r)
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestJournalValidationOnRead(unittest.TestCase):
+    """2.24 finding 1: unknown, missing or malformed journal state is a failure on read, never a silent skip."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = make_base(Path(self.tmp.name))
+        self.proto = proto_for_tests()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _two(self):
+        clk2 = _two_executions(self.base, self.proto)
+        return clk2, _eids_in_order(self.base)
+
+    def _third(self):
+        clk3 = Clock(START_MS + 8 * 3600_000)
+        _second_decision(self.base, clk3, hours=8)
+        return P.execute(self.base, clock=clk3, fetch=quote_fetcher(clk3, bid=85000.0, ask=85000.5), proto=self.proto,
+                         run={}, pause=lambda s: None)
+
+    def test_reproduction_misspelled_final_state_fails_and_blocks_the_third_decision(self):
+        _, eids = self._two()
+        _set_state(self.base, eids[1], "completed", "completd")
+        before = (self.base / P.EXECUTIONS).read_bytes()
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertFalse(ch["ok"])
+        self.assertIn("unknown or missing state 'completd'", ch["failures"][0]["reason"])
+        self.assertIsNone(ch["ledger_rows"]["unaccounted"])
+        doc = P.report(self.base, now=DEC + dt.timedelta(hours=9), proto=self.proto)
+        self.assertEqual((doc["integrity"]["ok"], doc["integrity"]["state"]), (False, "failed"))
+        self.assertTrue(_all_withheld(doc))
+        with self.assertRaises(RuntimeError):
+            P.ledger_state(self.base, self.proto)
+        r = self._third()
+        self.assertEqual((r["outcome"], r["class"]), ("refused: ledger integrity failure", "error"))
+        self.assertEqual((self.base / P.EXECUTIONS).read_bytes(), before)       # no added ledger rows
+        self.assertEqual(len(P.exec_states(self.base)), 2)
+
+    def test_unknown_missing_and_malformed_states(self):
+        cases = {
+            "missing state": lambda r: {k: v for k, v in r.items() if k != "state"},
+            "null state": lambda r: dict(r, state=None),
+            "numeric state": lambda r: dict(r, state=3),
+            "missing time": lambda r: {k: v for k, v in r.items() if k != "t_ms"},
+        }
+        for name, fn in cases.items():
+            with self.subTest(name), tempfile.TemporaryDirectory() as d:
+                base = make_base(Path(d))
+                _two_executions(base, self.proto)
+                eid = _eids_in_order(base)[1]
+                _rewrite(base / P.EXEC_STATES, lambda r: fn(r) if r["execution_id"] == eid and r["state"] == "completed" else r)
+                ch = P.verify_chain(base, self.proto)
+                self.assertFalse(ch["ok"])
+                self.assertIn("execution state history invalid", ch["failures"][0]["reason"])
+
+    def test_journal_rows_without_an_id_or_not_objects_fail(self):
+        self._two()
+        with open(self.base / P.EXEC_STATES, "a") as f:
+            f.write(json.dumps({"state": "completed", "t_ms": 1}) + "\n")
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertFalse(ch["ok"])
+        self.assertIn("malformed journal row", ch["failures"][0]["reason"])
+
+    def test_invalid_transitions_and_rows_after_a_terminal_state(self):
+        _, eids = self._two()
+        st = P.exec_states(self.base)[eids[1]]
+        U.append(self.base / P.EXEC_STATES, dict(st[-1], state="running", t_ms=st[-1]["t_ms"] + 5),
+                 key=lambda r: (r["execution_id"], r["state"], r["t_ms"]))
+        self.assertIn("invalid transition completed -> running", P.verify_chain(self.base, self.proto)["failures"][0]["reason"])
+
+    def test_history_not_starting_pending_fails(self):
+        _, eids = self._two()
+        _set_state(self.base, eids[1], "pending", "running")
+        self.assertFalse(P.verify_chain(self.base, self.proto)["ok"])
+
+    def test_zero_row_cases(self):
+        # a legitimate zero-row failed execution is an exclusion; a completed one with zero rows is a failure
+        clk = Clock(START_MS)
+        _ps1_ready(self.base, clk, self.proto)
+        with self.assertRaises(Interrupted):
+            P.execute(self.base, clock=clk, fetch=quote_fetcher(clk), proto=self.proto, run={}, pause=lambda s: None,
+                      writer=crash_after(0))
+        P.operator_lifecycle("terminated", "test", base=self.base)
+        P.execute(self.base, clock=clk, fetch=quote_fetcher(clk), proto=self.proto, run={}, pause=lambda s: None)
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertTrue(ch["ok"])
+        self.assertEqual((len(ch["exclusions"]), ch["ledger_rows"]["physical"], ch["ledger_rows"]["unaccounted"]), (1, 0, 0))
+        _rewrite(self.base / P.EXEC_STATES, lambda r: {k: v for k, v in r.items() if k != "rows_written"} if r["state"] == "failed" else r)
+        self.assertTrue(P.verify_chain(self.base, self.proto)["ok"])            # absent count on failed = 0 rows
+        _rewrite(self.base / P.EXEC_STATES, lambda r: dict(r, rows_written="0") if r["state"] == "failed" else r)
+        self.assertIn("rows_written", P.verify_chain(self.base, self.proto)["failures"][0]["reason"])
+
+    def test_completed_with_zero_rows_fails(self):
+        _, eids = self._two()
+        rows = [r for r in U.rows(self.base / P.EXECUTIONS) if r["execution_id"] != eids[1]]
+        (self.base / P.EXECUTIONS).write_text("".join(json.dumps(r) + "\n" for r in rows))
+        self.assertFalse(P.verify_chain(self.base, self.proto)["ok"])
+
+    def test_conservation_is_enforced_even_if_categories_disagree(self):
+        _two_executions(self.base, self.proto)
+        real = P.account
+        def lossy(states, by):
+            out = real(states, by)
+            out["quarantined"].append({"execution_id": "x", "decision_id": "x", "rows": -6, "disposition": "test"})
+            return out
+        P.account = lossy
+        try:
+            ch = P.verify_chain(self.base, self.proto)
+        finally:
+            P.account = real
+        self.assertFalse(ch["ok"])
+        self.assertIn("conservation", ch["failures"][-1]["reason"])
+
+    def test_cli_and_wrapper_fail_on_an_unknown_state(self):
+        import stream_ops
+        _, eids = self._two()
+        _set_state(self.base, eids[1], "completed", "completd")
+        env = os.environ.get("JBM_DESK_BASE")
+        os.environ["JBM_DESK_BASE"] = str(self.base)
+        ident = {"run_id": "s", "run_attempt": "1", "event": "test", "triggering_run": None, "code_commit": "x"}
+        try:
+            r = stream_ops.run_stage(self.base, "ps1-execute", True, [sys.executable, str(DESK / "paper_ps1.py"), "execute"],
+                                     (), ident=ident, semantic=True)
+            self.assertEqual((r["status"], r["exit_code"], r["outcome"]["class"]), ("failed", 3, "error"))
+            r2 = stream_ops.run_stage(self.base, "ps1-report", True, [sys.executable, str(DESK / "paper_ps1.py"), "report"],
+                                      ["reports/paper_ps1.json"], ident=ident, semantic=True)
+            self.assertEqual(r2["status"], "failed")
+            self.assertEqual(stream_ops.verdict(self.base, ["ps1-execute", "ps1-report"], "success", ident=ident)["status"], "failed")
+        finally:
+            if env is None:
+                os.environ.pop("JBM_DESK_BASE", None)
+            else:
+                os.environ["JBM_DESK_BASE"] = env
+
+    def test_valid_histories_from_earlier_jobs_still_verify(self):
+        _, eids = self._two()
+        _rewrite(self.base / P.EXEC_STATES, lambda r: dict(r, job="ps1-job-3.0.0") if r["execution_id"] == eids[0] else r)
+        self.assertTrue(P.verify_chain(self.base, self.proto)["ok"])
+
+
 if __name__ == "__main__":
     unittest.main()
