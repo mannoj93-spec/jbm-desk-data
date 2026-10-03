@@ -27,7 +27,8 @@
    "2026-10-03T00:00:00Z": "executed",
    "2026-10-03T04:00:00Z": "executed",
    "2026-10-03T08:00:00Z": "executed",
-   "2026-10-03T12:00:00Z": "missed"
+   "2026-10-03T12:00:00Z": "missed",
+   "2026-10-03T16:00:00Z": "pending"
   },
   "ps1_launched": true,
   "range": {
@@ -54,12 +55,12 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means the collector (and probably GitHub's scheduler) has been silent - its contents are not current",
- "generated_utc": "2026-10-03T15:50:48Z",
+ "generated_utc": "2026-10-03T16:57:05Z",
  "job": "health-1.0.0",
  "monitors": {
-  "newest_scheduled_start_utc": "2026-10-03T14:57:50Z",
+  "newest_scheduled_start_utc": "2026-10-03T16:56:51Z",
   "source": "GitHub Actions API, scheduled runs",
-  "state": "fresh",
+  "state": "stale",
   "workflows": {
    "collect.yml": {
     "last_scheduled_start_utc": "2026-10-03T13:26:49Z",
@@ -92,20 +93,20 @@
     "last_success_utc": "2026-10-03T09:02:31Z"
    },
    "research.yml": {
-    "last_scheduled_start_utc": "2026-10-03T07:01:41Z",
+    "last_scheduled_start_utc": "2026-10-03T16:56:51Z",
     "last_success_utc": "2026-10-03T07:01:41Z"
    },
    "watchdog.yml": {
     "last_scheduled_start_utc": "2026-10-03T14:48:44Z",
     "last_success_utc": "2026-10-03T14:48:44Z",
     "stale_after_min": 90,
-    "state": "fresh"
+    "state": "stale"
    }
   }
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 49.7,
+  "report_age_min": 116.0,
   "report_coverage": 0.75,
   "report_generated_utc": "2026-10-03T15:01:04.052Z",
   "report_scheduled_decisions": 4,
@@ -115,7 +116,7 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 143.8,
+  "age_min": 210.0,
   "gaps": [
    {
     "end_ms": 1791034022272,
@@ -127,13 +128,13 @@
    {
     "end_ms": null,
     "end_utc": null,
-    "minutes": 143.77,
+    "minutes": 210.05,
     "start_ms": 1791034022272,
     "start_utc": "2026-10-03T13:27:02Z"
    }
   ],
   "last_scheduled_utc": "2026-10-03T13:27:02Z",
-  "manual_runs_since": 1,
+  "manual_runs_since": 2,
   "rule": "scheduled runs only (manual and local runs do not close a scheduled gap)",
   "stale_limit_min": 90,
   "state": "stale"
