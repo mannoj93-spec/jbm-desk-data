@@ -73,6 +73,7 @@ jobs:
         if: always()
         timeout-minutes: 2
         env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           PERSIST_BUDGET_S: '100'
         run: bash scripts/commit_push.sh data state registry/frozen reports/health.json reports/health.md
       - name: Fail after preserving a partial run

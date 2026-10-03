@@ -32,6 +32,8 @@ jobs:
         run: python report.py --days 7
       - name: Persist reports, scores, and their observation evidence
         if: always()
+        env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
         run: bash scripts/commit_push.sh reports registry/scores.jsonl registry/evidence tests/results.jsonl
       - name: Fail if report construction failed
         if: steps.report.outcome == 'failure'

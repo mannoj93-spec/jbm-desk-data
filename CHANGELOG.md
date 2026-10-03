@@ -1,3 +1,16 @@
+# Maintenance, revision 2.24.1 — 2026-10-03 (push credential for the release gate)
+
+**Why.** Importing the release-gate ruleset failed: GitHub rejects the GitHub Actions app as a bypass actor, so a
+required check on `main` would have blocked every data push made with the workflow token. Release identity
+(`desk/release.json`) is unchanged: no desk module, protocol or artifact changes.
+
+| Change | Tests |
+|---|---|
+| `scripts/commit_push.sh` pushes over SSH with the deploy key in `DESK_DEPLOY_KEY` when set (host keys from `api.github.com/meta`; key removed at exit; `origin/<branch>` refreshed for the persistence check), else with the workflow token as before | `regression/test_push_credential.py` |
+| The secret is passed to the nine persistence steps only (collector, range ×2, scoring, research streams ×2, research lab, weekly report, intake) | same (workflow scan) |
+| Deploy-key pushes trigger push workflows: `fixtures.yml` skips `desk/inputs`, `desk/fits`; `release-check.yml` push also skips `registry/`, `tests/`, `desk/deployments.jsonl` | review |
+| `docs/OPERATIONS.md` "Release gate": the deploy-key design, operator order, residual risk, phone edits under the gate | review |
+
 # Maintenance, revision 2.24 (crypto-desk 12.4.7 on the 12.4 release family) — 2026-10-03
 
 **Base.** `main` at `24e6dcaf` (2.23). Nothing here changes the range model, contracts RC1D/RC1, PS1 protocol v3, its

@@ -1,3 +1,14 @@
+# Validation record — revision 2.24.1 (push credential for the release gate)
+
+Validated 2026-10-03 16:15–16:35Z on branch `maint-2-25` from `main` at `e55bbd1e` (2.24 merged 15:33:40Z). Container; Python 3.12.11.
+
+| Check | Result |
+|---|---|
+| Regression suite | 3.12.11: ran 761, executed 760, passed 760, failed 0, errors 0, skipped 1 (new: `test_push_credential` 4) |
+| Push credential | with the key: pushes to the SSH remote, refreshes `origin/main`, leaves no key file, never prints it; failure path still removes it; without the key: workflow-token path unchanged; exactly the nine persistence steps receive the secret |
+| Release and checksums | `make_release.py check` OK (release identity unchanged, repo 2.24); `check_checksums.py check` OK |
+| Not executed | an SSH push with a real deploy key (needs the secret); the ruleset (operator import); `fixtures.yml` path filters under deploy-key pushes |
+
 # Validation record — maintenance, revision 2.24 (crypto-desk 12.4.7 on the 12.4 release family)
 
 Implemented 2026-10-03 14:15–14:45Z on branch `maint-2-24` from `main` at `24e6dcaf` (the assessed commit); re-verified 15:00–15:25Z after merging `main` at `8abd9c2f`. Container; Python 3.12.11 and 3.11.15; Node 22; Chromium via Playwright. Earlier blocks below are kept as recorded.

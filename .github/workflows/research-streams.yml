@@ -71,6 +71,7 @@ jobs:
         if: always()
         continue-on-error: true
         env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           COMMIT_MESSAGE: Research streams registered
           PERSIST_BUDGET_S: '90'
         run: python desk/stream_ops.py run --stage publish --required -- bash scripts/commit_push.sh streams
@@ -100,6 +101,7 @@ jobs:
         id: persist
         if: always()
         env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           COMMIT_MESSAGE: Research streams
           PERSIST_BUDGET_S: '90'
         run: bash scripts/commit_push.sh streams reports/companion_b1.json reports/companion_b1.md reports/paper_ps1.json reports/paper_ps1.md reports/feasibility.json reports/feasibility.md

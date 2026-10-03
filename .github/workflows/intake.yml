@@ -36,6 +36,7 @@ jobs:
           python-version: '3.12'
       - name: Validate, register, push, and acknowledge; recover open unprocessed issues
         env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           GH_TOKEN: ${{ github.token }}
           INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: python process_issues.py
