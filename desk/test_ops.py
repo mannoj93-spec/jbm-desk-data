@@ -520,7 +520,11 @@ class TestScoringStatesAndEvidence(unittest.TestCase):
         self.assertTrue(0 < e["width_b2"] and 0 < e["width_b0"])
         self.assertIsNone(e["diff_mean_ci95"])
         self.assertIn("unavailable", e["uncertainty"])                  # 2 decisions: no block, no interval
-        self.assertIn("up to 17 earlier", ev["horizons"]["72h"]["windows"])
+        # 12.4.6 / repo 2.23: overlap is described from the actual registered windows, not a theoretical count
+        w72 = ev["horizons"]["72h"]["window_overlap"]
+        self.assertEqual((w72["windows"], w72["overlapping_another"], w72["largest_disjoint_subset"]), (2, 2, 1))
+        self.assertIn("2 of 2 overlap another", ev["horizons"]["72h"]["windows"])
+        self.assertEqual(e["window_overlap"]["windows"], 2)
         self.assertIn("ln range", e["metric"])
         md = RR.markdown(st)
         for want in ("Range scoring", "Range monitor", "## Current availability", "## Evidence (descriptive)",

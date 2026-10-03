@@ -1,3 +1,21 @@
+# Validation record — maintenance, revision 2.23 (crypto-desk 12.4.6 on the 12.4 release family)
+
+Validated 2026-10-02 23:50Z – 2026-10-03 00:45Z on branch `maint-2-23` from `main` at `dd5ca024`, merged with `main` at `7444d65c` before finalizing (container; Python 3.13 for development, 3.12.11 and 3.11.15 for the suites; Node 22; Chromium via Playwright). Earlier blocks below are kept as recorded.
+
+| Check (2.23) | Result |
+|---|---|
+| Baseline | `main` dd5ca024 → 7444d65c. 2.22 merged Oct 2 02:37Z (PR #26); ten production research-streams runs through Oct 2 21:01Z, every stage completed. PS1 v3 approved, not launched at Oct 3 00:15Z. Findings 1–9 reproduced in disposable fixtures or on a pristine `main` archive before any change (`CHANGELOG.md` 2.23) |
+| Regression suite (`python -m unittest discover -s regression`) | 3.12.11: ran 738, executed 737, passed 737, failed 0, errors 0, skipped 1. 3.11.15: ran 738, executed 736, passed 736, failed 0, errors 0, skipped 2 |
+| Stream tests (`desk/test_streams.py`) | ran 169 (138 earlier + 31 new: ledger reconciliation 11, recovery lifecycle 8, historical exclusions 3, companion binding downgrade 5, overlap and clocks 4); two 2.21–2.22 tests that expected legacy acceptance of a stripped modern binding replaced. 3.12: executed 169, passed 169. 3.11: executed 168, passed 168, skipped 1 |
+| Other desk test files | `test_asof`, `test_hardening`, `test_jbm_archive`, `test_jbm_measure`, `test_ops` (evidence-block assertion moved to actual-window overlap), `test_range_contract`, `test_range_job`, `test_range_model`, `test_release`, `test_verify`: all OK |
+| Dashboard | `regression.test_dashboard` 5 OK; `node --test dashboard/model.test.mjs` 11 pass, 0 fail; `node --check dashboard/app.js` OK; Chromium acceptance 16/16 (initial HTTP failure, retry, failed refresh on malformed nested field / bad JSON / HTTP 500 keeps the previous snapshot and flags it across all six views, successful refresh clears the flag, PS1 and B1 panels show integrity and clocks). Original `main` reproduced the refresh defect (`research.filter is not a function`) |
+| Release and checksums | `make_release.py check` OK (repo 2.23); `scripts/check_checksums.py check` OK (hashes verify; listed set equals the documented scope); `regression/test_checksums.py`: a changed covered file fails, the refreshed release passes, data excluded |
+| O21 and calibration | `o21_reanalysis.py verify` PASS; `desk/research/ps1/calibrate.py verify` PASS |
+| Replay on merged records | 117 of 117 RC1D forecasts replay; 92 scores reproduce from retained evidence; 36 of 36 B1 forecasts reproduce from fit and frozen features; 17 of 17 B1 scores match their verified inputs; companion pairs 11 / 6 / 0 (4h / 24h / 72h); RC1D and companion evaluation figures identical to the committed reports except the overlap description and named clocks |
+| Preserved | no file under `registry/`, `state/`, `streams/`, `reports/`, `research/`, `desk/fits/`, `desk/inputs/`, `desk/calendars/`, `desk/research/` differs from `main`; PS1 protocol v3, v2, v1 and calibration byte-identical |
+| Real CLIs through `stream_ops --semantic` on a copy of `main` | companion score, companion report, PS1 decide, execute, report: all stages completed |
+| Not executed | any GitHub run of 2.23; any production PS1 decision or execution; fresh-thread Claude scenarios (skill `evals.md` 133–140 ready, unexecuted) |
+
 # Validation record — maintenance, revision 2.22 (crypto-desk 12.4.5 on the 12.4 release family)
 
 Validated 2026-10-02 01:45–02:45Z on branch `maint-2-22` from `main` at `dea47603` (container; Python 3.11.15 and 3.12.11). Earlier blocks below are kept as recorded.
