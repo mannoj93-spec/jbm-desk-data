@@ -105,7 +105,7 @@ with warnings when sources failed, books were degraded or requests were rate lim
 minutes tolerates ordinary scheduling delays and the odd dropped run; a collector that stops is
 reported about 90–120 minutes after its last run, plus any delay in starting the watchdog. The
 watchdog runs on the same Actions scheduler, so a platform-wide scheduling outage silences both
-(observed Oct 3 2026: no scheduled run of any workflow from 11:17:56Z to 13:26:49Z). From 2.24 the
+(observed Oct 3 2026: no scheduled run of any workflow from 11:17:56Z to 13:26:49Z; then, from 13:26:49Z, no scheduled collector run for at least 109 minutes while GitHub delivered only six scheduled runs of other workflows through 15:15Z, the 12:00Z Range forecasts schedule arriving 2 h 57 min late and correctly refusing the stale bar; cause not established). From 2.24 the
 watchdog keeps reporting a recovered gap as a warning for a day instead of turning plainly green.
 
 **Operational health (2.24).** Every collector run executes `health.py --record` (read-only over all
@@ -127,6 +127,19 @@ another cron, fails with the scheduler. An independent check needs a scheduler o
 a Claude scheduled task (hourly, read-only over the raw file, notifying the owner by push or email), or a
 dead-man's-switch service pinged at the end of each collector run (needs an account and a secret URL).
 Neither is configured; no alert from either has been delivered.
+
+**Release gate (not enforced yet; operator setting).** `release-check.yml` (job `release`, check context
+`release` from the GitHub Actions app, integration 15368) verifies `SHA256SUMS` and `desk/release.json` on every pull
+request. As of Oct 3 2026 `main` has no branch protection and no ruleset, so a green check is not a gate. The
+intended ruleset requires `release` on `main` and lets only the GitHub Actions app bypass it, so the collector,
+range and research workflows can keep pushing data with the workflow token: that token cannot change workflow files,
+and the workflows push only the data paths given to `scripts/commit_push.sh`. Residual risk: a workflow on `main`
+could be changed (through a pull request, which the gate checks) to push code. Verify before enforcing on `main`:
+create the same ruleset for `refs/heads/ruleset-probe`, dispatch `release-check.yml` on that branch (its probe version
+pushes one empty commit with the workflow token) and confirm the bot push lands while any other direct push is
+refused; then target `main` and confirm the next data commit lands. If GitHub will not accept the Actions app as a
+bypass actor, do not enforce on `main` (data persistence would stop); the alternative is a deploy key for the
+workflows' pushes as the bypass actor.
 
 ## Forecasts from a phone
 
