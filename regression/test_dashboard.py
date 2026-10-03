@@ -25,6 +25,15 @@ class DashboardTests(unittest.TestCase):
                 self.assertEqual(card['evaluation_version'], index['designs'][card['design']]['current'])
                 self.assertTrue(card['source'].startswith('research/evidence/v2/'))
             self.assertEqual(payload['workflow']['status'], 'unverified')
+            # 2.23: research clocks come from the cards' cutoff_ms, the index's 'updated' is named as such
+            self.assertEqual(payload['schema'], 'jbm-dashboard/2')
+            self.assertNotIn('generated_utc', payload['research'])
+            cuts = sorted(c['cutoff_utc'] for c in payload['research']['designs'] if c['cutoff_utc'])
+            self.assertEqual((payload['research']['oldest_cutoff_utc'], payload['research']['source_cutoff_utc']),
+                             (cuts[0], cuts[-1]) if cuts else (None, None))
+            self.assertEqual(payload['research']['index_updated_utc'], module.utc(index['updated']))
+            self.assertEqual(payload['paper'], json.loads((ROOT / 'reports/paper_ps1.json').read_text()))
+            self.assertEqual(payload['companion'], json.loads((ROOT / 'reports/companion_b1.json').read_text()))
             self.assertNotIn('null', payload['research']['statuses'])
             self.assertLess((Path(tmp) / 'site/data.json').stat().st_size, 1_000_000)
             for rel, digest in payload['sources'].items():

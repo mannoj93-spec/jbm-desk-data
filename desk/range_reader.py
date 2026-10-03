@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """range_reader — the deterministic contract for reading the desk's registered range forecasts.
 
-Version reader-12.4.0 (crypto-desk 12.4, repo 2.19). Stdlib only. Used by range_job.py (to write
+Version reader-12.4.6 (crypto-desk 12.4, repo 2.23: actual-window overlap diagnostics). Stdlib only. Used by range_job.py (to write
 reports/range_status.json) and by a desk thread (on a clone, or through that JSON).
 
 read_current(base, now, horizon) is an AS-OF read: it resolves the manifest - never raw registry/ files - and
@@ -41,7 +41,7 @@ for p in (str(DESK), str(DESK.parent)):
 import range_contract as C      # noqa: E402
 import range_ops as OPS          # noqa: E402
 
-VERSION = "reader-12.4.0"
+VERSION = "reader-12.4.6"
 UTC = dt.timezone.utc
 PREFIX = "range-rc1d-"
 LEGACY = "range-b2-"
