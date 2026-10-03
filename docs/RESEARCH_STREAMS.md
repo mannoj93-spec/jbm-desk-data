@@ -16,9 +16,15 @@ Forecast accuracy (RC1D, companion), simulated sizing performance (PS1) and demo
 performance are three different things. The first two are measured here; the third is not measured anywhere in
 this repository, and no status in these reports is a trading edge or an entry endorsement.
 
-**Common report fields (2.22).** Every report carries `report`, `schema`, `generated_utc`, `source_cutoff_utc` (the
-latest observation it is built from), `evidence_class`, `integrity` and `lifecycle` (feasibility: "not applicable").
-Freshness is judged by `source_cutoff_utc`: a new generation time never makes old inputs fresh.
+**Common report fields (2.22; clocks named in 2.23).** The stream reports (companion, PS1, feasibility) carry `report`,
+`schema`, `generated_utc`, `source_cutoff_utc`, `evidence_class`, `integrity` and `lifecycle` (feasibility: "not
+applicable"); companion and PS1 also carry `processed_utc` and a `clocks` block defining each one.
+`source_cutoff_utc` is the latest market observation a report's figures depend on: the companion's latest included
+outcome-window end (2.20-2.22 recorded its scoring time there, now `processed_utc`); PS1's latest decision close read
+or quote receipt (null before the first decision - expected pre-launch, not a collection failure). RC1D's
+`reports/range_status.json` keeps its own schema and exact expiry (report, row, window). Freshness per report type is
+one table (the skill's runbook D2; `dashboard/model.js` `CLOCKS` implements it): stale = older than twice the
+producer's interval, each clock judged on its own, so a new generation or rescore never makes old inputs fresh.
 
 ## Companion B1
 
@@ -42,9 +48,12 @@ Freshness is judged by `source_cutoff_utc`: a new generation time never makes ol
   window-start times, version (stream, job, model, fit), input snapshot (RC1D id, frozen-record hash, snapshot hash),
   contract, confirmation time and commit, and the binding's own hash. Scoring verifies the file against the registry
   and the binding; reporting re-verifies every scored file. A mismatch is recorded in `streams/rc1d-b1/integrity.jsonl`
-  and the record is excluded; nothing is overwritten. The three 2026-10-01T00:00Z confirmations predate bindings and
-  are verified against the registry hash and their own fields (labelled "legacy confirmation"; no binding is
-  fabricated for them).
+  and the record is excluded; nothing is overwritten. The three 2026-10-01T00:00Z confirmations predate bindings. From
+  1.3.0 (2.23) they - and only they - verify without one: `LEGACY_UNBOUND` pins each id to its row hash as first
+  committed (`4ffe647d`) and its registry hash, and the record must also name companion-1.0.0. Any other confirmation
+  with an absent, null, malformed or inconsistent binding fails consumption: a binding stripped from a modern record,
+  or an edited version label, never grants legacy status. The legacy pairs carry that limitation in their
+  verification text; no binding is fabricated for them.
 - **One verified path (1.2.0).** Scoring and evaluation both go through `verified_pair`: the forecast against the
   hash recorded at registration and the confirmation binding; the RC1D outcome against original records (the score
   row names the manifest's frozen forecast, its evidence file hashes to the value recorded at scoring, the realized
@@ -113,6 +122,22 @@ evidence thresholds are v1's. Summary:
   rows reproducible from the snapshot. Missing evidence is a failure, and a failed execution invalidates every later
   one. Recovery runs the same checks before writing. Any failure withholds every performance figure (arms, paired
   differences, win counts, intervals) and makes `execute` and `report` exit with class `error`.
+- **Complete reconciliation (2.23).** `account()` reconciles the physical ledger with the state journal in both
+  directions: every row belongs to a verified execution, a recoverable in-progress execution, a quarantined partial
+  set (`partially_written`, row count as recorded) or an excluded failed execution (row count as recorded). Rows with
+  no state history, counts that differ from the recorded state, rows naming another decision, incomplete histories and
+  two live executions of one decision are failures. A decision with any physical ledger row is never executed again,
+  independently of the state journal, and balances are unavailable while the chain fails. The report states
+  `integrity.state` (`verified`, `verified with exclusions`, `failed`), the ledger-row accounting and every excluded
+  decision with its reason and disposition, on every later run; an excluded decision counts as not executed and does
+  not by itself withhold unrelated figures. Rows are rebuilt under the job recorded in each snapshot, so a later job
+  version still verifies them.
+- **Recovery under the lifecycle (2.23).** Recovery separates bookkeeping from completion. All six rows already
+  persisted and reproducible → the state is closed `recovered` whatever the lifecycle (history is recorded, not
+  created). Zero or some rows → writing the fill is new ledger activity: under an operator pause the execution is held
+  (nothing written, no launch; it completes from the same snapshot, original quote and fill time after the operator
+  resumes), under termination or archiving it is closed `failed` with its rows preserved, and a job pause permits it.
+  The lifecycle is re-read at the write boundary itself. `execute` reports the action actually taken.
 - **Launch reconciliation (v3).** After the six rows and `completed`, `reconcile` derives `launch.json` and the
   lifecycle activation from the earliest verified execution (its decision and its fill time), idempotently on every
   pass; an interruption anywhere after the row write converges to what a clean run writes. A retry never trades

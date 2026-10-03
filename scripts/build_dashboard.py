@@ -133,6 +133,9 @@ def build(base, output):
             'generated_at', 'cutoff_ms', 'research_integrity', 'publication', 'checkpoints',
             'min_dependence_blocks', 'min_retained_observations', 'primary_horizon_min']})
         designs[-1]['source'] = path
+        cutoff = card.get('cutoff_ms')
+        designs[-1]['cutoff_utc'] = (datetime.fromtimestamp(cutoff / 1000, timezone.utc).isoformat().replace('+00:00', 'Z')
+                                     if isinstance(cutoff, (int, float)) and math.isfinite(cutoff) else None)
     forecasts = read('reports/range_status.json')
     utc(forecasts['generated_utc'])
     utc(forecasts['status_expires_utc'])
@@ -142,9 +145,13 @@ def build(base, output):
         commit = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=base, text=True).strip()
     except (OSError, subprocess.CalledProcessError):
         commit = None
-    payload = {'schema': 'jbm-dashboard/1', 'built_utc': datetime.now(timezone.utc).isoformat(),
+    cutoffs = sorted(d['cutoff_utc'] for d in designs if d['cutoff_utc'])
+    # Clocks are named (repo 2.23): the index's 'updated' is when the lab last published (processing); observation
+    # cutoffs come from each card's cutoff_ms. A rebuild never refreshes either.
+    payload = {'schema': 'jbm-dashboard/2', 'built_utc': datetime.now(timezone.utc).isoformat(),
                'repository': REPO, 'commit': commit, 'health': health, 'range': forecasts,
-               'research': {'generated_utc': index['updated'], 'designs': designs,
+               'research': {'index_updated_utc': utc(index['updated']), 'source_cutoff_utc': cutoffs[-1] if cutoffs else None,
+                            'oldest_cutoff_utc': cutoffs[0] if cutoffs else None, 'designs': designs,
                             'statuses': dict(Counter(d['status'] for d in designs))},
                'companion': read('reports/companion_b1.json'), 'paper': read('reports/paper_ps1.json'),
                'feasibility': read('reports/feasibility.json'), 'market': price_history(base, record),

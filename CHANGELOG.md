@@ -1,3 +1,23 @@
+# Maintenance, revision 2.23 (crypto-desk 12.4.6 on the 12.4 release family) — 2026-10-03
+
+**Base.** `main` at `dd5ca024` (reviewed snapshot), merged with `7444d65c`. 2.22 merged Oct 2 02:37Z (PR #26) and
+production-observed (ten runs, every stage completed); the research dashboard merged Oct 2 19:06Z (PR #27). PS1 v3
+launched at the Oct 3 00:00Z decision under ps1-job-3.0.0; 3.1.0 verifies that execution unchanged. Each item was reproduced before it was changed. Nothing here changes the range model, contracts
+RC1D/RC1, `range_job.py`, any registered forecast, score, fit or bundle, the lab, the collector, PS1 protocol v3 or its
+calibration; job versions record the code (ps1-job-3.1.0, companion-1.3.0, reader-12.4.6).
+
+| Finding (reproduced) | Change | Tests |
+|---|---|---|
+| **PS1 ledger rows outside verification; duplicate execution.** With a second execution's state records removed, verification returned ok on 6 of 12 rows and a retry wrote 6 more (18) | `account()` reconciles ledger rows and states both ways (verified, recoverable, quarantined, excluded; anything else fails); a decision with any ledger row is never executed again; balances unavailable on failure; rows rebuilt under the snapshot's job | `TestLedgerReconciliation` |
+| **Recovery overrode an operator pause.** A zero-row interruption then an operator pause: recovery wrote 6 rows and `launch.json` | bookkeeping (rows persisted) separated from completion (lifecycle-gated; held under operator pause, closed under termination); lifecycle re-read at the write boundary; the action taken is reported | `TestRecoveryLifecycleAuthority` |
+| **Companion legacy downgrade.** A modern confirmation stripped of its binding (+1 ms) verified as legacy 1.0.0 | only the three Oct 1 00:00Z confirmations, pinned to their first-committed hashes, verify unbound | `TestCompanionBindingDowngrade` |
+| **Exclusions invisible.** A failed zero-row recovery left `integrity.ok: true` with no reason on later runs | integrity `state`, `excluded_decisions`, `ledger_rows`; "excluded" schedule outcome; execute outcome lists exclusions | `TestHistoricalExclusions` |
+| **Checksums.** README.md and .gitignore mismatched; 13 maintained files unlisted; no CI check | scope defined in `scripts/check_checksums.py`; manifest refreshed; `release-check.yml` | `regression/test_checksums.py` |
+| **Clocks.** Companion `source_cutoff_utc` was scoring time; dashboard aged generation with a 6 h rule and labelled the index update a cutoff | named clocks (`processed_utc`, observation cutoff, outcome-window end); one freshness table; builder reads card cutoffs | `TestOverlapAndClocks2_23`, `model.test.mjs` |
+| **Dashboard.** No companion integrity; intervals hidden; a malformed refresh replaced the good snapshot | integrity, exclusions and ledger accounting shown; intervals rendered; staged, validated refresh | `model.test.mjs`, browser acceptance |
+| **Action runtimes** on node20 | setup-node v6, upload-pages-artifact v5, deploy-pages v5 (node24) | workflow review |
+| **RC1D overlap** described theoretically | actual [start, end) diagnostics shared with the companion | `TestOverlapAndClocks2_23`, `test_ops` |
+
 # Maintenance, revision 2.22 (crypto-desk 12.4.5 on the 12.4 release family) — 2026-10-02
 
 **Base.** `main` at `dea47603` (2.21 merged Oct 1 01:26:51Z as `c805152d`; twelve production research-streams runs on

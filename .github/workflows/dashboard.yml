@@ -31,9 +31,13 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - uses: actions/setup-node@v4
+      # Action runtimes (repo 2.23): setup-node v6, upload-pages-artifact v5 (composite; pins
+      # upload-artifact v7.0.0) and deploy-pages v5 all run on node24. node-version selects the
+      # runtime for the dashboard's own tests, not the actions' runtime.
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
+          package-manager-cache: false
       - name: Validate snapshot and expiry semantics
         run: |
           python -m unittest regression.test_dashboard -v
@@ -41,7 +45,7 @@ jobs:
           node --check dashboard/app.js
       - name: Build immutable source snapshot
         run: python scripts/build_dashboard.py
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v5
         with:
           path: .dashboard-build
   deploy:
@@ -58,4 +62,4 @@ jobs:
     steps:
       - name: Deploy research desk
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/deploy-pages@v5

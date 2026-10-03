@@ -915,11 +915,13 @@ class TestCompanionIntegrity(unittest.TestCase):
         ev = CJ.evaluation(self.base)["horizons"]["4h"]
         self.assertEqual((ev["paired"], ev["excluded_integrity"]), (0, 1))
 
-    def test_legacy_confirmation_is_verified_against_the_registry_hash(self):
+    def test_a_modern_confirmation_stripped_of_its_binding_is_not_scored(self):
+        # replaces the 2.21-2.22 test that expected legacy acceptance here (repo 2.23 finding 3); the genuine
+        # unbound cohort is tested from the retained records in TestCompanionBindingDowngrade
         _rewrite(self.base / CJ.CONFIRMS, lambda c: {k: v for k, v in c.items() if k not in ("binding", "binding_sha256")})
-        rows = [r for r in CJ.score(self.base)["scored"] if r["id"] == self.cid]
-        self.assertEqual(len(rows), 1)
-        self.assertTrue(rows[0]["verification"].startswith("legacy confirmation"))
+        r = CJ.score(self.base)
+        self.assertNotIn(self.cid, [x["id"] for x in r["scored"]])
+        self.assertIn(self.cid, [x["id"] for x in r["integrity"]])
 
 
 @unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
@@ -1528,10 +1530,14 @@ class TestCompanionVerifiedConsumption(unittest.TestCase):
                  lambda r: dict(r, events=[dict(r["events"][0], abs_error_log_lr=0.0)] + r["events"][1:]) if r["id"] == IDS[0] else r)
         self.assertEqual(self.h4()["excluded_integrity"], 1)
 
-    def test_legacy_confirmation_keeps_its_label_and_no_binding_is_fabricated(self):
+    def test_stripped_modern_binding_is_excluded_and_no_binding_is_fabricated(self):
+        # 2.22 accepted this as legacy companion-1.0.0 and included the pair (repo 2.23 finding 3)
         _rewrite(self.base / CJ.CONFIRMS, lambda c: {k: v for k, v in c.items() if k not in ("binding", "binding_sha256")})
+        before = (self.base / CJ.CONFIRMS).read_bytes()
         e = self.h4()
-        self.assertEqual(e["paired"], 1)
+        self.assertEqual((e["paired"], e["excluded_integrity"]), (0, 1))
+        self.assertIn("withheld", e["B2_vs_B1"])
+        self.assertEqual((self.base / CJ.CONFIRMS).read_bytes(), before)          # left as found
         self.assertNotIn("binding", (self.base / CJ.CONFIRMS).read_text())
 
 
@@ -1674,6 +1680,491 @@ class TestCheckpointRecords(unittest.TestCase):
         bad = {"ordinary": {"sharpe_diff_ci90": [-0.5, -0.1]}, "stressed": {"sharpe_diff_B2_minus_VOL": -0.2}}
         self.assertEqual(P.c2_status(bad, arms, 0.9)[0], "paper-unfavourable")
 
+
+
+
+# =============================================================================================
+# Repo 2.23 maintenance regressions
+# =============================================================================================
+def _drop_states(base, eid):
+    lines = [l for l in (base / P.EXEC_STATES).read_text().splitlines() if l.strip() and json.loads(l)["execution_id"] != eid]
+    (base / P.EXEC_STATES).write_text("".join(l + "\n" for l in lines))
+
+
+def _eids_in_order(base):
+    return list(P.exec_states(base))
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestLedgerReconciliation(unittest.TestCase):
+    """2.23 finding 1: every physical ledger row belongs to an accounted execution; duplicates are refused
+    independently of the state journal; invalid predecessors leave no usable balance."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = make_base(Path(self.tmp.name))
+        self.proto = proto_for_tests()
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _exec(self, clk, **kw):
+        return P.execute(self.base, clock=clk, fetch=quote_fetcher(clk, bid=84000.0, ask=84000.5), proto=self.proto, run={},
+                         pause=lambda s: None, **kw)
+
+    def test_reproduction_removed_state_group_fails_and_retry_writes_nothing(self):
+        clk2 = _two_executions(self.base, self.proto)
+        self.assertEqual(len(U.rows(self.base / P.EXECUTIONS)), 12)
+        _drop_states(self.base, _eids_in_order(self.base)[-1])
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertFalse(ch["ok"])
+        self.assertIn("no execution state history", ch["failures"][0]["reason"])
+        doc = P.report(self.base, now=DEC + dt.timedelta(hours=5), proto=self.proto)
+        self.assertFalse(doc["integrity"]["ok"])
+        self.assertTrue(_all_withheld(doc))
+        n_states = len(P.exec_states(self.base))
+        res = self._exec(clk2)
+        self.assertEqual(res["class"], "error")
+        self.assertEqual(len(U.rows(self.base / P.EXECUTIONS)), 12)           # the original 12, nothing new
+        self.assertEqual(len(P.exec_states(self.base)), n_states)              # no new execution id
+
+    def test_missing_state_file_fails(self):
+        _two_executions(self.base, self.proto)
+        (self.base / P.EXEC_STATES).unlink()
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertFalse(ch["ok"])
+        self.assertEqual(len(ch["failures"]), 2)
+        self.assertEqual(ch["ledger_rows"]["physical"], 12)
+
+    def test_missing_ledger_rows_fail(self):
+        _two_executions(self.base, self.proto)
+        (self.base / P.EXECUTIONS).write_text("")
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertFalse(ch["ok"])
+        self.assertIn("six arm/scenario", ch["failures"][0]["reason"])
+
+    def test_unknown_execution_id_rows_fail(self):
+        clk = Clock(START_MS)
+        _ps1_ready(self.base, clk, self.proto)
+        self._exec(clk)
+        row = dict(U.rows(self.base / P.EXECUTIONS)[0], execution_id="ps1-unknown#x1")
+        U.append(self.base / P.EXECUTIONS, row, key=lambda r: (r["execution_id"], r["scenario"], r["arm"]))
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertFalse(ch["ok"])
+        self.assertEqual(ch["failures"][0]["execution_id"], "ps1-unknown#x1")
+        self.assertEqual(self._exec(clk)["class"], "error")
+
+    def test_two_live_executions_of_one_decision_fail(self):
+        clk = Clock(START_MS)
+        _ps1_ready(self.base, clk, self.proto)
+        self._exec(clk)
+        eid = _eids_in_order(self.base)[0]
+        dup = eid + "-dup"
+        for st in P.exec_states(self.base)[eid]:
+            st = copy.deepcopy(st)
+            st["execution_id"] = dup
+            if st.get("snapshot"):
+                st["snapshot"]["execution_id"] = dup
+                st["snapshot"]["sha256"] = st["snapshot_sha256"] = P.snap_sha(st["snapshot"])
+            U.append(self.base / P.EXEC_STATES, st, key=lambda r: (r["execution_id"], r["state"], r["t_ms"]))
+        rows = [dict(r, execution_id=dup) for r in U.rows(self.base / P.EXECUTIONS)]
+        U.rows(self.base / P.EXECUTIONS)
+        from storage import append_unique
+        append_unique(self.base / P.EXECUTIONS, rows, key=lambda x: (x["execution_id"], x["scenario"], x["arm"]))
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertFalse(ch["ok"])
+        self.assertTrue(any("duplicate execution of decision" in f["reason"] for f in ch["failures"]))
+
+    def test_rows_naming_another_decision_and_count_mismatches_fail(self):
+        clk = Clock(START_MS)
+        _ps1_ready(self.base, clk, self.proto)
+        with self.assertRaises(Interrupted):
+            self._exec(clk, writer=crash_after(2))
+        rows = U.rows(self.base / P.EXECUTIONS)
+        (self.base / P.EXECUTIONS).write_text("".join(json.dumps(dict(r, decision_id="ps1-other")) + "\n" for r in rows))
+        self.assertIn("another decision", P.verify_chain(self.base, self.proto)["failures"][0]["reason"])
+
+    def test_start_execution_refuses_a_decision_with_ledger_rows_without_state_history(self):
+        clk = Clock(START_MS)
+        _ps1_ready(self.base, clk, self.proto)
+        self._exec(clk)
+        d = P.decisions(self.base)["ps1-20260930T2000Z"]
+        conf = P.verified_confirmations(self.base)[d["decision_id"]]
+        q = [r for r in U.rows(self.base / P.QUOTES) if r["eligible"]][0]
+        (self.base / P.EXEC_STATES).write_text("")
+        with self.assertRaises(P.DuplicateExecution) as cm:
+            P.start_execution(self.base, d, conf, q, self.proto, clk, {})
+        self.assertIn("ledger rows", str(cm.exception))
+        self.assertEqual(len(U.rows(self.base / P.EXECUTIONS)), 6)
+
+    def test_invalid_predecessor_leaves_no_usable_balance(self):
+        _two_executions(self.base, self.proto)
+        _drop_states(self.base, _eids_in_order(self.base)[-1])
+        with self.assertRaises(RuntimeError):
+            P.ledger_state(self.base, self.proto)
+
+    def test_clean_and_partial_recovery_account_every_row(self):
+        clk = Clock(START_MS)
+        _ps1_ready(self.base, clk, self.proto)
+        with self.assertRaises(Interrupted):
+            self._exec(clk, writer=crash_after(1))
+        P.recover(self.base, self.proto, clk, run={})
+        ch = P.verify_chain(self.base, self.proto)
+        self.assertTrue(ch["ok"])
+        self.assertEqual(ch["ledger_rows"], {"physical": 7, "verified": 6, "quarantined": 1, "excluded": 0,
+                                             "in_progress": 0, "unaccounted": 0})
+        doc = P.report(self.base, now=DEC + dt.timedelta(hours=1), proto=self.proto)
+        self.assertEqual(doc["integrity"]["state"], "verified with exclusions")
+        self.assertEqual(len(doc["integrity"]["quarantined_executions"]), 1)
+
+    def test_cli_and_wrapper_fail_on_unaccounted_rows(self):
+        import stream_ops
+        _two_executions(self.base, self.proto)
+        _drop_states(self.base, _eids_in_order(self.base)[-1])
+        env = os.environ.get("JBM_DESK_BASE")
+        os.environ["JBM_DESK_BASE"] = str(self.base)
+        ident = {"run_id": "u", "run_attempt": "1", "event": "test", "triggering_run": None, "code_commit": "x"}
+        try:
+            r = stream_ops.run_stage(self.base, "ps1-execute", True, [sys.executable, str(DESK / "paper_ps1.py"), "execute"],
+                                     (), ident=ident, semantic=True)
+            self.assertEqual((r["status"], r["exit_code"], r["outcome"]["class"]), ("failed", 3, "error"))
+            r2 = stream_ops.run_stage(self.base, "ps1-report", True, [sys.executable, str(DESK / "paper_ps1.py"), "report"],
+                                      ["reports/paper_ps1.json"], ident=ident, semantic=True)
+            self.assertEqual(r2["status"], "failed")
+            self.assertEqual(stream_ops.verdict(self.base, ["ps1-execute", "ps1-report"], "success", ident=ident)["status"],
+                             "failed")
+            self.assertEqual(len(U.rows(self.base / P.EXECUTIONS)), 12)
+        finally:
+            if env is None:
+                os.environ.pop("JBM_DESK_BASE", None)
+            else:
+                os.environ["JBM_DESK_BASE"] = env
+
+    def test_rows_reproduce_under_the_job_recorded_in_the_snapshot(self):
+        clk = Clock(START_MS)
+        _ps1_ready(self.base, clk, self.proto)
+        self._exec(clk)
+        real = P.VERSION
+        try:
+            P.VERSION = "ps1-job-9.9.9"                 # a later job still verifies rows an earlier job wrote
+            self.assertTrue(P.verify_chain(self.base, self.proto)["ok"])
+        finally:
+            P.VERSION = real
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestRecoveryLifecycleAuthority(unittest.TestCase):
+    """2.23 finding 2: recovery never writes a fill the lifecycle forbids; bookkeeping of persisted rows is apart."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = make_base(Path(self.tmp.name))
+        self.clk, self.proto = Clock(START_MS), proto_for_tests()
+        _ps1_ready(self.base, self.clk, self.proto)
+        self.fetch = CountingFetch(self.clk)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _exec(self, **kw):
+        return P.execute(self.base, clock=self.clk, fetch=self.fetch, proto=self.proto, run={}, pause=lambda s: None, **kw)
+
+    def _interrupt(self, writer):
+        with self.assertRaises(Interrupted):
+            self._exec(writer=writer)
+        return [q for q in U.rows(self.base / P.QUOTES) if q["eligible"]][0]
+
+    def test_reproduction_zero_row_recovery_under_operator_pause_writes_nothing(self):
+        self._interrupt(crash_after(0))
+        P.operator_lifecycle("paused", "operator hold", base=self.base)
+        res = self._exec()
+        self.assertEqual(res["outcome"], "refused: lifecycle paused")
+        self.assertEqual(res["recovery"][0]["state"], "held")
+        self.assertEqual(U.rows(self.base / P.EXECUTIONS), [])
+        self.assertFalse((self.base / P.LAUNCH).exists())
+        self.assertEqual(set(_final_states(self.base).values()), {"running"})      # still recoverable
+        self.assertTrue(any(r["outcome"] == "held" for r in U.rows(self.base / P.RUNS)))
+        self.assertEqual(P.lifecycle(self.base)[1]["by"], "operator")
+
+    def test_partial_rows_under_operator_pause_stay_partial(self):
+        self._interrupt(crash_after(2))
+        P.operator_lifecycle("paused", "operator hold", base=self.base)
+        self._exec()
+        self.assertEqual(len(U.rows(self.base / P.EXECUTIONS)), 2)
+        self.assertEqual(len(P.exec_states(self.base)), 1)                          # no ~r1 under the pause
+        self.assertTrue(P.verify_chain(self.base, self.proto)["ok"])               # recognized recoverable partial
+        self.assertFalse((self.base / P.LAUNCH).exists())
+
+    def test_fully_persisted_rows_are_bookkept_under_operator_pause(self):
+        def writer(b, rows):
+            P._write_rows(b, rows)
+            raise Interrupted("after the row write")
+        q = self._interrupt(writer)
+        P.operator_lifecycle("paused", "operator hold", base=self.base)
+        res = self._exec()
+        self.assertEqual(res["recovery"][0]["action"], "bookkeeping: rows already persisted; state closed")
+        self.assertEqual(len(U.rows(self.base / P.EXECUTIONS)), 6)
+        self.assertEqual(json.loads((self.base / P.LAUNCH).read_text())["first_execution_ms"], q["t_received_ms"])
+        self.assertEqual(P.lifecycle(self.base)[:1], ("paused",))
+        self.assertEqual(P.lifecycle(self.base)[1]["by"], "operator")
+
+    def test_resume_completes_from_the_original_quote_and_timestamp(self):
+        q = self._interrupt(crash_after(0))
+        P.operator_lifecycle("paused", "operator hold", base=self.base)
+        self._exec()
+        n = self.fetch.n
+        P.operator_lifecycle("active", "operator resume", base=self.base)
+        res = self._exec()
+        self.assertEqual(self.fetch.n, n)                                            # no replacement quote
+        self.assertIn("completed from the snapshot", res["recovery"][0]["action"])
+        rows = U.rows(self.base / P.EXECUTIONS)
+        self.assertEqual({r["fill_time_ms"] for r in rows}, {q["t_received_ms"]})   # never a later fill time
+        self.assertEqual(json.loads((self.base / P.LAUNCH).read_text())["first_execution_ms"], q["t_received_ms"])
+        self.assertEqual(P.ledger_state(self.base, self.proto), _clean_ledger())
+
+    def test_termination_closes_unwritten_fills_and_keeps_persisted_history(self):
+        self._interrupt(crash_after(0))
+        P.operator_lifecycle("terminated", "operator stop", base=self.base)
+        res = self._exec()
+        self.assertEqual(res["outcome"], "refused: lifecycle terminated")
+        self.assertEqual(U.rows(self.base / P.EXECUTIONS), [])
+        self.assertFalse((self.base / P.LAUNCH).exists())
+        doc = P.report(self.base, now=DEC + dt.timedelta(hours=1), proto=self.proto)
+        self.assertEqual(doc["integrity"]["excluded_decisions"][0]["reason"], "terminated before recovery")
+        self.assertFalse(doc["integrity"]["excluded_decisions"][0]["integrity"])
+
+    def test_termination_after_a_fully_persisted_write_is_bookkept(self):
+        def writer(b, rows):
+            P._write_rows(b, rows)
+            raise Interrupted("after the row write")
+        self._interrupt(writer)
+        P.operator_lifecycle("terminated", "operator stop", base=self.base)
+        self._exec()
+        self.assertEqual(set(_final_states(self.base).values()), {"recovered"})
+        self.assertTrue(P.verify_chain(self.base, self.proto)["ok"])
+
+    def test_recovery_under_a_job_pause_is_permitted(self):
+        q = self._interrupt(crash_after(0))
+        U.transition(self.base, P.ROOT, P.PROTOCOL_SHA256, "paused", by="job", reason="infrastructure")
+        res = self._exec()
+        self.assertEqual(res["recovery"][0]["state"], "recovered")
+        self.assertEqual({r["fill_time_ms"] for r in U.rows(self.base / P.EXECUTIONS)}, {q["t_received_ms"]})
+
+    def test_a_pause_landing_before_the_write_boundary_is_honoured(self):
+        self._interrupt(crash_after(0))
+        real = P.build_rows
+
+        def pause_then_build(*a, **k):
+            out = real(*a, **k)
+            if not U.rows(self.base / P.EXECUTIONS) and P.lifecycle(self.base)[0] != "paused":
+                P.operator_lifecycle("paused", "operator hold mid-recovery", base=self.base)
+            return out
+        P.build_rows = pause_then_build
+        try:
+            res = self._exec()
+        finally:
+            P.build_rows = real
+        self.assertEqual(U.rows(self.base / P.EXECUTIONS), [])
+        self.assertEqual(res["recovery"][0]["state"], "held")
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestHistoricalExclusions(unittest.TestCase):
+    """2.23 finding 4: an excluded decision stays visible across runs; it is not ordinary missing data."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = make_base(Path(self.tmp.name))
+        self.clk, self.proto = Clock(START_MS), proto_for_tests()
+        _ps1_ready(self.base, self.clk, self.proto)
+        with self.assertRaises(Interrupted):
+            self._exec(writer=crash_after(0))
+        _rewrite(self.base / P.QUOTES, lambda q: dict(q, bids=[[str(float(p) - 50), z] for p, z in q["bids"]]))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _exec(self, clk=None, **kw):
+        clk = clk or self.clk
+        return P.execute(self.base, clock=clk, fetch=quote_fetcher(clk), proto=self.proto, run={}, pause=lambda s: None, **kw)
+
+    def test_reproduction_exclusion_stays_visible_on_repeated_runs(self):
+        self.assertEqual(self._exec()["class"], "error")
+        for _ in range(2):
+            res = self._exec()
+            self.assertEqual(res["class"], "expected")
+            self.assertEqual(res["exclusions"][0]["decision_id"], "ps1-20260930T2000Z")
+            self.assertIn("excluded", res["outcome"])
+        doc = P.report(self.base, now=DEC + dt.timedelta(hours=1), proto=self.proto)
+        self.assertTrue(doc["integrity"]["ok"])
+        self.assertEqual(doc["integrity"]["state"], "verified with exclusions")
+        x = doc["integrity"]["excluded_decisions"][0]
+        self.assertEqual((x["decision_id"], x["integrity"], x["rows_preserved"]), ("ps1-20260930T2000Z", True, 0))
+        self.assertIn("quote row missing or changed", x["reason"])
+        self.assertIn("Excluded decision ps1-20260930T2000Z", (self.base / "reports/paper_ps1.md").read_text())
+
+    def test_unrelated_later_evidence_stays_usable_and_the_exclusion_is_counted(self):
+        self._exec()
+        clk2 = Clock(START_MS + 4 * 3600_000)
+        _second_decision(self.base, clk2)
+        self.assertEqual(self._exec(clk2)["outcome"], "executed")
+        doc = P.report(self.base, now=DEC + dt.timedelta(hours=5), proto=self.proto)
+        self.assertTrue(doc["integrity"]["ok"])
+        self.assertNotIn("withheld", json.dumps(doc["arms"]))
+        self.assertEqual(doc["launch"]["first_decision_utc"], "2026-10-01T00:00:00Z")
+        self.assertEqual(doc["integrity"]["excluded_decisions"][0]["decision_id"], "ps1-20260930T2000Z")
+
+    def test_cli_through_the_wrapper_reports_the_exclusion(self):
+        import stream_ops
+        self._exec()
+        env = os.environ.get("JBM_DESK_BASE")
+        os.environ["JBM_DESK_BASE"] = str(self.base)
+        try:
+            ident = {"run_id": "x", "run_attempt": "1", "event": "test", "triggering_run": None, "code_commit": "x"}
+            r = stream_ops.run_stage(self.base, "ps1-execute", True, [sys.executable, str(DESK / "paper_ps1.py"), "execute"],
+                                     (), ident=ident, semantic=True)
+            self.assertEqual((r["status"], r["outcome"]["class"]), ("completed", "expected"))
+            self.assertEqual(r["outcome"]["exclusions"][0]["decision_id"], "ps1-20260930T2000Z")
+        finally:
+            if env is None:
+                os.environ.pop("JBM_DESK_BASE", None)
+            else:
+                os.environ["JBM_DESK_BASE"] = env
+
+
+@unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+class TestCompanionBindingDowngrade(unittest.TestCase):
+    """2.23 finding 3: a missing binding never grants legacy status; the genuine cohort stays verifiable."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.base = make_base(Path(self.tmp.name))
+        f = CJ.fit_path(self.base, "2026-09")
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(json.dumps(synthetic_fit()))
+        CJ.forecast(self.base, now=DEC + dt.timedelta(minutes=17), clock=Clock(START_MS - 600_000), run={})
+        reg = CJ.registered(self.base)
+        CJ.confirm(self.base, clock=Clock(START_MS - 300_000), remote=lambda p: ("c", reg[Path(p).stem]["sha256"]))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def _mutate_then_score(self, fn):
+        _rewrite(self.base / CJ.CONFIRMS, fn)
+        return CJ.score(self.base)
+
+    def test_reproduction_stripped_binding_with_shifted_time_fails_scoring_and_report(self):
+        r = self._mutate_then_score(lambda c: dict({k: v for k, v in c.items() if k not in ("binding", "binding_sha256")},
+                                                   confirmed_ms=c["confirmed_ms"] + 1))
+        self.assertEqual(r["scored"], [])
+        self.assertIn("binding missing", r["integrity"][0]["reason"])
+        e = CJ.evaluation(self.base)["horizons"]["4h"]
+        self.assertEqual((e["paired"], e["excluded_integrity"]), (0, 1))
+        doc = CJ.report(self.base)
+        self.assertFalse(doc["integrity"]["ok"])
+        self.assertTrue(any("binding missing" in f["reason"] for f in doc["integrity"]["failures_now"]))
+
+    def test_null_malformed_and_half_present_bindings_fail(self):
+        for name, fn in (("null", lambda c: dict(c, binding=None)),
+                         ("string", lambda c: dict(c, binding="x", binding_sha256=U.sha("x"))),
+                         ("hash only", lambda c: {k: v for k, v in c.items() if k != "binding"}),
+                         ("binding only", lambda c: {k: v for k, v in c.items() if k != "binding_sha256"}),
+                         ("null hash", lambda c: dict(c, binding_sha256=None))):
+            with self.subTest(name):
+                conf = U.rows(self.base / CJ.CONFIRMS)[0]
+                reg = CJ.registered(self.base)[conf["id"]]
+                ok, why, _ = CJ.verify(self.base, reg, fn(copy.deepcopy(conf)))
+                self.assertFalse(ok, why)
+
+    def test_a_version_label_alone_never_grants_legacy_status(self):
+        conf = {k: v for k, v in U.rows(self.base / CJ.CONFIRMS)[0].items() if k not in ("binding", "binding_sha256")}
+        reg = dict(CJ.registered(self.base)[conf["id"]], job="companion-1.0.0")
+        ok, why, _ = CJ.verify(self.base, reg, conf)
+        self.assertFalse(ok)
+        self.assertIn("only the pinned", why)
+
+    def test_the_genuine_legacy_cohort_verifies_and_a_one_millisecond_change_fails(self):
+        real = {r["id"]: r for r in U.rows(BASE / CJ.CONFIRMS)}
+        reg = CJ.registered(BASE)
+        if not all(i in real for i in CJ.LEGACY_UNBOUND):
+            self.skipTest("legacy cohort not in this checkout")
+        for cid, (row_sha, reg_sha) in CJ.LEGACY_UNBOUND.items():
+            self.assertEqual(U.sha(real[cid]), row_sha)
+            self.assertEqual(reg[cid]["sha256"], reg_sha)
+            ok, why, _ = CJ.verify(BASE, reg[cid], real[cid])
+            self.assertEqual((ok, why), (True, CJ.LEGACY_LIMITATION))
+            ok, _, _ = CJ.verify(BASE, reg[cid], dict(real[cid], confirmed_ms=real[cid]["confirmed_ms"] + 1))
+            self.assertFalse(ok)
+
+    def test_every_retained_confirmation_still_verifies(self):
+        reg = CJ.registered(BASE)
+        bad = []
+        for c in U.rows(BASE / CJ.CONFIRMS):
+            if c["id"] in reg:
+                ok, why, _ = CJ.verify(BASE, reg[c["id"]], c)
+                if not ok:
+                    bad.append((c["id"], why))
+        self.assertEqual(bad, [])
+
+
+class TestOverlapAndClocks2_23(unittest.TestCase):
+    """2.23 findings 7-8: one overlap implementation from actual windows; named report clocks."""
+    def test_endpoint_touching_and_shifted_starts(self):
+        import range_reader as RR
+        self.assertEqual(RR.window_diagnostics([(0, 4), (4, 8)])["overlapping_another"], 0)       # touching
+        self.assertEqual(RR.window_diagnostics([(0, 4), (3, 7)])["overlapping_another"], 2)       # shifted start
+        d = RR.window_diagnostics([(0, 4), (3, 7), (7, 11), (10, 14)])
+        self.assertEqual((d["overlapping_another"], d["largest_disjoint_subset"]), (4, 2))
+        self.assertIs(CJ.disjoint_windows.__module__, "companion_job")
+        self.assertEqual(CJ.disjoint_windows([(0, 4), (3, 7)]), RR.disjoint_windows([(0, 4), (3, 7)]))
+
+    def test_rc1d_evaluation_reports_actual_overlap_not_a_theoretical_zero(self):
+        import range_reader as RR
+        t = lambda s: dt.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=UTC)          # noqa: E731
+        docs, scores = {}, {}
+        for i, (start, end) in enumerate((("2026-10-01T00:30:00Z", "2026-10-01T04:30:00Z"),
+                                          ("2026-10-01T04:25:00Z", "2026-10-01T08:25:00Z"),
+                                          ("2026-10-01T08:25:00Z", "2026-10-01T12:25:00Z"))):
+            fid = f"range-rc1d-4h-x{i}"
+            ev = [{"name": n, "point": 0.01, "q10": 0.005, "q50": 0.01, "q90": 0.02} for n in ("B2 x", "B0 x")]
+            docs[fid] = ({"decision_utc": f"2026-10-01T0{i}:00:00Z", "start_utc": start, "horizon_utc": end, "events": ev}, None)
+            scores[fid] = {"status": "scored", "events": [{"name": n, "abs_error_log_lr": 0.1, "covered_80": True}
+                                                          for n in ("B2 x", "B0 x")]}
+        e = RR.evaluation(docs, scores)["horizons"]["4h"]
+        self.assertEqual((e["window_overlap"]["overlapping_another"], e["window_overlap"]["largest_disjoint_subset"]), (2, 2))
+        self.assertIn("2 of 3 overlap another", e["windows"])
+        self.assertNotIn("overlaps up to 0", e["windows"])
+
+    @unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+    def test_companion_source_cutoff_is_the_outcome_window_end_not_the_scoring_time(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = make_base(Path(d))
+            f = CJ.fit_path(base, "2026-09")
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text(json.dumps(synthetic_fit()))
+            CJ.forecast(base, now=DEC + dt.timedelta(minutes=17), clock=Clock(START_MS - 600_000), run={})
+            reg = CJ.registered(base)
+            CJ.confirm(base, clock=Clock(START_MS - 300_000), remote=lambda p: ("c", reg[Path(p).stem]["sha256"]))
+            CJ.score(base)
+            doc = CJ.report(base, now_ms=START_MS + 86400_000)
+            ends = [json.loads((base / CJ.FORECASTS / f"rc1d-b1-{h}-20260930T2000Z.json").read_text())["horizon_utc"]
+                    for h in ("4h", "24h", "72h") if doc["evaluation"]["horizons"][h]["paired"]]
+            self.assertTrue(ends)
+            self.assertEqual(doc["source_cutoff_utc"][:19], max(ends)[:19])     # latest included window end
+            self.assertEqual(doc["outcome_window_end_utc"], doc["source_cutoff_utc"])
+            self.assertNotEqual(doc["processed_utc"], doc["source_cutoff_utc"])
+            self.assertIn("source_cutoff_utc", doc["clocks"])
+
+    @unittest.skipUnless(_have_fixture(), "RC1D fixture batch not in this checkout")
+    def test_ps1_source_cutoff_is_null_before_launch_and_an_observation_after(self):
+        with tempfile.TemporaryDirectory() as d:
+            base = make_base(Path(d))
+            clk, proto = Clock(START_MS), proto_for_tests()
+            doc = P.report(base, now=DEC, proto=proto)
+            self.assertIsNone(doc["source_cutoff_utc"])
+            self.assertIn("expected pre-launch", doc["clocks"]["source_cutoff_utc"])
+            _ps1_ready(base, clk, proto)
+            P.execute(base, clock=clk, fetch=quote_fetcher(clk), proto=proto, run={}, pause=lambda s: None)
+            doc = P.report(base, now=DEC + dt.timedelta(hours=1), proto=proto)
+            fill = U.rows(base / P.EXECUTIONS)[0]["fill_time_ms"]
+            self.assertEqual(doc["source_cutoff_utc"], U.iso_ms(fill))
+            self.assertIsNotNone(doc["processed_utc"])
 
 if __name__ == "__main__":
     unittest.main()

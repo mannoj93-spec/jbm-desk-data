@@ -49,7 +49,7 @@ for p in (str(DESK), str(CODE)):
 
 import stream_util as U          # noqa: E402
 
-VERSION = "ps1-job-3.0.0"
+VERSION = "ps1-job-3.1.0"
 PROTOCOL = DESK / "research/ps1/protocol.json"
 PROTOCOL_SHA256 = "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952"
 PROTOCOL_V1_RETIRED = ("desk/research/ps1/protocol_v1_retired.json",
@@ -79,7 +79,11 @@ class Refused(RuntimeError):
 
 
 class DuplicateExecution(RuntimeError):
-    """The decision already has an execution (completed, recovered, in progress or failed)."""
+    """The decision already has an execution (completed, recovered, in progress or failed) or ledger rows."""
+
+
+class LifecycleHold(RuntimeError):
+    """The lifecycle does not permit a fill to be written now (operator pause, termination, archiving)."""
 
 
 # --------------------------------------------------------------------------------------------
@@ -487,15 +491,78 @@ def verify_inputs(snap: dict, first_state: dict, decs: dict, confs: dict, quotes
     return True, "verified", d, q
 
 
+def _rows_by_execution(base) -> dict:
+    by = {}
+    for r in U.rows(Path(base) / EXECUTIONS):
+        by.setdefault(r.get("execution_id"), []).append(r)
+    return by
+
+
+EXCLUDED = "excluded: no ledger row; the decision counts as not executed; original records preserved"
+QUARANTINED = "quarantined: partial rows preserved in place, outside the ledger"
+
+
+def account(states: dict, by: dict) -> dict:
+    """Reconcile physical ledger rows with the execution-state journal, in both directions (repo 2.23).
+
+    Every physical row must belong to exactly one execution with a state history: a final completed/recovered
+    execution (verified by verify_chain), a recognized recoverable partial (pending/running, finished by
+    recover()), a quarantined partial set (partially_written) or an explicit exclusion (failed, with the row count
+    its state recorded). Rows with no state history, row counts that differ from the recorded state, rows naming
+    another decision, incomplete state histories and two live executions of one decision are failures."""
+    failures, exclusions, quarantined, in_progress, live = [], [], [], [], {}
+    fail = lambda eid, why, rows=None: failures.append(                                   # noqa: E731
+        {"execution_id": eid, "reason": why, "expected": None, "found": rows_sha(rows) if rows else None})
+    for eid in sorted(set(by) - set(states), key=str):
+        fail(eid, f"{len(by[eid])} ledger row(s) with no execution state history (unknown execution id)", by[eid])
+    for eid, st in states.items():
+        first, last, rows = st[0], st[-1], by.get(eid, [])
+        snap = first.get("snapshot") or {}
+        did = first.get("decision_id")
+        if first.get("state") != "pending" or snap.get("execution_id") != eid or snap.get("decision_id") != did:
+            if last.get("state") not in FINAL_OK:                  # final ones fail inside verify_chain itself
+                fail(eid, "execution state history incomplete (pending state with its snapshot missing)", rows)
+            continue
+        if any(r.get("decision_id") != did for r in rows):
+            fail(eid, "ledger rows name another decision than the execution's snapshot", rows)
+            continue
+        state = last.get("state")
+        if state in FINAL_OK or state in ("pending", "running"):
+            live.setdefault(did, []).append(eid)
+        if state in ("pending", "running"):
+            in_progress.append({"execution_id": eid, "decision_id": did, "state": state, "rows": len(rows),
+                                "disposition": "recoverable: recover() finishes or closes it from its snapshot"})
+        elif state == "partially_written":
+            if last.get("rows_written") != len(rows):
+                fail(eid, f"quarantined execution records {last.get('rows_written')} row(s) but {len(rows)} exist", rows)
+            else:
+                quarantined.append({"execution_id": eid, "decision_id": did, "rows": len(rows), "disposition": QUARANTINED})
+        elif state == "failed":
+            n = last.get("rows_written", 0)
+            if n != len(rows):
+                fail(eid, f"failed execution records {n} row(s) but {len(rows)} exist", rows)
+            else:
+                exclusions.append({"decision_id": did, "execution_id": eid, "reason": last.get("reason"),
+                                   "integrity": bool(last.get("integrity")), "rows_preserved": n,
+                                   "t_ms": last.get("t_ms"),
+                                   "disposition": EXCLUDED if not n else EXCLUDED + "; " + QUARANTINED})
+    for did, eids in sorted(live.items()):
+        if len(eids) > 1:
+            for eid in eids[1:]:
+                fail(eid, f"duplicate execution of decision {did} (also {eids[0]})", by.get(eid))
+    return {"failures": failures, "exclusions": exclusions, "quarantined": quarantined, "in_progress": in_progress}
+
+
 def verify_chain(base, proto=None) -> dict:
-    """Verify every completed or recovered execution in fill order. A failed execution invalidates every later
-    one (their balances derive from it). Returns {rows, verified, failures, ok}."""
+    """Verify every completed or recovered execution in fill order, and account for every physical ledger row
+    (account()). A failed execution invalidates every later one (their balances derive from it); any unaccounted
+    row fails the whole chain. Returns {rows, verified, failures, ok, exclusions, quarantined, in_progress,
+    ledger_rows}."""
     base = Path(base)
     proto = proto or _proto_unchecked()
     states, decs, confs, quotes = exec_states(base), decisions(base), confirmations(base), _quotes(base)
-    by = {}
-    for r in U.rows(base / EXECUTIONS):
-        by.setdefault(r.get("execution_id"), []).append(r)
+    by = _rows_by_execution(base)
+    acc = account(states, by)
     finals = [(eid, st) for eid, st in states.items() if st[-1]["state"] in FINAL_OK]
 
     def order(item):
@@ -530,7 +597,15 @@ def verify_chain(base, proto=None) -> dict:
             continue
         good.extend(sorted(rows, key=lambda r: (r["scenario"], r["arm"])))
         verified.append(eid)
-    return {"rows": good, "verified": verified, "failures": failures, "ok": not failures}
+    failures = acc["failures"] + failures
+    physical = sum(len(v) for v in by.values())
+    counted = {"verified": len(good), "quarantined": sum(q["rows"] for q in acc["quarantined"]),
+               "excluded": sum(x["rows_preserved"] for x in acc["exclusions"]),
+               "in_progress": sum(p["rows"] for p in acc["in_progress"])}
+    ledger_rows = dict(counted, physical=physical, unaccounted=physical - sum(counted.values()) if not failures else None)
+    return {"rows": good, "verified": verified, "failures": failures, "ok": not failures,
+            "exclusions": acc["exclusions"], "quarantined": acc["quarantined"], "in_progress": acc["in_progress"],
+            "ledger_rows": ledger_rows}
 
 
 def ledger(base, proto=None) -> tuple:
@@ -540,9 +615,13 @@ def ledger(base, proto=None) -> tuple:
 
 
 def ledger_state(base, proto) -> dict:
-    """(scenario, arm) -> {cash, btc} after the last verified execution; start equity otherwise."""
+    """(scenario, arm) -> {cash, btc} after the last verified execution; start equity otherwise. Refuses when the
+    chain has any failure: balances derived from an invalid or unaccounted predecessor are never usable."""
     st = {(s, a): {"cash": float(proto["capital"]["start_equity_usdt"]), "btc": 0.0} for s in SCENARIOS for a in ARMS}
-    for r in ledger(base, proto)[0]:
+    rows, failures = ledger(base, proto)
+    if failures:
+        raise RuntimeError("ledger integrity failure; balances are unavailable: " + failures[0]["reason"])
+    for r in rows:
         st[(r["scenario"], r["arm"])] = {"cash": r["cash_after"], "btc": r["btc_after"]}
     return st
 
@@ -720,7 +799,8 @@ def build_rows(snap: dict, d: dict, quote: dict, proto: dict) -> list:
                        scenario=s, arm=a, quote_id=quote["quote_id"], fill_time_ms=fill,
                        executable_ms=snap["executable_ms"], intended_execution_ms=snap["executable_ms"],
                        quote_sent_ms=quote["t_sent_ms"], delay_from_decision_ms=fill - U.ms(U.parse(d["decision_utc"])),
-                       costs_version=proto["costs"]["version"], job=VERSION, snapshot_sha256=snap["sha256"])
+                       costs_version=proto["costs"]["version"], job=snap.get("job", VERSION),
+                       snapshot_sha256=snap["sha256"])
             if p:
                 steps = (U.parse(d["decision_utc"]) - U.parse(p["decision_utc"])).total_seconds() / 3600 / STEP_H
                 row.update(interval_start_decision=p["decision_utc"], interval_start_fill_ms=p["fill_time_ms"],
@@ -742,10 +822,33 @@ def _write_rows(base, rows) -> int:
     return append_unique(Path(base) / EXECUTIONS, rows, key=lambda x: (x["execution_id"], x["scenario"], x["arm"]))
 
 
+def _guarded_write(base, rows, writer) -> None:
+    """The execution write boundary (repo 2.23): the lifecycle is re-read immediately before any fill row is
+    written, so an operator pause or termination that lands after the quote is honoured."""
+    ok, st = stage_allowed(base, "execute")
+    if not ok:
+        raise LifecycleHold(st)
+    writer(base, rows)
+
+
+def _lifecycle_label(base) -> str:
+    st, last = lifecycle(base)
+    return f"{st} (by {(last or {}).get('by')})" if st == "paused" else st
+
+
 def recover(base=BASE, proto=None, clock=U.clock_ms, run=None, writer=None) -> list:
-    """Finish or close every execution left pending or running, from its snapshot only (never a new quote).
-    Every input is verified BEFORE anything is written; a failure writes no ledger row and marks the execution
-    failed (its decision becomes a missed execution)."""
+    """Finish, close or hold every execution left pending or running, from its snapshot only (never a new quote,
+    never a later fill time). Every input is verified BEFORE anything is written.
+
+    Two different things are kept apart (repo 2.23):
+      bookkeeping  all six rows were already persisted and reproduce from the snapshot: the fill happened, so the
+                   state is closed as 'recovered' whatever the lifecycle is now (history is recorded, not created);
+      completion   zero or some rows were written: writing the fill is new ledger activity, so it runs only while
+                   the lifecycle permits execution. Under an operator pause the execution is HELD (left pending,
+                   nothing written, resumed later from the same snapshot and its original quote timestamp); under
+                   termination or archiving it is closed as failed with its rows preserved.
+    A verification failure writes no ledger row and marks the execution failed (its decision is excluded).
+    Returns one dict per execution handled: its state ('recovered', 'failed', 'held') and the action taken."""
     base = Path(base)
     proto = proto or load_protocol()
     run = run if run is not None else U.run_meta()
@@ -758,11 +861,6 @@ def recover(base=BASE, proto=None, clock=U.clock_ms, run=None, writer=None) -> l
         snap = first.get("snapshot") or {}
         written = [r for r in U.rows(base / EXECUTIONS) if r.get("execution_id") == eid]
         t = clock()
-        if U.lifecycle_state(base, ROOT, PROTOCOL_SHA256) in ("terminated", "archived"):
-            out.append(_state(base, eid, "failed", t, reason="terminated before recovery", rows_written=len(written),
-                              integrity=False))
-            _run_row(base, run, "execute", "missed-execution", decision_id=snap.get("decision_id"), reason="terminated")
-            continue
         chain = verify_chain(base, proto)
         if not chain["ok"]:
             why = "the verified ledger has failures; nothing is rebuilt on it"
@@ -771,45 +869,81 @@ def recover(base=BASE, proto=None, clock=U.clock_ms, run=None, writer=None) -> l
                                           chain["rows"])
             why = None if ok else why
         if why:
-            out.append(_state(base, eid, "failed", t, reason=f"recovery impossible: {why}", rows_written=len(written),
-                              integrity=True))
+            out.append(dict(_state(base, eid, "failed", t, reason=f"recovery impossible: {why}", rows_written=len(written),
+                                   integrity=True), action="failed verification; no row written"))
             U.integrity_failure(base, ROOT, f"execution {eid}", f"recovery refused: {why}")
             _run_row(base, run, "execute", "missed-execution", decision_id=snap.get("decision_id"), reason=f"recovery failed: {why}")
             continue
         rows = build_rows(snap, d, q, proto)
-        if not written:
-            writer(base, rows)
-            out.append(_state(base, eid, "recovered", clock(), rows_sha256=rows_sha(rows), n_rows=len(rows),
-                              recovered_from=eid, note="no row had been written; rebuilt from the snapshot"))
-        elif len(written) == len(rows) and rows_sha(written) == rows_sha(rows):
-            out.append(_state(base, eid, "recovered", clock(), rows_sha256=rows_sha(rows), n_rows=len(rows),
-                              recovered_from=eid, note="every row had been written; verified against the snapshot"))
-        else:
-            _state(base, eid, "partially_written", t, rows_written=len(written),
-                   note="partial rows preserved in place; excluded from the ledger")
-            eid2 = f"{eid}~r1"
-            snap2 = dict(snap, execution_id=eid2)
-            snap2["sha256"] = snap_sha(snap2)
-            rows2 = build_rows(snap2, d, q, proto)
-            _state(base, eid2, "pending", clock(), snapshot=snap2, snapshot_sha256=snap2["sha256"],
-                   decision_id=snap["decision_id"], recovers=eid)
-            writer(base, rows2)
-            out.append(_state(base, eid2, "recovered", clock(), rows_sha256=rows_sha(rows2), n_rows=len(rows2),
-                              recovered_from=eid, note="rebuilt from the original snapshot under a new id"))
+        if written and len(written) == len(rows) and rows_sha(written) == rows_sha(rows):
+            out.append(dict(_state(base, eid, "recovered", clock(), rows_sha256=rows_sha(rows), n_rows=len(rows),
+                                   recovered_from=eid, note="every row had been written; verified against the snapshot"),
+                            action="bookkeeping: rows already persisted; state closed"))
+            reconcile(base, verify_chain(base, proto))
+            _run_row(base, run, "execute", "recovered", decision_id=snap["decision_id"], execution_id=eid,
+                     action="bookkeeping")
+            continue
+        life = U.lifecycle_state(base, ROOT, PROTOCOL_SHA256)
+        if life in ("terminated", "archived"):
+            out.append(dict(_state(base, eid, "failed", t, reason=f"{life} before recovery", rows_written=len(written),
+                                   integrity=False), action=f"closed: lifecycle {life}; nothing written"))
+            _run_row(base, run, "execute", "missed-execution", decision_id=snap.get("decision_id"), reason=life)
+            continue
+        allowed, _ = stage_allowed(base, "execute")
+        if not allowed:
+            label = _lifecycle_label(base)
+            out.append({"execution_id": eid, "state": "held", "decision_id": snap.get("decision_id"),
+                        "rows_written": len(written),
+                        "action": f"held: lifecycle {label}; nothing written; resumes from the same snapshot"})
+            _run_row(base, run, "execute", "held", decision_id=snap.get("decision_id"), execution_id=eid,
+                     reason=f"lifecycle {label}")
+            continue
+        try:
+            if not written:
+                _guarded_write(base, rows, writer)
+                out.append(dict(_state(base, eid, "recovered", clock(), rows_sha256=rows_sha(rows), n_rows=len(rows),
+                                       recovered_from=eid, note="no row had been written; rebuilt from the snapshot"),
+                                action="completed from the snapshot (original quote and fill time)"))
+            else:
+                eid2 = f"{eid}~r1"
+                snap2 = dict(snap, execution_id=eid2)
+                snap2["sha256"] = snap_sha(snap2)
+                rows2 = build_rows(snap2, d, q, proto)
+                ok_now, _ = stage_allowed(base, "execute")
+                if not ok_now:
+                    raise LifecycleHold(U.lifecycle_state(base, ROOT, PROTOCOL_SHA256))
+                _state(base, eid, "partially_written", t, rows_written=len(written),
+                       note="partial rows preserved in place; excluded from the ledger")
+                _state(base, eid2, "pending", clock(), snapshot=snap2, snapshot_sha256=snap2["sha256"],
+                       decision_id=snap["decision_id"], recovers=eid)
+                _guarded_write(base, rows2, writer)
+                out.append(dict(_state(base, eid2, "recovered", clock(), rows_sha256=rows_sha(rows2), n_rows=len(rows2),
+                                       recovered_from=eid, note="rebuilt from the original snapshot under a new id"),
+                                action="completed under a new id from the original snapshot; partial rows quarantined"))
+        except LifecycleHold as hold:
+            out.append({"execution_id": eid, "state": "held", "decision_id": snap.get("decision_id"),
+                        "rows_written": len(written), "action": f"held at the write boundary: lifecycle {hold}"})
+            _run_row(base, run, "execute", "held", decision_id=snap.get("decision_id"), execution_id=eid,
+                     reason=f"lifecycle {hold} at the write boundary")
+            continue
         reconcile(base, verify_chain(base, proto))
-        _run_row(base, run, "execute", "recovered", decision_id=snap["decision_id"], execution_id=eid)
+        _run_row(base, run, "execute", "recovered", decision_id=snap["decision_id"], execution_id=eid,
+                 action="completion")
     return out
 
 
 def start_execution(base, d, conf, quote, proto, clock, run, writer=None) -> dict:
     """Execute one verified decision on one eligible, recorded quote. Raises DuplicateExecution if the decision
-    already has any execution state. Order: snapshot -> six rows (one atomic write) -> completed -> reconcile
-    (launch, lifecycle); every step after the write is idempotent and repaired by the next pass."""
+    already has any execution state OR any physical ledger row (repo 2.23: duplicate prevention does not depend
+    on the state journal alone). Order: snapshot -> six rows (one atomic write, lifecycle re-checked at the
+    boundary) -> completed -> reconcile (launch, lifecycle); every step after the write is idempotent."""
     base = Path(base)
     writer = writer or _write_rows
     states = exec_states(base)
     if any((st[0].get("decision_id") == d["decision_id"]) for st in states.values()):
         raise DuplicateExecution(f"{d['decision_id']} already has an execution")
+    if any(r.get("decision_id") == d["decision_id"] for r in U.rows(base / EXECUTIONS)):
+        raise DuplicateExecution(f"{d['decision_id']} already has ledger rows")
     chain = verify_chain(base, proto)
     if not chain["ok"]:
         raise RuntimeError("ledger integrity failure; execution refused")
@@ -825,11 +959,11 @@ def start_execution(base, d, conf, quote, proto, clock, run, writer=None) -> dic
     _state(base, eid, "pending", clock(), snapshot=snap, snapshot_sha256=snap["sha256"], decision_id=d["decision_id"])
     _state(base, eid, "running", clock())
     rows = build_rows(snap, d, quote, proto)
-    ok, st = stage_allowed(base, "execute")
-    if not ok:
-        return _state(base, eid, "failed", clock(), reason=f"lifecycle {st} during execution; no ledger row written",
+    try:
+        _guarded_write(base, rows, writer)
+    except LifecycleHold as hold:
+        return _state(base, eid, "failed", clock(), reason=f"lifecycle {hold} during execution; no ledger row written",
                       rows_written=0, integrity=False)
-    writer(base, rows)
     done = _state(base, eid, "completed", clock(), rows_sha256=rows_sha(rows), n_rows=len(rows))
     reconcile(base, verify_chain(base, proto))
     return done
@@ -850,38 +984,40 @@ def execute(base=BASE, clock=U.clock_ms, fetch=fetch_depth, proto=None, run=None
     c = constants(proto)
     check_launch(base)
     rec = recover(base, proto, clock, run, writer)
+    actions = [{k: r.get(k) for k in ("execution_id", "state", "action")} for r in rec]
     failed_rec = [r for r in rec if r["state"] == "failed" and r.get("integrity")]
     chain = verify_chain(base, proto)
     if not chain["ok"] or failed_rec:
         record_failures(base, chain["failures"])
         _run_row(base, run, "execute", "refused: ledger integrity failure")
         return _result("refused: ledger integrity failure", "error",
-                       failures=[f["reason"] for f in chain["failures"]] + [r["reason"] for r in failed_rec])
+                       failures=[f["reason"] for f in chain["failures"]] + [r["reason"] for r in failed_rec],
+                       recovery=actions, ledger_rows=chain["ledger_rows"])
     rc = reconcile(base, chain)
     if rc["launch"] == "conflict":
         _run_row(base, run, "execute", "refused: launch record conflict")
         return _result("refused: launch record conflict", "error", reason=rc["conflict"])
+    excl = [{k: x[k] for k in ("decision_id", "reason", "disposition")} for x in chain["exclusions"]]
     ok, st = stage_allowed(base, "execute")
     if not ok:
         _run_row(base, run, "execute", f"refused: lifecycle {st}")
-        return _result(f"refused: lifecycle {st}", "expected")
-    if rec:
-        recovered = [r["execution_id"] for r in rec if r["state"] == "recovered"]
-    else:
-        recovered = []
+        return _result(f"refused: lifecycle {st}", "expected", recovery=actions, exclusions=excl)
+    recovered = [r["execution_id"] for r in rec if r["state"] == "recovered"]
     conf = verified_confirmations(base)
     bad_conf = set(confirmations(base)) - set(conf)
     if bad_conf:
         _run_row(base, run, "execute", "refused: confirmation integrity failure")
         return _result("refused: confirmation integrity failure", "error", decisions=sorted(bad_conf))
     started = {st_[0].get("decision_id") for st_ in exec_states(base).values()}
-    done = started | {r["decision_id"] for r in U.rows(base / RUNS)
-                      if r.get("stage") == "execute" and r.get("outcome") == "missed-execution" and r.get("decision_id")}
+    in_ledger = {r.get("decision_id") for r in U.rows(base / EXECUTIONS)}
+    done = started | in_ledger | {r["decision_id"] for r in U.rows(base / RUNS)
+                                  if r.get("stage") == "execute" and r.get("outcome") == "missed-execution" and r.get("decision_id")}
     cands = sorted((d for d in decisions(base).values() if d.get("action") == "rebalance" and d["decision_id"] in conf
                     and d["decision_id"] not in done), key=lambda d: d["decision_utc"])
     if not cands:
-        return _result("recovered" if recovered else "nothing to execute", "done" if recovered else "expected",
-                       recovered=recovered)
+        tail = f" ({len(excl)} excluded decision(s) on record)" if excl else ""
+        return _result(("recovered" if recovered else "nothing to execute") + tail, "done" if recovered else "expected",
+                       recovered=recovered, recovery=actions, exclusions=excl)
     d = cands[-1]
     for older in cands[:-1]:                             # superseded before execution: never executed late
         _run_row(base, run, "execute", "missed-execution", decision_id=older["decision_id"], reason="superseded by a newer decision")
@@ -1146,13 +1282,24 @@ def report(base=BASE, now=None, proto=None) -> dict:
     for eid, st in states.items():
         final_states[st[-1]["state"]] = final_states.get(st[-1]["state"], 0) + 1
     integrity_ok = chain["ok"] and not bad_conf and rc["launch"] != "conflict"
+    excluded = {x["decision_id"]: x for x in chain["exclusions"]}
     if launch and integrity_ok:
         sched = schedule(U.parse(launch["first_decision_utc"]), now)
         auto_pause(base, sched, {r["decision_id"] for r in ex}, U.ms(now), proto["execution"]["max_delay_min"] * 60000)
     life, last = lifecycle(base)
     cps = checkpoints(base)
-    source_cutoff = max([r["fill_time_ms"] for r in ex] + [d.get("computed_end_ms") or 0 for d in decs.values()] or [0])
-    doc = {"report": "paper_ps1", "schema": "ps1-report-3", "generated_utc": U.iso_ms(U.ms(now)), "job": VERSION,
+    observed = [r["fill_time_ms"] for r in ex] + [U.ms(U.parse(d["data_cutoff_utc"])) for d in decs.values()
+                                                     if d.get("data_cutoff_utc")]
+    processed = [d.get("computed_end_ms") or 0 for d in decs.values()] + [st[-1].get("t_ms") or 0 for st in states.values()]
+    source_cutoff, processed_ms = max(observed or [0]), max(processed or [0])
+    doc = {"report": "paper_ps1", "schema": "ps1-report-4", "generated_utc": U.iso_ms(U.ms(now)), "job": VERSION,
+           "processed_utc": U.iso_ms(processed_ms) if processed_ms else None,
+           "clocks": {"generated_utc": "when this report file was written",
+                      "processed_utc": "latest decision computation or execution-state record (processing)",
+                      "source_cutoff_utc": "latest market observation used: the 4H close a rebalance decision read, "
+                                           "or a captured quote's receipt (repo 2.23; 2.22 also counted computation "
+                                           "time); null before the first decision - expected pre-launch, not a "
+                                           "collection failure"},
            "protocol": f"PS1 v{proto['version']}", "protocol_sha256": PROTOCOL_SHA256, "label": proto["label"],
            "source_cutoff_utc": U.iso_ms(source_cutoff) if source_cutoff else None,
            "launch": launch,
@@ -1161,11 +1308,23 @@ def report(base=BASE, now=None, proto=None) -> dict:
            "retired_protocols": [{"file": f, "sha256": h, "state": "retired before launch, zero observations"}
                                  for f, h in PROTOCOLS_RETIRED],
            "execution_states": final_states,
-           "integrity": {"ok": integrity_ok, "verified_executions": len(chain["verified"]),
+           "integrity": {"ok": integrity_ok,
+                         "state": ("failed" if not integrity_ok else
+                                   "verified with exclusions" if chain["exclusions"] or chain["quarantined"] else "verified"),
+                         "verified_executions": len(chain["verified"]),
                          "failed_executions": [f["execution_id"] for f in chain["failures"]],
                          "failures": [f["reason"] for f in chain["failures"]] + [f"confirmation {d}" for d in bad_conf]
                          + ([rc["conflict"]] if rc["launch"] == "conflict" else []),
-                         "recorded_failures": len(integrity_rows)},
+                         "excluded_decisions": chain["exclusions"],
+                         "quarantined_executions": chain["quarantined"],
+                         "in_progress_executions": chain["in_progress"],
+                         "ledger_rows": chain["ledger_rows"],
+                         "scope": ("every physical ledger row is accounted for: verified, quarantined, excluded or in "
+                                   "progress" if chain["ok"] else "ledger reconciliation failed; see failures"),
+                         "recorded_failures": len(integrity_rows),
+                         "recorded_failures_note": "integrity.jsonl is the append-only history of every failure ever "
+                                                   "recorded; current status is 'state' (resolved exclusions stay listed "
+                                                   "in excluded_decisions)"},
            "checkpoints": {k: {"status": v["status"], "t_ms": v["t_ms"], "by": v["by"]} for k, v in cps.items()}}
     if not launch:
         status = "not launched"
@@ -1188,6 +1347,8 @@ def report(base=BASE, now=None, proto=None) -> dict:
                 k = f"{d['action']}: {str(d.get('reason', '')).split(' (')[0]}"
             elif did in bad_conf:
                 k = "excluded: integrity failure"
+            elif did in excluded:
+                k = ("excluded: integrity failure" if excluded[did]["integrity"] else "excluded: lifecycle")
             elif did in missed_exec:
                 k = "missed-execution"
             else:
@@ -1276,6 +1437,14 @@ def markdown(doc: dict) -> str:
     if not doc["integrity"]["ok"]:
         L += ["Integrity failed: every performance figure is withheld; the records stay as found. "
               + "; ".join(doc["integrity"]["failures"][:5]), ""]
+    lr = doc["integrity"].get("ledger_rows") or {}
+    if lr.get("physical"):
+        L += [f"Ledger rows: {lr['physical']} physical; {lr['verified']} verified, {lr['quarantined']} quarantined, "
+              f"{lr['excluded']} excluded, {lr['in_progress']} in progress"
+              + (f", {lr['unaccounted']} unaccounted" if lr.get("unaccounted") else "") + ".", ""]
+    for x in doc["integrity"].get("excluded_decisions") or []:
+        L += [f"Excluded decision {x['decision_id']} ({'integrity' if x['integrity'] else 'lifecycle'}): {x['reason']}. "
+              f"{x['disposition']}.", ""]
     if not doc.get("launch"):
         L += [doc.get("reason", ""), "", "Protocol: [desk/research/ps1/protocol.json](../desk/research/ps1/protocol.json)", ""]
         return "\n".join(L)

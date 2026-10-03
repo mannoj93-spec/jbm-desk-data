@@ -62,8 +62,19 @@ publishing misleading empty values. The dashboard does not change research versi
 
 Forecast availability is checked against the report expiry, each row's valid-until timestamp and
 window end on every clock tick. Unknown clocks/expiry metadata cannot produce a current label.
-Research and coverage reports use their documented six-hour cadence; range report age is shown
-separately from exact forecast expiry. Workflow success remains **unverified** with a link to Actions:
+Clocks are named, aged on the viewer's clock and judged one by one (repo 2.23; `CLOCKS` in `model.js`, the same
+table as the skill's runbook D2): stream reports are stale after 8 h by generation; the companion's observation cutoff
+(latest included outcome-window end) after 12 h; PS1's after 8 h while collecting (null before launch is expected,
+not a failure); research evidence by its cards' observation cutoffs after 12 h, never by the index update or the
+build time. The range report keeps its exact expiry. The paper view shows PS1 integrity state, ledger-row accounting
+and excluded decisions, and the companion's integrity and withheld horizons; withheld or unavailable states are
+exported to CSV as such, and an available interval is shown even without explanatory text.
+
+A refresh is staged: the candidate snapshot is validated field by field and rendered in every view before it
+replaces the last good one, so a failed or malformed refresh leaves the previous snapshot usable and the failure flag
+stays on screen across navigation until a refresh succeeds. Actions run on node24 (setup-node v6, upload-pages-artifact
+v5, deploy-pages v5); upload-pages-artifact v5 excludes dotfiles, so `.nojekyll` is not uploaded (Pages deployments
+from Actions do not run Jekyll). Workflow success remains **unverified** with a link to Actions:
 a successful dashboard build is not evidence of upstream workflow success.
 
 ## Checks
