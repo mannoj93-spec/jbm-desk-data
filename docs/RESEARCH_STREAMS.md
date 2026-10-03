@@ -131,7 +131,11 @@ evidence thresholds are v1's. Summary:
   `integrity.state` (`verified`, `verified with exclusions`, `failed`), the ledger-row accounting and every excluded
   decision with its reason and disposition, on every later run; an excluded decision counts as not executed and does
   not by itself withhold unrelated figures. Rows are rebuilt under the job recorded in each snapshot, so a later job
-  version still verifies them.
+  version still verifies them. From 2.24 (ps1-job-3.2.0) every journal history is validated on read: each row an
+  object with a recognized state name and an integer time, starting at `pending`, only allowed transitions, nothing
+  after a terminal state, and a row count on `failed`/`partially_written`. An unknown, missing or malformed state, or
+  a broken history, is an integrity failure whose rows are unassigned - never skipped or treated as an exclusion -
+  and the physical row total must equal the rows assigned to the four categories.
 - **Recovery under the lifecycle (2.23).** Recovery separates bookkeeping from completion. All six rows already
   persisted and reproducible → the state is closed `recovered` whatever the lifecycle (history is recorded, not
   created). Zero or some rows → writing the fill is new ledger activity: under an operator pause the execution is held

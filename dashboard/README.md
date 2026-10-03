@@ -70,8 +70,17 @@ build time. The range report keeps its exact expiry. The paper view shows PS1 in
 and excluded decisions, and the companion's integrity and withheld horizons; withheld or unavailable states are
 exported to CSV as such, and an available interval is shown even without explanatory text.
 
-A refresh is staged: the candidate snapshot is validated field by field and rendered in every view before it
-replaces the last good one, so a failed or malformed refresh leaves the previous snapshot usable and the failure flag
+The Data health view leads with the operational health report (`reports/health.json`, repo 2.24): one row per
+question - health report age, collector schedule, recorded silences, range and PS1 decisions, PS1 report coverage,
+scoring backlog, monitors - each judged on the viewer's clock; a missing report reads unknown. The paper view states
+PS1 coverage as of its report and lists due decisions not in it. Reports in a legacy schema (companion-report-2,
+ps1-report-3) keep their own clock meanings; an unknown schema is labelled, never read as the current one.
+
+A refresh is staged: the candidate snapshot is validated field by field and rendered in every view (including the
+chart geometry for each period) before it replaces the last good one; market bars must be finite
+`[t, open, high, low, close, minutes]` rows and timestamps parseable. A failure in the live page after
+commit returns to the last good snapshot, a chart failure stays inside the chart box, and Refresh is
+re-enabled in every path, so a failed or malformed refresh leaves the previous snapshot usable and the failure flag
 stays on screen across navigation until a refresh succeeds. Actions run on node24 (setup-node v6, upload-pages-artifact
 v5, deploy-pages v5); upload-pages-artifact v5 excludes dotfiles, so `.nojekyll` is not uploaded (Pages deployments
 from Actions do not run Jekyll). Workflow success remains **unverified** with a link to Actions:

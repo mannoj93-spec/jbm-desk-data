@@ -104,9 +104,29 @@ open-interest book collected), and passes
 with warnings when sources failed, books were degraded or requests were rate limited. Ninety
 minutes tolerates ordinary scheduling delays and the odd dropped run; a collector that stops is
 reported about 90–120 minutes after its last run, plus any delay in starting the watchdog. The
-watchdog runs on the same Actions scheduler, so a platform-wide scheduling outage silences both;
-that case still surfaces only at the weekly report or by looking. External uptime monitoring
-remains a future addition.
+watchdog runs on the same Actions scheduler, so a platform-wide scheduling outage silences both
+(observed Oct 3 2026: no scheduled run of any workflow from 11:17:56Z to 13:26:49Z). From 2.24 the
+watchdog keeps reporting a recovered gap as a warning for a day instead of turning plainly green.
+
+**Operational health (2.24).** Every collector run executes `health.py --record` (read-only over all
+research and forecast records; never fails the collector). It writes `reports/health.{json,md}` and
+appends new rows to `state/incidents.jsonl`, deduplicated, with the event times taken from the records
+and `first_recorded_utc` from the check's clock (`recorded_after_end` marks a gap first seen after it
+closed). Five questions are kept apart: source (scheduled collector cadence and every silence over the
+stale limit, recovered or ongoing; manual runs never close a scheduled gap), decisions (each due range
+and PS1 decision's recorded state), coverage (a report's percentage is as of its generation; decisions
+due after it are listed separately), availability (the range status on the check's clock) and monitors
+(last successful watchdog and range-monitor runs, and the newest scheduled start of any workflow, from
+the Actions API). A missed decision stays missed; later runs, backfills and recovered bars never complete
+it. The dashboard's Data health view shows these rows on the viewer's clock; a health report older than
+90 minutes is itself the sign of silence.
+
+**Independent heartbeat (not deployed; operator choice).** Anything scheduled by GitHub Actions, including
+another cron, fails with the scheduler. An independent check needs a scheduler outside GitHub reading
+`reports/health.json` (or the last commit time) and alerting when it is older than 90 minutes. Options:
+a Claude scheduled task (hourly, read-only over the raw file, notifying the owner by push or email), or a
+dead-man's-switch service pinged at the end of each collector run (needs an account and a secret URL).
+Neither is configured; no alert from either has been delivered.
 
 ## Forecasts from a phone
 
