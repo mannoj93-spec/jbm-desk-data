@@ -2,7 +2,7 @@
 
 **Base.** `main` at `dd5ca024` (reviewed snapshot), merged with `7444d65c`. 2.22 merged Oct 2 02:37Z (PR #26) and
 production-observed (ten runs, every stage completed); the research dashboard merged Oct 2 19:06Z (PR #27). PS1 v3
-approved, not launched. Each item was reproduced before it was changed. Nothing here changes the range model, contracts
+launched at the Oct 3 00:00Z decision under ps1-job-3.0.0; 3.1.0 verifies that execution unchanged. Each item was reproduced before it was changed. Nothing here changes the range model, contracts
 RC1D/RC1, `range_job.py`, any registered forecast, score, fit or bundle, the lab, the collector, PS1 protocol v3 or its
 calibration; job versions record the code (ps1-job-3.1.0, companion-1.3.0, reader-12.4.6).
 
