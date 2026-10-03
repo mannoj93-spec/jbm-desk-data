@@ -155,6 +155,7 @@ def build(base, output):
                             'statuses': dict(Counter(d['status'] for d in designs))},
                'companion': read('reports/companion_b1.json'), 'paper': read('reports/paper_ps1.json'),
                'feasibility': read('reports/feasibility.json'), 'market': price_history(base, record),
+               'ops': read('reports/health.json') if (base / 'reports/health.json').exists() else None,
                'workflow': {'status': 'unverified', 'url': REPO + '/actions'}, 'sources': sources}
     serialized = json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
     output.mkdir(parents=True, exist_ok=True)

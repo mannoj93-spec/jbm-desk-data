@@ -50,7 +50,7 @@ test('a withheld horizon carries no figures and no zeros', () => {
 });
 test('a fresh report never makes an old observation fresh', () => {
  const now = Date.parse('2026-10-03T12:00:00Z');
- const c = {generated_utc: '2026-10-03T11:50:00Z', processed_utc: '2026-10-03T11:49:00Z', source_cutoff_utc: '2026-10-02T20:00:00Z',
+ const c = {schema: 'companion-report-3', generated_utc: '2026-10-03T11:50:00Z', processed_utc: '2026-10-03T11:49:00Z', source_cutoff_utc: '2026-10-02T20:00:00Z',
             evaluation: {horizons: {'4h': {paired: 3}}}};
  const [gen, , obs] = companionClocks(c, now);
  assert.equal(gen.state, 'within cadence');
@@ -60,18 +60,18 @@ test('a fresh report never makes an old observation fresh', () => {
 });
 test('PS1 pre-launch null cutoff and paused streams are not collection failures', () => {
  const now = Date.parse('2026-10-03T12:00:00Z');
- assert.equal(paperClocks({generated_utc: '2026-10-03T11:00:00Z', source_cutoff_utc: null, launch: null, lifecycle: {state: 'approved'}}, now)[2].state, 'pre-launch: none expected');
- assert.equal(paperClocks({source_cutoff_utc: '2026-10-01T00:00:00Z', launch: {}, lifecycle: {state: 'paused', paused_by: 'operator'}}, now)[2].state, 'not collecting (paused by operator)');
- assert.equal(paperClocks({source_cutoff_utc: '2026-10-01T00:00:00Z', launch: {}, lifecycle: {state: 'active'}}, now)[2].state, 'stale');
- assert.equal(paperClocks({source_cutoff_utc: null, launch: {}, lifecycle: {state: 'active'}}, now)[2].state, 'unknown');
+ assert.equal(paperClocks({schema: 'ps1-report-4', generated_utc: '2026-10-03T11:00:00Z', source_cutoff_utc: null, launch: null, lifecycle: {state: 'approved'}}, now)[2].state, 'pre-launch: none expected');
+ assert.equal(paperClocks({schema: 'ps1-report-4', source_cutoff_utc: '2026-10-01T00:00:00Z', launch: {}, lifecycle: {state: 'paused', paused_by: 'operator'}}, now)[2].state, 'not collecting (paused by operator)');
+ assert.equal(paperClocks({schema: 'ps1-report-4', source_cutoff_utc: '2026-10-01T00:00:00Z', launch: {}, lifecycle: {state: 'active'}}, now)[2].state, 'stale');
+ assert.equal(paperClocks({schema: 'ps1-report-4', source_cutoff_utc: null, launch: {}, lifecycle: {state: 'active'}}, now)[2].state, 'unknown');
 });
 test('RC1D report expiry is exact', () => {
  assert.equal(reportExpiry({status_expires_utc: '2026-10-03T00:20:00Z'}, Date.parse('2026-10-03T00:19:59Z')), 'within expiry');
  assert.equal(reportExpiry({status_expires_utc: '2026-10-03T00:20:00Z'}, Date.parse('2026-10-03T00:20:00Z')), 'expired');
  assert.equal(reportExpiry({}), 'unknown');
 });
-const good = () => ({schema: 'jbm-dashboard/2', health: {sources: [{name: 'a', ok: 1, observed: 1}], datasets: [], alerts: []},
-  research: {designs: [{design: 'A1'}]}, range: {current: {}, evaluation: {}}, market: {bars: []},
+const good = () => ({schema: 'jbm-dashboard/2', built_utc: '2026-10-03T00:00:00Z', health: {sources: [{name: 'a', ok: 1, observed: 1}], datasets: [], alerts: []},
+  research: {designs: [{design: 'A1'}]}, range: {current: {}, evaluation: {}, generated_utc: '2026-10-03T00:00:00Z', status_expires_utc: null}, market: {bars: []},
   paper: {status: 'not launched', integrity: {}, lifecycle: {}}, companion: {evaluation: {horizons: {}}, integrity: {}},
   feasibility: {}, sources: {}});
 test('malformed nested fields are rejected before they replace the last good snapshot', () => {
@@ -95,4 +95,62 @@ test('staging keeps the previous snapshot on validation or render failure and co
  assert.equal(r.data, next); assert.equal(r.error, null);
  r = stage(undefined, invalid, () => {});
  assert.equal(r.data, undefined);
+});
+
+// ---- repo 2.24 ----
+import { validBar, chartPoints, schemaClass, opsRows } from './model.js';
+const snap = () => ({schema: 'jbm-dashboard/2', built_utc: '2026-10-03T13:00:00Z', health: {sources: [], datasets: [{name: 'x', observed_utc: null}], alerts: []},
+  research: {designs: []}, range: {current: {}, evaluation: {}, generated_utc: '2026-10-03T12:00:00Z', status_expires_utc: '2026-10-03T13:20:00Z'},
+  market: {bars: [[0, 1, 2, 0.5, 1.5, 60], [3600000, 1.5, 2, 1, 1.8, 42]], latest: {t: 3600000, close: 1.8}, observed_utc: '2026-10-03T12:59:00+00:00'},
+  paper: {status: 'x', integrity: {}, lifecycle: {}}, companion: {evaluation: {horizons: {}}, integrity: {}}, feasibility: {}, sources: {}, ops: null});
+test('null, truncated and non-finite chart rows are rejected before commit; empty bars stay legitimate', () => {
+ assert.deepEqual(validateSnapshot(snap()), []);
+ for (const bad of [[null], [[0, 1, 2]], [[0, 1, 2, 0.5, NaN, 60]], [[0, 1, 2, 0.5, Infinity, 1]], [[0, '1', 2, 0.5, 1, 1]], [[0, 1, 0.5, 2, 1, 1]]]) {
+  const s = snap(); s.market.bars = bad;
+  assert.ok(validateSnapshot(s).some(p => p.startsWith('market.bars rows')), JSON.stringify(bad));
+  assert.equal(stage({good: true}, s, () => {}).data.good, true);
+ }
+ const empty = snap(); empty.market = {bars: [], latest: null, observed_utc: null};
+ assert.deepEqual(validateSnapshot(empty), []);
+ assert.deepEqual(chartPoints([], 7), []);
+ assert.throws(() => chartPoints([null], 7));
+ assert.equal(chartPoints(snap().market.bars, 1).length, 2);
+});
+test('timestamps the renderers parse must be parseable or legitimately null', () => {
+ const s = snap(); s.range.generated_utc = 'yesterday';
+ assert.ok(validateSnapshot(s).some(p => p.includes('timestamps')));
+ const d = snap(); d.health.datasets = [{name: 'x', observed_utc: 'not a time'}];
+ assert.ok(validateSnapshot(d).some(p => p.includes('health.datasets')));
+ const o = snap(); o.ops = {generated_utc: 'x', source: {}, decisions: {}};
+ assert.ok(validateSnapshot(o).some(p => p.includes('ops')));
+});
+test('legacy report schemas keep their meanings; no "none yet" and no new clocks', () => {
+ assert.equal(schemaClass('companion', 'companion-report-2'), 'legacy');
+ assert.equal(schemaClass('paper', 'ps1-report-4'), 'current');
+ const now = Date.parse('2026-10-02T21:30:00Z');
+ const c2 = companionClocks({schema: 'companion-report-2', generated_utc: '2026-10-02T21:01:20Z', source_cutoff_utc: '2026-10-02T20:54:43Z'}, now);
+ assert.ok(!c2.some(c => c.state === 'none yet'));
+ assert.equal(c2[1].state, 'scoring time in this schema, not an observation cutoff');
+ assert.match(c2[2].state, /not in this schema/);
+ const p3 = paperClocks({schema: 'ps1-report-3', generated_utc: '2026-10-02T21:01:20Z', source_cutoff_utc: null}, now);
+ assert.ok(!p3.some(c => c.state === 'none yet' || c.state === 'pre-launch: none expected'));
+ assert.match(paperClocks({schema: 'ps1-report-9'}, now)[2].state, /unknown schema/);
+});
+test('operational health rows are judged on the viewer clock; a missing report is unknown', () => {
+ assert.equal(opsRows(null)[0].state, 'unknown');
+ const ops = {generated_utc: '2026-10-03T13:27:30Z', clock: 'runner', source: {last_scheduled_utc: '2026-10-03T13:27:02Z', stale_limit_min: 90,
+   gaps: [{start_utc: '2026-10-03T11:04:10Z', end_utc: '2026-10-03T13:27:02Z', minutes: 142.86}]},
+   decisions: {range: {'2026-10-03T12:00:00Z': 'absent'}, ps1: {'2026-10-03T12:00:00Z': 'missed: no decision record (run absent)'}, ps1_launched: true},
+   ps1_coverage: {report_coverage: 1, report_generated_utc: '2026-10-03T09:03:10Z', not_covered: [{decision_utc: '2026-10-03T12:00:00Z', recorded_state: 'missed'}]},
+   scoring_backlog: {}, monitors: {workflows: {'watchdog.yml': {last_success_utc: '2026-10-03T11:17:56Z', stale_after_min: 90}}}};
+ const fresh = opsRows(ops, Date.parse('2026-10-03T13:40:00Z'));
+ const by = Object.fromEntries(fresh.map(r => [r.area, r]));
+ assert.equal(by['Health report'].state, 'within cadence');
+ assert.equal(by['Recorded silences'].state, '1 in 72 h');                       // a recovered gap stays visible
+ assert.equal(by['Range decisions'].state, '1 missed or failed');
+ assert.equal(by['PS1 report coverage'].state, '1 due decision(s) not in the report');
+ assert.equal(by['Monitor watchdog.yml'].state, 'stale');                         // an old success is not current health
+ const later = Object.fromEntries(opsRows(ops, Date.parse('2026-10-03T15:30:00Z')).map(r => [r.area, r]));
+ assert.equal(later['Health report'].state, 'stale');
+ assert.equal(later['Collector schedule'].state, 'stale');
 });

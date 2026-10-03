@@ -34,6 +34,9 @@ class DashboardTests(unittest.TestCase):
             self.assertEqual(payload['research']['index_updated_utc'], module.utc(index['updated']))
             self.assertEqual(payload['paper'], json.loads((ROOT / 'reports/paper_ps1.json').read_text()))
             self.assertEqual(payload['companion'], json.loads((ROOT / 'reports/companion_b1.json').read_text()))
+            # 2.24: the operational health report is carried as written, or null when it does not exist yet
+            hp = ROOT / 'reports/health.json'
+            self.assertEqual(payload['ops'], json.loads(hp.read_text()) if hp.exists() else None)
             self.assertNotIn('null', payload['research']['statuses'])
             self.assertLess((Path(tmp) / 'site/data.json').stat().st_size, 1_000_000)
             for rel, digest in payload['sources'].items():
