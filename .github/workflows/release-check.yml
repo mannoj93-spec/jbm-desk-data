@@ -1,31 +1,29 @@
 name: Release check
-# Repo 2.23: SHA256SUMS must verify and list exactly the maintained scope (scripts/check_checksums.py), and the
-# release identity in desk/release.json must match the modules (desk/make_release.py check). Path filters cover every
-# maintained file and the manifest; collector and stream data are excluded (bot pushes do not trigger workflows
-# either). The required check of the main-branch ruleset (check context "release"; data workflows bypass it with
-# the deploy key - docs/OPERATIONS.md "Release gate"). Repo 2.24: pull requests always run it - a required check
-# that a path filter skips would leave a PR waiting forever.
+# PROBE BRANCH ONLY (ruleset verification, repo 2.24.1). Never merged. Two pushes to this branch:
+#   1. deploy-key push through scripts/commit_push.sh - must land (deploy keys bypass the ruleset);
+#   2. workflow-token push - must be refused once the probe ruleset is active (and lands without it).
 on:
-  push:
-    branches: [main]
-    paths: ['**', '!data/**', '!streams/**', '!state/**', '!reports/**', '!research/**', '!desk/inputs/**', '!desk/fits/**', '!registry/**', '!tests/**', '!desk/deployments.jsonl']
-  pull_request:
   workflow_dispatch:
 permissions:
-  contents: read
+  contents: write
 jobs:
   release:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.12'
-      - name: Checksums (verify hashes and scope)
-        run: python scripts/check_checksums.py check
-      - name: Release identity
-        working-directory: desk
-        run: python make_release.py check
-      - name: Checker regression
-        run: python -m unittest regression.test_checksums -v
+      - name: Deploy-key push (must land)
+        env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}
+        run: |
+          test -n "$DESK_DEPLOY_KEY" || { echo "::error::secret DESK_DEPLOY_KEY is not set"; exit 1; }
+          git -c user.name=collector-bot -c user.email=collector-bot@users.noreply.github.com commit -q --allow-empty -m "ruleset probe: deploy-key push"
+          bash scripts/commit_push.sh
+      - name: Workflow-token push (refused while the ruleset is active)
+        id: token
+        continue-on-error: true
+        run: |
+          git -c user.name=collector-bot -c user.email=collector-bot@users.noreply.github.com commit -q --allow-empty -m "ruleset probe: workflow-token push"
+          git push origin HEAD:ruleset-probe
+      - name: Summary
+        run: echo "deploy-key push landed; workflow-token push outcome = ${{ steps.token.outcome }}"
