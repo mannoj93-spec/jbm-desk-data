@@ -1,7 +1,130 @@
 {
+ "arms": {
+  "ordinary": {
+   "B2": {
+    "costs_usdt_closed": 0,
+    "costs_usdt_incl_open_trade": 77.79624963480455,
+    "elapsed_hours": 0.0,
+    "es5_log": null,
+    "exposure_mean": null,
+    "extended_intervals": 0,
+    "intervals": 0,
+    "log_return_ann": null,
+    "longest_interval_h": null,
+    "max_drawdown_marks": 0.0,
+    "net_return_closed": null,
+    "sharpe_ann": null,
+    "turnover_ann_closed": null,
+    "vol_ann": null,
+    "worst_interval_log": null
+   },
+   "FIXED": {
+    "costs_usdt_closed": 0,
+    "costs_usdt_incl_open_trade": 37.44679636829824,
+    "elapsed_hours": 0.0,
+    "es5_log": null,
+    "exposure_mean": null,
+    "extended_intervals": 0,
+    "intervals": 0,
+    "log_return_ann": null,
+    "longest_interval_h": null,
+    "max_drawdown_marks": 0.0,
+    "net_return_closed": null,
+    "sharpe_ann": null,
+    "turnover_ann_closed": null,
+    "vol_ann": null,
+    "worst_interval_log": null
+   },
+   "VOL": {
+    "costs_usdt_closed": 0,
+    "costs_usdt_incl_open_trade": 49.24519276439969,
+    "elapsed_hours": 0.0,
+    "es5_log": null,
+    "exposure_mean": null,
+    "extended_intervals": 0,
+    "intervals": 0,
+    "log_return_ann": null,
+    "longest_interval_h": null,
+    "max_drawdown_marks": 0.0,
+    "net_return_closed": null,
+    "sharpe_ann": null,
+    "turnover_ann_closed": null,
+    "vol_ann": null,
+    "worst_interval_log": null
+   }
+  },
+  "stressed": {
+   "B2": {
+    "costs_usdt_closed": 0,
+    "costs_usdt_incl_open_trade": 141.50216161180288,
+    "elapsed_hours": 0.0,
+    "es5_log": null,
+    "exposure_mean": null,
+    "extended_intervals": 0,
+    "intervals": 0,
+    "log_return_ann": null,
+    "longest_interval_h": null,
+    "max_drawdown_marks": 0.0,
+    "net_return_closed": null,
+    "sharpe_ann": null,
+    "turnover_ann_closed": null,
+    "vol_ann": null,
+    "worst_interval_log": null
+   },
+   "FIXED": {
+    "costs_usdt_closed": 0,
+    "costs_usdt_incl_open_trade": 68.1112862949667,
+    "elapsed_hours": 0.0,
+    "es5_log": null,
+    "exposure_mean": null,
+    "extended_intervals": 0,
+    "intervals": 0,
+    "log_return_ann": null,
+    "longest_interval_h": null,
+    "max_drawdown_marks": 0.0,
+    "net_return_closed": null,
+    "sharpe_ann": null,
+    "turnover_ann_closed": null,
+    "vol_ann": null,
+    "worst_interval_log": null
+   },
+   "VOL": {
+    "costs_usdt_closed": 0,
+    "costs_usdt_incl_open_trade": 89.57117159070913,
+    "elapsed_hours": 0.0,
+    "es5_log": null,
+    "exposure_mean": null,
+    "extended_intervals": 0,
+    "intervals": 0,
+    "log_return_ann": null,
+    "longest_interval_h": null,
+    "max_drawdown_marks": 0.0,
+    "net_return_closed": null,
+    "sharpe_ann": null,
+    "turnover_ann_closed": null,
+    "vol_ann": null,
+    "worst_interval_log": null
+   }
+  }
+ },
+ "checkpoint_progress": {
+  "C1": {
+   "due_after_days": 180,
+   "needs_blocks": 10,
+   "recorded": false
+  },
+  "C2": {
+   "due_after_days": 365,
+   "needs_blocks": 20,
+   "recorded": false
+  },
+  "owner": "operator (paper_ps1.py checkpoint C1|C2 \"<note>\"); the job never records one",
+  "progress": "0.0 days, 0 complete block(s)"
+ },
  "checkpoints": {},
- "decisions_recorded": 0,
- "evidence_class": "hypothesis",
+ "coverage": 1.0,
+ "days_since_launch": 0.01,
+ "evidence_class": "descriptive",
  "evidence_vocabulary": [
   "descriptive",
   "hypothesis",
@@ -11,34 +134,92 @@
   "unavailable",
   "retired"
  ],
- "execution_states": {},
- "generated_utc": "2026-10-02T21:01:20.483Z",
+ "execution_delay_min": {
+  "max": 20.4206,
+  "median": 20.4206
+ },
+ "execution_states": {
+  "completed": 1
+ },
+ "generated_utc": "2026-10-03T00:20:25.654Z",
  "integrity": {
   "failed_executions": [],
   "failures": [],
   "ok": true,
   "recorded_failures": 0,
-  "verified_executions": 0
+  "verified_executions": 1
  },
  "job": "ps1-job-3.0.0",
  "label": "PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.",
- "launch": null,
+ "launch": {
+  "first_decision_utc": "2026-10-03T00:00:00Z",
+  "first_execution_ms": 1790986825236,
+  "job": "ps1-job-3.0.0",
+  "protocol_sha256": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952"
+ },
  "lifecycle": {
   "authority": "termination and archiving: operator only; pause: operator or job (infrastructure)",
   "last": {
    "by": "job",
-   "from": "proposed",
+   "from": "approved",
    "key": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
-   "reason": "protocol on main at b373d1c5f2f0b4f3c2992a61612c4eb827ec5d6f (the operator's merge)",
-   "state": "approved",
-   "t_ms": 1790914547534
+   "reason": "first verified execution",
+   "state": "active",
+   "t_ms": 1790986825236
   },
   "paused_by": null,
-  "state": "approved"
+  "state": "active"
+ },
+ "note": "Simulated fills on captured quotes; not executions. Sizing only - no direction is tested. No status here is a trading edge or an entry endorsement.",
+ "open_interval": {
+  "since_decision_utc": "2026-10-03T00:00:00Z",
+  "state": "pending - not marked until the next executed rebalance"
+ },
+ "outcomes": {
+  "executed": 1
+ },
+ "paired": {
+  "ordinary": {
+   "B2_better_intervals_vs_VOL": 0,
+   "baselines": {
+    "control": "FIXED",
+    "primary": "VOL"
+   },
+   "blocks": 0,
+   "dependence": "adjacent, non-overlapping intervals that are serially dependent (volatility clusters); 42-interval blocks are the bootstrap's resampling unit, not a measured effective sample size",
+   "elapsed_hours": 0,
+   "log_return_ann_diff_B2_minus_VOL": null,
+   "mean_log_diff_B2_minus_FIXED": null,
+   "mean_log_diff_B2_minus_VOL": null,
+   "n_intervals": 0,
+   "sharpe_diff_B2_minus_VOL": null,
+   "sharpe_diff_ci90": null,
+   "standardized_diff_B2_minus_VOL": null,
+   "uncertainty": "unavailable: 0 complete block(s) of 42 intervals; PS1 needs 10",
+   "uncertainty_method": "moving-block bootstrap of paired intervals (B2 and VOL (log return, dt_h) pairs resampled together), blocks of 42 intervals, 5,000 resamples, seed 20261003; 90% percentile interval of the duration-weighted Sharpe difference"
+  },
+  "stressed": {
+   "B2_better_intervals_vs_VOL": 0,
+   "baselines": {
+    "control": "FIXED",
+    "primary": "VOL"
+   },
+   "blocks": 0,
+   "dependence": "adjacent, non-overlapping intervals that are serially dependent (volatility clusters); 42-interval blocks are the bootstrap's resampling unit, not a measured effective sample size",
+   "elapsed_hours": 0,
+   "log_return_ann_diff_B2_minus_VOL": null,
+   "mean_log_diff_B2_minus_FIXED": null,
+   "mean_log_diff_B2_minus_VOL": null,
+   "n_intervals": 0,
+   "sharpe_diff_B2_minus_VOL": null,
+   "sharpe_diff_ci90": null,
+   "standardized_diff_B2_minus_VOL": null,
+   "uncertainty": "unavailable: 0 complete block(s) of 42 intervals; PS1 needs 10",
+   "uncertainty_method": "moving-block bootstrap of paired intervals (B2 and VOL (log return, dt_h) pairs resampled together), blocks of 42 intervals, 5,000 resamples, seed 20261003; 90% percentile interval of the duration-weighted Sharpe difference"
+  }
  },
  "protocol": "PS1 v3",
  "protocol_sha256": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
- "reason": "no verified execution yet (not before 2026-10-03T00:00:00Z)",
  "report": "paper_ps1",
  "retired_protocols": [
   {
@@ -52,7 +233,14 @@
    "state": "retired before launch, zero observations"
   }
  ],
+ "scheduled_decisions": 1,
  "schema": "ps1-report-3",
- "source_cutoff_utc": null,
- "status": "not launched"
+ "source_cutoff_utc": "2026-10-03T00:20:25.236Z",
+ "status": "collecting (descriptive)",
+ "time_accounting": {
+  "basis": "elapsed hours between fills; 8760 h/yr; drift and variance rates per hour (protocol v3); no interpolation; the interval opened by the latest trade is pending",
+  "elapsed_hours": 0,
+  "extended_intervals": 0,
+  "intervals": 0
+ }
 }
