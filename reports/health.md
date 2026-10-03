@@ -1,8 +1,8 @@
 # Operational health
 
-Generated 2026-10-03T17:54:15Z by health-1.0.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means the collector (and probably GitHub's scheduler) has been silent - its contents are not current.
+Generated 2026-10-03T18:28:01Z by health-1.0.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means the collector (and probably GitHub's scheduler) has been silent - its contents are not current.
 
-**Source:** stale; last scheduled collector run 2026-10-03T13:27:02Z (267.2 min). Silences over 90 min in the last 72 h: 2026-10-03T11:04:10Z to 2026-10-03T13:27:02Z (143 min); 2026-10-03T13:27:02Z to ongoing (267 min).
+**Source:** healthy; last scheduled collector run 2026-10-03T18:26:26Z (1.6 min). Silences over 90 min in the last 72 h: 2026-10-03T11:04:10Z to 2026-10-03T13:27:02Z (143 min); 2026-10-03T13:27:02Z to 2026-10-03T18:26:26Z (299 min).
 
 **Range decisions:** 10-02T12:00 published; 10-02T16:00 published; 10-02T20:00 published; 10-03T00:00 published; 10-03T04:00 published; 10-03T08:00 published; 10-03T12:00 missed: skipped (processed after the freshness limit); 10-03T16:00 absent.
 
@@ -14,4 +14,4 @@ Generated 2026-10-03T17:54:15Z by health-1.0.0 (runner UTC clock at the check (t
 
 **Scoring backlog:** none.
 
-**Monitors:** stale (GitHub Actions API, scheduled runs); watchdog.yml last success 2026-10-03T14:48:44Z (stale); range-monitor.yml last success 2026-10-03T09:57:53Z (fresh); newest scheduled start of any workflow 2026-10-03T17:50:01Z.
+**Monitors:** stale (GitHub Actions API, scheduled runs); watchdog.yml last success 2026-10-03T14:48:44Z (stale); range-monitor.yml last success 2026-10-03T09:57:53Z (stale); newest scheduled start of any workflow 2026-10-03T18:27:36Z.
