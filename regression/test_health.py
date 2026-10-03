@@ -119,6 +119,21 @@ class HealthTests(unittest.TestCase):
         self.assertIn("2026-10-03T12:00:00Z", [x["decision_utc"] for x in cov["not_covered"]])
         self.assertNotIn("2026-10-03T00:00:00Z", [x["decision_utc"] for x in cov["not_covered"]])
 
+    def test_a_late_stale_skip_is_still_a_missed_decision_and_recorded_once(self):
+        # Oct 3 production sequence: 12:00Z had no record during the silence; a scheduled run delivered ~3 h late
+        # refused the stale bar and recorded "skipped". The decision stays missed and is recorded once.
+        during = T0 + dt.timedelta(hours=14)                     # both deadlines passed, collector still silent
+        first = [r for r in H.record(self.b.d, self.ev(during)) if r["subject"] == "2026-10-03T12:00:00Z"]
+        self.assertEqual([r["kind"] for r in first], ["range_decision", "ps1_decision"])
+        with open(self.b.d / "state/range_attempts.jsonl", "a") as f:
+            f.write(json.dumps({"decision_utc": "2026-10-03T12:00:00Z", "state": "skipped",
+                                "reason": "stale decision (2.99h > 1.0h)",
+                                "run": {"production": True}}) + "\n")
+        later = self.ev(T0 + dt.timedelta(hours=15))
+        self.assertTrue(later["decisions"]["range"]["2026-10-03T12:00:00Z"].startswith("missed: skipped"))
+        self.assertIn("2026-10-03T12:00:00Z", [r["subject"] for r in H.incidents(later) if r["kind"] == "range_decision"])
+        self.assertEqual([r for r in H.record(self.b.d, later) if r["subject"] == "2026-10-03T12:00:00Z"], [])
+
     def test_a_decision_inside_its_deadline_is_pending_not_missed(self):
         d = self.ev(T0 + dt.timedelta(hours=4, minutes=30))
         self.assertEqual(d["decisions"]["ps1"]["2026-10-03T04:00:00Z"], "pending")

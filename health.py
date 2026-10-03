@@ -109,7 +109,10 @@ def range_decisions(base, now):
     states = info.get("decisions", {})
     norm = {}
     for k, v in states.items():
-        norm[k] = ("absent" if v == "absent" else "failed: " + v if v.startswith(("attempt", "failed")) else v)
+        # "skipped" is range_job's stale-decision refusal (processed more than an hour after the close): the live
+        # decision was missed even though a later run left a record, so it is a problem state here
+        norm[k] = ("absent" if v == "absent" else "failed: " + v if v.startswith(("attempt", "failed")) else
+                   "missed: skipped (processed after the freshness limit)" if v == "skipped" else v)
     return norm, info
 
 
