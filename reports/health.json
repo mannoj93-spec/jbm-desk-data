@@ -18,7 +18,7 @@
     "valid_until_utc": "2026-10-03T13:15:00Z"
    }
   },
-  "status": "within expiry",
+  "status": "expired",
   "status_expires_utc": "2026-10-03T17:15:00Z"
  },
  "clock": "runner UTC clock at the check (time.time)",
@@ -28,11 +28,10 @@
    "2026-10-03T04:00:00Z": "executed",
    "2026-10-03T08:00:00Z": "executed",
    "2026-10-03T12:00:00Z": "missed",
-   "2026-10-03T16:00:00Z": "pending"
+   "2026-10-03T16:00:00Z": "missed"
   },
   "ps1_launched": true,
   "range": {
-   "2026-09-30T12:00:00Z": "published",
    "2026-09-30T16:00:00Z": "published",
    "2026-09-30T20:00:00Z": "published",
    "2026-10-01T00:00:00Z": "published",
@@ -50,15 +49,16 @@
    "2026-10-03T00:00:00Z": "published",
    "2026-10-03T04:00:00Z": "published",
    "2026-10-03T08:00:00Z": "published",
-   "2026-10-03T12:00:00Z": "missed: skipped (processed after the freshness limit)"
+   "2026-10-03T12:00:00Z": "missed: skipped (processed after the freshness limit)",
+   "2026-10-03T16:00:00Z": "absent"
   },
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means the collector (and probably GitHub's scheduler) has been silent - its contents are not current",
- "generated_utc": "2026-10-03T16:57:05Z",
+ "generated_utc": "2026-10-03T17:54:15Z",
  "job": "health-1.0.0",
  "monitors": {
-  "newest_scheduled_start_utc": "2026-10-03T16:56:51Z",
+  "newest_scheduled_start_utc": "2026-10-03T17:50:01Z",
   "source": "GitHub Actions API, scheduled runs",
   "state": "stale",
   "workflows": {
@@ -89,12 +89,12 @@
     "last_success_utc": "2026-10-03T08:13:15Z"
    },
    "research-streams.yml": {
-    "last_scheduled_start_utc": "2026-10-03T09:02:31Z",
-    "last_success_utc": "2026-10-03T09:02:31Z"
+    "last_scheduled_start_utc": "2026-10-03T17:50:01Z",
+    "last_success_utc": "2026-10-03T17:50:01Z"
    },
    "research.yml": {
     "last_scheduled_start_utc": "2026-10-03T16:56:51Z",
-    "last_success_utc": "2026-10-03T07:01:41Z"
+    "last_success_utc": "2026-10-03T16:56:51Z"
    },
    "watchdog.yml": {
     "last_scheduled_start_utc": "2026-10-03T14:48:44Z",
@@ -106,17 +106,17 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 116.0,
-  "report_coverage": 0.75,
-  "report_generated_utc": "2026-10-03T15:01:04.052Z",
-  "report_scheduled_decisions": 4,
+  "report_age_min": 3.4,
+  "report_coverage": 0.6,
+  "report_generated_utc": "2026-10-03T17:50:49.997Z",
+  "report_scheduled_decisions": 5,
   "rule": "the report's coverage is as of its generation; decisions due after it are listed here with their recorded state, never folded into its percentage"
  },
  "report": "health",
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 210.0,
+  "age_min": 267.2,
   "gaps": [
    {
     "end_ms": 1791034022272,
@@ -128,13 +128,13 @@
    {
     "end_ms": null,
     "end_utc": null,
-    "minutes": 210.05,
+    "minutes": 267.22,
     "start_ms": 1791034022272,
     "start_utc": "2026-10-03T13:27:02Z"
    }
   ],
   "last_scheduled_utc": "2026-10-03T13:27:02Z",
-  "manual_runs_since": 2,
+  "manual_runs_since": 3,
   "rule": "scheduled runs only (manual and local runs do not close a scheduled gap)",
   "stale_limit_min": 90,
   "state": "stale"
