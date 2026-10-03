@@ -119,7 +119,7 @@
    "recorded": false
   },
   "owner": "operator (paper_ps1.py checkpoint C1|C2 \"<note>\"); the job never records one",
-  "progress": "0.6 days, 0 complete block(s)"
+  "progress": "0.7 days, 0 complete block(s)"
  },
  "checkpoints": {},
  "clocks": {
@@ -127,8 +127,8 @@
   "processed_utc": "latest decision computation or execution-state record (processing)",
   "source_cutoff_utc": "latest market observation used: the 4H close a rebalance decision read, or a captured quote's receipt (repo 2.23; 2.22 also counted computation time); null before the first decision - expected pre-launch, not a collection failure"
  },
- "coverage": 0.75,
- "days_since_launch": 0.63,
+ "coverage": 0.6,
+ "days_since_launch": 0.74,
  "evidence_class": "descriptive",
  "evidence_vocabulary": [
   "descriptive",
@@ -146,7 +146,7 @@
  "execution_states": {
   "completed": 3
  },
- "generated_utc": "2026-10-03T15:01:04.052Z",
+ "generated_utc": "2026-10-03T17:50:49.997Z",
  "integrity": {
   "excluded_decisions": [],
   "failed_executions": [],
@@ -168,7 +168,7 @@
   "state": "verified",
   "verified_executions": 3
  },
- "job": "ps1-job-3.1.0",
+ "job": "ps1-job-3.2.0",
  "label": "PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.",
  "launch": {
   "first_decision_utc": "2026-10-03T00:00:00Z",
@@ -196,7 +196,7 @@
  },
  "outcomes": {
   "executed": 3,
-  "missed: stale: processed after close + max_delay": 1
+  "missed: stale: processed after close + max_delay": 2
  },
  "paired": {
   "ordinary": {
@@ -238,7 +238,7 @@
    "uncertainty_method": "moving-block bootstrap of paired intervals (B2 and VOL (log return, dt_h) pairs resampled together), blocks of 42 intervals, 5,000 resamples, seed 20261003; 90% percentile interval of the duration-weighted Sharpe difference"
   }
  },
- "processed_utc": "2026-10-03T15:01:01.517Z",
+ "processed_utc": "2026-10-03T17:50:47.031Z",
  "protocol": "PS1 v3",
  "protocol_sha256": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
  "report": "paper_ps1",
@@ -254,7 +254,7 @@
    "state": "retired before launch, zero observations"
   }
  ],
- "scheduled_decisions": 4,
+ "scheduled_decisions": 5,
  "schema": "ps1-report-4",
  "source_cutoff_utc": "2026-10-03T08:16:04.089Z",
  "status": "collecting (descriptive)",
