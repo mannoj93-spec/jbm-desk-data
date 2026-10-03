@@ -102,6 +102,7 @@ jobs:
           cp "${{ runner.temp }}/incoming/lab-summary.json" . 2>/dev/null || true
       - name: Persist research outputs
         env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           COMMIT_MESSAGE: Update research evidence
           PERSIST_BUDGET_S: '240'
         run: bash scripts/commit_push.sh research/v2 research/evidence reports/research.md reports/skill_proposals.md reports/latest.md state/lab_registrations.json state/lab_run_state.json

@@ -128,18 +128,27 @@ a Claude scheduled task (hourly, read-only over the raw file, notifying the owne
 dead-man's-switch service pinged at the end of each collector run (needs an account and a secret URL).
 Neither is configured; no alert from either has been delivered.
 
-**Release gate (not enforced yet; operator setting).** `release-check.yml` (job `release`, check context
-`release` from the GitHub Actions app, integration 15368) verifies `SHA256SUMS` and `desk/release.json` on every pull
-request. As of Oct 3 2026 `main` has no branch protection and no ruleset, so a green check is not a gate. The
-intended ruleset requires `release` on `main` and lets only the GitHub Actions app bypass it, so the collector,
-range and research workflows can keep pushing data with the workflow token: that token cannot change workflow files,
-and the workflows push only the data paths given to `scripts/commit_push.sh`. Residual risk: a workflow on `main`
-could be changed (through a pull request, which the gate checks) to push code. Verify before enforcing on `main`:
-create the same ruleset for `refs/heads/ruleset-probe`, dispatch `release-check.yml` on that branch (its probe version
-pushes one empty commit with the workflow token) and confirm the bot push lands while any other direct push is
-refused; then target `main` and confirm the next data commit lands. If GitHub will not accept the Actions app as a
-bypass actor, do not enforce on `main` (data persistence would stop); the alternative is a deploy key for the
-workflows' pushes as the bypass actor.
+**Release gate (repo 2.24.1).** `release-check.yml` (job `release`, check context `release`) verifies `SHA256SUMS`
+and `desk/release.json` on every pull request. The gate makes it required on `main` with a ruleset. GitHub does not
+accept the GitHub Actions app as a ruleset bypass actor (import refused it as "an invalid actor", Oct 3 2026), so the
+data workflows push with a write **deploy key** instead of the workflow token: `scripts/commit_push.sh` uses the
+repository secret `DESK_DEPLOY_KEY` when it is set (SSH to GitHub, host keys read from `api.github.com/meta` over
+HTTPS) and the workflow token otherwise. Only the nine persistence steps receive the secret. The ruleset requires
+`release` on `main` and lets deploy keys bypass it, so data writes land while every other change - including the
+owner's - goes through a pull request whose check passed. Deploy-key pushes trigger push workflows (token pushes do
+not); `fixtures.yml` and `release-check.yml` skip data-only paths. Residual risk: whoever holds the key can push
+unchecked; rotate it by replacing the deploy key and the secret together.
+
+Order of operations: (1) merge the pull request that adds the key path (no effect without the secret); (2) create an
+ed25519 key pair, add the public half under Settings → Deploy keys with write access and the private half as the
+Actions secret `DESK_DEPLOY_KEY`; (3) confirm a data run logs `persistence: deploy key`; (4) import
+`ruleset-probe` (target `refs/heads/ruleset-probe`, bypass: deploy keys) and dispatch `release-check.yml` on that
+branch - its probe version must land a deploy-key push and have a workflow-token push refused; (5) import the same
+ruleset for `main` and confirm the next data commit lands and a direct push is refused. If the secret is ever
+removed while the ruleset is active, data pushes fail visibly (the persistence step fails; nothing is lost silently
+from the run's own logs). With the gate on, a phone edit to `main` (for example committing
+`streams/<stream>/terminated.json` to stop a stream) goes through GitHub's "Propose changes" pull request and is
+merged once its check passes.
 
 ## Forecasts from a phone
 
