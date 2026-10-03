@@ -1,3 +1,21 @@
+# Validation record — maintenance, revision 2.24 (crypto-desk 12.4.7 on the 12.4 release family)
+
+Validated 2026-10-03 14:15–14:45Z on branch `maint-2-24` from `main` at `24e6dcaf` (the assessed commit; no newer `main` commit existed through 14:31Z because GitHub's scheduler was silent). Container; Python 3.12.11 and 3.11.15; Node 22; Chromium via Playwright. Earlier blocks below are kept as recorded.
+
+| Check (2.24) | Result |
+|---|---|
+| Baseline | `main` 24e6dcaf (2.23, PR #28 merged Oct 3 01:06Z). Production PS1: three executions (00:00Z under ps1-job-3.0.0; 04:00Z and 08:00Z under 3.1.0), 18 rows. Actions API: no scheduled run of any workflow 11:17:56Z–13:26:49Z, one collector run at 13:26:49Z, none since through 14:31Z; no githubstatus.com incident. Findings 1 and 3 reproduced on disposable fixtures and on the unmodified dashboard (`CHANGELOG.md` 2.24) |
+| Regression suite | 3.12.11: ran 756, executed 755, passed 755, failed 0, errors 0, skipped 1. 3.11.15: ran 756, executed 754, passed 754, skipped 2 (new: `test_health` 8; dashboard Python 5) |
+| Stream tests (`desk/test_streams.py`) | ran 179 (169 earlier + 10 journal-validation tests); executed 178, passed 178, skipped 1 |
+| Other desk test files | `test_asof`, `test_hardening`, `test_jbm_archive`, `test_jbm_measure`, `test_ops`, `test_range_contract`, `test_range_job`, `test_range_model`, `test_release` (1 skipped), `test_verify`: all OK |
+| Dashboard | node 15 pass, 0 fail; `node --check` OK; Chromium at 1440×900 and 390×844: 36/36 (initial failure, retry with the real chart drawn, `[null]`/non-finite/truncated bars and HTTP 500 keep the last good data, chart and provenance with Refresh re-enabled, six-view navigation, period redraws, health and coverage panels, no horizontal scroll, no uncaught errors) plus 3/3 rollback checks (staged render exception; post-commit DOM failure returns to the last good snapshot; retry). The unmodified `main` dashboard reproduced the defect (uncaught error, Refresh left disabled, chart gone) |
+| Release and checksums | `make_release.py check` OK (repo 2.24); `scripts/check_checksums.py check` OK |
+| O21 and calibration | `o21_reanalysis.py verify` PASS; `calibrate.py verify` PASS |
+| Replay | 126 of 126 RC1D forecasts; 101 of 101 RC1D scores from retained evidence; 45 of 45 B1 forecasts; 23 of 23 B1 scores match verified inputs; PS1 18 physical = 18 verified, 0 unaccounted |
+| Production PS1 under 3.2.0 (copy of `main`) | verifies; launch (00:00Z decision, first fill 1790986825236) unchanged; arm and paired figures identical to the committed report; `streams/ps1/` byte-identical after verification and report |
+| Health on a copy of `main` at 14:22Z | source healthy (13:27Z), gap 11:04:10Z–13:27:02Z (142.86 min) recorded as resolved and retrospective; 12:00Z range decision absent; 12:00Z PS1 decision missed (no run); range status expired at 12:25Z; watchdog stale (last success 11:17:56Z); read-only evaluation left `streams/` unchanged |
+| Not executed | any GitHub run of 2.24; `health.py --record` in production; fresh-thread scenarios other than those recorded in the package |
+
 # Validation record — maintenance, revision 2.23 (crypto-desk 12.4.6 on the 12.4 release family)
 
 Validated 2026-10-02 23:50Z – 2026-10-03 00:45Z on branch `maint-2-23` from `main` at `dd5ca024`, merged with `main` at `7444d65c` and again after the PS1 launch (`1c8fcf14`) before finalizing (container; Python 3.13 for development, 3.12.11 and 3.11.15 for the suites; Node 22; Chromium via Playwright). Earlier blocks below are kept as recorded.
