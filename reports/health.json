@@ -62,7 +62,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means the collector (and probably GitHub's scheduler) has been silent - its contents are not current",
- "generated_utc": "2026-10-04T23:14:08Z",
+ "generated_utc": "2026-10-04T23:16:22Z",
  "job": "health-1.1.0",
  "monitors": {
   "dispatcher_state": "fresh",
@@ -123,7 +123,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 102.3,
+  "report_age_min": 104.5,
   "report_coverage": 0.4167,
   "report_generated_utc": "2026-10-04T21:31:50.300Z",
   "report_scheduled_decisions": 12,
@@ -133,21 +133,21 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 18.2,
+  "age_min": 1.8,
   "coverage_24h": {
-   "automated_runs": 20,
+   "automated_runs": 21,
    "expected_slots": 96,
-   "from_ms": 1791069248569,
-   "from_utc": "2026-10-03T23:14:08Z",
+   "from_ms": 1791069382182,
+   "from_utc": "2026-10-03T23:16:22Z",
    "intervals": 95,
    "intervals_with_automated_run": 15,
    "longest_automated_gap_min": 413.3,
    "runs_by_source": {
-    "native-schedule": 12,
+    "native-schedule": 13,
     "recovery": 8
    },
-   "to_ms": 1791155648569,
-   "to_utc": "2026-10-04T23:14:08Z"
+   "to_ms": 1791155782182,
+   "to_utc": "2026-10-04T23:16:22Z"
   },
   "gaps": [
    {
@@ -207,11 +207,11 @@
     "start_utc": "2026-10-04T18:01:32Z"
    }
   ],
-  "last_scheduled_utc": "2026-10-04T22:55:57Z",
+  "last_scheduled_utc": "2026-10-04T23:14:35Z",
   "manual_runs_since": 0,
   "rule": "scheduled runs only (manual, local and recovery runs do not close a scheduled gap)",
   "service": {
-   "age_min": 1.6,
+   "age_min": 1.8,
    "gaps": [
     {
      "end_ms": 1791034022272,
@@ -270,8 +270,8 @@
      "start_utc": "2026-10-04T18:01:32Z"
     }
    ],
-   "last_automated_utc": "2026-10-04T23:12:29Z",
-   "last_source": "recovery",
+   "last_automated_utc": "2026-10-04T23:14:35Z",
+   "last_source": "native-schedule",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts",
    "state": "healthy"
   },
