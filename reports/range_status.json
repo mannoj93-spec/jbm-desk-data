@@ -8,12 +8,12 @@
    "b0_point_lr": 0.022847345339,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-03T20:00:00Z",
-   "elapsed_fraction": 0.6221,
+   "elapsed_fraction": 0.8011,
    "end_utc": "2026-10-04T20:15:00Z",
    "frozen_sha256": "bdb02b84872a7351d42348da6729496a4c6bb98db3637bb97d52688aecc3c5ae",
    "horizon": "24h",
    "id": "range-rc1d-24h-20261003T2000Z",
-   "now_utc": "2026-10-04T11:10:47.230Z",
+   "now_utc": "2026-10-04T15:28:33.064Z",
    "point_lr": 0.015516288235,
    "points_at_decision_close": {
     "point": 1326.0,
@@ -47,7 +47,7 @@
    "frozen_sha256": "459d6d04ec536412575bfba31b8e744ecaf13c2e12c88a870ffcb6297e63a4f9",
    "horizon": "4h",
    "id": "range-rc1d-4h-20261003T2000Z",
-   "now_utc": "2026-10-04T11:10:47.230Z",
+   "now_utc": "2026-10-04T15:28:33.064Z",
    "point_lr": 0.003749600683,
    "points_at_decision_close": {
     "point": 318.5,
@@ -76,12 +76,12 @@
    "b0_point_lr": 0.051463367988,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-03T20:00:00Z",
-   "elapsed_fraction": 0.2074,
+   "elapsed_fraction": 0.267,
    "end_utc": "2026-10-06T20:15:00Z",
    "frozen_sha256": "01c4a02b26d64a266430f4fdc0f8dff22c2c6d85f36d43186a86f20758fce0eb",
    "horizon": "72h",
    "id": "range-rc1d-72h-20261003T2000Z",
-   "now_utc": "2026-10-04T11:10:47.230Z",
+   "now_utc": "2026-10-04T15:28:33.064Z",
    "point_lr": 0.039218423856,
    "points_at_decision_close": {
     "point": 3391.6,
@@ -105,7 +105,7 @@
   }
  },
  "current_decision": null,
- "due_decisions": 50,
+ "due_decisions": 51,
  "evaluation": {
   "block_decisions": 42,
   "horizons": {
@@ -198,9 +198,9 @@
   "min_blocks": 10,
   "note": "Descriptive. Overlapping windows are dependent; the count of non-overlapping windows is not an effective sample size. No support claim; promotion criteria unchanged (queue.md section 0)."
  },
- "expected_decisions": 50,
+ "expected_decisions": 51,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-10-04T11:10:47.230Z",
+ "generated_utc": "2026-10-04T15:28:33.064Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
@@ -211,7 +211,7 @@
   "missing": 3,
   "registered-pending": 13,
   "scored": 30,
-  "skipped": 3
+  "skipped": 4
  },
  "provenance_corrections": [
   {
@@ -225,16 +225,6 @@
  ],
  "reader": "reader-12.4.6",
  "recent": [
-  {
-   "decision_utc": "2026-10-01T12:00:00Z",
-   "ids": [
-    "range-rc1d-4h-20261001T1200Z",
-    "range-rc1d-24h-20261001T1200Z",
-    "range-rc1d-72h-20261001T1200Z"
-   ],
-   "outcome": "registered-pending",
-   "reason": "eligible; 2/3 scored"
-  },
   {
    "decision_utc": "2026-10-01T16:00:00Z",
    "ids": [
@@ -384,6 +374,12 @@
    "ids": [],
    "outcome": "missing",
    "reason": "no production attempt or run record (run absent, or it failed before persisting)"
+  },
+  {
+   "decision_utc": "2026-10-04T12:00:00Z",
+   "ids": [],
+   "outcome": "skipped",
+   "reason": "stale decision (3.48h > 1.0h)"
   }
  ],
  "release": {
@@ -392,7 +388,7 @@
   "release_sha256": "7e20572b63e15eb3f6fa46720a6781fb9d7ed4c0be321be997710f44f0d90d12",
   "repo_revision": "2.24"
  },
- "runs_recorded": 315,
+ "runs_recorded": 319,
  "scored": {
   "24h": {
    "coverage_b0": 0.786,
@@ -439,14 +435,21 @@
    "waiting-maturity": 0
   },
   "72h": {
-   "backlog": [],
+   "backlog": [
+    {
+     "id": "range-rc1d-72h-20261001T1200Z",
+     "last_attempt": null,
+     "matured_utc": "2026-10-04T12:35:00Z",
+     "state": "overdue"
+    }
+   ],
    "ineligible": 0,
-   "overdue": 0,
+   "overdue": 1,
    "ready": 0,
    "scored": 30,
    "scoring-failed": 0,
-   "waiting-maturity": 13
+   "waiting-maturity": 12
   }
  },
- "status_expires_utc": "2026-10-04T13:15:00Z"
+ "status_expires_utc": "2026-10-04T17:15:00Z"
 }

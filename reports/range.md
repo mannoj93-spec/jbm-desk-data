@@ -4,7 +4,7 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-10-04T11:10:47.230Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-04T13:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-10-04T15:28:33.064Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-04T17:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
@@ -14,7 +14,7 @@ Generated 2026-10-04T11:10:47.230Z by reader-12.4.6; contract `RC1D/contract-12.
 | 24h | stale | range-rc1d-24h-20261003T2000Z | 2026-10-03T20:15:00Z → 2026-10-04T20:15:00Z | 2026-10-04T01:15:00Z | expired at 2026-10-04T01:15:00Z (a newer decision was due; no newer forecast is current) |
 | 72h | stale | range-rc1d-72h-20261003T2000Z | 2026-10-03T20:15:00Z → 2026-10-06T20:15:00Z | 2026-10-04T01:15:00Z | expired at 2026-10-04T01:15:00Z (a newer decision was due; no newer forecast is current) |
 
-Due production decisions: 50; outcomes: failed 1, missing 3, registered-pending 13, scored 30, skipped 3.
+Due production decisions: 51; outcomes: failed 1, missing 3, registered-pending 13, scored 30, skipped 4.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
@@ -38,13 +38,12 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 |---|---|---|---|---|---|---|
 | 4h | 0 | 0 | 0 | 0 | 43 | 0 |
 | 24h | 1 | 0 | 0 | 0 | 42 | 0 |
-| 72h | 13 | 0 | 0 | 0 | 30 | 0 |
+| 72h | 12 | 0 | 1 | 0 | 30 | 0 |
 
 ## Recent decisions (history)
 
 | decision | outcome | reason |
 |---|---|---|
-| 2026-10-01T12:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-10-01T16:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-10-01T20:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-10-02T00:00:00Z | registered-pending | eligible; 2/3 scored |
@@ -62,3 +61,4 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 | 2026-10-04T00:00:00Z | skipped | stale decision (3.19h > 1.0h) |
 | 2026-10-04T04:00:00Z | skipped | stale decision (1.75h > 1.0h) |
 | 2026-10-04T08:00:00Z | missing | no production attempt or run record (run absent, or it failed before persisting) |
+| 2026-10-04T12:00:00Z | skipped | stale decision (3.48h > 1.0h) |
