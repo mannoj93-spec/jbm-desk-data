@@ -28,6 +28,8 @@ run. It never cancels, re-runs or edits a run, and never touches research state.
   python recovery.py plan [--now ISO]      print what would be dispatched (read-only; needs GITHUB_TOKEN)
   python recovery.py dispatch              plan and dispatch (GITHUB_TOKEN with actions: write)
   python recovery.py covered --slot ISO    yield check for a recovery collector run: covered=true|false
+  python recovery.py chain --slot ISO      from a recovery range run: dispatch the research streams for its decision
+                                           (1.1.0; a token-started run raises no workflow_run event)
 Stdlib only.
 """
 from __future__ import annotations
@@ -42,7 +44,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "recovery-1.0.0"
+VERSION = "recovery-1.1.0"
 UTC = dt.timezone.utc
 API = "https://api.github.com"
 _sleep = time.sleep                # between API retries; replaced in tests
@@ -226,6 +228,19 @@ def main(argv):
         if os.environ.get("GITHUB_OUTPUT"):
             with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                 f.write(f"covered={'true' if yes else 'false'}\n")
+        return 0
+    if cmd == "chain":
+        slot = argv[argv.index("--slot") + 1] if "--slot" in argv else ""
+        token, repo = os.environ.get("GITHUB_TOKEN"), os.environ.get("GITHUB_REPOSITORY")
+        if not (slot and token and repo):
+            print("chain needs --slot, GITHUB_TOKEN and GITHUB_REPOSITORY", file=sys.stderr)
+            return 2
+        res = dispatch(repo, token, [("streams", slot, "chained from the recovery range run")],
+                       f"{os.environ.get('GITHUB_RUN_ID', 'local')}:range-recovery")
+        print(json.dumps(res))
+        if not res[0]["ok"]:
+            print(f"::error title=Recovery chain failed::research streams {slot}: {res[0].get('error')}")
+            return 1
         return 0
     if cmd not in ("plan", "dispatch"):
         print(__doc__)

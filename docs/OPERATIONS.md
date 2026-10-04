@@ -130,7 +130,7 @@ repository write), only work that is due and that no run has covered:
 |---|---|---|---|
 | Collector | latest 15-minute slot ≥ 4 min old, no run created since it | one per slot | a recovery run that finds its slot already collected yields (`recovery.py covered`) |
 | Range forecasts | 8–45 min after a 4H close, no live run since the close, or only failed ones | two per decision | `range_job` refuses a decision older than 1.0 h at its forecast step; 15 min covers runner start, the repo-write queue and preflight/refit |
-| Research streams | 3 min after the decision's range run completed (or 50 min after the close if none), no streams run since | one per decision, until +75 min | normally `workflow_run` starts it at once; PS1 executes within 90 min |
+| Research streams | 3 min after the decision's range run completed (or 50 min after the close if none), no streams run since | one per decision, until +75 min | a native range run starts it through `workflow_run`; a recovery range run starts it itself (2.25.1: a token-started run raises no `workflow_run` event, observed Oct 4); PS1 executes within 90 min |
 | Range scoring | no run for 70 min | one per hour | hourly schedule + 10 min |
 
 Not covered, by design: the research lab, weekly report, dashboard and range monitor (not time-critical; they still
