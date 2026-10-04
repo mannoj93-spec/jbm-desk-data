@@ -62,17 +62,17 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means the collector (and probably GitHub's scheduler) has been silent - its contents are not current",
- "generated_utc": "2026-10-04T23:30:30Z",
+ "generated_utc": "2026-10-04T23:44:05Z",
  "job": "health-1.1.0",
  "monitors": {
   "dispatcher_state": "fresh",
-  "newest_scheduled_start_utc": "2026-10-04T23:28:16Z",
+  "newest_scheduled_start_utc": "2026-10-04T23:43:54Z",
   "source": "GitHub Actions API, scheduled runs",
   "state": "stale",
   "workflows": {
    "collect.yml": {
-    "last_scheduled_start_utc": "2026-10-04T23:28:16Z",
-    "last_success_utc": "2026-10-04T23:13:45Z"
+    "last_scheduled_start_utc": "2026-10-04T23:43:54Z",
+    "last_success_utc": "2026-10-04T23:28:16Z"
    },
    "dashboard.yml": {
     "last_scheduled_start_utc": "2026-10-04T23:21:49Z",
@@ -101,7 +101,7 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_success_utc": "2026-10-04T23:27:01Z",
+    "last_success_utc": "2026-10-04T23:43:10Z",
     "stale_after_min": 45,
     "state": "fresh"
    },
@@ -123,7 +123,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 118.7,
+  "report_age_min": 132.2,
   "report_coverage": 0.4167,
   "report_generated_utc": "2026-10-04T21:31:50.300Z",
   "report_scheduled_decisions": 12,
@@ -133,21 +133,21 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 1.6,
+  "age_min": 15.2,
   "coverage_24h": {
-   "automated_runs": 23,
+   "automated_runs": 24,
    "expected_slots": 96,
-   "from_ms": 1791070230521,
-   "from_utc": "2026-10-03T23:30:30Z",
+   "from_ms": 1791071045133,
+   "from_utc": "2026-10-03T23:44:05Z",
    "intervals": 95,
-   "intervals_with_automated_run": 16,
+   "intervals_with_automated_run": 17,
    "longest_automated_gap_min": 413.3,
    "runs_by_source": {
     "native-schedule": 14,
-    "recovery": 9
+    "recovery": 10
    },
-   "to_ms": 1791156630521,
-   "to_utc": "2026-10-04T23:30:30Z"
+   "to_ms": 1791157445133,
+   "to_utc": "2026-10-04T23:44:05Z"
   },
   "gaps": [
    {
@@ -270,8 +270,8 @@
      "start_utc": "2026-10-04T18:01:32Z"
     }
    ],
-   "last_automated_utc": "2026-10-04T23:28:52Z",
-   "last_source": "native-schedule",
+   "last_automated_utc": "2026-10-04T23:42:31Z",
+   "last_source": "recovery",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts",
    "state": "healthy"
   },
