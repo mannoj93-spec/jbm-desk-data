@@ -8,12 +8,15 @@
    "b0_point_lr": 0.022847345339,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-03T20:00:00Z",
-   "elapsed_fraction": 0.9116,
+   "elapsed_fraction": 1.0,
    "end_utc": "2026-10-04T20:15:00Z",
    "frozen_sha256": "bdb02b84872a7351d42348da6729496a4c6bb98db3637bb97d52688aecc3c5ae",
    "horizon": "24h",
    "id": "range-rc1d-24h-20261003T2000Z",
-   "now_utc": "2026-10-04T18:07:39.097Z",
+   "newer_pending": [
+    "range-rc1d-24h-20261004T2000Z"
+   ],
+   "now_utc": "2026-10-04T20:46:38.659Z",
    "point_lr": 0.015516288235,
    "points_at_decision_close": {
     "point": 1326.0,
@@ -27,7 +30,7 @@
     0.027841375464
    ],
    "reader": "reader-12.4.6",
-   "reason": "expired at 2026-10-04T01:15:00Z (a newer decision was due; no newer forecast is current)",
+   "reason": "window ended",
    "reference_price": 84794.6,
    "registered_ms": 1791057990256,
    "remaining": null,
@@ -47,7 +50,10 @@
    "frozen_sha256": "459d6d04ec536412575bfba31b8e744ecaf13c2e12c88a870ffcb6297e63a4f9",
    "horizon": "4h",
    "id": "range-rc1d-4h-20261003T2000Z",
-   "now_utc": "2026-10-04T18:07:39.097Z",
+   "newer_pending": [
+    "range-rc1d-4h-20261004T2000Z"
+   ],
+   "now_utc": "2026-10-04T20:46:38.659Z",
    "point_lr": 0.003749600683,
    "points_at_decision_close": {
     "point": 318.5,
@@ -76,12 +82,15 @@
    "b0_point_lr": 0.051463367988,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-03T20:00:00Z",
-   "elapsed_fraction": 0.3039,
+   "elapsed_fraction": 0.3407,
    "end_utc": "2026-10-06T20:15:00Z",
    "frozen_sha256": "01c4a02b26d64a266430f4fdc0f8dff22c2c6d85f36d43186a86f20758fce0eb",
    "horizon": "72h",
    "id": "range-rc1d-72h-20261003T2000Z",
-   "now_utc": "2026-10-04T18:07:39.097Z",
+   "newer_pending": [
+    "range-rc1d-72h-20261004T2000Z"
+   ],
+   "now_utc": "2026-10-04T20:46:38.659Z",
    "point_lr": 0.039218423856,
    "points_at_decision_close": {
     "point": 3391.6,
@@ -104,7 +113,17 @@
    "valid_until_utc": "2026-10-04T01:15:00Z"
   }
  },
- "current_decision": null,
+ "current_decision": {
+  "decision_utc": "2026-10-04T20:00:00Z",
+  "grace_until_utc": "2026-10-04T21:15:00Z",
+  "ids": [
+   "range-rc1d-4h-20261004T2000Z",
+   "range-rc1d-24h-20261004T2000Z",
+   "range-rc1d-72h-20261004T2000Z"
+  ],
+  "outcome": "registered-pending",
+  "reason": "frozen; publication confirmation pending"
+ },
  "due_decisions": 52,
  "evaluation": {
   "block_decisions": 42,
@@ -200,7 +219,7 @@
  },
  "expected_decisions": 52,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-10-04T18:07:39.097Z",
+ "generated_utc": "2026-10-04T20:46:38.659Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
@@ -381,10 +400,10 @@
  "release": {
   "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
   "package": "crypto-desk 12.4",
-  "release_sha256": "7e20572b63e15eb3f6fa46720a6781fb9d7ed4c0be321be997710f44f0d90d12",
-  "repo_revision": "2.24"
+  "release_sha256": "c05cb495d0b8b909b569ab42adbe45f543b48d5de99e63a219f81cf14c32404a",
+  "repo_revision": "2.25"
  },
- "runs_recorded": 322,
+ "runs_recorded": 326,
  "scored": {
   "24h": {
    "coverage_b0": 0.786,
@@ -416,7 +435,7 @@
    "backlog": [],
    "ineligible": 0,
    "overdue": 0,
-   "ready": 0,
+   "ready": 1,
    "scored": 42,
    "scoring-failed": 0,
    "waiting-maturity": 1
@@ -428,17 +447,17 @@
    "ready": 0,
    "scored": 43,
    "scoring-failed": 0,
-   "waiting-maturity": 0
+   "waiting-maturity": 1
   },
   "72h": {
    "backlog": [],
    "ineligible": 0,
    "overdue": 0,
-   "ready": 0,
+   "ready": 1,
    "scored": 32,
    "scoring-failed": 0,
    "waiting-maturity": 11
   }
  },
- "status_expires_utc": "2026-10-04T21:15:00Z"
+ "status_expires_utc": "2026-10-05T01:15:00Z"
 }

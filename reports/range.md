@@ -4,17 +4,17 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-10-04T18:07:39.097Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-04T21:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-10-04T20:46:38.659Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-05T01:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
 | horizon | state | id | window | valid until | reason |
 |---|---|---|---|---|---|
 | 4h | stale | range-rc1d-4h-20261003T2000Z | 2026-10-03T20:15:00Z → 2026-10-04T00:15:00Z | 2026-10-04T00:15:00Z | window ended |
-| 24h | stale | range-rc1d-24h-20261003T2000Z | 2026-10-03T20:15:00Z → 2026-10-04T20:15:00Z | 2026-10-04T01:15:00Z | expired at 2026-10-04T01:15:00Z (a newer decision was due; no newer forecast is current) |
+| 24h | stale | range-rc1d-24h-20261003T2000Z | 2026-10-03T20:15:00Z → 2026-10-04T20:15:00Z | 2026-10-04T01:15:00Z | window ended |
 | 72h | stale | range-rc1d-72h-20261003T2000Z | 2026-10-03T20:15:00Z → 2026-10-06T20:15:00Z | 2026-10-04T01:15:00Z | expired at 2026-10-04T01:15:00Z (a newer decision was due; no newer forecast is current) |
 
-Due production decisions: 52; outcomes: failed 1, missing 4, registered-pending 11, scored 32, skipped 4.
+Current decision 2026-10-04T20:00:00Z: registered-pending (frozen; publication confirmation pending). Due production decisions: 52; outcomes: failed 1, missing 4, registered-pending 11, scored 32, skipped 4.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
@@ -36,9 +36,9 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 
 | horizon | waiting maturity | ready | overdue | scoring failed | scored | ineligible |
 |---|---|---|---|---|---|---|
-| 4h | 0 | 0 | 0 | 0 | 43 | 0 |
-| 24h | 1 | 0 | 0 | 0 | 42 | 0 |
-| 72h | 11 | 0 | 0 | 0 | 32 | 0 |
+| 4h | 1 | 0 | 0 | 0 | 43 | 0 |
+| 24h | 1 | 1 | 0 | 0 | 42 | 0 |
+| 72h | 11 | 1 | 0 | 0 | 32 | 0 |
 
 ## Recent decisions (history)
 
