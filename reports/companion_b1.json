@@ -164,57 +164,57 @@
    },
    "72h": {
     "B1_vs_B0": {
-     "diff_mean": 0.01788,
+     "diff_mean": -0.0717,
      "diff_mean_ci95": null,
-     "diff_median": 0.04942,
+     "diff_median": -0.04738,
      "effect": {
-      "mae_first": 0.10631,
-      "mae_second": 0.08843,
-      "relative_mae_reduction": -0.2023,
-      "standardized_mean_diff": 0.3164
+      "mae_first": 0.07761,
+      "mae_second": 0.14931,
+      "relative_mae_reduction": 0.4802,
+      "standardized_mean_diff": -0.5426
      },
      "first": "B1",
-     "first_better": 1,
+     "first_better": 3,
      "first_worse": 2,
-     "n": 3,
+     "n": 5,
      "resampling_blocks": 0,
      "second": "B0",
      "ties": 0,
      "uncertainty": "unavailable: 0 complete resampling block(s) of 42; needs 10"
     },
     "B2_vs_B0": {
-     "diff_mean": 0.10025,
+     "diff_mean": -0.01616,
      "diff_mean_ci95": null,
-     "diff_median": 0.12651,
+     "diff_median": 0.04109,
      "effect": {
-      "mae_first": 0.18868,
-      "mae_second": 0.08843,
-      "relative_mae_reduction": -1.1337,
-      "standardized_mean_diff": 1.9528
+      "mae_first": 0.13315,
+      "mae_second": 0.14931,
+      "relative_mae_reduction": 0.1082,
+      "standardized_mean_diff": -0.0905
      },
      "first": "B2",
-     "first_better": 0,
+     "first_better": 2,
      "first_worse": 3,
-     "n": 3,
+     "n": 5,
      "resampling_blocks": 0,
      "second": "B0",
      "ties": 0,
      "uncertainty": "unavailable: 0 complete resampling block(s) of 42; needs 10"
     },
     "B2_vs_B1": {
-     "diff_mean": 0.08236,
+     "diff_mean": 0.05554,
      "diff_mean_ci95": null,
-     "diff_median": 0.08153,
+     "diff_median": 0.07709,
      "effect": {
-      "mae_first": 0.18868,
-      "mae_second": 0.10631,
-      "relative_mae_reduction": -0.7748,
-      "standardized_mean_diff": 14.3451
+      "mae_first": 0.13315,
+      "mae_second": 0.07761,
+      "relative_mae_reduction": -0.7156,
+      "standardized_mean_diff": 0.9754
      },
      "first": "B2",
-     "first_better": 0,
-     "first_worse": 3,
-     "n": 3,
+     "first_better": 1,
+     "first_worse": 4,
+     "n": 5,
      "resampling_blocks": 0,
      "second": "B1",
      "ties": 0,
@@ -224,31 +224,31 @@
     "late_companion": 0,
     "metric": "absolute error of ln range (log units); a negative difference favours the first model",
     "missing_companion": 0,
-    "overlap_warning": "3 of 3 windows overlap another; the largest disjoint subset has 1",
-    "paired": 3,
+    "overlap_warning": "5 of 5 windows overlap another; the largest disjoint subset has 1",
+    "paired": 5,
     "rc1d_not_eligible": 0,
-    "rc1d_scored_since_start": 3,
+    "rc1d_scored_since_start": 5,
     "unscored": 0,
     "windows": {
      "basis": "actual [start, end) windows of the verified pairs; all valid pairs stay in the registered analysis - the disjoint count describes dependence, it selects nothing",
      "largest_disjoint_subset": 1,
-     "overlapping_another": 3,
-     "verified_pairs": 3
+     "overlapping_another": 5,
+     "verified_pairs": 5
     }
    }
   },
   "integrity_failures_now": [],
   "method": "companion-eval-1 (2026-09-30): rc1d-eval-1 applied to B2 vs B1 on eligible paired windows",
   "note": "Descriptive. B2 vs B0 here is restricted to windows with an eligible companion, so it can differ from reports/range_status.json (all eligible RC1D windows). Overlapping windows are dependent.",
-  "outcome_window_end_ms": 1791102300000,
-  "processed_ms": 1791112247230,
+  "outcome_window_end_ms": 1791131100000,
+  "processed_ms": 1791137259097,
   "schema": "companion-eval-2",
   "stream_start_decision_utc": "2026-10-01T00:00:00Z",
   "uncertainty_method": "moving-block bootstrap of paired differences, blocks of 42 decisions (a resampling device for dependence, not a measured effective sample size), 2000 resamples, seed 20260930, 95% interval; reported only from 10 blocks"
  },
  "evidence_class": "descriptive",
  "evidence_class_rule": "no pre-registered success threshold exists for the companion, so its ceiling is 'exploratory' (an interval with no decision rule); 'descriptive' below the block minimum; 'unavailable' with no scored pair or any integrity failure; 'retired' once terminated",
- "generated_utc": "2026-10-04T15:29:32.491Z",
+ "generated_utc": "2026-10-04T18:20:55.416Z",
  "integrity": {
   "failures_now": [],
   "ok": true,
@@ -261,14 +261,14 @@
   "state": "active"
  },
  "not_registered_by_reason": {
-  "rc1d-unavailable": 18
+  "rc1d-unavailable": 21
  },
- "outcome_window_end_utc": "2026-10-04T08:25:00.000Z",
- "processed_utc": "2026-10-04T11:10:47.230Z",
+ "outcome_window_end_utc": "2026-10-04T16:25:00.000Z",
+ "processed_utc": "2026-10-04T18:07:39.097Z",
  "registered": 48,
  "report": "companion_b1",
  "schema": "companion-report-3",
- "source_cutoff_utc": "2026-10-04T08:25:00.000Z",
+ "source_cutoff_utc": "2026-10-04T16:25:00.000Z",
  "status": "prospective record only; descriptive until rc1d-eval-1 block minimums are met",
  "stream": "rc1d-b1"
 }
