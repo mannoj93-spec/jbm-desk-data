@@ -1,7 +1,7 @@
 # Validation record — maintenance, revision 2.25 (crypto-desk 12.4.8 on the 12.4 release family)
 
 Implemented 2026-10-04 18:40–19:50Z on branch `maint-2-26` from `main` at `af9b0868` (still the tip at 19:44Z). Container;
-Python 3.12.13, 3.11.15 and 3.13.16 available.
+Python 3.12.3, 3.11 and 3.13.16 available.
 
 | Check | Result |
 |---|---|
