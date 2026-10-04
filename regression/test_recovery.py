@@ -338,5 +338,40 @@ class DispatcherMonitorTests(unittest.TestCase):
         self.assertEqual(H.monitors(now, "tok", "o/r", down)["dispatcher_state"], "unknown")
 
 
+class AcceptanceCheckTests(unittest.TestCase):
+    """scripts/service_acceptance.py: measured values against targets stated in advance; a partial window is pending."""
+    def run_check(self, runs, now, rng=None, ps1=None):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import service_acceptance as A
+        from unittest import mock
+        with tempfile.TemporaryDirectory() as d:
+            base = Path(d)
+            (base / "cadence.json").write_text(json.dumps({"periods": [{"from": "2026-09-23T16:06:13Z", "minutes": Q}]}))
+            storage.append_unique(base / "data/runs/2026-10.jsonl", runs, lambda r: r["t"])
+            with mock.patch.object(A.health, "range_decisions", return_value=(rng or {}, {"scoring_backlog": {}})), \
+                    mock.patch.object(A.health, "ps1_decisions", return_value=(ps1 or {}, {})):
+                return A.measure(base, t("2026-10-05T00:00:00Z"), t("2026-10-06T00:00:00Z"), t(now))
+
+    def test_full_automated_day_passes_and_partial_window_is_pending(self):
+        T = int(t("2026-10-05T00:07:00Z").timestamp() * 1000)
+        runs = [rec(T + i * 15 * M + 60_000, "recovery" if i % 3 else "native-schedule") for i in range(96)]
+        dec = {f"2026-10-05T{h:02d}:00:00Z": "published" for h in range(0, 24, 4)}
+        ps1 = {k: "executed" for k in dec}
+        doc = self.run_check(runs, "2026-10-06T00:05:00Z", dec, ps1)
+        self.assertEqual(doc["verdict"], "pass", doc["checks"])
+        self.assertEqual(doc["collection"]["runs_by_source"], {"native-schedule": 32, "recovery": 64})
+        self.assertEqual(self.run_check(runs[:40], "2026-10-05T10:00:00Z", dec, ps1)["verdict"], "pending")
+
+    def test_a_gap_a_missed_decision_or_a_persons_run_fails(self):
+        T = int(t("2026-10-05T00:07:00Z").timestamp() * 1000)
+        runs = [rec(T + i * 15 * M + 60_000, "recovery") for i in range(96) if not 40 <= i < 44]
+        doc = self.run_check(runs, "2026-10-06T00:05:00Z", {"2026-10-05T04:00:00Z": "missed: skipped"})
+        self.assertEqual(doc["verdict"], "fail")
+        self.assertFalse(doc["checks"]["longest_automated_gap"])
+        self.assertFalse(doc["checks"]["range_decisions_published"])
+        runs = [rec(T + i * 15 * M + 60_000, "recovery") for i in range(96)] + [rec(T + 5 * M, "human")]
+        self.assertFalse(self.run_check(runs, "2026-10-06T00:05:00Z")["checks"]["no_person_started_runs"])
+
+
 if __name__ == "__main__":
     unittest.main()

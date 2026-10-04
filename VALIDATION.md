@@ -6,7 +6,7 @@ Python 3.12.3, 3.11.17 and 3.13.16 available.
 | Check | Result |
 |---|---|
 | Diagnosis | 483 run records since Oct 2 (Actions API): 0 queued, in progress or cancelled; every scheduled run started at creation; onset Oct 3 10–11Z; no workflow-file change at onset (`docs/incidents/2026-10-03-native-schedule.md`). Not verifiable from here: Actions permissions/billing endpoints, GitHub status, other repositories |
-| Regression suite | 3.12: ran 794, failures 0, errors 0, skipped 1. 3.11: ran 794, failures 0, errors 0, skipped 2. New: `test_recovery` 21, `test_push_guard` 12 |
+| Regression suite | 3.12: ran 796, failures 0, errors 0, skipped 1. 3.11: ran 796, failures 0, errors 0, skipped 2. New: `test_recovery` 23, `test_push_guard` 12 |
 | Fixtures, desk tests | `test_fixtures.py` pass (3.12, 3.11); `desk/test_*.py` (11 files) OK; PS1 `calibrate.py verify` PASS; O21 `verify` PASS |
 | Dashboard | `node --test dashboard/model.test.mjs` 16 pass; `test_dashboard` (Playwright) OK |
 | Release and checksums | `make_release.py check` OK (repo 2.25; no desk module changed); `check_checksums.py check` OK, 205 entries |

@@ -159,6 +159,14 @@ scheduler (recommended: cron-job.org, free) that sends
 notifications on; (3) confirm a "Recovery dispatcher" run with event `workflow_dispatch` appears within 15 minutes.
 The token can start, re-run or cancel workflow runs in this repository; it cannot change code. Rotate it before expiry.
 
+**Acceptance (infrastructure, stated before observing).** After activation, `python scripts/service_acceptance.py
+--from <first full hour after activation>` over 24 unattended hours must show: at least 97% of slot intervals holding
+an automated stored run (at most 3 of 95 empty), no interval longer than 45 min without one, every range decision
+published, every PS1 decision executed or a recorded no-rebalance, an empty scoring backlog and no person-started run.
+It reports the measured values, not only the verdict; a window still open is "pending". Until it passes, recovery is
+"activated and observed", not "sustained". It is an infrastructure check, not a research criterion. Baseline on the
+24 h to Oct 4 19:00Z (native only): 5% of intervals, longest gap 413 min - fail.
+
 **Independent alerting.** The external scheduler's failure notifications cover a refused dispatch call; GitHub's
 failed-run notifications cover a failing dispatcher or service watch. Neither reports a silence of the external
 scheduler itself; an hourly Claude scheduled task reading `reports/health.json` remains an option, not configured.
