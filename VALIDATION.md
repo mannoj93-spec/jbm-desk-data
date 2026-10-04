@@ -1,3 +1,19 @@
+# Validation record — maintenance, revision 2.25 (crypto-desk 12.4.8 on the 12.4 release family)
+
+Implemented 2026-10-04 18:40–19:50Z on branch `maint-2-26` from `main` at `af9b0868` (still the tip at 19:44Z). Container;
+Python 3.12.13, 3.11.15 and 3.13.16 available.
+
+| Check | Result |
+|---|---|
+| Diagnosis | 483 run records since Oct 2 (Actions API): 0 queued, in progress or cancelled; every scheduled run started at creation; onset Oct 3 10–11Z; no workflow-file change at onset (`docs/incidents/2026-10-03-native-schedule.md`). Not verifiable from here: Actions permissions/billing endpoints, GitHub status, other repositories |
+| Regression suite | 3.12: ran 794, failures 0, errors 0, skipped 1. 3.11: ran 794, failures 0, errors 0, skipped 2. New: `test_recovery` 21, `test_push_guard` 12 |
+| Fixtures, desk tests | `test_fixtures.py` pass (3.12, 3.11); `desk/test_*.py` (11 files) OK; PS1 `calibrate.py verify` PASS; O21 `verify` PASS |
+| Dashboard | `node --test dashboard/model.test.mjs` 16 pass; `test_dashboard` (Playwright) OK |
+| Release and checksums | `make_release.py check` OK (repo 2.25; no desk module changed); `check_checksums.py check` OK, 205 entries |
+| Defect reproduction | 2.24.1 `commit_push.sh data` with a staged `collector.py` pushed both files; 2.25 refuses and pushes nothing |
+| Production-data copy (`main` af9b0868, read-only) | records byte-identical before and after `health.py` and `watchdog.py`; last 24 h to 19:44Z: 96 expected slots, 5 automated runs (all native), 5 of 95 intervals, longest automated gap 413 min; range 00:00/04:00/12:00 missed (late skip), 08:00/16:00 absent; watchdog exit 1 (service silent 103 min) |
+| Not executed here | a real dispatch (needs merge); `github-actions[bot]` as the triggering actor of a token dispatch (verified only in production); the external cron (operator activation); 24 h unattended observation |
+
 # Validation record — revision 2.24.1 (push credential for the release gate)
 
 Validated 2026-10-03 16:15–16:35Z on branch `maint-2-25` from `main` at `e55bbd1e` (2.24 merged 15:33:40Z). Container; Python 3.12.11.
