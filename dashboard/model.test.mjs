@@ -154,3 +154,17 @@ test('operational health rows are judged on the viewer clock; a missing report i
  assert.equal(later['Health report'].state, 'stale');
  assert.equal(later['Collector schedule'].state, 'stale');
 });
+test('service continuity is judged apart from the native schedule (repo 2.25)', () => {
+ const base = {generated_utc: '2026-10-04T20:00:00Z', clock: 'runner', decisions: {}, scoring_backlog: {}, monitors: {}};
+ const old = Object.fromEntries(opsRows({...base, source: {last_scheduled_utc: '2026-10-04T11:07:58Z'}}, Date.parse('2026-10-04T20:05:00Z')).map(r => [r.area, r]));
+ assert.equal(old['Collector service (automated)'].state, 'unknown');           // a pre-2.25 report has no service block
+ const ops = {...base, source: {last_scheduled_utc: '2026-10-04T11:07:58Z', stale_limit_min: 90,
+   service: {last_automated_utc: '2026-10-04T19:52:40Z', last_source: 'recovery', gaps: []},
+   coverage_24h: {expected_slots: 96, intervals: 95, intervals_with_automated_run: 40, longest_automated_gap_min: 406.5,
+                  runs_by_source: {'native-schedule': 5, recovery: 35, human: 1}}}};
+ const by = Object.fromEntries(opsRows(ops, Date.parse('2026-10-04T20:05:00Z')).map(r => [r.area, r]));
+ assert.equal(by['Collector schedule'].state, 'stale');                         // native silence stays visible
+ assert.equal(by['Collector service (automated)'].state, 'within cadence');
+ assert.match(by['Collection, 24 h to report'].detail, /recovery 35/);
+ assert.equal(by['Collection, 24 h to report'].state, '40 of 95 intervals');
+});

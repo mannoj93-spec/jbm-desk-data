@@ -341,7 +341,7 @@ class WorkflowBudgetTests(unittest.TestCase):
         job_backfill, job_routine = pair(r"    timeout-minutes: ", text)
         step_backfill, step_routine = pair(r"        timeout-minutes: ", text)
         budget_backfill, budget_routine = pair(r"COLLECTOR_BUDGET_S: ", text)
-        persist_min = int(re.search(r"always\(\)\n        timeout-minutes: (\d+)", text).group(1))
+        persist_min = int(re.search(r"always\(\)[^\n]*\n        timeout-minutes: (\d+)", text).group(1))
         persist_budget = int(re.search(r"PERSIST_BUDGET_S: '(\d+)'", text).group(1))
         self.assertLess(job_routine, 15)
         self.assertEqual(budget_routine, 600)                                 # 10-minute network budget
@@ -393,7 +393,7 @@ class OutageCompletionTests(unittest.TestCase):
         text = workflow('collect.yml')
         _, job_routine = pair(r"    timeout-minutes: ", text)
         _, budget = pair(r"COLLECTOR_BUDGET_S: ", text)
-        persist_min = int(re.search(r"always\(\)\n        timeout-minutes: (\d+)", text).group(1))
+        persist_min = int(re.search(r"always\(\)[^\n]*\n        timeout-minutes: (\d+)", text).group(1))
         with tempfile.TemporaryDirectory() as tmp:
             took, requests, record = self.full_outage(tmp, budget)
         self.assertLessEqual(took, budget + 30)
@@ -507,7 +507,7 @@ class PersistenceBudgetTests(unittest.TestCase):
             fake.write_text('#!/usr/bin/env bash\ncase "$1" in\n  push|pull) sleep 30 ;;\n'
                             '  symbolic-ref) echo main ;;\n  *) exit 0 ;;\nesac\n')
             fake.chmod(0o755)
-            env = dict(os.environ, PATH=f"{tmp}:{os.environ['PATH']}", PERSIST_BUDGET_S='8')
+            env = dict(os.environ, PATH=f"{tmp}:{os.environ['PATH']}", PERSIST_BUDGET_S='8', DESK_WRITER='collector')
             started = time.monotonic()
             proc = subprocess.run(['bash', str(ROOT / 'scripts/commit_push.sh'), 'data'], cwd=tmp, env=env,
                                   capture_output=True, text=True, timeout=60)
@@ -521,7 +521,7 @@ class PersistenceBudgetTests(unittest.TestCase):
             fake = Path(tmp) / 'git'
             fake.write_text('#!/usr/bin/env bash\ncase "$1" in\n  symbolic-ref) echo main ;;\n  *) exit 0 ;;\nesac\n')
             fake.chmod(0o755)
-            env = dict(os.environ, PATH=f"{tmp}:{os.environ['PATH']}")
+            env = dict(os.environ, PATH=f"{tmp}:{os.environ['PATH']}", DESK_WRITER='collector')
             proc = subprocess.run(['bash', str(ROOT / 'scripts/commit_push.sh'), 'data'], cwd=tmp, env=env,
                                   capture_output=True, text=True, timeout=60)
         self.assertEqual(proc.returncode, 0, proc.stderr)

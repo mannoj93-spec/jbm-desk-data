@@ -31,8 +31,9 @@ from storage import atomic_json, read_json, append_unique
 from registration import register as register_content
 from schema import SERIES_KIND
 import enrich, hlsample, optionsbook
+import provenance
 
-CODE_VERSION = "collector-2.7-2026-09-23"
+CODE_VERSION = "collector-2.8-2026-10-04"
 UA = {"User-Agent": "jbm-desk-collector/2.0", "Accept": "application/json"}
 BASE = os.environ.get("OUT_DIR", os.path.dirname(os.path.abspath(__file__)))
 STATE = os.path.join(BASE, "state", "checkpoints.json")
@@ -81,6 +82,9 @@ TRIPPED = {}                # host -> transport failure that opened its circuit 
 RUN = {"code_version": CODE_VERSION, "t_ret": NOW, "mode": "backfill" if BACKFILL else "routine",
        "runner": "github" if os.environ.get("GITHUB_ACTIONS") else os.environ.get("RUNNER_LABEL", "local"),
        "trigger": os.environ.get("GITHUB_EVENT_NAME") or "local",
+       # 2.8 (repo 2.25): native schedule, recovery dispatcher (authenticated as github-actions[bot]) or a person -
+       # cadence.py counts native and automated service separately and never credits a person's run to either
+       "provenance": provenance.record(),
        "schedule": os.environ.get("SCHEDULE_CRON") or None,
        "workflow": os.environ.get("GITHUB_WORKFLOW") or None,
        "run_id": os.environ.get("GITHUB_RUN_ID") or None,

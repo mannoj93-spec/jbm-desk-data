@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""check_checksums - the release manifest SHA256SUMS: its scope, verification and refresh (repo 2.23).
+"""check_checksums - the release manifest SHA256SUMS: its scope, verification and refresh (repo 2.23; scope 2.25).
 
 Scope (the single definition; VALIDATION.md and README cite it): every file tracked by git that is maintained by a
 revision - code, workflows, documentation, tests, fixtures, protocols, the dashboard's source and static assets, and
@@ -7,6 +7,8 @@ frozen release artifacts - and nothing that changes without a revision:
   - collector and stream records: data/, streams/, state/, reports/, research/ (the lab's evidence and ledgers),
     registry/ (except its README and template), tests/ (except its README and template), desk/inputs/, desk/fits/;
   - append-only operational logs: desk/deployments.jsonl, desk/provenance_corrections.jsonl;
+  - content-addressed calendar copies written by the range job: desk/calendars/<sha256>.csv (each name is its own
+    hash, verified by desk/make_release.py check; repo 2.25);
   - files governed by a nested manifest: desk/research/o21/inputs/ and desk/research/o21/original/ (their hashes are
     in desk/research/o21/MANIFEST.json, which is itself in scope);
   - the manifest itself, and generated dashboard output (.dashboard-build/, never tracked).
@@ -25,7 +27,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = "SHA256SUMS"
 EXCLUDED_TREES = ("data/", "streams/", "state/", "reports/", "research/", "desk/inputs/", "desk/fits/",
-                  "desk/research/o21/inputs/", "desk/research/o21/original/", ".dashboard-build/")
+                  "desk/calendars/", "desk/research/o21/inputs/", "desk/research/o21/original/", ".dashboard-build/")
 EXCLUDED_FILES = {MANIFEST, "desk/deployments.jsonl", "desk/provenance_corrections.jsonl"}
 DATA_TREES_WITH_MAINTAINED_FILES = {"registry/": {"registry/README.md", "registry/_TEMPLATE.json"},
                                     "tests/": {"tests/README.md", "tests/_template.py"}}

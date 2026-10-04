@@ -1,0 +1,65 @@
+name: Recovery dispatcher
+# Repo 2.25 (docs/OPERATIONS.md, "Recovery dispatcher"). GitHub's native schedule stopped starting most scheduled runs
+# from Oct 3 2026 (docs/incidents/2026-10-03-native-schedule.md). This workflow dispatches collection, range
+# publication, the research streams and range scoring when they are due and no run covered them (recovery.py).
+# It is meant to be started from OUTSIDE GitHub's scheduler: an external cron calls the workflow_dispatch API at
+# 12, 27, 42 and 57 minutes past each hour with input trigger=external. The schedule below is only a fallback for the
+# day native scheduling recovers; a run it starts is labelled native-schedule. The dispatched work still runs on
+# GitHub's runners: this restores starts, not independence from GitHub.
+on:
+  workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'Leave blank when running it by hand; the external cron sends "external"'
+        required: false
+        type: string
+        default: ''
+      dry_run:
+        description: 'Plan only: list what is due, dispatch nothing'
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    - cron: '12,27,42,57 * * * *'
+permissions:
+  contents: read
+  actions: write      # list runs and dispatch the four target workflows; nothing else
+# One dispatcher at a time; a newer pending invocation replaces an older pending one, a running one is never cancelled.
+concurrency:
+  group: recovery-dispatcher
+  cancel-in-progress: false
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github      # cone mode: root files (recovery.py, cadence.json ...) plus this directory
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Dispatch due work that no run covered
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          DESK_DISPATCH_TRIGGER: ${{ inputs.trigger }}
+        run: python recovery.py ${{ inputs.dry_run && 'plan' || 'dispatch' }}
+  # The service watch runs on the same independent trigger, so a silent collector is reported even while GitHub's
+  # scheduler starts no watchdog run. It fails when no automated (native or recovery) collector run is stored within
+  # the stale limit; a native-only silence is a warning (watchdog.py).
+  service-watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: data/runs    # cone mode: root files plus the run records
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Collector service continuity
+        env:
+          WATCHDOG_STALE_MIN: ${{ vars.WATCHDOG_STALE_MIN || '90' }}
+        run: python watchdog.py

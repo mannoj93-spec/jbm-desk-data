@@ -121,21 +121,70 @@ the Actions API). A missed decision stays missed; later runs, backfills and reco
 it. The dashboard's Data health view shows these rows on the viewer's clock; a health report older than
 90 minutes is itself the sign of silence.
 
-**Independent heartbeat (not deployed; operator choice).** Anything scheduled by GitHub Actions, including
-another cron, fails with the scheduler. An independent check needs a scheduler outside GitHub reading
-`reports/health.json` (or the last commit time) and alerting when it is older than 90 minutes. Options:
-a Claude scheduled task (hourly, read-only over the raw file, notifying the owner by push or email), or a
-dead-man's-switch service pinged at the end of each collector run (needs an account and a secret URL).
-Neither is configured; no alert from either has been delivered.
+**Recovery dispatcher (repo 2.25).** From Oct 3 2026 GitHub's scheduler stopped creating most scheduled runs for this
+repository (`docs/incidents/2026-10-03-native-schedule.md`: no repository cause found; root cause not established).
+`.github/workflows/recovery.yml` runs `recovery.py`, which dispatches, with the workflow token (`actions: write`, no
+repository write), only work that is due and that no run has covered:
 
-**Release gate (repo 2.24.1).** `release-check.yml` (job `release`, check context `release`) verifies `SHA256SUMS`
+| Work | Due when | Last dispatch | Why that limit |
+|---|---|---|---|
+| Collector | latest 15-minute slot ≥ 4 min old, no run created since it | one per slot | a recovery run that finds its slot already collected yields (`recovery.py covered`) |
+| Range forecasts | 8–45 min after a 4H close, no live run since the close, or only failed ones | two per decision | `range_job` refuses a decision older than 1.0 h at its forecast step; 15 min covers runner start, the repo-write queue and preflight/refit |
+| Research streams | 3 min after the decision's range run completed (or 50 min after the close if none), no streams run since | one per decision, until +75 min | normally `workflow_run` starts it at once; PS1 executes within 90 min |
+| Range scoring | no run for 70 min | one per hour | hourly schedule + 10 min |
+
+Not covered, by design: the research lab, weekly report, dashboard and range monitor (not time-critical; they still
+run whenever the native schedule fires) and intake (issue events start it without the scheduler). It is invoked at 12, 27, 42 and 57 minutes past each hour by an **external cron calling the workflow_dispatch API**
+(input `trigger=external`); its own schedule is a fallback for when native scheduling recovers. A dispatched run still
+runs on GitHub's runners: this restores starts, not independence from GitHub. Nothing late is published: a range
+decision past +45 min is left missed, PS1 and companion deadlines are the jobs' own, and every missed decision stays
+recorded. Listing failures dispatch nothing; dispatch failures fail the run and are not retried beyond one attempt.
+
+Provenance (`provenance.py`, collector records from collector-2.8): `native-schedule`; `recovery` only when the run was
+dispatched with `trigger=recovery` by `github-actions[bot]` (a person typing "recovery" is recorded as `human` with the
+declaration kept); `human`; `chained`. The dispatcher passes `origin=<its run id>:<native-schedule | external | human>`
+("external" is declared by the caller, whose token is the owner's). Health keeps native and automated apart:
+`reports/health.json` `source` is native cadence, `source.service` is automated continuity (native or recovery),
+`source.coverage_24h` counts expected slots, runs by source, slot intervals holding an automated stored run and the
+longest automated gap; a person's run counts in neither. The watchdog (and the dispatcher's own `service-watch` job,
+which runs on the external trigger) fails on a service silence and warns on a native one. `monitors["recovery.yml"]`
+is stale after 45 min without a successful dispatcher run.
+
+Activation (operator, once): (1) create a fine-grained personal access token limited to this repository with
+**Actions: Read and write** only (Metadata read is implied), expiry ≤ 1 year; (2) create a cron job at an external
+scheduler (recommended: cron-job.org, free) that sends
+`POST https://api.github.com/repos/mannoj93-spec/jbm-desk-data/actions/workflows/recovery.yml/dispatches` with headers
+`Authorization: Bearer <token>`, `Accept: application/vnd.github+json`, `X-GitHub-Api-Version: 2022-11-28` and body
+`{"ref":"main","inputs":{"trigger":"external"}}` at minutes 12, 27, 42, 57 of every hour (UTC), with failure
+notifications on; (3) confirm a "Recovery dispatcher" run with event `workflow_dispatch` appears within 15 minutes.
+The token can start, re-run or cancel workflow runs in this repository; it cannot change code. Rotate it before expiry.
+
+**Acceptance (infrastructure, stated before observing).** After activation, `python scripts/service_acceptance.py
+--from <first full hour after activation>` over 24 unattended hours must show: at least 97% of slot intervals holding
+an automated stored run (at most 3 of 95 empty), no interval longer than 45 min without one, every range decision
+published, every PS1 decision executed or a recorded no-rebalance, an empty scoring backlog and no person-started run.
+It reports the measured values, not only the verdict; a window still open is "pending". Until it passes, recovery is
+"activated and observed", not "sustained". It is an infrastructure check, not a research criterion. Baseline on the
+24 h to Oct 4 19:00Z (native only): 5% of intervals, longest gap 413 min - fail.
+
+**Independent alerting.** The external scheduler's failure notifications cover a refused dispatch call; GitHub's
+failed-run notifications cover a failing dispatcher or service watch. Neither reports a silence of the external
+scheduler itself; an hourly Claude scheduled task reading `reports/health.json` remains an option, not configured.
+
+**Release gate (repo 2.24.1; push guard 2.25).** `release-check.yml` (job `release`, check context `release`) verifies `SHA256SUMS`
 and `desk/release.json` on every pull request. The gate makes it required on `main` with a ruleset. GitHub does not
 accept the GitHub Actions app as a ruleset bypass actor (import refused it as "an invalid actor", Oct 3 2026), so the
 data workflows push with a write **deploy key** instead of the workflow token: `scripts/commit_push.sh` uses the
 repository secret `DESK_DEPLOY_KEY` when it is set (SSH to GitHub, host keys read from `api.github.com/meta` over
 HTTPS) and the workflow token otherwise. Only the nine persistence steps receive the secret. The ruleset requires
-`release` on `main` and lets deploy keys bypass it, so data writes land while every other change - including the
-owner's - goes through a pull request whose check passed. Deploy-key pushes trigger push workflows (token pushes do
+`release` on `main` and lets deploy keys bypass it, so data writes land while every other push to `main` - including
+the owner's - needs a commit whose `release` check passed. The ruleset has **no pull-request rule** (read Oct 4 2026):
+a pull request is the working process, not an enforced requirement. To enforce it, import
+`ruleset_main_with_pr.json` (delivered with 2.25: the same ruleset plus a `pull_request` rule with zero required
+approvals; deploy keys still bypass). Since 2.25 `scripts/commit_push.sh` refuses to commit or push anything outside
+the calling job's documented outputs (`DESK_WRITER`, `scripts/writers.json`, `scripts/push_guard.py`): the staged
+changes before committing and every outgoing commit before each push, re-checked after a rebase; deletions,
+symlinks, merge commits and files in the release manifest's scope are refused for every writer. Deploy-key pushes trigger push workflows (token pushes do
 not); `fixtures.yml` and `release-check.yml` skip data-only paths. Residual risk: whoever holds the key can push
 unchecked; rotate it by replacing the deploy key and the secret together.
 

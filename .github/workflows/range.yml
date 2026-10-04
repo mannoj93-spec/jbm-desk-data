@@ -1,4 +1,5 @@
 name: Range forecasts
+run-name: ${{ inputs.trigger == 'recovery' && format('Range forecasts recovery {0}', inputs.slot) || '' }}
 # Crypto-desk range stream (desk/, package 12.2, repo 2.17): contract RC1D (desk/range_contract.py).
 # One run = one attempt for the last 4H close: prepare and freeze a batch of three forecasts in one
 # transaction (range_job.py forecast), push it, confirm the push on the remote BEFORE the window starts
@@ -11,11 +12,33 @@ on:
   schedule:
     - cron: '2 0,4,8,12,16,20 * * *'
   workflow_dispatch:
+    inputs:
+      # Repo 2.25: set only by the recovery dispatcher (recovery.py); provenance.py credits recovery only when the
+      # dispatch came from github-actions[bot]. Leave blank when running by hand.
+      trigger:
+        description: 'Automation only (recovery dispatcher); leave blank'
+        required: false
+        type: string
+        default: ''
+      slot:
+        description: 'Automation only: the decision or hour this recovery run is for'
+        required: false
+        type: string
+        default: ''
+      origin:
+        description: 'Automation only: the dispatcher run and its trigger'
+        required: false
+        type: string
+        default: ''
 permissions:
   contents: write
 jobs:
   forecast:
     runs-on: ubuntu-latest
+    env:
+      DESK_DISPATCH_TRIGGER: ${{ inputs.trigger }}
+      DESK_DISPATCH_SLOT: ${{ inputs.slot }}
+      DESK_DISPATCH_ORIGIN: ${{ inputs.origin }}
     timeout-minutes: 20
     # Shares the repository-write queue with the collector, intake and report jobs.
     concurrency:
@@ -73,6 +96,7 @@ jobs:
         if: always()
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
+          DESK_WRITER: range                                   # scripts/writers.json: the outputs this job may push
           COMMIT_MESSAGE: Range forecasts
           PERSIST_BUDGET_S: '100'
         run: bash scripts/commit_push.sh registry state/forecast_manifest.json state/registered.json state/range_attempts.jsonl state/range_publications.jsonl state/range_runs.jsonl desk/fits desk/inputs desk/calendars reports/range.md reports/range_status.json
@@ -93,6 +117,7 @@ jobs:
         if: always()
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
+          DESK_WRITER: range                                   # scripts/writers.json: the outputs this job may push
           COMMIT_MESSAGE: Range publication confirmed
           PERSIST_BUDGET_S: '60'
         run: bash scripts/commit_push.sh state/range_attempts.jsonl state/range_publications.jsonl state/range_runs.jsonl reports/range.md reports/range_status.json

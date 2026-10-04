@@ -1,6 +1,8 @@
 # File name kept (collect.yml) so the workflow's run history, badge and dispatch URL carry over
 # from the hourly collector it replaces. Schedule history lives in cadence.json.
 name: Collector
+# Repo 2.25: a run dispatched by the recovery dispatcher is named "Collector recovery <slot>" (recovery.py matches it).
+run-name: ${{ inputs.trigger == 'recovery' && format('Collector recovery {0}', inputs.slot) || '' }}
 on:
   schedule:
     # Every 15 minutes, off the quarter-hour. GitHub starts scheduled runs late (typically
@@ -13,6 +15,23 @@ on:
         description: 'Revisit retained source history; deduplicate existing observations'
         type: boolean
         default: false
+      # Set only by the recovery dispatcher (recovery.py). provenance.py credits a run to recovery only when it was
+      # also dispatched by github-actions[bot]; typed by hand these values are recorded as a person's declaration.
+      trigger:
+        description: 'Automation only (recovery dispatcher); leave blank'
+        required: false
+        type: string
+        default: ''
+      slot:
+        description: 'Automation only: the collector slot this recovery run is for'
+        required: false
+        type: string
+        default: ''
+      origin:
+        description: 'Automation only: the dispatcher run and its trigger'
+        required: false
+        type: string
+        default: ''
 permissions:
   contents: write
   actions: read      # health.py reads scheduled-run times (repo 2.24); read-only
@@ -20,9 +39,10 @@ permissions:
 # running and one pending, and a newer pending run cancels the older pending one. During an
 # outage or a long backfill, obsolete scheduled runs are therefore dropped instead of piling up;
 # a run already running is never cancelled. Manual and backfill runs have their own groups, so a
-# scheduled run never cancels a manual check.
+# scheduled run never cancels a manual check. Recovery runs (repo 2.25) have their own group too, so a recovery
+# dispatch never cancels a pending native run; one that arrives after its slot was collected yields (recovery.py).
 concurrency:
-  group: collector-${{ github.event_name == 'schedule' && 'scheduled' || (inputs.backfill && 'backfill' || 'manual') }}
+  group: collector-${{ github.event_name == 'schedule' && 'scheduled' || (inputs.trigger == 'recovery' && 'recovery') || (inputs.backfill && 'backfill' || 'manual') }}
   cancel-in-progress: false
 jobs:
   collect:
@@ -38,6 +58,10 @@ jobs:
       group: repo-write
       queue: max
       cancel-in-progress: false
+    env:
+      DESK_DISPATCH_TRIGGER: ${{ inputs.trigger }}
+      DESK_DISPATCH_SLOT: ${{ inputs.slot }}
+      DESK_DISPATCH_ORIGIN: ${{ inputs.origin }}
     defaults:
       run:
         shell: bash
@@ -48,8 +72,13 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      - name: Recovery yields when its slot is already collected
+        id: yield
+        if: inputs.trigger == 'recovery' && inputs.slot != ''
+        run: python recovery.py covered --slot "$DESK_DISPATCH_SLOT"
       - name: Collect
         id: collect
+        if: steps.yield.outputs.covered != 'true'
         continue-on-error: true
         timeout-minutes: ${{ inputs.backfill && 35 || 11 }}
         env:
@@ -63,17 +92,18 @@ jobs:
       # Repo 2.24: operational health on this run's clock. Read-only over every research and forecast record;
       # writes only reports/health.{json,md} and new rows of state/incidents.jsonl. Never fails the collector.
       - name: Record operational health
-        if: always()
+        if: always() && steps.yield.outputs.covered != 'true'
         continue-on-error: true
         timeout-minutes: 2
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: python health.py --record
       - name: Persist completed series and failure diagnostics
-        if: always()
+        if: always() && steps.yield.outputs.covered != 'true'
         timeout-minutes: 2
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
+          DESK_WRITER: collector                                   # scripts/writers.json: the outputs this job may push
           PERSIST_BUDGET_S: '100'
         run: bash scripts/commit_push.sh data state registry/frozen reports/health.json reports/health.md
       - name: Fail after preserving a partial run

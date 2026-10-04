@@ -111,6 +111,46 @@ def schedule_evidence(run):
                                 or (trigger(run) is None and run.get("runner") == "github"))
 
 
+def automated_evidence(run):
+    """Started without a person (repo 2.25): schedule evidence, or the recovery dispatcher as authenticated by
+    provenance.py (dispatched by github-actions[bot] with trigger=recovery). A person's dispatch is never automated,
+    whatever it declared."""
+    return schedule_evidence(run) or (is_routine(run) and (run.get("provenance") or {}).get("source") == "recovery")
+
+
+def gaps(runs, stale_min, evidence, since_ms=None, now_ms=None):
+    """Silences longer than stale_min between consecutive runs that satisfy `evidence` (see scheduled_gaps)."""
+    sel = sorted((r for r in runs if evidence(r)), key=lambda r: r["t"])
+    out = []
+    for a, b in zip(sel, sel[1:]):
+        if (b["t"] - a["t"]) / 60_000 > stale_min and (since_ms is None or b["t"] >= since_ms):
+            out.append({"start_ms": a["t"], "end_ms": b["t"], "minutes": round((b["t"] - a["t"]) / 60_000, 2)})
+    if sel and now_ms is not None and (now_ms - sel[-1]["t"]) / 60_000 > stale_min:
+        out.append({"start_ms": sel[-1]["t"], "end_ms": None, "minutes": round((now_ms - sel[-1]["t"]) / 60_000, 2)})
+    return out
+
+
+def coverage(periods, runs, a, b):
+    """Measured collection coverage over [a, b) (repo 2.25). Counts, never slot matching for single runs:
+    expected nominal slots; routine runs by provenance; slot-to-slot intervals holding at least one automated run
+    record (stored records only, so persisted); the longest interval between automated runs, edges included."""
+    routine = sorted((r for r in runs if is_routine(r) and a <= r["t"] < b), key=lambda r: r["t"])
+    auto = [r for r in routine if automated_evidence(r)]
+    buckets = slot_buckets(periods, a, b)
+    covered = sum(1 for s, e in buckets if any(s <= r["t"] < e for r in auto))
+    edges = [a] + [r["t"] for r in auto] + [b]
+    longest = max((y - x for x, y in zip(edges, edges[1:])), default=b - a)
+    def src(r):
+        return ("native-schedule" if schedule_evidence(r) else "recovery" if automated_evidence(r) else
+                (r.get("provenance") or {}).get("source") or trigger(r) or "unknown")
+    by = {}
+    for r in routine:
+        by[src(r)] = by.get(src(r), 0) + 1
+    return {"from_ms": a, "to_ms": b, "expected_slots": len(slots(periods, a, b)), "runs_by_source": by,
+            "automated_runs": len(auto), "intervals": len(buckets), "intervals_with_automated_run": covered,
+            "longest_automated_gap_min": round(longest / 60_000, 1)}
+
+
 def scheduled_gaps(runs, stale_min, since_ms=None, now_ms=None):
     """Silences between consecutive scheduled runs longer than stale_min (repo 2.24). Each gap is
     {start_ms, end_ms, minutes}: the record times of the run before and the run after (end_ms None while
