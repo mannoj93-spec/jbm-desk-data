@@ -1,3 +1,16 @@
+# Maintenance, revision 2.25.1 — 2026-10-04 (recovery chain to the research streams)
+
+**Why.** The first production recovery cycle (Oct 4 20:41–20:47Z: dispatcher run 37233076237 started by a test run of the external
+cron; collector, range and scoring runs started by `github-actions[bot]`) published the 20:00Z range decision eligibly,
+but no "Research streams" run followed: a run started with the workflow token raises no `workflow_run` event. The
+companion would have missed its window; the streams were dispatched by hand at 20:50:21Z (run 37233634940, recorded
+as `human`), the companion registered eligibly and PS1 executed. No research rule, deadline or record changes.
+
+| Change | Tests |
+|---|---|
+| `range.yml` (`actions: write`): a recovery run dispatches the research streams for its decision as soon as it has persisted (`recovery.py chain`, recovery-1.1.0; inputs trigger=recovery, origin `<range run>:range-recovery`) | `test_recovery.ChainTests` |
+| Known, not changed: the research dashboard, also chained by `workflow_run`, refreshes on its own schedule only while recovery is active | — |
+
 # Maintenance, revision 2.25 (crypto-desk 12.4.8 on the 12.4 release family) — 2026-10-04
 
 **Base.** `main` at `af9b0868` (2.24.1; later commits since the Oct 4 review `bf947639` are data only). Nothing here

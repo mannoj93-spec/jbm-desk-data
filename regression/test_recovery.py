@@ -373,5 +373,25 @@ class AcceptanceCheckTests(unittest.TestCase):
         self.assertFalse(self.run_check(runs, "2026-10-06T00:05:00Z")["checks"]["no_person_started_runs"])
 
 
+class ChainTests(unittest.TestCase):
+    """2.25.1: production showed no workflow_run event after a token-dispatched range run (Oct 4 20:47Z), so a
+    recovery range run dispatches the streams itself."""
+    def test_range_workflow_chains_streams_only_for_recovery_runs(self):
+        text = (ROOT / ".github/workflows/range.yml").read_text()
+        self.assertIn("  actions: write", text.split("jobs:", 1)[0])
+        step = text.split("- name: Start the research streams for this decision (recovery runs only)\n", 1)[1].split("\n      - name:", 1)[0]
+        self.assertIn("if: always() && inputs.trigger == 'recovery'", step)
+        self.assertIn('python recovery.py chain --slot "$DESK_DISPATCH_SLOT"', step)
+
+    def test_chain_dispatches_streams_with_recovery_inputs(self):
+        o = Opener()
+        res = R.dispatch("o/r", "tok", [("streams", "2026-10-04T20:00:00Z", "chained")], "9:range-recovery", opener=o)
+        self.assertTrue(res[0]["ok"])
+        _, url, data = o.calls[0]
+        self.assertTrue(url.endswith("/actions/workflows/research-streams.yml/dispatches"))
+        self.assertEqual(json.loads(data)["inputs"], {"trigger": "recovery", "slot": "2026-10-04T20:00:00Z",
+                                                      "origin": "9:range-recovery"})
+
+
 if __name__ == "__main__":
     unittest.main()

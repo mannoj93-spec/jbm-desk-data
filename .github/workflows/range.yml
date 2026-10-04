@@ -32,6 +32,7 @@ on:
         default: ''
 permissions:
   contents: write
+  actions: write     # repo 2.25.1: a recovery run starts the research streams itself (recovery.py chain)
 jobs:
   forecast:
     runs-on: ubuntu-latest
@@ -121,6 +122,14 @@ jobs:
           COMMIT_MESSAGE: Range publication confirmed
           PERSIST_BUDGET_S: '60'
         run: bash scripts/commit_push.sh state/range_attempts.jsonl state/range_publications.jsonl state/range_runs.jsonl reports/range.md reports/range_status.json
+      # Repo 2.25.1: a run started by the workflow token (the recovery dispatcher) never raises a workflow_run event, so
+      # the streams job would otherwise wait for the dispatcher's next invocation and the companion would miss its
+      # window. A recovery run therefore dispatches the streams for its decision itself, as soon as it has persisted.
+      - name: Start the research streams for this decision (recovery runs only)
+        if: always() && inputs.trigger == 'recovery'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python recovery.py chain --slot "$DESK_DISPATCH_SLOT"
       - name: Fail if preflight, refit, forecasting, publication or confirmation failed
         if: steps.preflight.outcome == 'failure' || steps.refit.outcome == 'failure' || steps.forecast.outcome == 'failure' || steps.publish.outcome == 'failure' || steps.confirm.outcome == 'failure'
         run: exit 1
