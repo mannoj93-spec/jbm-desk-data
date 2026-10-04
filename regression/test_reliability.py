@@ -332,13 +332,13 @@ class WorkflowTests(TempProject):
         bindir=self.base/'bin';bindir.mkdir()
         fake=bindir/'git';fake.write_text('#!/bin/sh\ncase "$1" in\n push) exit 1;;\n symbolic-ref) echo main;;\n diff) exit 0;;\nesac\nexit 0\n');fake.chmod(0o755)
         sleep=bindir/'sleep';sleep.write_text('#!/bin/sh\nexit 0\n');sleep.chmod(0o755)
-        result=subprocess.run(['bash',str(Path('scripts/commit_push.sh').resolve())],env=dict(os.environ,PATH=str(bindir)+':'+os.environ['PATH']),capture_output=True)
+        result=subprocess.run(['bash',str(Path('scripts/commit_push.sh').resolve())],env=dict(os.environ,PATH=str(bindir)+':'+os.environ['PATH'],DESK_WRITER='collector'),capture_output=True)
         self.assertNotEqual(result.returncode,0)
 
     def test_push_success(self):
         bindir=self.base/'bin';bindir.mkdir()
         fake=bindir/'git';fake.write_text('#!/bin/sh\nif [ "$1" = symbolic-ref ]; then echo main; fi\nexit 0\n');fake.chmod(0o755)
-        result=subprocess.run(['bash',str(Path('scripts/commit_push.sh').resolve())],env=dict(os.environ,PATH=str(bindir)+':'+os.environ['PATH']),capture_output=True)
+        result=subprocess.run(['bash',str(Path('scripts/commit_push.sh').resolve())],env=dict(os.environ,PATH=str(bindir)+':'+os.environ['PATH'],DESK_WRITER='collector'),capture_output=True)
         self.assertEqual(result.returncode,0)
 
     def test_issue_not_closed_when_push_fails(self):

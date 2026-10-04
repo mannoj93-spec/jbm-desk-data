@@ -1,3 +1,19 @@
+# Maintenance, revision 2.25 (crypto-desk 12.4.8 on the 12.4 release family) — 2026-10-04
+
+**Base.** `main` at `af9b0868` (2.24.1; later commits since the Oct 4 review `bf947639` are data only). Nothing here
+changes the range model, contracts RC1D/RC1, `range-job-12.4.0`, PS1 protocol v3 or its clock, calibration, statistical
+rules, deadlines, registered forecasts, scores or any recorded execution. Missed decisions stay missed.
+
+| Finding (reproduced) | Change | Tests |
+|---|---|---|
+| **Native schedule degraded.** 82 collector slots Oct 3 21:09 – Oct 4 17:50 UTC, 4 scheduled runs; range decisions Oct 4 00:00, 04:00, 12:00 arrived 3.19, 1.75, 3.48 h late and were refused; no queued, cancelled or failed collector run; no repository cause found (`docs/incidents/2026-10-03-native-schedule.md`) | `recovery.py` + `recovery.yml`: an externally triggered dispatcher starts collection, range publication, research streams and scoring when due and uncovered, inside the contracts' deadlines; recovery collector runs have their own concurrency group and yield when their slot is already collected | `test_recovery` (21): dropped and late native starts over a simulated day, queue/in-progress coverage, one dispatch per key, range window +8…+45 min and bounded retries, streams/PS1 deadline, scoring, permission/5xx/unavailable API, yield, provenance, wiring |
+| **Provenance not recorded.** A collector record said only `trigger` | `provenance.py`; collector-2.8 records `provenance` (native-schedule / recovery authenticated by `github-actions[bot]` / human / chained); the dispatcher passes `origin` | same |
+| **Health could not tell native cadence from service.** | `health-1.1.0`: `source` stays native; `source.service` automated continuity with its own gaps and `service_gap` incidents; `source.coverage_24h`; dispatcher monitor (`recovery.yml`, 45 min). `watchdog.py` fails on a service silence, warns on a native one; a person's run counts in neither. Dashboard rows for service and 24 h coverage | `test_recovery`, `test_health`, `test_rev26`, `model.test.mjs` |
+| **Index leak in `commit_push.sh`.** An unrelated staged `collector.py` was committed and pushed with `data` | `DESK_WRITER` + `scripts/writers.json` + `scripts/push_guard.py`: staged changes and every outgoing commit checked before each push and after a rebase; deletions, symlinks, merges and release-manifest files refused | `test_push_guard` (12), `test_push_credential` (writer per step) |
+| **Calendar copies vs. checksums.** `range_job` writes `desk/calendars/<sha>.csv`, which the release manifest scope included | scope excludes the content-addressed copies (self-verifying, `make_release.py check`); the range writer may add, never modify, them | `test_push_guard`, `test_checksums` |
+| **PR enforcement overstated.** Docs said every change goes through a pull request; the ruleset has only the required `release` check | `docs/OPERATIONS.md` corrected; an import file adding a `pull_request` rule is delivered (operator choice; not applied) | review |
+| **Receipt.** | `desk/deployments.jsonl`: PRs #29/#30 merged, release gate active, deploy-key persistence from a scheduled run, first eligible PS1 execution under 3.2.0 | release check |
+
 # Maintenance, revision 2.24.1 — 2026-10-03 (push credential for the release gate)
 
 **Why.** Importing the release-gate ruleset failed: GitHub rejects the GitHub Actions app as a bypass actor, so a

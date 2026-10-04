@@ -1,0 +1,41 @@
+{
+  "_note": "Documented outputs of every automated repository writer (repo 2.25). scripts/commit_push.sh refuses to commit or push anything else: scripts/push_guard.py checks the staged changes before committing and every outgoing commit before each push attempt, again after any rebase. An entry ending in '/' is a directory prefix; any other entry is an exact path. 'add_only' entries are regular expressions for content-addressed files that may be added but never modified. Only additions and modifications of regular files are accepted: deletions, renames, symlinks, submodules and merge commits are refused, and so is any file maintained by a revision (scripts/check_checksums.py scope), whatever a writer lists. Change this file only in a reviewed revision.",
+  "writers": {
+    "collector": {
+      "workflow": ".github/workflows/collect.yml",
+      "allow": ["data/", "registry/frozen/", "state/checkpoints.json", "state/liq_recent_keys.json",
+                "state/hl_cohort_fixed_v2.json", "state/incidents.jsonl", "state/forecast_manifest.json",
+                "state/registered.json", "reports/health.json", "reports/health.md"]
+    },
+    "range": {
+      "workflow": ".github/workflows/range.yml",
+      "allow": ["registry/", "state/forecast_manifest.json", "state/registered.json", "state/range_attempts.jsonl",
+                "state/range_publications.jsonl", "state/range_runs.jsonl", "desk/fits/", "desk/inputs/",
+                "reports/range.md", "reports/range_status.json"],
+      "add_only": ["^desk/calendars/[0-9a-f]{64}\\.csv$"]
+    },
+    "range-score": {
+      "workflow": ".github/workflows/range-score.yml",
+      "allow": ["registry/scores.jsonl", "registry/evidence/", "state/range_scoring.jsonl", "reports/range.md",
+                "reports/range_status.json"]
+    },
+    "streams": {
+      "workflow": ".github/workflows/research-streams.yml",
+      "allow": ["streams/", "reports/companion_b1.json", "reports/companion_b1.md", "reports/paper_ps1.json",
+                "reports/paper_ps1.md", "reports/feasibility.json", "reports/feasibility.md"]
+    },
+    "research": {
+      "workflow": ".github/workflows/research.yml",
+      "allow": ["research/v2/", "research/evidence/", "reports/research.md", "reports/skill_proposals.md",
+                "reports/latest.md", "state/lab_registrations.json", "state/lab_run_state.json"]
+    },
+    "report": {
+      "workflow": ".github/workflows/report.yml",
+      "allow": ["reports/", "registry/scores.jsonl", "registry/evidence/", "tests/results.jsonl"]
+    },
+    "intake": {
+      "workflow": ".github/workflows/intake.yml",
+      "allow": ["registry/", "state/forecast_manifest.json", "state/registered.json", "state/intake_receipts.json"]
+    }
+  }
+}

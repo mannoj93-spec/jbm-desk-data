@@ -1,4 +1,5 @@
 name: Research streams
+run-name: ${{ inputs.trigger == 'recovery' && format('Research streams recovery {0}', inputs.slot) || '' }}
 # Repo 2.20 prospective research streams, isolated from the range stream, its scoring and the collector:
 #   companion B1   desk/companion_job.py  - B1 (HAR/calendar without DVOL) registered beside each RC1D batch, same
 #                                           decision, snapshot and window, in streams/rc1d-b1/ (never registry/)
@@ -23,6 +24,24 @@ on:
   schedule:
     - cron: '50 0,4,8,12,16,20 * * *'
   workflow_dispatch:
+    inputs:
+      # Repo 2.25: set only by the recovery dispatcher (recovery.py); provenance.py credits recovery only when the
+      # dispatch came from github-actions[bot]. Leave blank when running by hand.
+      trigger:
+        description: 'Automation only (recovery dispatcher); leave blank'
+        required: false
+        type: string
+        default: ''
+      slot:
+        description: 'Automation only: the decision or hour this recovery run is for'
+        required: false
+        type: string
+        default: ''
+      origin:
+        description: 'Automation only: the dispatcher run and its trigger'
+        required: false
+        type: string
+        default: ''
 permissions:
   contents: write
 jobs:
@@ -34,6 +53,9 @@ jobs:
       queue: max
       cancel-in-progress: false
     env:
+      DESK_DISPATCH_TRIGGER: ${{ inputs.trigger }}
+      DESK_DISPATCH_SLOT: ${{ inputs.slot }}
+      DESK_DISPATCH_ORIGIN: ${{ inputs.origin }}
       TRIGGERING_RUN_ID: ${{ github.event.workflow_run.id }}
     defaults:
       run:
@@ -72,6 +94,7 @@ jobs:
         continue-on-error: true
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
+          DESK_WRITER: streams                                   # scripts/writers.json: the outputs this job may push
           COMMIT_MESSAGE: Research streams registered
           PERSIST_BUDGET_S: '90'
         run: python desk/stream_ops.py run --stage publish --required -- bash scripts/commit_push.sh streams
@@ -102,6 +125,7 @@ jobs:
         if: always()
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
+          DESK_WRITER: streams                                   # scripts/writers.json: the outputs this job may push
           COMMIT_MESSAGE: Research streams
           PERSIST_BUDGET_S: '90'
         run: bash scripts/commit_push.sh streams reports/companion_b1.json reports/companion_b1.md reports/paper_ps1.json reports/paper_ps1.md reports/feasibility.json reports/feasibility.md

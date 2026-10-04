@@ -34,6 +34,7 @@ jobs:
         if: always()
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
+          DESK_WRITER: report                                   # scripts/writers.json: the outputs this job may push
         run: bash scripts/commit_push.sh reports registry/scores.jsonl registry/evidence tests/results.jsonl
       - name: Fail if report construction failed
         if: steps.report.outcome == 'failure'

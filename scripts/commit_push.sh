@@ -3,6 +3,15 @@
 # PERSIST_BUDGET_S bounds the whole push/rebase loop (default 240 s): each network step gets at
 # most the time left, so a hung remote cannot run persistence past the workflow's job limit.
 set -euo pipefail
+# Writer identity (repo 2.25). DESK_WRITER names this caller's entry in scripts/writers.json; scripts/push_guard.py
+# refuses anything that is not one of its documented outputs - in the staged changes before committing and in every
+# outgoing commit before each push, re-checked after a rebase. Unset or unknown: nothing is committed or pushed.
+writer=${DESK_WRITER:-}
+if [ -z "$writer" ]; then
+  echo "DESK_WRITER is unset: no documented outputs to check against; nothing committed or pushed." >&2
+  exit 1
+fi
+guard=$(dirname "$0")/push_guard.py
 message=${COMMIT_MESSAGE:-"Update desk data"}
 budget=${PERSIST_BUDGET_S:-240}
 started=$SECONDS
@@ -54,11 +63,24 @@ for path in "$@"; do
     git add -- "$path"
   fi
 done
+if ! python3 "$guard" --writer "$writer" staged; then
+  echo "Push guard refused the staged changes; nothing committed or pushed." >&2
+  exit 1
+fi
 if ! git diff --cached --quiet; then
   git commit -m "$message"
 fi
 branch=$(git symbolic-ref --short HEAD)
+# The last remote tip this job knows: the checkout's origin/<branch>, then FETCH_HEAD after each rebase.
+if ! base=$(git rev-parse --verify -q "refs/remotes/origin/$branch"); then
+  echo "No origin/$branch to compare outgoing commits with; nothing pushed." >&2
+  exit 1
+fi
 for attempt in 1 2 3 4; do
+  if ! python3 "$guard" --writer "$writer" outgoing "$base"; then
+    echo "Push guard refused an outgoing commit; nothing pushed." >&2
+    exit 1
+  fi
   if bounded git push "$remote" "HEAD:$branch"; then
     if [ "$remote" != origin ]; then
       bounded git fetch --quiet origin "$branch" || true   # refresh origin/<branch> for later persistence checks
@@ -73,6 +95,7 @@ for attempt in 1 2 3 4; do
     echo "Rebase failed; data retained locally, remote persistence not confirmed." >&2
     exit 1
   fi
+  base=$(git rev-parse FETCH_HEAD)
   sleep "$attempt"
 done
 echo "Push failed after $attempt attempts in $((SECONDS - started)) s; remote persistence not confirmed." >&2

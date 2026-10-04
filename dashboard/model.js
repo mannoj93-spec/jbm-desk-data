@@ -159,9 +159,22 @@ export function opsRows(ops, now = Date.now()) {
     return {area: `Monitor ${k}`, state: st, detail: `last success ${v.last_success_utc || 'unknown'}`};
   });
   const cov = ops.ps1_coverage || {};
+  // Repo 2.25: service continuity (native or recovery-dispatcher runs) is judged apart from the native schedule;
+  // a person's dispatch counts as neither. Reports written before 2.25 carry no service block: unknown.
+  const svc = src.service || null;
+  const svcAge = svc ? (now - Date.parse(svc.last_automated_utc)) / 60000 : NaN;
+  const svcState = !Number.isFinite(svcAge) ? 'unknown' : svcAge > (src.stale_limit_min || HEALTH_STALE_MIN) ? 'stale' : 'within cadence';
+  const c24 = src.coverage_24h;
+  const svcRows = [
+    {area: 'Collector service (automated)', state: svcState,
+     detail: svc ? `last automated run ${svc.last_automated_utc || 'unknown'} (${svc.last_source || '—'}); ${(svc.gaps || []).length} silence(s) in 72 h` : 'not in this report (before repo 2.25)'},
+    ...(c24 ? [{area: 'Collection, 24 h to report', state: `${c24.intervals_with_automated_run} of ${c24.intervals} intervals`,
+               detail: `${c24.expected_slots} slots; runs ${Object.entries(c24.runs_by_source || {}).map(([k, v]) => `${k} ${v}`).join(', ') || 'none'}; longest automated gap ${c24.longest_automated_gap_min} min`}] : []),
+  ];
   return [
     {area: 'Health report', state: reportState, detail: `generated ${ops.generated_utc}; ${ops.clock}`},
-    {area: 'Collector schedule', state: srcState, detail: `last scheduled run ${src.last_scheduled_utc || 'unknown'}`},
+    {area: 'Collector schedule', state: srcState, detail: `native: last scheduled run ${src.last_scheduled_utc || 'unknown'}`},
+    ...svcRows,
     {area: 'Recorded silences', state: gaps.length ? `${gaps.length} in ${72} h` : 'none', detail: gaps.join('; ') || '—'},
     {area: 'Range decisions', state: problems(ops.decisions?.range) ? `${problems(ops.decisions.range)} missed or failed` : 'none missed', detail: last(ops.decisions?.range)},
     {area: 'PS1 decisions', state: ops.decisions?.ps1_launched ? (problems(ops.decisions.ps1) ? `${problems(ops.decisions.ps1)} missed` : 'none missed') : 'not launched', detail: last(ops.decisions?.ps1)},

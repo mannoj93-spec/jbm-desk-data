@@ -1,4 +1,5 @@
 name: Range scoring
+run-name: ${{ inputs.trigger == 'recovery' && format('Range scoring recovery {0}', inputs.slot) || '' }}
 # Hourly maturity scoring of the desk's range stream (desk/range_job.py score; since repo 2.17).
 # Independent of forecast generation: it scores forecasts already registered, whatever the forecast workflow
 # or its tests are doing. The repository scorer (scoring.py) requires complete, aligned Binance BTCUSDT
@@ -9,11 +10,33 @@ on:
   schedule:
     - cron: '41 * * * *'
   workflow_dispatch:
+    inputs:
+      # Repo 2.25: set only by the recovery dispatcher (recovery.py); provenance.py credits recovery only when the
+      # dispatch came from github-actions[bot]. Leave blank when running by hand.
+      trigger:
+        description: 'Automation only (recovery dispatcher); leave blank'
+        required: false
+        type: string
+        default: ''
+      slot:
+        description: 'Automation only: the decision or hour this recovery run is for'
+        required: false
+        type: string
+        default: ''
+      origin:
+        description: 'Automation only: the dispatcher run and its trigger'
+        required: false
+        type: string
+        default: ''
 permissions:
   contents: write
 jobs:
   score:
     runs-on: ubuntu-latest
+    env:
+      DESK_DISPATCH_TRIGGER: ${{ inputs.trigger }}
+      DESK_DISPATCH_SLOT: ${{ inputs.slot }}
+      DESK_DISPATCH_ORIGIN: ${{ inputs.origin }}
     timeout-minutes: 15
     # Shares the repository-write queue with the collector, forecast, intake and report jobs.
     concurrency:
@@ -38,6 +61,7 @@ jobs:
         if: always()
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
+          DESK_WRITER: range-score                                   # scripts/writers.json: the outputs this job may push
           COMMIT_MESSAGE: Range scores
           PERSIST_BUDGET_S: '120'
         run: bash scripts/commit_push.sh registry/scores.jsonl registry/evidence state/range_scoring.jsonl reports/range.md reports/range_status.json

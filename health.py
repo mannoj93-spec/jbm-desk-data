@@ -3,8 +3,11 @@
 
 Five questions are kept apart, because each fails differently and a green answer to one says nothing about
 another:
-  source      the collector's scheduled cadence: last scheduled run, its age, and every silence longer than the
+  source      the collector's NATIVE scheduled cadence: last scheduled run, its age, and every silence longer than the
               stale limit (cadence.scheduled_gaps), recovered or ongoing. A recovered gap stays listed.
+              source.service (repo 2.25): automated service continuity - native or recovery-dispatcher runs
+              (provenance.py), with its own gaps; source.coverage_24h: expected slots, runs by provenance, intervals
+              holding an automated stored run and the longest automated gap. A person's run counts in neither.
   decisions   expected 4H work: the range stream (published / skipped / failed / absent, desk/range_monitor.py's
               rules) and PS1 after its launch (executed / no-rebalance / missed-execution / no decision record /
               not expected under an operator pause or termination / pending inside its deadline). Recorded
@@ -41,10 +44,11 @@ for p in (str(ROOT), str(ROOT / "desk")):
 import cadence                    # noqa: E402
 from watchdog import load_runs    # noqa: E402
 
-VERSION = "health-1.0.0"
+VERSION = "health-1.1.0"
 UTC = dt.timezone.utc
 LOOKBACK_H = 72                   # decisions and gaps examined (incidents already recorded stay recorded)
-MONITORS = {"watchdog.yml": 90, "range-monitor.yml": 510}   # minutes: 90 = the collector stale limit (three
+MONITORS = {"watchdog.yml": 90, "range-monitor.yml": 510}
+DISPATCHER = ("recovery.yml", 45)   # repo 2.25: any event; three 15-minute invocations   # minutes: 90 = the collector stale limit (three
 #   30-minute watchdog slots); 510 = 8.5 h, the range monitor's publication limit (two 4-hourly slots + grace)
 SCHEDULED_WORKFLOWS = ("collect.yml", "watchdog.yml", "dashboard.yml", "intake.yml", "range-score.yml", "range.yml",
                        "research-streams.yml", "range-monitor.yml", "research.yml")
@@ -95,11 +99,27 @@ def source(base, now_ms, stale_min):
     age = (now_ms - last) / 60_000 if last else None
     state = "missing" if last is None else ("stale" if age > stale_min else
                                             ("failing" if cadence.failure_summary(sched[-1])[0] else "healthy"))
-    manual = [r for r in runs if cadence.is_routine(r) and not cadence.schedule_evidence(r) and (not last or r["t"] > last)]
+    manual = [r for r in runs if cadence.is_routine(r) and not cadence.automated_evidence(r) and (not last or r["t"] > last)]
+    auto = [r for r in runs if cadence.automated_evidence(r)]
+    alast = auto[-1] if auto else None
+    aage = (now_ms - alast["t"]) / 60_000 if alast else None
+    agaps = cadence.gaps(runs, stale_min, cadence.automated_evidence, since_ms=now_ms - LOOKBACK_H * 3_600_000, now_ms=now_ms)
+    service = {"state": "missing" if alast is None else ("stale" if aage > stale_min else
+                                                         ("failing" if cadence.failure_summary(alast)[0] else "healthy")),
+               "last_automated_utc": iso(alast["t"]) if alast else None,
+               "last_source": None if alast is None else ("native-schedule" if cadence.schedule_evidence(alast) else "recovery"),
+               "age_min": round(aage, 1) if aage is not None else None,
+               "gaps": [dict(g, start_utc=iso(g["start_ms"]), end_utc=iso(g["end_ms"])) for g in agaps],
+               "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts"}
+    periods = cadence.load(base)
+    cov = cadence.coverage(periods, runs, now_ms - 24 * 3_600_000, now_ms) if periods else None
+    if cov:
+        cov = dict(cov, from_utc=iso(cov["from_ms"]), to_utc=iso(cov["to_ms"]))
     return {"state": state, "last_scheduled_utc": iso(last), "age_min": round(age, 1) if age is not None else None,
             "stale_limit_min": stale_min, "manual_runs_since": len(manual),
             "gaps": [dict(g, start_utc=iso(g["start_ms"]), end_utc=iso(g["end_ms"])) for g in gaps],
-            "rule": "scheduled runs only (manual and local runs do not close a scheduled gap)"}
+            "rule": "scheduled runs only (manual, local and recovery runs do not close a scheduled gap)",
+            "service": service, "coverage_24h": cov}
 
 
 # --------------------------------------------------------------------------------------------- decisions
@@ -226,10 +246,25 @@ def monitors(now, token=None, repo=None, opener=None):
             e["stale_after_min"] = lim
             e["state"] = "unknown" if last_ok is None else ("stale" if (now - last_ok).total_seconds() / 60 > lim else "fresh")
         out[wf] = e
+    wf, lim = DISPATCHER
+    try:
+        req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/workflows/{wf}/runs?per_page=30",
+                                     headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
+        with opener(req, timeout=20) as r:
+            runs = json.loads(r.read()).get("workflow_runs", [])
+        ok = [parse(x.get("run_started_at") or x.get("created_at")) for x in runs if x.get("conclusion") == "success"]
+        ok = [s for s in ok if s]
+        last_ok = max(ok) if ok else None
+        out[wf] = {"last_success_utc": last_ok and last_ok.strftime("%Y-%m-%dT%H:%M:%SZ"), "stale_after_min": lim,
+                   "events": sorted({x.get("event") for x in runs if x.get("event")}),
+                   "state": "unknown" if last_ok is None else ("stale" if (now - last_ok).total_seconds() / 60 > lim else "fresh")}
+    except Exception as exc:                                      # noqa: BLE001 - reported as unknown
+        out[wf] = {"state": "unknown", "error": type(exc).__name__}
     states = [v.get("state") for k, v in out.items() if k in MONITORS]
     return {"source": "GitHub Actions API, scheduled runs", "workflows": out,
             "newest_scheduled_start_utc": newest and newest.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "state": "stale" if "stale" in states else ("unknown" if "unknown" in states or not states else "fresh")}
+            "state": "stale" if "stale" in states else ("unknown" if "unknown" in states or not states else "fresh"),
+            "dispatcher_state": (out.get(DISPATCHER[0]) or {}).get("state")}
 
 
 # --------------------------------------------------------------------------------------------- assemble
@@ -260,6 +295,9 @@ def incidents(doc):
     for g in doc["source"]["gaps"]:
         out.append({"kind": "collector_gap", "subject": "scheduled collector", "start_utc": g["start_utc"],
                     "end_utc": g["end_utc"], "minutes": g["minutes"], "status": "ongoing" if g["end_utc"] is None else "resolved"})
+    for g in (doc["source"].get("service") or {}).get("gaps", []):
+        out.append({"kind": "service_gap", "subject": "automated collector (native or recovery)", "start_utc": g["start_utc"],
+                    "end_utc": g["end_utc"], "minutes": g["minutes"], "status": "ongoing" if g["end_utc"] is None else "resolved"})
     for stream in ("range", "ps1"):
         for k, v in doc["decisions"][stream].items():
             if any(v.startswith(p) for p in PROBLEM_STATES):
@@ -283,7 +321,7 @@ def record(base, doc):
         if inc["kind"].endswith("_decision"):
             end = None
         row = dict(inc, first_recorded_utc=doc["generated_utc"], detector=VERSION, clock=doc["clock"],
-                   recorded_after_end=bool(inc["kind"] == "collector_gap" and inc["end_utc"] is not None))
+                   recorded_after_end=bool(inc["kind"] in ("collector_gap", "service_gap") and inc["end_utc"] is not None))
         new.append(row)
         have.add(k)
     if new:
@@ -303,6 +341,13 @@ def markdown(doc):
          f"**Source:** {s['state']}; last scheduled collector run {s['last_scheduled_utc']} ({s['age_min']} min). "
          f"Silences over {s['stale_limit_min']} min in the last {LOOKBACK_H} h: "
          + ("; ".join(f"{g['start_utc']} to {g['end_utc'] or 'ongoing'} ({g['minutes']:.0f} min)" for g in s["gaps"]) or "none") + ".", "",
+         f"**Service continuity:** {(s.get('service') or {}).get('state')}; last automated run "
+         f"{(s.get('service') or {}).get('last_automated_utc')} ({(s.get('service') or {}).get('last_source')}, "
+         f"{(s.get('service') or {}).get('age_min')} min). "
+         + (lambda c: (f"Last 24 h: {c['expected_slots']} slots; runs by source "
+                       + ", ".join(f"{k} {v}" for k, v in sorted(c['runs_by_source'].items()))
+                       + f"; {c['intervals_with_automated_run']} of {c['intervals']} slot intervals hold an automated run; "
+                       f"longest automated gap {c['longest_automated_gap_min']} min.") if c else "")(s.get("coverage_24h")), "",
          "**Range decisions:** " + ("; ".join(f"{k[5:16]} {v}" for k, v in list(doc["decisions"]["range"].items())[-8:]) or "none due") + ".", "",
          "**PS1 decisions:** " + ("; ".join(f"{k[5:16]} {v}" for k, v in list(doc["decisions"]["ps1"].items())[-8:]) or "not launched") + ".", "",
          f"**PS1 report coverage:** {cov.get('report_coverage')} as of {cov.get('report_generated_utc')}; due since and not covered: "

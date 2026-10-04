@@ -39,7 +39,7 @@ class PushCredentialTests(unittest.TestCase):
 
     def run_push(self, **env):
         e = {k: v for k, v in os.environ.items() if k not in ('DESK_DEPLOY_KEY', 'DESK_PUSH_URL')}
-        e.update(TMPDIR=str(self.tmpdir), PERSIST_BUDGET_S='60')
+        e.update(TMPDIR=str(self.tmpdir), PERSIST_BUDGET_S='60', DESK_WRITER='collector')
         e.update(env)
         return subprocess.run(['bash', str(SCRIPT), 'data'], cwd=self.work, env=e, capture_output=True, text=True)
 
@@ -77,6 +77,8 @@ class PushCredentialTests(unittest.TestCase):
                 pushes = 'commit_push.sh' in step or 'process_issues.py' in step
                 has_key = 'DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}' in step
                 self.assertEqual(pushes, has_key, f'{wf.name}: {step[:60]}')
+                # repo 2.25: every persistence step names its writer (scripts/writers.json)
+                self.assertEqual(pushes, bool(re.search(r'\n\s*DESK_WRITER: [a-z-]+', step)), f'{wf.name}: {step[:60]}')
                 with_key += has_key
         self.assertEqual(with_key, 9)
 
