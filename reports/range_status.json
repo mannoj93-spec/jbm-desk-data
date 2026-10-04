@@ -8,12 +8,12 @@
    "b0_point_lr": 0.022847345339,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-03T20:00:00Z",
-   "elapsed_fraction": 0.3886,
+   "elapsed_fraction": 0.3957,
    "end_utc": "2026-10-04T20:15:00Z",
    "frozen_sha256": "bdb02b84872a7351d42348da6729496a4c6bb98db3637bb97d52688aecc3c5ae",
    "horizon": "24h",
    "id": "range-rc1d-24h-20261003T2000Z",
-   "now_utc": "2026-10-04T05:34:36.152Z",
+   "now_utc": "2026-10-04T05:44:44.369Z",
    "point_lr": 0.015516288235,
    "points_at_decision_close": {
     "point": 1326.0,
@@ -47,7 +47,7 @@
    "frozen_sha256": "459d6d04ec536412575bfba31b8e744ecaf13c2e12c88a870ffcb6297e63a4f9",
    "horizon": "4h",
    "id": "range-rc1d-4h-20261003T2000Z",
-   "now_utc": "2026-10-04T05:34:36.152Z",
+   "now_utc": "2026-10-04T05:44:44.369Z",
    "point_lr": 0.003749600683,
    "points_at_decision_close": {
     "point": 318.5,
@@ -76,12 +76,12 @@
    "b0_point_lr": 0.051463367988,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-03T20:00:00Z",
-   "elapsed_fraction": 0.1295,
+   "elapsed_fraction": 0.1319,
    "end_utc": "2026-10-06T20:15:00Z",
    "frozen_sha256": "01c4a02b26d64a266430f4fdc0f8dff22c2c6d85f36d43186a86f20758fce0eb",
    "horizon": "72h",
    "id": "range-rc1d-72h-20261003T2000Z",
-   "now_utc": "2026-10-04T05:34:36.152Z",
+   "now_utc": "2026-10-04T05:44:44.369Z",
    "point_lr": 0.039218423856,
    "points_at_decision_close": {
     "point": 3391.6,
@@ -200,7 +200,7 @@
  },
  "expected_decisions": 49,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-10-04T05:34:36.152Z",
+ "generated_utc": "2026-10-04T05:44:44.369Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
@@ -208,10 +208,10 @@
  "orphans": [],
  "outcomes": {
   "failed": 1,
-  "missing": 3,
+  "missing": 2,
   "registered-pending": 14,
   "scored": 29,
-  "skipped": 2
+  "skipped": 3
  },
  "provenance_corrections": [
   {
@@ -386,8 +386,8 @@
   {
    "decision_utc": "2026-10-04T04:00:00Z",
    "ids": [],
-   "outcome": "missing",
-   "reason": "no production attempt or run record (run absent, or it failed before persisting)"
+   "outcome": "skipped",
+   "reason": "stale decision (1.75h > 1.0h)"
   }
  ],
  "release": {
@@ -396,7 +396,7 @@
   "release_sha256": "7e20572b63e15eb3f6fa46720a6781fb9d7ed4c0be321be997710f44f0d90d12",
   "repo_revision": "2.24"
  },
- "runs_recorded": 308,
+ "runs_recorded": 312,
  "scored": {
   "24h": {
    "coverage_b0": 0.805,
