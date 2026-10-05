@@ -2,7 +2,7 @@
 # from the hourly collector it replaces. Schedule history lives in cadence.json.
 name: Collector
 # Repo 2.25: a run dispatched by the recovery dispatcher is named "Collector recovery <slot>" (recovery.py matches it).
-run-name: ${{ inputs.trigger == 'recovery' && format('Collector recovery {0}', inputs.slot) || '' }}
+run-name: ${{ inputs.trigger == 'recovery' && format('Collector recovery {0} via {1}', inputs.slot, inputs.origin) || '' }}
 on:
   schedule:
     # Every 15 minutes, off the quarter-hour. GitHub starts scheduled runs late (typically
@@ -104,6 +104,7 @@ jobs:
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           DESK_WRITER: collector                                   # scripts/writers.json: the outputs this job may push
+          DESK_META_TOKEN: ${{ github.token }}             # authenticated host-key lookup (scripts/github_host_keys.py)
           PERSIST_BUDGET_S: '100'
         run: bash scripts/commit_push.sh data state registry/frozen reports/health.json reports/health.md
       - name: Fail after preserving a partial run

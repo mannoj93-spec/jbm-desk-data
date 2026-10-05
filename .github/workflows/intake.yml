@@ -38,6 +38,7 @@ jobs:
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           DESK_WRITER: intake                                   # scripts/writers.json: the outputs this job may push
+          DESK_META_TOKEN: ${{ github.token }}             # authenticated host-key lookup (scripts/github_host_keys.py)
           GH_TOKEN: ${{ github.token }}
           INPUT_ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: python process_issues.py

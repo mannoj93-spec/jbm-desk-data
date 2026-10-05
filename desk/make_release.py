@@ -59,7 +59,7 @@ def body(desk=HERE, previous=None):
     return {
         # "package" is the shared-module release family (range_job's PACKAGE); package documentation versions
         # (12.4.1, 12.4.2, 12.4.3) sit on this family without changing it.
-        "package": "crypto-desk 12.4", "repo_revision": "2.25",
+        "package": "crypto-desk 12.4", "repo_revision": "2.26",
         "base_commit": "dea476035e9e198f791dcfbd7f0dd4b29f6aabc6",
         "audited_snapshot": "eb776d52a2d66563b6dad188d1b899c4efdf9134 (package 12.2, repo 2.17.1; after PR #19)",
         "contract": C.contract_id("RC1D"), "evaluated_contract": C.contract_id("RC1"),

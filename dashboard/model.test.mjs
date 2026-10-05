@@ -168,3 +168,12 @@ test('service continuity is judged apart from the native schedule (repo 2.25)', 
  assert.match(by['Collection, 24 h to report'].detail, /recovery 35/);
  assert.equal(by['Collection, 24 h to report'].state, '40 of 95 intervals');
 });
+
+test('a monitor that ran on time and failed is a heartbeat with a detected problem (repo 2.26)', () => {
+ const ops = {generated_utc: '2026-10-05T07:00:00Z', clock: 'runner', decisions: {}, scoring_backlog: {}, source: {},
+   monitors: {workflows: {'range-monitor.yml': {last_completed_utc: '2026-10-05T06:01:40Z', last_result: 'failure',
+     last_success_utc: '2026-10-04T18:00:00Z', stale_after_min: 510}}}};
+ const by = Object.fromEntries(opsRows(ops, Date.parse('2026-10-05T07:05:00Z')).map(r => [r.area, r]));
+ assert.equal(by['Monitor range-monitor.yml'].state, 'ran; detected a problem');
+ assert.match(by['Monitor range-monitor.yml'].detail, /last success 2026-10-04T18:00:00Z/);
+});

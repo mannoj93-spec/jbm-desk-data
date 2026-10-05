@@ -121,7 +121,7 @@ the Actions API). A missed decision stays missed; later runs, backfills and reco
 it. The dashboard's Data health view shows these rows on the viewer's clock; a health report older than
 90 minutes is itself the sign of silence.
 
-**Recovery dispatcher (repo 2.25).** From Oct 3 2026 GitHub's scheduler stopped creating most scheduled runs for this
+**Recovery dispatcher (repo 2.25; branch-scoped and lineage-carrying 2.26).** From Oct 3 2026 GitHub's scheduler stopped creating most scheduled runs for this
 repository (`docs/incidents/2026-10-03-native-schedule.md`: no repository cause found; root cause not established).
 `.github/workflows/recovery.yml` runs `recovery.py`, which dispatches, with the workflow token (`actions: write`, no
 repository write), only work that is due and that no run has covered:
@@ -159,13 +159,32 @@ scheduler (recommended: cron-job.org, free) that sends
 notifications on; (3) confirm a "Recovery dispatcher" run with event `workflow_dispatch` appears within 15 minutes.
 The token can start, re-run or cancel workflow runs in this repository; it cannot change code. Rotate it before expiry.
 
-**Acceptance (infrastructure, stated before observing).** After activation, `python scripts/service_acceptance.py
---from <first full hour after activation>` over 24 unattended hours must show: at least 97% of slot intervals holding
-an automated stored run (at most 3 of 95 empty), no interval longer than 45 min without one, every range decision
-published, every PS1 decision executed or a recorded no-rebalance, an empty scoring backlog and no person-started run.
-It reports the measured values, not only the verdict; a window still open is "pending". Until it passes, recovery is
-"activated and observed", not "sustained". It is an infrastructure check, not a research criterion. Baseline on the
-24 h to Oct 4 19:00Z (native only): 5% of intervals, longest gap 413 min - fail.
+**Primary scheduling authority (repo 2.26).** The external timer -> recovery dispatcher is the primary trigger for the
+time-critical chain; GitHub's native schedules remain enabled as an independent fallback and as the measurement of
+GitHub's scheduler. Evidence, ruled-out causes and the revisit condition: `docs/incidents/2026-10-03-native-schedule.md`
+("Update 2026-10-05"). The original scheduler root cause is unresolved and is tracked there, apart from service health.
+
+**Lineage (repo 2.26).** Each hop passes the chain's root on: `origin = <root run>:<native-schedule|external|human>[:<parent
+run>]`, and each recovery run's title ends "via <origin>" so the Actions run list shows it. A recovery run whose chain a
+person started is human-assisted (never counted as automated); a root that cannot be found is unknown.
+
+**Acceptance (infrastructure, stated before observing; repo 2.26).** `python scripts/service_acceptance.py --from <start>`
+with `GITHUB_TOKEN`/`GH_TOKEN` and `GITHUB_REPOSITORY` set (or `--runs-json` with a complete run list) evaluates one window
+of at least 24 h after it has ended. Targets: at least 97% of slot intervals holding a persisted, critical-successful
+collector record started without a person (95 intervals: at most 2 empty - 2.25's "3" was wrong), no interval longer than
+45 min without one, every range decision of the window published eligibly and every PS1 decision executed or recorded
+(expected decisions come from the schedule, not from the records), no duplicate execution, no collector run without a
+stored record, an empty scoring backlog, and no person in the critical chain. Initiation is verified against the run
+list: native schedule, a chain rooted in a scheduled dispatcher run, or a dispatcher run titled "(external)" created within
+90 s after :12/:27/:42/:57 (the timer's cadence corroborates the owner-token trigger; it does not prove it). Verdicts:
+pass, fail, invalid (shorter than 24 h), pending (not ended), insufficient (no complete run evidence). The output names
+the checker version, commit, input hash and Actions retrieval. Data restored after a failed push never counts.
+
+**Restoring a failed push (repo 2.26).** A collector run whose push fails uploads `collector-recovery-<run id>` (7-day
+retention). `python scripts/restore_failed_run.py --zip <archive> --sha256 <GitHub digest> --run <id> --artifact <id>`
+verifies the digest and keeps, byte-identical, only rows whose identity the repository lacks under
+`data/restored/collector-<id>/`, with a receipt in `data/restored/receipts.jsonl`; reviewed by pull request. Restored
+rows are not read by forecasts, scores, paper executions or the lab, and the failed run stays a persistence failure.
 
 **Independent alerting.** The external scheduler's failure notifications cover a refused dispatch call; GitHub's
 failed-run notifications cover a failing dispatcher or service watch. Neither reports a silence of the external
@@ -176,7 +195,8 @@ and `desk/release.json` on every pull request. The gate makes it required on `ma
 accept the GitHub Actions app as a ruleset bypass actor (import refused it as "an invalid actor", Oct 3 2026), so the
 data workflows push with a write **deploy key** instead of the workflow token: `scripts/commit_push.sh` uses the
 repository secret `DESK_DEPLOY_KEY` when it is set (SSH to GitHub, host keys read from `api.github.com/meta` over
-HTTPS) and the workflow token otherwise. Only the nine persistence steps receive the secret. The ruleset requires
+HTTPS; from 2.26 authenticated with the job's token, retried within the budget, validated and reused within
+the job - `scripts/github_host_keys.py`) and the workflow token otherwise. Only the nine persistence steps receive the secret. The ruleset requires
 `release` on `main` and lets deploy keys bypass it, so data writes land while every other push to `main` - including
 the owner's - needs a commit whose `release` check passed. The ruleset has **no pull-request rule** (read Oct 4 2026):
 a pull request is the working process, not an enforced requirement. To enforce it, import

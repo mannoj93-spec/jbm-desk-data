@@ -1,3 +1,19 @@
+# Validation record — maintenance, revision 2.26 (crypto-desk 12.4.9 on the 12.4 release family)
+
+Implemented 2026-10-05 13:10–14:00Z on branch `maint-2-26-1` from `main` at `ad9df852`. Container; Python 3.12.3, 3.11.17.
+
+| Check | Result |
+|---|---|
+| Regression suite | 3.12: ran 837, failures 0, errors 0, skipped 1. 3.11: ran 837, failures 0, errors 0, skipped 2. New: `test_host_keys` 14, `test_acceptance` 11, `test_restore` 3, `test_monitor_aging` 6, recovery lineage/branch 6, heartbeat 1 |
+| Fixtures, desk tests | `test_fixtures.py` pass (3.12, 3.11); `desk/test_*.py` (11 files) OK; PS1 `calibrate.py verify` PASS; O21 `verify` PASS |
+| Dashboard | `node --test dashboard/model.test.mjs` 17 pass; `test_dashboard` (Playwright) OK |
+| Release and checksums | `make_release.py check` OK (repo 2.26; no desk module changed); `check_checksums.py check` OK, 212 entries |
+| Production-data replay (copy of `main` `ad9df852`) | 144 of 144 RC1D forecasts replay; PS1 `verify_chain` ok, 54 of 54 ledger rows verified; companion report integrity ok, 63 registered |
+| Artifacts | 11322590457 and 11326693263 downloaded; SHA-256 equal to GitHub's digests (d1bd305d…, e1772c6a…) |
+| Scheduling evidence | 1,098 runs (Oct 1 – Oct 5 14:00Z, complete pagination), 101 collector job timings |
+| Acceptance on production | window 2026-10-04T21:00Z–10-05T21:00Z evaluated 13:20Z: pending (partial values in the closure record); runs before 2.26 carry no lineage in their titles, so their chain lineage is unknown |
+| Not executed here | GitHub-side scheduler cause; Actions settings/billing (not served); a live authenticated host-key lookup (the session cannot call /meta); the prospective 24 h window after 2.26 |
+
 # Validation record — maintenance, revision 2.25 (crypto-desk 12.4.8 on the 12.4 release family)
 
 Implemented 2026-10-04 18:40–19:50Z on branch `maint-2-26` from `main` at `af9b0868` (still the tip at 19:44Z). Container;

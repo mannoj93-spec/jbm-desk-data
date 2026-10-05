@@ -154,9 +154,14 @@ export function opsRows(ops, now = Date.now()) {
   const problems = obj => Object.values(obj || {}).filter(v => /^(absent|failed|missed)/.test(v)).length;
   const mon = ops.monitors || {};
   const monRows = Object.entries(mon.workflows || {}).filter(([, v]) => v.stale_after_min).map(([k, v]) => {
-    const a = (now - Date.parse(v.last_success_utc)) / 60000;
-    const st = !Number.isFinite(a) ? 'unknown' : a > v.stale_after_min ? 'stale' : 'within cadence';
-    return {area: `Monitor ${k}`, state: st, detail: `last success ${v.last_success_utc || 'unknown'}`};
+    // Repo 2.26: heartbeat = last completed run, whatever it found; reports before 2.26 carry only last_success_utc.
+    const beat = v.last_completed_utc || v.last_success_utc;
+    const a = (now - Date.parse(beat)) / 60000;
+    const st = !Number.isFinite(a) ? 'unknown' : a > v.stale_after_min ? 'stale'
+      : v.last_result === 'failure' ? 'ran; detected a problem' : 'within cadence';
+    return {area: `Monitor ${k}`, state: st,
+            detail: v.last_completed_utc ? `last run ${v.last_completed_utc} (${v.last_result || '—'}); last success ${v.last_success_utc || 'none'}`
+                                         : `last success ${v.last_success_utc || 'unknown'}`};
   });
   const cov = ops.ps1_coverage || {};
   // Repo 2.25: service continuity (native or recovery-dispatcher runs) is judged apart from the native schedule;

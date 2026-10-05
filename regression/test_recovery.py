@@ -32,8 +32,9 @@ def t(s):
     return dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
 
 
-def gh(created, event="schedule", status="completed", conclusion="success", title=None, updated=None, name=""):
-    return {"id": random.randint(1, 10**9), "event": event, "status": status,
+def gh(created, event="schedule", status="completed", conclusion="success", title=None, updated=None, name="",
+       branch="main"):
+    return {"id": random.randint(1, 10**9), "event": event, "status": status, "head_branch": branch,
             "conclusion": conclusion if status == "completed" else None, "created_at": created,
             "updated_at": updated or created, "display_title": title or name}
 
@@ -300,9 +301,11 @@ class WiringTests(unittest.TestCase):
             text = (self.WF / wf).read_text()
             for inp in ("trigger:", "slot:", "origin:"):
                 self.assertIn(f"      {inp}", text, f"{wf} {inp}")
-            self.assertIn(f"run-name: ${{{{ inputs.trigger == 'recovery' && format('{name} recovery {{0}}', inputs.slot) || '' }}}}",
-                          text)
+            self.assertIn(f"run-name: ${{{{ inputs.trigger == 'recovery' && format('{name} recovery {{0}} via {{1}}', "
+                          f"inputs.slot, inputs.origin) || '' }}}}", text)
             self.assertEqual(R.title(name, "K"), f"{name} recovery K")
+            self.assertTrue(R.is_title(f"{name} recovery K via 1:native-schedule", name, "K"))
+            self.assertFalse(R.is_title(f"{name} recovery K2", name, "K"))
             for env in ("DESK_DISPATCH_TRIGGER", "DESK_DISPATCH_SLOT", "DESK_DISPATCH_ORIGIN"):
                 self.assertIn(env, text, f"{wf} {env}")
 
@@ -338,41 +341,6 @@ class DispatcherMonitorTests(unittest.TestCase):
         self.assertEqual(H.monitors(now, "tok", "o/r", down)["dispatcher_state"], "unknown")
 
 
-class AcceptanceCheckTests(unittest.TestCase):
-    """scripts/service_acceptance.py: measured values against targets stated in advance; a partial window is pending."""
-    def run_check(self, runs, now, rng=None, ps1=None):
-        sys.path.insert(0, str(ROOT / "scripts"))
-        import service_acceptance as A
-        from unittest import mock
-        with tempfile.TemporaryDirectory() as d:
-            base = Path(d)
-            (base / "cadence.json").write_text(json.dumps({"periods": [{"from": "2026-09-23T16:06:13Z", "minutes": Q}]}))
-            storage.append_unique(base / "data/runs/2026-10.jsonl", runs, lambda r: r["t"])
-            with mock.patch.object(A.health, "range_decisions", return_value=(rng or {}, {"scoring_backlog": {}})), \
-                    mock.patch.object(A.health, "ps1_decisions", return_value=(ps1 or {}, {})):
-                return A.measure(base, t("2026-10-05T00:00:00Z"), t("2026-10-06T00:00:00Z"), t(now))
-
-    def test_full_automated_day_passes_and_partial_window_is_pending(self):
-        T = int(t("2026-10-05T00:07:00Z").timestamp() * 1000)
-        runs = [rec(T + i * 15 * M + 60_000, "recovery" if i % 3 else "native-schedule") for i in range(96)]
-        dec = {f"2026-10-05T{h:02d}:00:00Z": "published" for h in range(0, 24, 4)}
-        ps1 = {k: "executed" for k in dec}
-        doc = self.run_check(runs, "2026-10-06T00:05:00Z", dec, ps1)
-        self.assertEqual(doc["verdict"], "pass", doc["checks"])
-        self.assertEqual(doc["collection"]["runs_by_source"], {"native-schedule": 32, "recovery": 64})
-        self.assertEqual(self.run_check(runs[:40], "2026-10-05T10:00:00Z", dec, ps1)["verdict"], "pending")
-
-    def test_a_gap_a_missed_decision_or_a_persons_run_fails(self):
-        T = int(t("2026-10-05T00:07:00Z").timestamp() * 1000)
-        runs = [rec(T + i * 15 * M + 60_000, "recovery") for i in range(96) if not 40 <= i < 44]
-        doc = self.run_check(runs, "2026-10-06T00:05:00Z", {"2026-10-05T04:00:00Z": "missed: skipped"})
-        self.assertEqual(doc["verdict"], "fail")
-        self.assertFalse(doc["checks"]["longest_automated_gap"])
-        self.assertFalse(doc["checks"]["range_decisions_published"])
-        runs = [rec(T + i * 15 * M + 60_000, "recovery") for i in range(96)] + [rec(T + 5 * M, "human")]
-        self.assertFalse(self.run_check(runs, "2026-10-06T00:05:00Z")["checks"]["no_person_started_runs"])
-
-
 class ChainTests(unittest.TestCase):
     """2.25.1: production showed no workflow_run event after a token-dispatched range run (Oct 4 20:47Z), so a
     recovery range run dispatches the streams itself."""
@@ -391,6 +359,71 @@ class ChainTests(unittest.TestCase):
         self.assertTrue(url.endswith("/actions/workflows/research-streams.yml/dispatches"))
         self.assertEqual(json.loads(data)["inputs"], {"trigger": "recovery", "slot": "2026-10-04T20:00:00Z",
                                                       "origin": "9:range-recovery"})
+
+
+class BranchScopeTests(unittest.TestCase):
+    """2.26: a run on another branch never suppresses, covers or anchors production recovery."""
+    def test_foreign_branch_success_cannot_suppress_main_recovery(self):
+        now = "2026-10-04T12:12:00Z"
+        foreign = gh("2026-10-04T12:03:00Z", event="workflow_dispatch", branch="test-branch")
+        self.assertIn("range", [w for w, _, _ in R.plan(t(now), {"range": [foreign]}, minutes=Q)])
+        main = gh("2026-10-04T12:03:00Z")
+        self.assertNotIn("range", [w for w, _, _ in R.plan(t(now), {"range": [main]}, minutes=Q)])
+        unstated = dict(main, head_branch=None)                       # ambiguous history is not production success
+        self.assertIn("range", [w for w, _, _ in R.plan(t(now), {"range": [unstated]}, minutes=Q)])
+
+    def test_listing_asks_for_the_production_branch_and_keeps_it(self):
+        seen = []
+        def opener(req, timeout=None):
+            seen.append(req.full_url)
+            return Resp(200, json.dumps({"workflow_runs": [{"id": 1, "head_branch": "main", "created_at": "x"}]}).encode())
+        runs = R.list_runs("o/r", "tok", opener=opener)
+        self.assertTrue(all("branch=main" in u for u in seen))
+        self.assertEqual(runs["range"][0]["head_branch"], "main")
+
+    def test_a_malformed_listing_is_an_error_not_an_empty_history(self):
+        def opener(req, timeout=None):
+            return Resp(200, json.dumps({"message": "odd"}).encode())
+        with self.assertRaises(RuntimeError):
+            R.list_runs("o/r", "tok", opener=opener)
+
+
+class LineageTests(unittest.TestCase):
+    """2.26: mechanism (source) and initiating origin (root) are kept apart through every hop."""
+    BOT = provenance.BOT
+
+    def env(self, **kw):
+        return {"GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_TRIGGERING_ACTOR": self.BOT,
+                "DESK_DISPATCH_TRIGGER": "recovery", **kw}
+
+    def test_human_parent_bot_child_is_human_assisted(self):
+        disp = {"GITHUB_EVENT_NAME": "workflow_dispatch", "GITHUB_TRIGGERING_ACTOR": "mannoj93-spec", "GITHUB_RUN_ID": "100"}
+        origin = R.origin_label(disp)
+        self.assertEqual(origin, "100:human")
+        child = provenance.record(self.env(DESK_DISPATCH_ORIGIN=origin, GITHUB_RUN_ID="101"))
+        self.assertEqual(child["source"], "recovery")                       # mechanism: the bot dispatched it
+        self.assertEqual(provenance.root(child)["label"], "human")          # origin: a person started the chain
+        self.assertFalse(provenance.automated(child))
+        rec = {"t": 1, "mode": "routine", "runner": "github", "trigger": "workflow_dispatch", "provenance": child}
+        self.assertFalse(cadence.automated_evidence(rec))
+
+    def test_native_parent_and_multihop_range_to_streams(self):
+        disp = {"GITHUB_EVENT_NAME": "schedule", "GITHUB_RUN_ID": "200"}
+        self.assertEqual(R.origin_label(disp), "200:native-schedule")
+        rng = self.env(DESK_DISPATCH_ORIGIN="200:native-schedule", GITHUB_RUN_ID="201")
+        streams_origin = provenance.child_origin(rng)
+        self.assertEqual(streams_origin, "200:native-schedule:201")          # root kept, parent appended
+        st = provenance.record(self.env(DESK_DISPATCH_ORIGIN=streams_origin, GITHUB_RUN_ID="202"))
+        self.assertEqual(provenance.root(st), {"run": "200", "label": "native-schedule", "parent": "201"})
+        self.assertTrue(provenance.automated(st))
+        ext = provenance.record(self.env(DESK_DISPATCH_ORIGIN="300:external"))
+        self.assertEqual(provenance.root(ext)["label"], "external")         # declared, verified only by acceptance
+
+    def test_absent_or_inconsistent_lineage_is_unknown(self):
+        for origin in (None, "", "abc:native-schedule", "12", "37246375075:range-recovery"):
+            r = provenance.root(provenance.record(self.env(DESK_DISPATCH_ORIGIN=origin or "")))
+            self.assertEqual(r["label"], "unknown", origin)
+        self.assertEqual(provenance.root(None)["label"], "unknown")
 
 
 if __name__ == "__main__":
