@@ -8,13 +8,16 @@
    "b0_point_lr": 0.024686740333,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-05T12:00:00Z",
-   "elapsed_fraction": 0.1503,
+   "elapsed_fraction": 0.1645,
    "end_utc": "2026-10-06T12:20:00Z",
    "frozen_sha256": "1020f0840a3c35a2d63c0485848eb9f88f826538837f16ea8062ee89c6228edc",
    "horizon": "24h",
    "id": "range-rc1d-24h-20261005T1200Z",
-   "label": "range-rc1d-24h-20261005T1200Z - full-window range forecast for [2026-10-05T12:20:00Z, 2026-10-06T12:20:00Z) (15% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-10-05T15:56:24.286Z",
+   "label": "range-rc1d-24h-20261005T1200Z - full-window range forecast for [2026-10-05T12:20:00Z, 2026-10-06T12:20:00Z) (16% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
+   "newer_pending": [
+    "range-rc1d-24h-20261005T1600Z"
+   ],
+   "now_utc": "2026-10-05T16:16:56.192Z",
    "point_lr": 0.026116040564,
    "points_at_decision_close": {
     "point": 2279.9,
@@ -43,13 +46,16 @@
    "b0_point_lr": 0.007900540127,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-05T12:00:00Z",
-   "elapsed_fraction": 0.9017,
+   "elapsed_fraction": 0.9872,
    "end_utc": "2026-10-05T16:20:00Z",
    "frozen_sha256": "04edb009c2d8246e48097d45462fbd05782ba3206824c88f4576f2e4cbef8cc9",
    "horizon": "4h",
    "id": "range-rc1d-4h-20261005T1200Z",
-   "label": "range-rc1d-4h-20261005T1200Z - full-window range forecast for [2026-10-05T12:20:00Z, 2026-10-05T16:20:00Z) (90% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-10-05T15:56:24.286Z",
+   "label": "range-rc1d-4h-20261005T1200Z - full-window range forecast for [2026-10-05T12:20:00Z, 2026-10-05T16:20:00Z) (99% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
+   "newer_pending": [
+    "range-rc1d-4h-20261005T1600Z"
+   ],
+   "now_utc": "2026-10-05T16:16:56.192Z",
    "point_lr": 0.008878682084,
    "points_at_decision_close": {
     "point": 768.4,
@@ -78,13 +84,16 @@
    "b0_point_lr": 0.050542833455,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-05T12:00:00Z",
-   "elapsed_fraction": 0.0501,
+   "elapsed_fraction": 0.0548,
    "end_utc": "2026-10-08T12:20:00Z",
    "frozen_sha256": "9f61fc4dbbb5112b27c97e74cdcc98ab75e7ec77532734688fad0c0126d9ddec",
    "horizon": "72h",
    "id": "range-rc1d-72h-20261005T1200Z",
    "label": "range-rc1d-72h-20261005T1200Z - full-window range forecast for [2026-10-05T12:20:00Z, 2026-10-08T12:20:00Z) (5% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-10-05T15:56:24.286Z",
+   "newer_pending": [
+    "range-rc1d-72h-20261005T1600Z"
+   ],
+   "now_utc": "2026-10-05T16:16:56.192Z",
    "point_lr": 0.048970429106,
    "points_at_decision_close": {
     "point": 4324.6,
@@ -107,7 +116,17 @@
    "valid_until_utc": "2026-10-05T17:15:00Z"
   }
  },
- "current_decision": null,
+ "current_decision": {
+  "decision_utc": "2026-10-05T16:00:00Z",
+  "grace_until_utc": "2026-10-05T17:15:00Z",
+  "ids": [
+   "range-rc1d-4h-20261005T1600Z",
+   "range-rc1d-24h-20261005T1600Z",
+   "range-rc1d-72h-20261005T1600Z"
+  ],
+  "outcome": "registered-pending",
+  "reason": "frozen; publication confirmation pending"
+ },
  "due_decisions": 57,
  "evaluation": {
   "block_decisions": 42,
@@ -203,7 +222,7 @@
  },
  "expected_decisions": 57,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-10-05T15:56:24.286Z",
+ "generated_utc": "2026-10-05T16:16:56.192Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
@@ -387,7 +406,7 @@
   "release_sha256": "ec5121c7e1fcf10566cc7668a3c486a80e0d5c6fee8540653b3092d9df492eda",
   "repo_revision": "2.26"
  },
- "runs_recorded": 392,
+ "runs_recorded": 396,
  "scored": {
   "24h": {
    "coverage_b0": 0.791,
@@ -422,7 +441,7 @@
    "ready": 0,
    "scored": 43,
    "scoring-failed": 0,
-   "waiting-maturity": 5
+   "waiting-maturity": 6
   },
   "4h": {
    "backlog": [],
@@ -431,7 +450,7 @@
    "ready": 0,
    "scored": 47,
    "scoring-failed": 0,
-   "waiting-maturity": 1
+   "waiting-maturity": 2
   },
   "72h": {
    "backlog": [],
@@ -440,7 +459,7 @@
    "ready": 0,
    "scored": 37,
    "scoring-failed": 0,
-   "waiting-maturity": 11
+   "waiting-maturity": 12
   }
  },
  "status_expires_utc": "2026-10-05T16:20:00Z"
