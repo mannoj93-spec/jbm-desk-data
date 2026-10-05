@@ -1,6 +1,6 @@
 # Paper sizing experiment PS1
 
-Generated 2026-10-05T17:03:38.650Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-10-05T16:19:16.278Z.
+Generated 2026-10-05T21:32:55.121Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-10-05T16:19:16.278Z.
 
 > PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.
 
@@ -10,11 +10,11 @@ Retired before launch, zero observations: `desk/research/ps1/protocol_v2_retired
 
 Ledger rows: 60 physical; 60 verified, 0 quarantined, 0 excluded, 0 in progress.
 
-Launched at decision 2026-10-03T00:00:00Z; 2.71 days; 17 scheduled decisions; coverage 58.8%; execution delay after the 4H close: median 14.6 min, max 51.2 min.
+Launched at decision 2026-10-03T00:00:00Z; 2.9 days; 18 scheduled decisions; coverage 55.6%; execution delay after the 4H close: median 14.6 min, max 51.2 min.
 
 Time accounting: elapsed hours between fills; 8760 h/yr; drift and variance rates per hour (protocol v3); no interpolation; the interval opened by the latest trade is pending. 9 closed intervals over 64.0 h; extended intervals 2.
 
-Outcomes: executed 10; missed: stale: processed after close + max_delay 7
+Outcomes: executed 10; missed: stale: processed after close + max_delay 8
 
 Execution states: completed 10
 
@@ -34,6 +34,6 @@ Execution states: completed 10
 
 Dependence: adjacent, non-overlapping intervals that are serially dependent (volatility clusters); 42-interval blocks are the bootstrap's resampling unit, not a measured effective sample size. Uncertainty: moving-block bootstrap of paired intervals (B2 and VOL (log return, dt_h) pairs resampled together), blocks of 42 intervals, 5,000 resamples, seed 20261003; 90% percentile interval of the duration-weighted Sharpe difference. Baseline: VOL (primary), FIXED (control).
 Open interval since 2026-10-05T16:00:00Z: pending - not marked until the next executed rebalance.
-Checkpoints: C1 after 180 days with ≥10 blocks (recorded: False); C2 after 365 days with ≥20 blocks (recorded: False). Owner: operator (paper_ps1.py checkpoint C1|C2 "<note>"); the job never records one. Progress: 2.7 days, 0 complete block(s).
+Checkpoints: C1 after 180 days with ≥10 blocks (recorded: False); C2 after 365 days with ≥20 blocks (recorded: False). Owner: operator (paper_ps1.py checkpoint C1|C2 "<note>"); the job never records one. Progress: 2.9 days, 0 complete block(s).
 
 Simulated fills on captured quotes; not executions. Sizing only - no direction is tested. No status here is a trading edge or an entry endorsement.
