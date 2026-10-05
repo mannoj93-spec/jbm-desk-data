@@ -63,7 +63,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means the collector (and probably GitHub's scheduler) has been silent - its contents are not current",
- "generated_utc": "2026-10-05T03:38:03Z",
+ "generated_utc": "2026-10-05T03:44:14Z",
  "job": "health-1.1.0",
  "monitors": {
   "dispatcher_state": "fresh",
@@ -73,7 +73,7 @@
   "workflows": {
    "collect.yml": {
     "last_scheduled_start_utc": "2026-10-05T03:35:54Z",
-    "last_success_utc": "2026-10-05T03:18:26Z"
+    "last_success_utc": "2026-10-05T03:35:54Z"
    },
    "dashboard.yml": {
     "last_scheduled_start_utc": "2026-10-05T03:26:39Z",
@@ -102,7 +102,7 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_success_utc": "2026-10-05T03:27:01Z",
+    "last_success_utc": "2026-10-05T03:43:19Z",
     "stale_after_min": 45,
     "state": "fresh"
    },
@@ -124,7 +124,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 151.8,
+  "report_age_min": 157.9,
   "report_coverage": 0.4615,
   "report_generated_utc": "2026-10-05T01:06:18.712Z",
   "report_scheduled_decisions": 13,
@@ -134,21 +134,21 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 1.9,
+  "age_min": 8.1,
   "coverage_24h": {
-   "automated_runs": 47,
+   "automated_runs": 48,
    "expected_slots": 96,
-   "from_ms": 1791085083835,
-   "from_utc": "2026-10-04T03:38:03Z",
+   "from_ms": 1791085454827,
+   "from_utc": "2026-10-04T03:44:14Z",
    "intervals": 95,
    "intervals_with_automated_run": 31,
    "longest_automated_gap_min": 413.3,
    "runs_by_source": {
     "native-schedule": 26,
-    "recovery": 21
+    "recovery": 22
    },
-   "to_ms": 1791171483835,
-   "to_utc": "2026-10-05T03:38:03Z"
+   "to_ms": 1791171854827,
+   "to_utc": "2026-10-05T03:44:14Z"
   },
   "gaps": [
    {
@@ -212,7 +212,7 @@
   "manual_runs_since": 0,
   "rule": "scheduled runs only (manual, local and recovery runs do not close a scheduled gap)",
   "service": {
-   "age_min": 1.9,
+   "age_min": 1.7,
    "gaps": [
     {
      "end_ms": 1791034022272,
@@ -271,8 +271,8 @@
      "start_utc": "2026-10-04T18:01:32Z"
     }
    ],
-   "last_automated_utc": "2026-10-05T03:36:09Z",
-   "last_source": "native-schedule",
+   "last_automated_utc": "2026-10-05T03:42:31Z",
+   "last_source": "recovery",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts",
    "state": "healthy"
   },
