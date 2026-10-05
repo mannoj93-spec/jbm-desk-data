@@ -1,32 +1,32 @@
 {
  "evidence_class": "not applicable (an operations report: it restates counts and carries no hypothesis evidence)",
- "generated_utc": "2026-10-05T00:22:39Z",
+ "generated_utc": "2026-10-05T01:06:18Z",
  "integrity": "not verified here: inputs are the lab's evidence cards and the stream reports as written",
  "job": "feasibility-1.1.0",
  "lab": [
   {
    "calendar_exposure": {
     "basis": "calendar time since registration - not the time the collection could observe",
-    "days": 9.16,
+    "days": 9.31,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-04T21:20Z"
+    "to": "2026-10-05T00:56Z"
    },
    "capability": "observable",
    "checkpoint": {
     "look": 1,
     "min_dependence_blocks": 20,
     "need": 100,
-    "retained": 0
+    "retained": 2
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 198,
-    "hours_elapsed": 219.8,
-    "share": 0.901
+    "hourly_controls_selected": 201,
+    "hours_elapsed": 223.4,
+    "share": 0.9
    },
    "data_reasons": [],
    "data_state": "available",
-   "episodes_prospective": 11,
+   "episodes_prospective": 15,
    "exclusions_named": [
     "middle response group",
     "windows with missing bars",
@@ -34,49 +34,49 @@
    ],
    "id": "A1-flow-absorption",
    "kind": "lab",
-   "limiting_factor": "absent events",
+   "limiting_factor": "time (accumulation)",
    "observable_exposure": {
     "basis": "hours with a selected hourly control in the evaluation phase (the lab's own coverage count) / 24",
-    "days": 8.25
+    "days": 8.38
    },
    "primary_horizon_min": 60,
    "question": "Do weak-response heavy-flow windows differ from strong-response ones in subsequent flow-direction net return?",
    "rates_per_observable_day": {
-    "test_episodes": 0.0,
-    "test_retained": 0.0
+    "test_episodes": 0.239,
+    "test_retained": 0.239
    },
-   "raw_candidates_prospective": 17,
+   "raw_candidates_prospective": 23,
    "recorded_counters": {
-    "events": 17,
+    "events": 23,
     "late_inputs": 414,
     "skipped_history": 144,
     "skipped_missing": 0,
-    "spot_not_yet_available": 3320,
-    "steps": 3464
+    "spot_not_yet_available": 3364,
+    "steps": 3508
    },
    "reference_evaluation_phase": {
-    "episodes": 10,
-    "retained": 8
+    "episodes": 11,
+    "retained": 10
    },
-   "status": "exploratory",
+   "status": "under prospective evaluation",
    "test_evaluation_phase": {
-    "blocks": 0,
-    "episodes": 0,
-    "firings": 0,
-    "retained": 0,
-    "scorable": 0
+    "blocks": 1,
+    "episodes": 2,
+    "firings": 2,
+    "retained": 2,
+    "scorable": 2
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 8.2 observable days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 2 retained test observation(s) in 8.4 observable days; an ETA needs >= 5",
    "version": "ev-c368833b5ae6",
-   "zero_interpretation": "observed zero test episodes with data available"
+   "zero_interpretation": "events occur; evidence accumulates with time"
   },
   {
    "calendar_exposure": {
     "basis": "calendar time since registration - not the time the collection could observe",
-    "days": 9.16,
+    "days": 9.31,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-04T21:20Z"
+    "to": "2026-10-05T00:56Z"
    },
    "capability": "observable",
    "checkpoint": {
@@ -87,12 +87,12 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 187,
-    "hours_elapsed": 219.8,
+    "hourly_controls_selected": 190,
+    "hours_elapsed": 223.4,
     "share": 0.851
    },
    "data_reasons": [
-    "877 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)"
+    "899 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)"
    ],
    "data_state": "insufficient_data",
    "episodes_prospective": 0,
@@ -105,7 +105,7 @@
    "limiting_factor": "time (warm-up)",
    "observable_exposure": {
     "basis": "hours with a selected hourly control in the evaluation phase (the lab's own coverage count) / 24",
-    "days": 7.79
+    "days": 7.92
    },
    "primary_horizon_min": 240,
    "question": "Do fixed-cohort BTC additions under drawdown differ from additions in profit in subsequent return in the added direction?",
@@ -117,16 +117,16 @@
    "raw_candidates_prospective": 0,
    "recorded_counters": {
     "behaviour_counts": {
-     "drawdown:hold": 5107,
+     "drawdown:hold": 5264,
      "drawdown:reduce": 5,
-     "neutral:add": 665,
-     "neutral:flat": 78053,
-     "neutral:hold": 2989,
-     "neutral:reduce": 710,
-     "neutral:reverse": 171
+     "neutral:add": 675,
+     "neutral:flat": 80011,
+     "neutral:hold": 3036,
+     "neutral:reduce": 732,
+     "neutral:reverse": 177
     },
-    "snapshots": 877,
-    "transitions": 87700
+    "snapshots": 899,
+    "transitions": 89900
    },
    "reference_evaluation_phase": {
     "episodes": 0,
@@ -141,24 +141,24 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 7.8 observable days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 7.9 observable days; an ETA needs >= 5",
    "version": "ev-125c86066f05",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
-    "days_to_complete_at_observed_rate": 6.3,
-    "have": 877.0,
+    "days_to_complete_at_observed_rate": 6.0,
+    "have": 899.0,
     "need": 1344.0,
-    "observed_accumulation_per_day": 73.59,
+    "observed_accumulation_per_day": 74.5,
     "unit": "snapshot transitions for the fixed cohort"
    },
-   "zero_interpretation": "warm-up not complete per the lab (877 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)); no retained test observation yet"
+   "zero_interpretation": "warm-up not complete per the lab (899 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)); no retained test observation yet"
   },
   {
    "calendar_exposure": {
     "basis": "calendar time since registration - not the time the collection could observe",
-    "days": 9.16,
+    "days": 9.31,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-04T21:20Z"
+    "to": "2026-10-05T00:56Z"
    },
    "capability": "observable",
    "checkpoint": {
@@ -169,12 +169,12 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 198,
-    "hours_elapsed": 219.8,
-    "share": 0.901
+    "hourly_controls_selected": 201,
+    "hours_elapsed": 223.4,
+    "share": 0.9
    },
    "data_reasons": [
-    "895 sampled snapshots; the design needs 1344"
+    "917 sampled snapshots; the design needs 1344"
    ],
    "data_state": "insufficient_data",
    "episodes_prospective": 4,
@@ -187,22 +187,22 @@
    "limiting_factor": "time (warm-up)",
    "observable_exposure": {
     "basis": "hours with a selected hourly control in the evaluation phase (the lab's own coverage count) / 24",
-    "days": 8.25
+    "days": 8.38
    },
    "primary_horizon_min": 240,
    "question": "When sampled long liquidation exposure within 2% of mark is large, does BTC fall more than at scheduled times?",
    "rates_per_observable_day": {
-    "test_episodes": 0.364,
-    "test_retained": 0.242
+    "test_episodes": 0.358,
+    "test_retained": 0.239
    },
    "raw_candidates_prospective": 4,
    "recorded_counters": {
-    "snapshots": 895,
-    "with_mark": 895
+    "snapshots": 917,
+    "with_mark": 917
    },
    "reference_evaluation_phase": {
-    "episodes": 198,
-    "retained": 46
+    "episodes": 201,
+    "retained": 47
    },
    "status": "under prospective evaluation",
    "test_evaluation_phase": {
@@ -213,24 +213,24 @@
     "scorable": 3
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 2 retained test observation(s) in 8.2 observable days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 2 retained test observation(s) in 8.4 observable days; an ETA needs >= 5",
    "version": "ev-eb20553bce1c",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
-    "days_to_complete_at_observed_rate": 6.0,
-    "have": 895.0,
+    "days_to_complete_at_observed_rate": 5.6,
+    "have": 917.0,
     "need": 1344.0,
-    "observed_accumulation_per_day": 75.1,
+    "observed_accumulation_per_day": 75.99,
     "unit": "sampled snapshots"
    },
-   "zero_interpretation": "warm-up not complete per the lab (895 sampled snapshots; the design needs 1344); 2 retained test observation(s) in 1 block(s) are already recorded"
+   "zero_interpretation": "warm-up not complete per the lab (917 sampled snapshots; the design needs 1344); 2 retained test observation(s) in 1 block(s) are already recorded"
   },
   {
    "calendar_exposure": {
     "basis": "calendar time since registration - not the time the collection could observe",
-    "days": 9.16,
+    "days": 9.31,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-04T21:20Z"
+    "to": "2026-10-05T00:56Z"
    },
    "capability": "observable",
    "capability_note": "TWAP programs are read by polling each fixed-cohort account's twapHistory every 15 minutes. A program that starts and finishes between polls is first seen finished and excluded, so the collection systematically under-observes short programs. Observing starts needs an event stream (Hyperliquid's websocket user events for the cohort accounts). Not commissioned: the recorded universe (2 BTC programs in 272) suggests qualifying BTC programs are rare even when seen, so a stream would not by itself make D1 feasible; decide after the per-reason counts exist.",
@@ -242,12 +242,12 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 220,
-    "hours_elapsed": 219.8,
-    "share": 1.001
+    "hourly_controls_selected": 223,
+    "hours_elapsed": 223.4,
+    "share": 0.998
    },
    "data_reasons": [
-    "7440 twapHistory checks, 276 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs"
+    "7620 twapHistory checks, 276 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs"
    ],
    "data_state": "insufficient_data",
    "episodes_prospective": 0,
@@ -260,7 +260,7 @@
    "limiting_factor": "absent events",
    "observable_exposure": {
     "basis": "hours with a selected hourly control in the evaluation phase (the lab's own coverage count) / 24",
-    "days": 9.17
+    "days": 9.29
    },
    "primary_horizon_min": 240,
    "question": "After an active BTC TWAP of a fixed-cohort account is first observed, do returns in its direction exceed scheduled entries with the same direction mix?",
@@ -275,11 +275,11 @@
     "excluded_non_btc": 274,
     "per_reason_note": "lab-2.2 does not record which of the BTC programs failed which rule (first observed after finishing vs below the notional floor)",
     "programs_observed": 276,
-    "twap_checks": 7440
+    "twap_checks": 7620
    },
    "reference_evaluation_phase": {
-    "episodes": 220,
-    "retained": 46
+    "episodes": 223,
+    "retained": 47
    },
    "status": "exploratory",
    "test_evaluation_phase": {
@@ -290,16 +290,16 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 9.2 observable days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 9.3 observable days; an ETA needs >= 5",
    "version": "ev-2b023a90293f",
    "zero_interpretation": "observed zero qualifying events while the detector ran (see capability note)"
   },
   {
    "calendar_exposure": {
     "basis": "calendar time since registration - not the time the collection could observe",
-    "days": 9.16,
+    "days": 9.31,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-04T21:20Z"
+    "to": "2026-10-05T00:56Z"
    },
    "capability": "not observable (the collection cannot see these events)",
    "capability_note": "Needs second-scale order-book depth around shocks. The repository's stream/ recorder exists but is not deployed (it needs a persistent host, not GitHub Actions); until then E1 cannot observe a single event and its zero is 'not observable'. Not commissioned here.",
@@ -312,7 +312,7 @@
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
     "hourly_controls_selected": 0,
-    "hours_elapsed": 219.8,
+    "hours_elapsed": 223.4,
     "share": 0.0
    },
    "data_reasons": [
@@ -362,9 +362,9 @@
   {
    "calendar_exposure": {
     "basis": "calendar time since registration - not the time the collection could observe",
-    "days": 9.16,
+    "days": 9.31,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-04T21:20Z"
+    "to": "2026-10-05T00:56Z"
    },
    "capability": "observable",
    "checkpoint": {
@@ -375,12 +375,12 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 198,
-    "hours_elapsed": 219.8,
-    "share": 0.901
+    "hourly_controls_selected": 201,
+    "hours_elapsed": 223.4,
+    "share": 0.9
    },
    "data_reasons": [
-    "932 option records (461 with a trailing z-score); the design needs 1344"
+    "954 option records (483 with a trailing z-score); the design needs 1344"
    ],
    "data_state": "insufficient_data",
    "episodes_prospective": 0,
@@ -394,7 +394,7 @@
    "limiting_factor": "time (warm-up)",
    "observable_exposure": {
     "basis": "hours with a selected hourly control in the evaluation phase (the lab's own coverage count) / 24",
-    "days": 8.25
+    "days": 8.38
    },
    "primary_horizon_min": 480,
    "question": "When 7-day risk reversal and perp funding disagree at extremes, does BTC follow the options side more than scheduled entries do?",
@@ -406,11 +406,11 @@
    "raw_candidates_prospective": 0,
    "recorded_counters": {
     "quote_policy": "qualified",
-    "records": 932,
-    "with_z": 461
+    "records": 954,
+    "with_z": 483
    },
    "reference_evaluation_phase": {
-    "episodes": 198,
+    "episodes": 201,
     "retained": 25
    },
    "status": "exploratory",
@@ -422,24 +422,24 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 8.2 observable days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 8.4 observable days; an ETA needs >= 5",
    "version": "ev-1c53cfe81c9f",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
-    "days_to_complete_at_observed_rate": 5.3,
-    "have": 932.0,
+    "days_to_complete_at_observed_rate": 4.9,
+    "have": 954.0,
     "need": 1344.0,
-    "observed_accumulation_per_day": 78.21,
+    "observed_accumulation_per_day": 79.06,
     "unit": "option records"
    },
-   "zero_interpretation": "warm-up not complete per the lab (932 option records (461 with a trailing z-score); the design needs 1344); no retained test observation yet"
+   "zero_interpretation": "warm-up not complete per the lab (954 option records (483 with a trailing z-score); the design needs 1344); no retained test observation yet"
   },
   {
    "calendar_exposure": {
     "basis": "calendar time since registration - not the time the collection could observe",
-    "days": 9.16,
+    "days": 9.31,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-04T21:20Z"
+    "to": "2026-10-05T00:56Z"
    },
    "capability": "observable",
    "checkpoint": {
@@ -450,12 +450,12 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 198,
-    "hours_elapsed": 219.8,
-    "share": 0.901
+    "hourly_controls_selected": 201,
+    "hours_elapsed": 223.4,
+    "share": 0.9
    },
    "data_reasons": [
-    "12.1 days of stored bars; the design needs 14"
+    "12.2 days of stored bars; the design needs 14"
    ],
    "data_state": "insufficient_data",
    "episodes_prospective": 3,
@@ -468,23 +468,23 @@
    "limiting_factor": "time (warm-up)",
    "observable_exposure": {
     "basis": "hours with a selected hourly control in the evaluation phase (the lab's own coverage count) / 24",
-    "days": 8.25
+    "days": 8.38
    },
    "primary_horizon_min": 60,
    "question": "After an ETH/SOL 5-minute shock with BTC calm, does BTC follow the alt more than scheduled entries do?",
    "rates_per_observable_day": {
-    "test_episodes": 0.364,
-    "test_retained": 0.364
+    "test_episodes": 0.358,
+    "test_retained": 0.358
    },
    "raw_candidates_prospective": 3,
    "recorded_counters": {
     "late_inputs": 558,
     "skipped_missing": 0,
-    "steps": 3464
+    "steps": 3508
    },
    "reference_evaluation_phase": {
-    "episodes": 198,
-    "retained": 127
+    "episodes": 201,
+    "retained": 130
    },
    "status": "under prospective evaluation",
    "test_evaluation_phase": {
@@ -495,24 +495,24 @@
     "scorable": 3
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 3 retained test observation(s) in 8.2 observable days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 3 retained test observation(s) in 8.4 observable days; an ETA needs >= 5",
    "version": "ev-5cbc55c34b6d",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
-    "days_to_complete_at_observed_rate": 1.9,
-    "have": 12.1,
+    "days_to_complete_at_observed_rate": 1.8,
+    "have": 12.2,
     "need": 14.0,
-    "observed_accumulation_per_day": 1.02,
+    "observed_accumulation_per_day": 1.01,
     "unit": "days of stored bars"
    },
-   "zero_interpretation": "warm-up not complete per the lab (12.1 days of stored bars; the design needs 14); 3 retained test observation(s) in 3 block(s) are already recorded"
+   "zero_interpretation": "warm-up not complete per the lab (12.2 days of stored bars; the design needs 14); 3 retained test observation(s) in 3 block(s) are already recorded"
   },
   {
    "calendar_exposure": {
     "basis": "calendar time since registration - not the time the collection could observe",
-    "days": 9.16,
+    "days": 9.31,
     "from": "2026-09-25T17:33Z",
-    "to": "2026-10-04T21:20Z"
+    "to": "2026-10-05T00:56Z"
    },
    "capability": "observable",
    "checkpoint": {
@@ -523,13 +523,13 @@
    },
    "collection_coverage": {
     "collector_running_since": "2026-09-22T23:19Z",
-    "hourly_controls_selected": 220,
-    "hours_elapsed": 219.8,
-    "share": 1.001
+    "hourly_controls_selected": 223,
+    "hours_elapsed": 223.4,
+    "share": 0.998
    },
    "data_reasons": [],
    "data_state": "available",
-   "episodes_prospective": 18,
+   "episodes_prospective": 19,
    "exclusions_named": [
     "buckets before 7 days of collected liquidation history",
     "other venues' deleveraging data (unavailable)"
@@ -539,7 +539,7 @@
    "limiting_factor": "absent events",
    "observable_exposure": {
     "basis": "hours with a selected hourly control in the evaluation phase (the lab's own coverage count) / 24",
-    "days": 9.17
+    "days": 9.29
    },
    "primary_horizon_min": 30,
    "question": "Do OKX liquidation bursts accompanied by insurance-fund loss or ADL rows continue further than plain bursts?",
@@ -547,10 +547,10 @@
     "test_episodes": 0.0,
     "test_retained": 0.0
    },
-   "raw_candidates_prospective": 28,
+   "raw_candidates_prospective": 30,
    "recorded_counters": {
-    "buckets": 857,
-    "liquidation_orders": 17736,
+    "buckets": 871,
+    "liquidation_orders": 18080,
     "stress_rows": 0,
     "unavailable_sources": [
      "bybit (HTTP 403 here)",
@@ -559,8 +559,8 @@
     ]
    },
    "reference_evaluation_phase": {
-    "episodes": 18,
-    "retained": 17
+    "episodes": 19,
+    "retained": 19
    },
    "status": "exploratory",
    "test_evaluation_phase": {
@@ -571,7 +571,7 @@
     "scorable": 0
    },
    "time_to_checkpoint": null,
-   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 9.2 observable days; an ETA needs >= 5",
+   "time_to_checkpoint_note": "no ETA: 0 retained test observation(s) in 9.3 observable days; an ETA needs >= 5",
    "version": "ev-02fcecefd1bf",
    "zero_interpretation": "observed zero test episodes with data available"
   }
@@ -585,13 +585,13 @@
   "zeros": "observed zero (collection capable) is reported separately from not observable; an unobservable rate is null, never 0.0"
  },
  "schema": "feasibility-report-2",
- "source_cutoff_utc": "2026-10-04T21:20Z",
+ "source_cutoff_utc": "2026-10-05T00:56Z",
  "streams": [
   {
    "blocks": 1,
    "calendar_exposure": {
     "basis": "calendar days since the stream start (one window per 4H decision)",
-    "days": 8.85,
+    "days": 8.88,
     "from": "2026-09-26T04:00:00Z"
    },
    "checkpoint": {
@@ -603,16 +603,16 @@
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
    "paired_scored": 43,
-   "rate_per_day": 4.86,
+   "rate_per_day": 4.84,
    "time_to_checkpoint": {
-    "central": 77.58366779147688
+    "central": 77.84948794891876
    }
   },
   {
    "blocks": 1,
    "calendar_exposure": {
     "basis": "calendar days since the stream start (one window per 4H decision)",
-    "days": 8.85,
+    "days": 8.88,
     "from": "2026-09-26T04:00:00Z"
    },
    "checkpoint": {
@@ -623,17 +623,17 @@
    "kind": "range stream",
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
-   "paired_scored": 43,
-   "rate_per_day": 4.86,
+   "paired_scored": 44,
+   "rate_per_day": 4.96,
    "time_to_checkpoint": {
-    "central": 77.58366779147688
+    "central": 75.87837720991793
    }
   },
   {
    "blocks": 0,
    "calendar_exposure": {
     "basis": "calendar days since the stream start (one window per 4H decision)",
-    "days": 8.85,
+    "days": 8.88,
     "from": "2026-09-26T04:00:00Z"
    },
    "checkpoint": {
@@ -644,10 +644,10 @@
    "kind": "range stream",
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
-   "paired_scored": 33,
-   "rate_per_day": 3.73,
+   "paired_scored": 34,
+   "rate_per_day": 3.83,
    "time_to_checkpoint": {
-    "central": 103.77540516983899
+    "central": 100.80713067375204
    }
   },
   {
@@ -672,7 +672,7 @@
    "late": 0,
    "limiting_factor": "time (accumulation)",
    "missing": 0,
-   "paired": 16
+   "paired": 17
   },
   {
    "checkpoint": {
@@ -684,7 +684,7 @@
    "late": 0,
    "limiting_factor": "time (accumulation)",
    "missing": 0,
-   "paired": 6
+   "paired": 7
   },
   {
    "checkpoint": {},
