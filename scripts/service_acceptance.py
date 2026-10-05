@@ -61,6 +61,13 @@ Targets (stated before observing; unchanged in substance since 2.25):
                 operator pause/termination at that time. Unknown actions, invalid chains, duplicates, late fills and
                 missing or contradictory launch evidence fail.
   backlog       no matured, eligible RC1D forecast unscored beyond the monitor's lag at the window's end.
+Hardening after an independent review (before release): a re-run (run_attempt > 1) is a person's start whatever its
+event; a stored record counts only for the collect.yml run it names, once, inside that run's lifetime; a yield receipt
+must be written during its run and not contradict the run's job steps; a range decision counts only when its
+publishing run's initiation is continuity-grade; lifecycle rows must form a valid transition chain, and an operator
+pause/termination or a no-rebalance record resolves a PS1 decision only when it was in the repository before that
+decision's deadline (git history; otherwise "unresolved: availability unestablished"); off-schedule decision ids are
+problems; the cutoff may not exceed the window end + 120 min; malformed evidence yields "insufficient", never a crash.
 Evidence binding: the output carries the checker version and the sha256 of its own code and helper modules, the
 evaluated commit, the sha256 of every consulted repository file at that commit, and the sha256 of the normalized
 Actions evidence (query bounds, pagination, runs, out-of-window parents, jobs/steps) and of any timer receipts.
@@ -115,7 +122,8 @@ CONSULTED = ("cadence.json", "desk/release.json", "desk/deployments.jsonl", "sta
              "desk/research/ps1/protocol.json", "data/restored/receipts.jsonl")
 CONSULTED_TREES = ("data/runs", "streams/ps1")
 CODE = ("scripts/service_acceptance.py", "cadence.py", "execution.py", "provenance.py", "recovery.py", "watchdog.py",
-        "health.py", "desk/paper_ps1.py", "desk/range_monitor.py", "desk/stream_util.py")
+        "health.py", "storage.py", "desk/paper_ps1.py", "desk/range_monitor.py", "desk/stream_util.py",
+        "desk/research/ps1/protocol.json")      # the checkout's protocol: paper_ps1.verify_chain reads it
 
 
 def parse(s):
@@ -280,9 +288,9 @@ class Lineage:
             pu = parse(p.get("updated_at"))
             if p.get("status") != "completed" or pu is None or c is None or pu > c + dt.timedelta(seconds=60):
                 return None, f"named parent {named[0]} had not completed before the child started"
-            if p.get("run_attempt") not in (None, named[1]):
-                # a rerun replaces the run's metadata with its latest attempt; the child names the attempt it followed
-                return p, f"named parent {named[0]} attempt {named[1]} (evidence shows attempt {p.get('run_attempt')})"
+            if (p.get("run_attempt") or 1) != named[1]:
+                # the evidence describes the parent's latest attempt only; the attempt the child followed is unverified
+                return None, f"named parent {named[0]} attempt {named[1]}, evidence shows attempt {p.get('run_attempt')}"
             return p, "named by the run (event payload)"
         if c is None:
             return None, "child has no creation time"
@@ -316,6 +324,10 @@ class Lineage:
         if branch != "main":
             return "unknown", f"branch {branch!r} is not main" if branch else "branch not stated"
         ev, trig = run.get("event"), run.get("triggering_actor")
+        if (run.get("run_attempt") or 1) != 1:
+            # a re-run keeps the original event and creation time; only a person (or a token) re-runs - the desk's
+            # automation never does - and the evidence describes only the latest attempt
+            return "human", f"re-run: attempt {run.get('run_attempt')} by {trig}"
         if ev == "schedule":
             return "verified", "GitHub schedule on main"
         if ev == "workflow_run":
@@ -403,18 +415,22 @@ def code_digest():
 
 
 # ------------------------------------------------------------------------------------------- decisions
-def range_decisions(base, start, end):
-    """Expected 4H decisions whose 75-minute run window ends inside [start, end]: published eligibly or missed."""
+def range_decisions(base, start, end, runs_of=None):
+    """Expected 4H decisions whose 75-minute run window ends inside [start, end]: published eligibly or missed.
+    runs_of (optional dict) receives the publishing attempts' run ids, for lineage."""
+    runs_of = {} if runs_of is None else runs_of
     attempts = [a for a in rows(Path(base) / "state/range_attempts.jsonl")
                 if isinstance(a.get("run"), dict) and a["run"].get("production")]
     eligible = {p.get("attempt") for p in rows(Path(base) / "state/range_publications.jsonl") if p.get("eligible") is True}
-    out, d = {}, start.replace(minute=0, second=0, microsecond=0)
-    while d.hour % 4 or d < start:
+    out, d = {}, (start - dt.timedelta(minutes=RANGE_GRACE_MIN)).replace(minute=0, second=0, microsecond=0)
+    while d.hour % 4 or d + dt.timedelta(minutes=RANGE_GRACE_MIN) < start:      # deadline inside the window
         d += dt.timedelta(hours=1)
     while d + dt.timedelta(minutes=RANGE_GRACE_MIN) <= end:
         mine = [a for a in attempts if a.get("decision_utc") == iso(d)]
-        if any(a.get("attempt") in eligible for a in mine):
+        pub = [a for a in mine if a.get("attempt") in eligible]
+        if pub:
             out[iso(d)] = "published"
+            runs_of[iso(d)] = [str((a.get("run") or {}).get("run_id") or "") for a in pub]
         elif mine:
             out[iso(d)] = f"missed: {mine[-1].get('state')}"
         else:
@@ -439,11 +455,52 @@ def _lifecycle_at(life, t_ms):
     return state, by
 
 
-def ps1_evaluate(base, start, end, cutoff):
+LIFE_STATES = ("proposed", "approved", "active", "paused", "terminated", "archived")
+
+
+def lifecycle_chain(rows_):
+    """(valid rows, problems): every row names a known state, an integer time, a known actor, and the state it left
+    ("from") equal to the previous row's state; times never decrease. Rows after the first invalid one are unused."""
+    good, problems, prev, last_t = [], [], "proposed", -1
+    for r in rows_:
+        why = (None if r.get("state") in LIFE_STATES else f"unknown state {r.get('state')!r}") or \
+              (None if isinstance(r.get("t_ms"), int) and r["t_ms"] >= last_t else "time missing or out of order") or \
+              (None if r.get("by") in ("operator", "job") else f"unknown actor {r.get('by')!r}") or \
+              (None if r.get("from") == prev else f"transition from {r.get('from')!r}, but the state was {prev!r}")
+        if why:
+            problems.append(f"lifecycle row {len(good)}: {why}")
+            break
+        good.append(r)
+        prev, last_t = r["state"], r["t_ms"]
+    return good, problems
+
+
+class History:
+    """Repository file contents as of a time (last first-parent commit at or before it), when the evaluated base is
+    a git checkout; .known is False otherwise (then availability before a deadline cannot be established)."""
+    def __init__(self, base=None, head=None):
+        self.base, self.head = (Path(base) if base else None), head
+        self.known = bool(self.base and head and (self.base / ".git").exists())
+
+    def text(self, path, when):
+        if not self.known:
+            return None
+        c = git(self.base, "rev-list", "-1", "--first-parent", f"--before={iso(when)}", self.head)
+        if not c:
+            return ""
+        out = git(self.base, "show", f"{c.decode().strip()}:{path}")
+        return out.decode() if out is not None else ""
+
+
+def ps1_evaluate(base, start, end, cutoff, history=None):
     """PS1 expected decisions and their validated outcomes. Returns {status, evidence_ok, problems, decisions,
     duplicates, chain}. Launch, protocol and lifecycle evidence are validated before deciding whether PS1 is expected;
-    the expected set comes from the launch and the schedule, never from the outcome rows present."""
+    the expected set comes from the launch and the schedule (decisions whose 90-minute deadline falls inside the
+    window), never from the outcome rows present. An operator pause/termination or a no-rebalance record counts only
+    when its row is valid AND was in the repository before the decision's deadline (git history); without history
+    that availability is unestablished and the decision is not resolved."""
     import paper_ps1 as P
+    history = history or History()
     base = Path(base)
     root = base / P.ROOT
     problems = []
@@ -451,18 +508,24 @@ def ps1_evaluate(base, start, end, cutoff):
     if not proto.exists() or sha256_bytes(proto.read_bytes()) != P.PROTOCOL_SHA256:
         problems.append("protocol file absent or differs from the frozen PS1 protocol")
     max_delay = PS1_DEADLINE_MIN
-    life = sorted((r for r in rows(root / "lifecycle.jsonl") if r.get("key") == P.PROTOCOL_SHA256),
-                  key=lambda r: r.get("t_ms") if isinstance(r.get("t_ms"), int) else -1)
     cut = ms(cutoff)
-    life = [r for r in life if isinstance(r.get("t_ms"), int) and r["t_ms"] <= cut]
+    life_all = [r for r in rows(root / "lifecycle.jsonl") if r.get("key") == P.PROTOCOL_SHA256]
+    life, lp = lifecycle_chain(life_all)
+    problems += lp
+    life = [r for r in life if r["t_ms"] <= cut]
     decs = {}
     for r in rows(root / "decisions.jsonl"):
         if "_malformed" in r or not isinstance(r.get("decision_id"), str):
             problems.append("malformed decision row")
             continue
-        decs.setdefault(r["decision_id"], r)                      # first write wins, as in paper_ps1.decisions
+        did = r["decision_id"]
+        t = parse(f"{did[4:8]}-{did[8:10]}-{did[10:12]}T{did[13:15]}:{did[15:17]}:00Z") if len(did) == 18 and did.startswith("ps1-") else None
+        if t is None or t.hour % 4 or t.minute:
+            problems.append(f"decision id {did[:40]!r} is not a scheduled 4H decision")
+            continue
+        decs.setdefault(did, r)                                   # first write wins, as in paper_ps1.decisions
     activity = bool(decs) or bool(rows(root / "executions.jsonl")) or bool(rows(root / "execution_states.jsonl")) \
-        or any(r.get("state") in ("active", "paused", "terminated", "archived") for r in life)
+        or any(r.get("state") in ("active", "paused", "terminated", "archived") for r in life_all)
     launch_path = root / "launch.json"
     launch = None
     if launch_path.exists():
@@ -492,18 +555,26 @@ def ps1_evaluate(base, start, end, cutoff):
             problems.append("launch record contradicts the earliest verified execution")
         status = "launched" if launch is not None else "invalid"
     first = parse((launch or {}).get("first_decision_utc"))
-    # verified executions by decision, with their fill and completion times
     by_dec = {}
     for r in chain["rows"]:
         by_dec.setdefault(r.get("decision_id"), {}).setdefault(r.get("execution_id"), []).append(r)
     final_t = {eid: st[-1].get("t_ms") for eid, st in P.exec_states(base).items() if st}
+
+    def available_by(line_match, deadline_dt, path):
+        """True / False when git history is available; None (unestablished) otherwise."""
+        if not history.known:
+            return None
+        text = history.text(f"{P.ROOT}/{path}", deadline_dt)
+        return any(line_match(json.loads(l)) for l in (text or "").splitlines() if l.strip().startswith("{"))
+
     out, dup = {}, {}
     if first is not None:
         t = first
         while t + dt.timedelta(minutes=max_delay) <= end:
-            if t >= start:
+            if t + dt.timedelta(minutes=max_delay) >= start:          # deadline inside the window
                 did, k = f"ps1-{t:%Y%m%dT%H%MZ}", iso(t)
                 deadline = ms(t) + max_delay * 60_000
+                dl_dt = t + dt.timedelta(minutes=max_delay)
                 st, by = _lifecycle_at(life, ms(t))
                 execs = {eid: rs for eid, rs in by_dec.get(did, {}).items()
                          if all(isinstance(r.get("fill_time_ms"), int) and r["fill_time_ms"] <= deadline for r in rs)
@@ -512,24 +583,34 @@ def ps1_evaluate(base, start, end, cutoff):
                 d = decs.get(did)
                 if len(by_dec.get(did, {})) > 1:
                     dup[k] = len(by_dec[did])
-                if st in ("terminated", "archived") or (st == "paused" and by == "operator"):
-                    s = f"not expected (lifecycle {st}{' by ' + by if by else ''})"
+                if (st in ("paused", "terminated", "archived")) and by == "operator":
+                    row = [r for r in life if r["t_ms"] <= ms(t)][-1]
+                    avail = available_by(lambda x: x == row, dl_dt, "lifecycle.jsonl")
+                    s_ = (f"not expected (lifecycle {st} by operator)" if avail else
+                          f"unresolved: lifecycle {st} row not in the repository before the deadline" if avail is False else
+                          f"unresolved: lifecycle {st} availability unestablished (no git history)")
                 elif d is None:
-                    s = "missed: no decision record"
+                    s_ = "missed: no decision record"
                 elif d.get("action") == "rebalance":
-                    s = ("executed" if len(execs) == 1 else
-                         "invalid: duplicate execution" if len(execs) > 1 else
-                         "missed: filled after the deadline or the cutoff" if late else
-                         "missed: not executed by the deadline")
+                    s_ = ("executed" if len(execs) == 1 else
+                          "invalid: duplicate execution" if len(execs) > 1 else
+                          "missed: filled after the deadline or the cutoff" if late else
+                          "missed: not executed by the deadline")
                 elif d.get("action") == "no-rebalance":
-                    ok_t = isinstance(d.get("computed_end_ms"), int) and d["computed_end_ms"] <= deadline
-                    s = ("invalid: execution of a no-rebalance decision" if by_dec.get(did) else
-                         "no-rebalance (recorded)" if ok_t else "missed: no-rebalance recorded after the deadline")
+                    fields_ok = (d.get("decision_utc") == k and d.get("protocol_sha256") == P.PROTOCOL_SHA256
+                                 and isinstance(d.get("computed_end_ms"), int) and d["computed_end_ms"] <= deadline)
+                    avail = available_by(lambda x: x.get("decision_id") == did and x.get("action") == "no-rebalance",
+                                         dl_dt, "decisions.jsonl") if fields_ok else False
+                    s_ = ("invalid: execution of a no-rebalance decision" if by_dec.get(did) else
+                          "missed: no-rebalance record invalid or after the deadline" if not fields_ok else
+                          "no-rebalance (recorded)" if avail else
+                          "unresolved: no-rebalance not in the repository before the deadline" if avail is False else
+                          "unresolved: no-rebalance availability unestablished (no git history)")
                 elif d.get("action") == "missed":
-                    s = "missed: decision processed after its deadline"
+                    s_ = "missed: decision processed after its deadline"
                 else:
-                    s = f"invalid: unrecognized action {str(d.get('action'))[:40]!r}"
-                out[k] = s
+                    s_ = f"invalid: unrecognized action {str(d.get('action'))[:40]!r}"
+                out[k] = s_
             t += dt.timedelta(hours=4)
     if status == "launched" and first is not None and first >= end:
         status = "launched after the window"
@@ -539,6 +620,20 @@ def ps1_evaluate(base, start, end, cutoff):
 
 
 YIELD_STEP = "Recovery yields when its slot is already collected"
+
+
+def yield_consistent(receipt, run, jobs):
+    """A receipt must have been written while its run was running, and the run's own job evidence must not contradict
+    a yield (the Collect step ran, or the yield step did not succeed)."""
+    c, u, k = parse(run.get("created_at")), parse(run.get("updated_at")), parse(receipt.get("checked_utc"))
+    if c is None or u is None or k is None or not (c <= k <= u + dt.timedelta(seconds=60)):
+        return False
+    steps = {s.get("name"): s for j in jobs or [] for s in j.get("steps") or []}
+    if "Collect" in steps and steps["Collect"].get("conclusion") not in ("skipped", None):
+        return False
+    if YIELD_STEP in steps and steps[YIELD_STEP].get("conclusion") != "success":
+        return False
+    return True
 
 
 def job_yield(run, jobs, records):
@@ -595,18 +690,38 @@ def measure(base, start, end, now, evidence=None, receipts=None, cutoff=None, co
     if hours < MIN_WINDOW_H:
         doc.update(verdict="invalid", reason=f"window {hours:.2f} h < {MIN_WINDOW_H} h: diagnostics only, never a pass")
         return doc
-    if cutoff < end:
-        doc.update(verdict="invalid", reason="evidence cutoff before the window end")
+    if cutoff < end or cutoff > end + dt.timedelta(minutes=CUTOFF_GRACE_MIN):
+        doc.update(verdict="invalid", reason=f"evidence cutoff must lie in [window end, window end + {CUTOFF_GRACE_MIN} min]: "
+                                             "a later cutoff would admit late evidence")
         return doc
     snap, sinfo = snapshot(base, cutoff, commit)
+    hist = History(base, sinfo.get("commit")) if sinfo.get("commit") else History()
     try:
-        return _measure(doc, snap, sinfo, start, end, now, evidence, receipts, cutoff)
+        return _measure(doc, snap, sinfo, start, end, now, evidence, receipts, cutoff, hist)
+    except (ValueError, KeyError, TypeError, AttributeError, IndexError) as exc:
+        doc.update(verdict="insufficient", reason=f"malformed evidence: {type(exc).__name__}: {str(exc)[:200]}")
+        return doc
     finally:
         if snap != Path(base):
             shutil.rmtree(snap, ignore_errors=True)
 
 
-def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff):
+def bound_record(rec, run, seen):
+    """Why a stored collector record cannot be credited to the Actions run it names, else None (2.27 review): the run
+    must be a collect.yml run on main, name only this record, and have existed when the record was collected."""
+    if run is None:
+        return "run not in the evidence"
+    if wf_of(run) != "collect.yml":
+        return f"record names a {wf_of(run) or 'non-collector'} run"
+    if seen.get(str(run["id"]), 0) > 1:
+        return "more than one record names this run"
+    c, u = parse(run.get("created_at")), parse(run.get("updated_at"))
+    if c is None or u is None or not (ms(c) - 60_000 <= rec["t"] <= ms(u) + 60_000):
+        return "record time outside the run's lifetime"
+    return None
+
+
+def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None):
     doc["inputs"] = {"repository": sinfo, "files_sha256": consulted_files(base),
                      "actions": None if ev is None else {
                          "sha256": canonical_sha(ev), "retrieved_utc": ev.get("retrieved_utc"), "query": ev.get("query"),
@@ -623,10 +738,18 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff):
     all_recs = load_runs(base)
     recs = [r for r in all_recs if a <= r["t"] < b and cadence.is_routine(r)]
     buckets = cadence.slot_buckets(cadence.load(base), a, b)
-    cont, strict, inits, crit_fail, degraded = [], [], {}, [], 0
+    cont, strict, inits, crit_fail, degraded, unbound = [], [], {}, [], 0, []
+    seen = {}
+    for r in recs:
+        seen[str(r.get("run_id"))] = seen.get(str(r.get("run_id")), 0) + 1
     for r in recs:
         run = by_id.get(str(r.get("run_id")))
-        label, _ = L.classify(run, origin=(r.get("provenance") or {}).get("origin")) if ev else ("unknown", "")
+        prov = r.get("provenance") if isinstance(r.get("provenance"), dict) else {}
+        label, _ = L.classify(run, origin=prov.get("origin")) if ev else ("unknown", "")
+        why = bound_record(r, run, seen) if ev else "no evidence"
+        if why and label != "unknown":
+            unbound.append({"run_id": r.get("run_id"), "t": r["t"], "why": why})
+            label = "unknown"
         inits[label] = inits.get(label, 0) + 1
         if not cadence.critical_success(r):
             crit_fail.append(r.get("run_id"))
@@ -647,6 +770,7 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff):
                          "allowed_empty": int(len(buckets) * (1 - TARGETS["interval_share"])),
                          "longest_gap_min": gap, "records": len(recs), "by_initiation": inits,
                          "critical_failures": crit_fail, "degraded_optional_records": degraded,
+                         "records_not_bound_to_their_run": unbound,
                          "strict": {"intervals_with_critical_success": s_held, "share": round(s_share, 4),
                                     "longest_gap_min": s_gap},
                          "rule": "continuity counts verified, timer-receipt and timer-corroborated starts; strict "
@@ -660,10 +784,10 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff):
     for x in col:
         rid = str(x["id"])
         rc = None
-        for y in yields:
-            if str(y.get("run_id")) == rid and recovery.valid_yield(y, all_recs, x)[0]:
-                rc = y
         jobs = (ev.get("jobs") or {}).get(rid) if ev else None
+        for y in yields:
+            if str(y.get("run_id")) == rid and recovery.valid_yield(y, all_recs, x)[0] and yield_consistent(y, x, jobs):
+                rc = y
         if rc is None and rid not in stored:
             rc = job_yield(x, jobs, all_recs)
             proven_by_jobs += rc is not None
@@ -685,9 +809,18 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff):
                         if (base / "data/restored").exists() else [],
                         "rule": "never-started / failed-before-execution = missed execution (no observation existed); "
                                 "executed-no-output = output or persistence failure; a yield needs a valid receipt"}
-    rd = range_decisions(base, start, end)
-    p1 = ps1_evaluate(base, start, end, cutoff)
-    doc["decisions"] = {"range": rd, "ps1": p1["decisions"], "ps1_status": p1["status"], "ps1_problems": p1["problems"],
+    pub_runs = {}
+    rd = range_decisions(base, start, end, pub_runs)
+    range_lineage = {}
+    for k, ids in pub_runs.items():
+        labs = [L.classify(by_id.get(i))[0] if ev else "unknown" for i in ids]
+        best = "verified" if "verified" in labs else "timer-receipt" if "timer-receipt" in labs else \
+            "timer-corroborated" if "timer-corroborated" in labs else (labs[0] if labs else "unknown")
+        range_lineage[k] = best
+        if best not in CONTINUITY:
+            rd[k] = f"published by a run that is {best}"
+    p1 = ps1_evaluate(base, start, end, cutoff, hist)
+    doc["decisions"] = {"range": rd, "range_initiation": range_lineage, "ps1": p1["decisions"], "ps1_status": p1["status"], "ps1_problems": p1["problems"],
                         "ps1_duplicate_executions": p1["duplicates"], "ps1_chain": p1["chain"]}
     import range_monitor
     _, minfo = range_monitor.check(base, end)
@@ -703,6 +836,7 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff):
         elif k == "unknown":
             unknown.append({"run": x["id"], "workflow": CRITICAL[wf_of(x)], "why": why})
         tc += k == "timer-corroborated"
+    tc += sum(1 for v in range_lineage.values() if v == "timer-corroborated")
     off_main = [x["id"] for x in runs if wf_of(x) in CRITICAL and start <= (parse(x.get("created_at")) or start) < end
                 and x.get("head_branch") != "main"]
     doc["chain"] = {"runs": len(chain), "by_initiation": kinds, "person_or_unverified_external": people,

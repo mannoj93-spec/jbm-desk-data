@@ -79,9 +79,10 @@ class World:
         att, pubs = [], []
         d = START.replace(hour=20)
         while d + dt.timedelta(minutes=75) <= END:
-            a = f"{iso(d)}#{self.next_id}"
-            self.run("range.yml", d + dt.timedelta(minutes=3), "schedule", OWNER)
-            att.append({"attempt": a, "decision_utc": iso(d), "state": "published", "run": {"production": True}})
+            rr = self.run("range.yml", d + dt.timedelta(minutes=3), "schedule", OWNER)
+            a = f"{iso(d)}#{rr['id']}"
+            att.append({"attempt": a, "decision_utc": iso(d), "state": "published",
+                        "run": {"production": True, "run_id": str(rr["id"]), "event": "schedule"}})
             pubs.append({"attempt": a, "eligible": True, "start_ms": ms(d + dt.timedelta(minutes=20))})
             d += dt.timedelta(hours=4)
         self.write("state/range_attempts.jsonl", att)
@@ -139,6 +140,18 @@ class World:
         return A.measure(self.d, start, end, now, ev, receipts, cutoff)
 
 
+GIT_ENV = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@t", GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@t")
+
+
+def commit_at(d, when, msg="c"):
+    """Commit the whole fixture directory with committer time `when` (git history = repository availability)."""
+    e = dict(GIT_ENV, GIT_AUTHOR_DATE=iso(when), GIT_COMMITTER_DATE=iso(when))
+    if not (Path(d) / ".git").exists():
+        subprocess.run(["git", "init", "-q"], cwd=d, check=True)
+    subprocess.run(["git", "add", "-A"], cwd=d, env=e, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-qm", msg, "--allow-empty"], cwd=d, env=e, check=True, capture_output=True)
+
+
 class Base(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
@@ -183,8 +196,9 @@ class PS1Tests(Base):
         rows = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
         path.write_text("".join(json.dumps(r) + "\n" for r in (fn(r) for r in rows) if r is not None))
 
-    def ps1(self, start=START, end=END):
-        return A.ps1_evaluate(self.w.d, start, end, end + dt.timedelta(hours=2))
+    def ps1(self, start=START, end=END, git=False):
+        h = A.History(self.w.d, "HEAD") if git else None
+        return A.ps1_evaluate(self.w.d, start, end, end + dt.timedelta(hours=2), h)
 
     def test_reproduced_launch_removed_fails(self):
         (self.w.d / self.P / "launch.json").unlink()
@@ -221,34 +235,91 @@ class PS1Tests(Base):
         later = self.ps1(START + dt.timedelta(hours=6), END + dt.timedelta(hours=6))   # includes Oct 5 20:00: no record
         self.assertEqual(later["decisions"]["2026-10-05T20:00:00Z"], "missed: no decision record")
 
-    def _add_decision(self, action, computed_after_min=10):
-        t = dt.datetime(2026, 10, 5, 20, tzinfo=UTC)
-        with open(self.w.d / self.P / "decisions.jsonl", "a") as f:
-            f.write(json.dumps({"decision_id": "ps1-20261005T2000Z", "decision_utc": iso(t), "action": action,
-                                "computed_end_ms": ms(t) + computed_after_min * 60_000}) + "\n")
+    T20 = dt.datetime(2026, 10, 5, 20, tzinfo=UTC)
 
-    def test_valid_no_rebalance_unknown_action_and_late_no_rebalance(self):
+    def _add_decision(self, action, computed_after_min=10, **extra):
+        t = self.T20
+        row = {"decision_id": "ps1-20261005T2000Z", "decision_utc": iso(t), "action": action,
+               "protocol_sha256": json.loads((self.w.d / self.P / "launch.json").read_text())["protocol_sha256"],
+               "computed_end_ms": ms(t) + computed_after_min * 60_000}
+        row.update(extra)
+        with open(self.w.d / self.P / "decisions.jsonl", "a") as f:
+            f.write(json.dumps(row) + "\n")
+
+    def test_valid_no_rebalance_needs_valid_fields_and_repository_availability(self):
         win = (START + dt.timedelta(hours=6), END + dt.timedelta(hours=6))
+        commit_at(self.w.d, self.T20 - dt.timedelta(hours=1), "before")
         self._add_decision("no-rebalance")
-        st = self.ps1(*win)
+        commit_at(self.w.d, self.T20 + dt.timedelta(minutes=12), "recorded on time")
+        st = self.ps1(*win, git=True)
         self.assertEqual(st["decisions"]["2026-10-05T20:00:00Z"], "no-rebalance (recorded)")
         self.assertTrue(st["evidence_ok"] and all(A.ps1_ok(v) for v in st["decisions"].values()))
+        # without history its on-time availability is unestablished; never resolved
+        self.assertFalse(A.ps1_ok(self.ps1(*win)["decisions"]["2026-10-05T20:00:00Z"]))
+
+    def test_reviewer_bare_or_late_no_rebalance_does_not_resolve(self):
+        win = (START + dt.timedelta(hours=6), END + dt.timedelta(hours=6))
+        commit_at(self.w.d, self.T20 - dt.timedelta(hours=1), "before")
+        self._add_decision("no-rebalance", protocol_sha256=None)                  # bare row (review finding 4)
+        commit_at(self.w.d, self.T20 + dt.timedelta(minutes=12))
+        self.assertEqual(self.ps1(*win, git=True)["decisions"]["2026-10-05T20:00:00Z"],
+                         "missed: no-rebalance record invalid or after the deadline")
+        self.tearDown(); self.setUp()
+        commit_at(self.w.d, self.T20 - dt.timedelta(hours=1), "before")
+        self._add_decision("no-rebalance")
+        commit_at(self.w.d, self.T20 + dt.timedelta(hours=3), "written after the deadline")
+        self.assertEqual(self.ps1(*win, git=True)["decisions"]["2026-10-05T20:00:00Z"],
+                         "unresolved: no-rebalance not in the repository before the deadline")
         self.tearDown(); self.setUp()
         self._add_decision("bogus")
         self.assertFalse(A.ps1_ok(self.ps1(*win)["decisions"]["2026-10-05T20:00:00Z"]))
         self.tearDown(); self.setUp()
         self._add_decision("no-rebalance", computed_after_min=120)
-        self.assertEqual(self.ps1(*win)["decisions"]["2026-10-05T20:00:00Z"], "missed: no-rebalance recorded after the deadline")
+        self.assertEqual(self.ps1(*win)["decisions"]["2026-10-05T20:00:00Z"],
+                         "missed: no-rebalance record invalid or after the deadline")
+
+    def _pause(self, t, by="operator", frm="active", state="paused"):
+        key = json.loads((self.w.d / self.P / "launch.json").read_text())["protocol_sha256"]
+        with open(self.w.d / self.P / "lifecycle.jsonl", "a") as f:
+            f.write(json.dumps({"key": key, "state": state, "by": by, "t_ms": t, "from": frm}) + "\n")
 
     def test_operator_pause_is_not_expected_but_a_job_pause_is(self):
         win = (START + dt.timedelta(hours=6), END + dt.timedelta(hours=6))
-        t = ms(dt.datetime(2026, 10, 5, 19, tzinfo=UTC))
-        key = json.loads((self.w.d / self.P / "launch.json").read_text())["protocol_sha256"]
-        with open(self.w.d / self.P / "lifecycle.jsonl", "a") as f:
-            f.write(json.dumps({"key": key, "state": "paused", "by": "operator", "t_ms": t, "from": "active"}) + "\n")
-        self.assertEqual(self.ps1(*win)["decisions"]["2026-10-05T20:00:00Z"], "not expected (lifecycle paused by operator)")
+        commit_at(self.w.d, self.T20 - dt.timedelta(hours=2), "before")
+        t = ms(self.T20 - dt.timedelta(hours=1))
+        self._pause(t)
+        commit_at(self.w.d, self.T20 - dt.timedelta(minutes=50), "operator pause")
+        self.assertEqual(self.ps1(*win, git=True)["decisions"]["2026-10-05T20:00:00Z"],
+                         "not expected (lifecycle paused by operator)")
         self.rewrite("lifecycle.jsonl", lambda r: dict(r, by="job") if r.get("t_ms") == t else r)
-        self.assertEqual(self.ps1(*win)["decisions"]["2026-10-05T20:00:00Z"], "missed: no decision record")
+        commit_at(self.w.d, self.T20 - dt.timedelta(minutes=49), "job pause")
+        self.assertEqual(self.ps1(*win, git=True)["decisions"]["2026-10-05T20:00:00Z"], "missed: no decision record")
+
+    def test_reviewer_backdated_or_invalid_lifecycle_rows_excuse_nothing(self):
+        # review finding 3: strip the window's PS1 records, then add a pause dated before the window
+        for name in ("decisions.jsonl", "executions.jsonl", "execution_states.jsonl", "confirmations.jsonl"):
+            keep = START.strftime("%Y%m%dT%H%MZ")
+            self.rewrite(name, lambda r: r if str(r.get("decision_id") or (r.get("snapshot") or {}).get("decision_id")
+                                                   or "")[4:] < keep else None)
+        (self.w.d / self.P / "execution_states.jsonl").write_text(
+            "".join(l + "\n" for l in (self.w.d / self.P / "execution_states.jsonl").read_text().splitlines()))
+        commit_at(self.w.d, START - dt.timedelta(hours=2), "window records missing")
+        self.assertEqual(self.w.measure()["verdict"], "fail")
+        self._pause(ms(START) - 1)                                     # backdated, committed after the deadlines
+        commit_at(self.w.d, END + dt.timedelta(hours=1), "backdated pause")
+        doc = self.w.measure()
+        self.assertEqual(doc["verdict"], "fail", doc["decisions"]["ps1"])
+        self.assertTrue(all(v.startswith(("unresolved", "missed")) for v in doc["decisions"]["ps1"].values()))
+        self.tearDown(); self.setUp()
+        self._pause(ms(START) - 1, by=None, frm=None, state="terminated")         # no actor, no transition
+        out = self.ps1()
+        self.assertIn("lifecycle row 2: unknown actor None", " ".join(out["problems"]))
+        self.assertFalse(out["evidence_ok"])
+
+    def test_off_schedule_decision_ids_are_problems(self):
+        with open(self.w.d / self.P / "decisions.jsonl", "a") as f:
+            f.write(json.dumps({"decision_id": "ps1-20261005T0100Z", "action": "garbage"}) + "\n")
+        self.assertIn("not a scheduled 4H decision", " ".join(self.ps1()["problems"]))
 
     def test_invalid_chain_and_duplicate_execution_fail(self):
         self.rewrite("executions.jsonl", lambda r: dict(r, cash_after=r["cash_after"] + 1)
@@ -489,6 +560,103 @@ class BindingTests(Base):
         self.assertEqual(before["collection"], after["collection"])
         self.assertEqual(after["verdict"], "fail")
         self.assertEqual(before["inputs"]["repository"]["commit"], after["inputs"]["repository"]["commit"])
+
+
+# ------------------------------------------------------------------------------------------- independent review (2.27)
+class ReviewFindingTests(Base):
+    """Counterexamples from an independent adversarial review of acceptance-3.0.0 before release, each now refused."""
+
+    def test_a_rerun_is_a_persons_start_whatever_its_event(self):
+        ev = self.w.evidence()
+        for r in ev["runs"]:
+            if r["path"].endswith("collect.yml") and r["event"] == "schedule":
+                r.update(run_attempt=2, triggering_actor="someone-else")
+        doc = self.w.measure(ev=ev)
+        self.assertEqual(doc["verdict"], "fail")
+        self.assertEqual(doc["collection"]["by_initiation"].get("human"), 48)
+        ev = self.w.evidence()
+        for r in ev["runs"]:
+            if r["display_title"] == "Recovery dispatcher (external)":
+                r.update(run_attempt=2)
+        self.assertEqual(self.w.measure(ev=ev)["verdict"], "fail")
+        parent = {"id": 4, "run_attempt": 2, "event": "schedule", "status": "completed", "head_branch": "main",
+                  "created_at": "2026-10-05T16:14:07Z", "updated_at": "2026-10-05T16:18:20Z",
+                  "path": ".github/workflows/range.yml", "triggering_actor": OWNER}
+        child = {"id": 5, "event": "workflow_run", "status": "completed", "head_branch": "main",
+                 "created_at": "2026-10-05T16:18:23Z", "path": ".github/workflows/research-streams.yml",
+                 "triggering_actor": OWNER, "display_title": "Research streams after run 4 attempt 1"}
+        self.assertEqual(A.Lineage([parent, child]).classify(child)[0], "unknown")   # attempt 1's start unverifiable
+
+    def test_records_must_belong_to_the_collector_run_they_name(self):
+        rng = [r for r in self.w.runs if r["path"].endswith("range.yml")][0]
+        native = [r for r in self.w.records if r["trigger"] == "schedule"]
+        for r in native:
+            r["run_id"] = str(rng["id"])
+        self.w.flush()
+        ev = self.w.evidence()
+        ev["runs"] = [r for r in ev["runs"] if not (r["path"].endswith("collect.yml") and r["event"] == "schedule")]
+        doc = self.w.measure(ev=ev)
+        self.assertEqual(doc["verdict"], "fail")
+        self.assertEqual(len(doc["collection"]["records_not_bound_to_their_run"]), 48)
+        self.tearDown(); self.setUp()
+        one = str(self.w.runs[0]["id"])                                  # every record names one scheduled run
+        for r in self.w.records:
+            r["run_id"] = one
+        self.w.flush()
+        self.assertEqual(self.w.measure()["verdict"], "fail")
+
+    def test_a_receipt_written_outside_its_run_or_contradicted_by_its_jobs_is_not_a_yield(self):
+        slot = START + dt.timedelta(hours=2, minutes=7)
+        cover = [r for r in self.w.records if r["t"] >= ms(slot)][0]
+        x = self.w.collector(slot + dt.timedelta(minutes=8), native=False, root="1:external", persist=False, slot=iso(slot))
+        env = {"GITHUB_RUN_ID": str(x["id"]), "GITHUB_REF_NAME": "main"}
+        late = R.yield_receipt(slot, cover, env=env, now=slot + dt.timedelta(hours=6))        # after the run ended
+        self.w.write("state/recovery_yields.jsonl", [late])
+        self.assertEqual(self.w.measure()["execution"]["executed_without_stored_output"], [x["id"]])
+        ok = R.yield_receipt(slot, cover, env=env, now=slot + dt.timedelta(minutes=9))
+        self.w.write("state/recovery_yields.jsonl", [ok])
+        self.w.jobs[str(x["id"])] = [{"id": 3, "runner_id": 7, "steps": [
+            {"name": A.YIELD_STEP, "conclusion": "skipped", "started_at": None},
+            {"name": "Collect", "conclusion": "success", "started_at": "x", "completed_at": "x"}]}]
+        self.assertEqual(self.w.measure()["execution"]["executed_without_stored_output"], [x["id"]])
+
+    def test_decisions_are_included_by_deadline(self):
+        # window [Oct 4 20:30, Oct 5 20:30): the Oct 4 20:00 decisions (deadlines 21:15 and 21:30) are inside it
+        s0 = START + dt.timedelta(hours=2, minutes=30)
+        rd = A.range_decisions(self.w.d, s0, s0 + dt.timedelta(hours=24))
+        self.assertIn("2026-10-04T20:00:00Z", rd)
+        p1 = A.ps1_evaluate(self.w.d, s0, s0 + dt.timedelta(hours=24), s0 + dt.timedelta(hours=26))
+        self.assertIn("2026-10-04T20:00:00Z", p1["decisions"])
+
+    def test_a_range_decision_published_by_a_person_does_not_count(self):
+        att = [json.loads(l) for l in (self.w.d / "state/range_attempts.jsonl").read_text().splitlines()]
+        rid = att[2]["run"]["run_id"]
+        ev = self.w.evidence()
+        for r in ev["runs"]:
+            if str(r["id"]) == rid:
+                r.update(event="workflow_dispatch")
+        doc = self.w.measure(ev=ev)
+        self.assertEqual(doc["decisions"]["range"][att[2]["decision_utc"]], "published by a run that is human")
+        self.assertFalse(doc["checks"]["range_decisions_published"])
+
+    def test_cutoff_is_bounded_and_the_code_digest_covers_storage(self):
+        self.assertEqual(self.w.measure(cutoff=END + dt.timedelta(days=30))["verdict"], "invalid")
+        self.assertIn("storage.py", self.w.measure()["code_sha256"])
+        self.assertIn("desk/research/ps1/protocol.json", self.w.measure()["code_sha256"])
+
+    def test_malformed_evidence_is_insufficient_not_a_crash(self):
+        with open(self.w.d / "data/runs/2026-10.jsonl", "a") as f:
+            f.write("{not json\n")
+        doc = self.w.measure()
+        self.assertEqual(doc["verdict"], "insufficient")
+        self.assertIn("malformed evidence", doc["reason"])
+        self.tearDown(); self.setUp()
+        self.w.records[5]["provenance"] = "a string"
+        self.w.flush()
+        self.assertIn(self.w.measure()["verdict"], ("pass", "fail", "insufficient"))
+        ev = self.w.evidence()
+        del ev["runs"][3]["id"]
+        self.assertEqual(self.w.measure(ev=ev)["verdict"], "insufficient")
 
 
 if __name__ == "__main__":
