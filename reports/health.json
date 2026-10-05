@@ -1,25 +1,25 @@
 {
  "availability": {
-  "generated_utc": "2026-10-04T23:52:11.688Z",
+  "generated_utc": "2026-10-05T00:11:26.015Z",
   "horizons": {
    "24h": {
     "recorded_state": "valid-current",
     "state_now": "valid-current",
-    "valid_until_utc": "2026-10-05T01:15:00Z"
+    "valid_until_utc": "2026-10-05T05:15:00Z"
    },
    "4h": {
     "recorded_state": "valid-current",
     "state_now": "valid-current",
-    "valid_until_utc": "2026-10-05T00:55:00Z"
+    "valid_until_utc": "2026-10-05T04:20:00Z"
    },
    "72h": {
     "recorded_state": "valid-current",
     "state_now": "valid-current",
-    "valid_until_utc": "2026-10-05T01:15:00Z"
+    "valid_until_utc": "2026-10-05T05:15:00Z"
    }
   },
   "status": "within expiry",
-  "status_expires_utc": "2026-10-05T00:55:00Z"
+  "status_expires_utc": "2026-10-05T04:20:00Z"
  },
  "clock": "runner UTC clock at the check (time.time)",
  "decisions": {
@@ -35,7 +35,8 @@
    "2026-10-04T08:00:00Z": "missed",
    "2026-10-04T12:00:00Z": "missed",
    "2026-10-04T16:00:00Z": "missed",
-   "2026-10-04T20:00:00Z": "executed"
+   "2026-10-04T20:00:00Z": "executed",
+   "2026-10-05T00:00:00Z": "executed"
   },
   "ps1_launched": true,
   "range": {
@@ -62,7 +63,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means the collector (and probably GitHub's scheduler) has been silent - its contents are not current",
- "generated_utc": "2026-10-04T23:57:06Z",
+ "generated_utc": "2026-10-05T00:14:35Z",
  "job": "health-1.1.0",
  "monitors": {
   "dispatcher_state": "fresh",
@@ -72,7 +73,7 @@
   "workflows": {
    "collect.yml": {
     "last_scheduled_start_utc": "2026-10-04T23:55:02Z",
-    "last_success_utc": "2026-10-04T23:43:54Z"
+    "last_success_utc": "2026-10-04T23:55:02Z"
    },
    "dashboard.yml": {
     "last_scheduled_start_utc": "2026-10-04T23:49:39Z",
@@ -101,7 +102,7 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_success_utc": "2026-10-04T23:57:01Z",
+    "last_success_utc": "2026-10-05T00:12:02Z",
     "stale_after_min": 45,
     "state": "fresh"
    },
@@ -123,31 +124,31 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 145.3,
-  "report_coverage": 0.4167,
-  "report_generated_utc": "2026-10-04T21:31:50.300Z",
-  "report_scheduled_decisions": 12,
+  "report_age_min": 2.2,
+  "report_coverage": 0.4615,
+  "report_generated_utc": "2026-10-05T00:12:22.069Z",
+  "report_scheduled_decisions": 13,
   "rule": "the report's coverage is as of its generation; decisions due after it are listed here with their recorded state, never folded into its percentage"
  },
  "report": "health",
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 1.8,
+  "age_min": 19.3,
   "coverage_24h": {
    "automated_runs": 26,
    "expected_slots": 96,
-   "from_ms": 1791071826703,
-   "from_utc": "2026-10-03T23:57:06Z",
+   "from_ms": 1791072875145,
+   "from_utc": "2026-10-04T00:14:35Z",
    "intervals": 95,
    "intervals_with_automated_run": 18,
    "longest_automated_gap_min": 413.3,
    "runs_by_source": {
-    "native-schedule": 16,
-    "recovery": 10
+    "native-schedule": 15,
+    "recovery": 11
    },
-   "to_ms": 1791158226703,
-   "to_utc": "2026-10-04T23:57:06Z"
+   "to_ms": 1791159275145,
+   "to_utc": "2026-10-05T00:14:35Z"
   },
   "gaps": [
    {
@@ -211,7 +212,7 @@
   "manual_runs_since": 0,
   "rule": "scheduled runs only (manual, local and recovery runs do not close a scheduled gap)",
   "service": {
-   "age_min": 1.8,
+   "age_min": 1.9,
    "gaps": [
     {
      "end_ms": 1791034022272,
@@ -270,8 +271,8 @@
      "start_utc": "2026-10-04T18:01:32Z"
     }
    ],
-   "last_automated_utc": "2026-10-04T23:55:17Z",
-   "last_source": "native-schedule",
+   "last_automated_utc": "2026-10-05T00:12:41Z",
+   "last_source": "recovery",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts",
    "state": "healthy"
   },
