@@ -597,13 +597,13 @@ class WatchdogTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             self.assertEqual(watchdog.check(tmp, START)[0], 1)
             storage.append_unique(Path(tmp) / 'data/runs/2026-01.jsonl',
-                                  [{'t': START, 'mode': 'hourly', 'runner': 'github'},
+                                  [{'t': START, 'mode': 'hourly', 'runner': 'github', 'critical_ok': True},  # 2.27: success stated
                                    {'t': START + 5 * H, 'mode': 'backfill'}], lambda r: r['t'])
             # 2.6: the limit is 90 minutes (WATCHDOG_STALE_MIN), not three hours.
             self.assertEqual(watchdog.check(tmp, START + 80 * schema.MINUTE)[0], 0)
             code, message = watchdog.check(tmp, START + 4 * H)   # a backfill run does not count as hourly
             self.assertEqual(code, 1)
-            self.assertIn('silent', message)
+            self.assertIn('stale', message)          # 2.27: stale persisted evidence, not proof of a silent scheduler
 
 
 if __name__ == '__main__':

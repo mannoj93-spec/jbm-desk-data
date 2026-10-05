@@ -1,5 +1,7 @@
 name: Research streams
-run-name: ${{ inputs.trigger == 'recovery' && format('Research streams recovery {0} via {1}', inputs.slot, inputs.origin) || '' }}
+run-name: ${{ inputs.trigger == 'recovery' && format('Research streams recovery {0} via {1}', inputs.slot, inputs.origin) || github.event_name == 'workflow_run' && format('Research streams after run {0} attempt {1}', github.event.workflow_run.id, github.event.workflow_run.run_attempt) || '' }}
+# Repo 2.27: a run started by a completed "Range forecasts" run names that parent run (GitHub's event payload), so
+# lineage resolves to the actual parent and is verified against the Actions run list; only main's range runs chain.
 # Repo 2.20 prospective research streams, isolated from the range stream, its scoring and the collector:
 #   companion B1   desk/companion_job.py  - B1 (HAR/calendar without DVOL) registered beside each RC1D batch, same
 #                                           decision, snapshot and window, in streams/rc1d-b1/ (never registry/)
@@ -21,6 +23,7 @@ on:
   workflow_run:
     workflows: ["Range forecasts"]
     types: [completed]
+    branches: [main]
   schedule:
     - cron: '50 0,4,8,12,16,20 * * *'
   workflow_dispatch:

@@ -1,3 +1,22 @@
+# Maintenance, revision 2.27 (crypto-desk 12.4.10 on the 12.4 release family) — 2026-10-05
+
+**Base.** `main` at `b2298393` (2.26 plus data; no implementation change since PR #34). No research definition, model,
+contract, `range-job-12.4.0`, PS1 protocol, calibration, cost, eligibility, deadline, forecast, score, execution or
+missed-decision record changes. The 2.26 host-key repair, strict SSH checking, writer guard, production branch filter
+and restored observations are kept unchanged.
+
+| Finding (reproduced) | Verified cause | Change | Tests |
+|---|---|---|---|
+| **Runs created but never executed** (Oct 5 from ~18:55Z: jobs `runner_id` 0, no steps, cancelled; run conclusion "failure") | GitHub-hosted runner assignment (incident 3q1yb5m7ltvb) | `execution.py`: trigger accepted, runner assigned, steps executed, critical success, persisted and yield as separate facts; a never-started collector is a missed execution, not a persistence loss | `test_rev227.StageTests` (real job metadata) |
+| **Dead attempts suppressed recovery** (a failed/never-started run counted as covering its slot) | `live()` = "not cancelled" | recovery 1.3.0 `progressing()`: success, in progress ≤ 40 min or queued ≤ 10 min; failed, never-started and long-queued runs do not suppress; ≤ 2 dispatches per slot / decision; never cancels | `test_rev227.RecoveryRetryTests`, `test_recovery` |
+| **A failed record covered a slot; failed records made full coverage** | `covered()` and `cadence.coverage` counted any record | `cadence.critical_success` (one definition) for coverage, health, watchdog, recovery yield and acceptance; activity kept as a separately labelled heartbeat | `test_rev227.SharedSuccessTests`, `YieldTests` |
+| **Yield exempted by title** | acceptance skipped titled recovery runs without proof | durable yield receipt (`state/recovery_yields.jsonl`, collector writer) naming slot, run and covering record hash; pre-receipt yields need equivalent job evidence | `test_acceptance.ExecutionTests` |
+| **Fresh failures shown "within cadence"; monitor that never ran shown "detected a problem"; stale report called scheduler silence** | presentation used age only; heartbeat had no execution evidence | health 1.3.0: data freshness vs activity, 45-min target beside the stale limit, monitor job/step evidence; dashboard rows for data and activity; watchdog stale on persisted critical success; corrected wording | `test_rev227.HealthAndWatchdogTests`, `model.test.mjs` (18) |
+| **PS1 acceptance false passes** (launch removed; corrupt actions, no executions; fills after the window) | expected set from records; permissive `ps1_ok` | acceptance 3.0.0 `ps1_evaluate`: launch/protocol/lifecycle validated first, expected decisions from launch + schedule, explicit valid outcomes, `paper_ps1.verify_chain`, deadline and cutoff enforced; real PS1 chain fixture | `test_acceptance.PS1Tests` (9) |
+| **Lineage: owner workflow_run child unknown; bot child verified without parent; timer-corroborated counted unattended** | actor identity used as lineage | named parent in research-streams titles (event payload, `branches: [main]`), verified against the run list; pre-2.27 unique-parent inference excluding token-started runs; multihop and out-of-window roots; branch must be main; strict certification only with timer receipts | `test_acceptance.LineageTests` (8, real run metadata) |
+| **Verdict not bound to its evidence** | only count/flag/time recorded | normalized Actions evidence hashed and saved (`--save-evidence`), offline replay (`--actions-evidence`, `--commit`), per-file hashes, code hashes, evidence cutoff via git commit time | `test_acceptance.BindingTests` (4) |
+| **Research run 37359675540 outputs unpublished** (persist job never got a runner) | runner outage | artifact verified and preserved (`data/restored/research-37359675540/`), publication gate dry run passed, not merged (freeze-time honesty) | — |
+
 # Maintenance, revision 2.26 (crypto-desk 12.4.9 on the 12.4 release family) — 2026-10-05
 
 **Base.** `main` at `ad9df852` (2.25.1 plus data). No research definition, model, contract, `range-job-12.4.0`, PS1

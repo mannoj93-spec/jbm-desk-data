@@ -72,10 +72,23 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
+      # Repo 2.27: only a critically successful stored record covers the slot, and a yield leaves a durable receipt
+      # (state/recovery_yields.jsonl: slot, this run, the covering record's identity and hash). A title or a missing
+      # output is never proof of a legitimate no-op.
       - name: Recovery yields when its slot is already collected
         id: yield
         if: inputs.trigger == 'recovery' && inputs.slot != ''
-        run: python recovery.py covered --slot "$DESK_DISPATCH_SLOT"
+        run: python recovery.py covered --slot "$DESK_DISPATCH_SLOT" --receipt
+      - name: Persist the yield receipt
+        if: steps.yield.outputs.covered == 'true'
+        timeout-minutes: 2
+        env:
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}
+          DESK_WRITER: collector
+          DESK_META_TOKEN: ${{ github.token }}
+          PERSIST_BUDGET_S: '100'
+          COMMIT_MESSAGE: Recovery yield receipt
+        run: bash scripts/commit_push.sh state/recovery_yields.jsonl
       - name: Collect
         id: collect
         if: steps.yield.outputs.covered != 'true'

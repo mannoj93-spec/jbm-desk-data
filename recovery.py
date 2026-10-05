@@ -8,12 +8,14 @@ run has covered. Every dispatched run carries inputs trigger=recovery, slot=<key
 and is labelled by provenance.py; native cadence health never counts it.
 
 What is due (UTC; derived from the contracts, not tuned to results):
-  collector       the latest 15-minute slot (cadence.json) at least COLLECTOR_GRACE_MIN old with no run created since
-                  it. One dispatch per slot. A recovery collector run yields (collects nothing) when a run record
-                  already exists at or after its slot (`recovery.py covered`), so a late native run and a recovery run
-                  never both collect one slot.
+  collector       the latest 15-minute slot (cadence.json) at least COLLECTOR_GRACE_MIN old with no run since it that
+                  can still collect it (progressing(): succeeded, in progress, or queued < 10 min - 1.3.0). At most
+                  COLLECTOR_MAX_DISPATCHES (2) per slot. A recovery collector run yields (collects nothing) only when a
+                  CRITICALLY SUCCESSFUL record already exists at or after its slot (`recovery.py covered`), and leaves a
+                  durable yield receipt naming that record; a failed record never covers a slot.
   range           the latest 4H decision, between RANGE_GRACE_MIN and RANGE_LAST_DISPATCH_MIN after the close, with no
-                  run created since the close, or only failed ones (at most RANGE_MAX_DISPATCHES per decision).
+                  run since the close that succeeded or is progressing - failed, cancelled, never-started (no runner)
+                  and long-queued runs do not count (1.3.0) - at most RANGE_MAX_DISPATCHES per decision.
                   range_job refuses a decision older than 1.0 h at its forecast step; a dispatch at +45 min leaves
                   15 min for runner start (~1), the repo-write queue (one collector or stream job, ~2-3 each) and the
                   preflight/refit steps (~2). The job itself is idempotent: an already registered decision returns
@@ -27,7 +29,10 @@ run. It never cancels, re-runs or edits a run, and never touches research state.
 
   python recovery.py plan [--now ISO]      print what would be dispatched (read-only; needs GITHUB_TOKEN)
   python recovery.py dispatch              plan and dispatch (GITHUB_TOKEN with actions: write)
-  python recovery.py covered --slot ISO    yield check for a recovery collector run: covered=true|false
+  python recovery.py covered --slot ISO [--receipt]
+                                           yield check for a recovery collector run: covered=true|false; only a
+                                           CRITICALLY SUCCESSFUL record covers (1.3.0); --receipt appends the
+                                           durable yield proof to state/recovery_yields.jsonl
   python recovery.py chain --slot ISO      from a recovery range run: dispatch the research streams for its decision
                                            (1.1.0; a token-started run raises no workflow_run event)
 Stdlib only.
@@ -44,7 +49,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "recovery-1.2.0"
+VERSION = "recovery-1.3.0"
 UTC = dt.timezone.utc
 API = "https://api.github.com"
 PRODUCTION_REF = "main"
@@ -58,6 +63,16 @@ STREAMS_DELAY_MIN = 3             # after the range run completes, leave workflo
 STREAMS_FALLBACK_MIN = 50         # the streams workflow's own fallback cron
 STREAMS_LAST_DISPATCH_MIN = 75    # PS1 executes within 90 minutes of the decision
 SCORING_STALE_MIN = 70
+# 1.3.0 (repo 2.27): a run suppresses a dispatch only while it can still do the work - completed successfully, in
+# progress (bounded), or queued for less than the wait below. A run that failed, was cancelled, never received a
+# runner or has been queued longer no longer suppresses, so dead attempts cannot block recovery indefinitely; the
+# per-key caps bound retries (at most two dispatches per collector slot, range decision or streams decision).
+QUEUE_WAIT_MIN = {"collector": 10, "range": 10, "streams": 10, "scoring": 20}
+IN_PROGRESS_MAX_MIN = 40
+COLLECTOR_MAX_DISPATCHES = 2
+STREAMS_MAX_DISPATCHES = 2
+WAITING = ("queued", "pending", "waiting", "requested")
+YIELDS = "state/recovery_yields.jsonl"
 
 WORKFLOWS = {"collector": ("collect.yml", "Collector"), "range": ("range.yml", "Range forecasts"),
              "streams": ("research-streams.yml", "Research streams"), "scoring": ("range-score.yml", "Range scoring")}
@@ -89,6 +104,23 @@ def via(display):
 
 def live(run):
     return run.get("conclusion") != "cancelled"
+
+
+def progressing(run, now, wait_min):
+    """Can this run still do (or has it done) the work? completed -> only a success; in progress -> for at most
+    IN_PROGRESS_MAX_MIN; queued/pending -> for at most wait_min after creation. Never-started, failed, cancelled and
+    long-queued runs do not (repo 2.27)."""
+    st, c = run.get("status"), created(run)
+    if st == "completed":
+        return run.get("conclusion") == "success"
+    if c is None:
+        return False
+    age = (now - c).total_seconds() / 60
+    if st in WAITING:
+        return age <= wait_min
+    if st == "in_progress":
+        return age <= IN_PROGRESS_MAX_MIN
+    return False
 
 
 def created(run):
@@ -129,34 +161,42 @@ def plan(now, runs, minutes=None):
     if slot:
         rs = runs.get("collector", [])
         key = iso(slot)
-        if not any(live(r) and created(r) >= slot for r in rs):
-            if not any(is_title(r.get("display_title"), "Collector", key) for r in rs):
-                out.append(("collector", key, f"no collector run since slot {key}"))
+        since = [r for r in rs if created(r) and created(r) >= slot]
+        mine = [r for r in rs if is_title(r.get("display_title"), "Collector", key)]
+        if not any(progressing(r, now, QUEUE_WAIT_MIN["collector"]) for r in since) and len(mine) < COLLECTOR_MAX_DISPATCHES:
+            out.append(("collector", key, f"no collector run able to collect slot {key}"
+                                          + (f" ({len(since)} run(s) since it failed, never started or stalled; "
+                                             f"dispatch {len(mine) + 1} of {COLLECTOR_MAX_DISPATCHES})" if since else "")))
     # range, streams
     d = decision(now)
     age = (now - d).total_seconds() / 60
     key = iso(d)
-    rr = [r for r in runs.get("range", []) if live(r) and created(r) >= d]
+    rr = [r for r in runs.get("range", []) if created(r) and created(r) >= d]
     mine = [r for r in runs.get("range", []) if is_title(r.get("display_title"), "Range forecasts", key)]
-    if RANGE_GRACE_MIN <= age <= RANGE_LAST_DISPATCH_MIN and len(mine) < RANGE_MAX_DISPATCHES:
-        if not rr:
-            out.append(("range", key, f"no range run for decision {key} after {age:.0f} min"))
-        elif all(r.get("status") == "completed" and r.get("conclusion") == "failure" for r in rr):
-            out.append(("range", key, f"every range run for decision {key} failed; retry {len(mine) + 1} of "
-                                      f"{RANGE_MAX_DISPATCHES}"))
+    if RANGE_GRACE_MIN <= age <= RANGE_LAST_DISPATCH_MIN and len(mine) < RANGE_MAX_DISPATCHES \
+            and not any(progressing(r, now, QUEUE_WAIT_MIN["range"]) for r in rr):
+        out.append(("range", key, f"no range run for decision {key} after {age:.0f} min" if not rr else
+                                  f"no range run for decision {key} succeeded or is progressing ({len(rr)} failed, "
+                                  f"never started or stalled); retry {len(mine) + 1} of {RANGE_MAX_DISPATCHES}"))
     done = [finished(r) for r in rr if finished(r)]
-    anchor = max(done) if done else (d + dt.timedelta(minutes=STREAMS_FALLBACK_MIN) if not rr else None)
+    if done:
+        anchor = max(done)
+    elif not any(progressing(r, now, QUEUE_WAIT_MIN["range"]) for r in rr):
+        anchor = d + dt.timedelta(minutes=STREAMS_FALLBACK_MIN)
+    else:
+        anchor = None
     if anchor and age <= STREAMS_LAST_DISPATCH_MIN and now >= anchor + dt.timedelta(minutes=STREAMS_DELAY_MIN):
         ss = runs.get("streams", [])
-        if not any(live(r) and created(r) >= anchor - dt.timedelta(minutes=1) for r in ss) and \
-                not any(is_title(r.get("display_title"), "Research streams", key) for r in ss):
-            out.append(("streams", key, f"no research-streams run since {iso(anchor)}"))
+        smine = [r for r in ss if is_title(r.get("display_title"), "Research streams", key)]
+        if not any(progressing(r, now, QUEUE_WAIT_MIN["streams"]) and created(r) >= anchor - dt.timedelta(minutes=1)
+                   for r in ss) and len(smine) < STREAMS_MAX_DISPATCHES:
+            out.append(("streams", key, f"no research-streams run progressing since {iso(anchor)}"))
     # scoring
-    sc = [created(r) for r in runs.get("scoring", []) if live(r)]
+    sc = [created(r) for r in runs.get("scoring", []) if progressing(r, now, QUEUE_WAIT_MIN["scoring"])]
     if not sc or (now - max(sc)).total_seconds() / 60 > SCORING_STALE_MIN:
         hk = iso(now.replace(minute=0, second=0, microsecond=0))
         if not any(is_title(r.get("display_title"), "Range scoring", hk) for r in runs.get("scoring", [])):
-            out.append(("scoring", hk, "no range-scoring run for "
+            out.append(("scoring", hk, "no successful or progressing range-scoring run for "
                                        + (f"{(now - max(sc)).total_seconds() / 60:.0f} min" if sc else "the listed history")))
     return out
 
@@ -224,12 +264,69 @@ def dispatch(repo, token, items, origin, opener=None, ref="main"):
 
 
 # ------------------------------------------------------------------------------------------------ yield check
-def covered(base, slot):
-    """True when a collector run record (any trigger) exists at or after the slot: the slot is already collected."""
+def covering(base, slot):
+    """The stored run record that already collected the slot (repo 2.27): the first CRITICALLY SUCCESSFUL routine
+    record (cadence.critical_success) at or after the slot, else None. A critical-failed record does not cover a
+    slot - the recovery run then collects."""
     sys.path.insert(0, str(ROOT))
+    import cadence
     from watchdog import load_runs
     ms = int(slot.timestamp() * 1000)
-    return any(r.get("t", 0) >= ms and r.get("mode") in ("routine", "hourly") for r in load_runs(base))
+    for r in load_runs(base):
+        if r.get("t", 0) >= ms and cadence.critical_success(r):
+            return r
+    return None
+
+
+def covered(base, slot):
+    return covering(base, slot) is not None
+
+
+def record_sha256(rec):
+    import hashlib
+    return hashlib.sha256(json.dumps(rec, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+def yield_receipt(slot, rec, env=None, now=None):
+    """The durable proof of a legitimate no-op (repo 2.27): the slot, the yielding run and the identity, quality and
+    time of the already-persisted record that covered it. A title or a missing output is never proof of a yield."""
+    env = os.environ if env is None else env
+    now = now or dt.datetime.now(UTC)
+    return {"schema": "recovery-yield/1", "slot": iso(slot), "run_id": str(env.get("GITHUB_RUN_ID") or ""),
+            "run_attempt": str(env.get("GITHUB_RUN_ATTEMPT") or ""), "workflow": "collect.yml",
+            "ref": env.get("GITHUB_REF_NAME") or None, "checked_utc": iso(now), "tool": VERSION,
+            "covering": {"run_id": str(rec.get("run_id")), "t": rec.get("t"), "trigger": rec.get("trigger"),
+                         "critical_ok": rec.get("critical_ok"), "record_sha256": record_sha256(rec)}}
+
+
+def valid_yield(receipt, records, run=None):
+    """(ok, reason) for one yield receipt against the stored records and, when given, the Actions run it names."""
+    import cadence
+    if not isinstance(receipt, dict) or receipt.get("schema") != "recovery-yield/1":
+        return False, "not a recovery-yield/1 receipt"
+    slot = parse(receipt.get("slot"))
+    cov = receipt.get("covering") or {}
+    if slot is None or not receipt.get("run_id"):
+        return False, "receipt without slot or run"
+    if run is not None:
+        if str(run.get("id")) != str(receipt["run_id"]) or run.get("head_branch") != PRODUCTION_REF:
+            return False, "receipt does not name this production run"
+        if not is_title(run.get("display_title"), "Collector", iso(slot)):
+            return False, "receipt slot differs from the run's dispatched slot"
+    match = [r for r in records if str(r.get("run_id")) == str(cov.get("run_id")) and r.get("t") == cov.get("t")]
+    if not match:
+        return False, "covering record not stored"
+    rec = match[0]
+    if record_sha256(rec) != cov.get("record_sha256"):
+        return False, "covering record differs from the one the receipt names"
+    if not cadence.critical_success(rec):
+        return False, "covering record is not a critical success"
+    if rec["t"] < int(slot.timestamp() * 1000):
+        return False, "covering record predates the slot"
+    checked = parse(receipt.get("checked_utc"))
+    if checked is None or checked.timestamp() * 1000 < rec["t"]:
+        return False, "receipt checked before the covering record existed"
+    return True, "verified"
 
 
 def origin_label(env=None):
@@ -251,8 +348,16 @@ def main(argv):
         if slot is None:
             print("covered needs --slot", file=sys.stderr)
             return 2
-        yes = covered(ROOT, slot)
+        rec = covering(ROOT, slot)
+        yes = rec is not None
         print(f"covered={'true' if yes else 'false'}")
+        if yes and "--receipt" in argv:
+            rc = yield_receipt(slot, rec)
+            path = ROOT / YIELDS
+            path.parent.mkdir(parents=True, exist_ok=True)
+            with open(path, "a") as f:
+                f.write(json.dumps(rc, sort_keys=True) + "\n")
+            print(json.dumps(rc))
         if os.environ.get("GITHUB_OUTPUT"):
             with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                 f.write(f"covered={'true' if yes else 'false'}\n")

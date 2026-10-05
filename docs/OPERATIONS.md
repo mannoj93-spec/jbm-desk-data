@@ -128,10 +128,15 @@ repository write), only work that is due and that no run has covered:
 
 | Work | Due when | Last dispatch | Why that limit |
 |---|---|---|---|
-| Collector | latest 15-minute slot ≥ 4 min old, no run created since it | one per slot | a recovery run that finds its slot already collected yields (`recovery.py covered`) |
-| Range forecasts | 8–45 min after a 4H close, no live run since the close, or only failed ones | two per decision | `range_job` refuses a decision older than 1.0 h at its forecast step; 15 min covers runner start, the repo-write queue and preflight/refit |
-| Research streams | 3 min after the decision's range run completed (or 50 min after the close if none), no streams run since | one per decision, until +75 min | a native range run starts it through `workflow_run`; a recovery range run starts it itself (2.25.1: a token-started run raises no `workflow_run` event, observed Oct 4); PS1 executes within 90 min |
-| Range scoring | no run for 70 min | one per hour | hourly schedule + 10 min |
+| Collector | latest 15-minute slot ≥ 4 min old, no run since it that can still collect it (2.27) | two per slot | a recovery run yields only when a **critically successful** record already covers its slot, and records a durable yield receipt (`state/recovery_yields.jsonl`) |
+| Range forecasts | 8–45 min after a 4H close, no run since the close that succeeded or is still progressing | two per decision | `range_job` refuses a decision older than 1.0 h at its forecast step; 15 min covers runner start, the repo-write queue and preflight/refit |
+| Research streams | 3 min after the decision's range run completed (or 50 min after the close if none completed and none is progressing), no progressing streams run since | two per decision, until +75 min | a native range run starts it through `workflow_run`; a recovery range run starts it itself (2.25.1: a token-started run raises no `workflow_run` event, observed Oct 4); PS1 executes within 90 min |
+| Range scoring | no successful or progressing run for 70 min | one per hour | hourly schedule + 10 min |
+
+"Progressing" (2.27, `recovery.progressing`): completed successfully, in progress for at most 40 min, or queued/pending
+for at most 10 min (20 for scoring). A run that failed, was cancelled, never received a runner or has waited longer no
+longer suppresses a dispatch, so dead attempts cannot block recovery; the per-key caps bound retries (no storms), new
+pending runs replace older pending ones in a concurrency group, and nothing is ever cancelled or re-run.
 
 Not covered, by design: the research lab, weekly report, dashboard and range monitor (not time-critical; they still
 run whenever the native schedule fires) and intake (issue events start it without the scheduler). It is invoked at 12, 27, 42 and 57 minutes past each hour by an **external cron calling the workflow_dispatch API**
@@ -149,6 +154,19 @@ declaration kept); `human`; `chained`. The dispatcher passes `origin=<its run id
 longest automated gap; a person's run counts in neither. The watchdog (and the dispatcher's own `service-watch` job,
 which runs on the external trigger) fails on a service silence and warns on a native one. `monitors["recovery.yml"]`
 is stale after 45 min without a successful dispatcher run.
+
+**Execution stages (repo 2.27, `execution.py`).** Trigger accepted (the run exists), runner assigned (a job has a
+runner), steps executed, critical success, persisted, explicit yield: separate facts, unknown without evidence. A run's
+creation time or conclusion is not evidence that anything executed (Oct 5 2026: runs created, jobs never assigned a
+runner, cancelled, run conclusion "failure"). Health separates data freshness (newest persisted automated critical
+success) from activity (newest automated record, any result) and reports the 45-minute acceptance target beside the
+stale limit; monitors whose failed run never executed read "could not execute", never "detected a problem". A stale
+health report means no newer report was persisted, not necessarily that the scheduler was silent.
+
+**Dependency limitation (repo 2.27).** The external timer, the dispatcher, its service watch, the native schedules and
+every job run on GitHub-hosted runners. When GitHub cannot assign runners (incident 3q1yb5m7ltvb, Oct 5 2026 from ~18:55Z),
+no trigger restores execution and no workflow-based alert can run; the outage stays in the acceptance record whatever
+its cause. See the incident file for the decision this leaves to the operator.
 
 Activation (operator, once): (1) create a fine-grained personal access token limited to this repository with
 **Actions: Read and write** only (Metadata read is implied), expiry ≤ 1 year; (2) create a cron job at an external
@@ -168,23 +186,47 @@ GitHub's scheduler. Evidence, ruled-out causes and the revisit condition: `docs/
 run>]`, and each recovery run's title ends "via <origin>" so the Actions run list shows it. A recovery run whose chain a
 person started is human-assisted (never counted as automated); a root that cannot be found is unknown.
 
-**Acceptance (infrastructure, stated before observing; repo 2.26).** `python scripts/service_acceptance.py --from <start>`
-with `GITHUB_TOKEN`/`GH_TOKEN` and `GITHUB_REPOSITORY` set (or `--runs-json` with a complete run list) evaluates one window
-of at least 24 h after it has ended. Targets: at least 97% of slot intervals holding a persisted, critical-successful
-collector record started without a person (95 intervals: at most 2 empty - 2.25's "3" was wrong), no interval longer than
-45 min without one, every range decision of the window published eligibly and every PS1 decision executed or recorded
-(expected decisions come from the schedule, not from the records), no duplicate execution, no collector run without a
-stored record, an empty scoring backlog, and no person in the critical chain. Initiation is verified against the run
-list: native schedule, a chain rooted in a scheduled dispatcher run, or a dispatcher run titled "(external)" created within
-90 s after :12/:27/:42/:57 (the timer's cadence corroborates the owner-token trigger; it does not prove it). Verdicts:
-pass, fail, invalid (shorter than 24 h), pending (not ended), insufficient (no complete run evidence). The output names
-the checker version, commit, input hash and Actions retrieval. Data restored after a failed push never counts.
+**Acceptance (infrastructure, stated before observing; acceptance-3.0.0, repo 2.27).** One window of at least 24 h,
+judged after its evidence cutoff (default window end + 120 min). Fetch and keep the evidence, then replay it offline:
+
+    GITHUB_REPOSITORY=mannoj93-spec/jbm-desk-data GH_TOKEN=... python scripts/service_acceptance.py \
+        --from <start> --to <end> --save-evidence actions.json [--timer-receipts receipts.json]
+    python scripts/service_acceptance.py --from <start> --to <end> --actions-evidence actions.json --commit <sha> \
+        [--timer-receipts receipts.json] [--now <iso>]
+
+Clocks kept apart: the window; each decision's deadline (range 75 min, PS1 90 min; a decision counts when its deadline
+falls inside the window); the evidence cutoff (repository files are read at the last first-parent commit with committer
+time at or before it, so later fills, confirmations, records, receipts or scores cannot repair the window - committer
+time is not push time); and the evaluation clock (before the cutoff: pending). Targets (unchanged): >= 97% of slot
+intervals hold a persisted **critical-success** collector record (`cadence.critical_success`, the one shared
+definition) from a run not started by a person (95 intervals: at most 2 empty); no gap over 45 min (the acceptance
+target - the 90-minute watchdog limit is a different rule); every range decision published eligibly; PS1 validated
+(launch, protocol and lifecycle checked first; expected decisions from the launch and the schedule; only "executed" by
+one verified-chain execution filled before the deadline, a recorded no-rebalance, or not expected under an operator
+pause/termination count; unknown actions, invalid chains, duplicates, late fills, missing or contradictory launch
+evidence fail); every collector run classified by execution stage (a never-started or failed-before-execution run is a
+missed execution, not a persistence loss; an executed run with no stored record and no valid yield receipt is lost
+output, whatever its title); empty scoring backlog; no person and no unknown lineage in the critical chain.
+Initiation is resolved from Actions metadata, never from actor identity: workflow_run children through their named
+parent (2.27 titles) or the unique parent able to raise the event; recovery chains through their root and named parent;
+roots outside the window are fetched individually. **Strict unattended certification** counts only verified starts and
+external dispatches matched one-to-one to an independent timer-provider receipt (`--timer-receipts`, bound by hash);
+"timer-corroborated" (owner token, on the cadence, no receipt) supports continuity but not certification, so a window
+whose targets pass on corroboration alone is reported `service_verdict: pass`, `verdict: insufficient`. The output binds
+the checker version and code hashes, the evaluated commit, every consulted file's hash and the normalized Actions
+evidence's hash (query bounds, pagination, runs, parents, jobs/steps). Exit codes: 0 pass, 1 fail, 2 invalid, 3 pending,
+4 insufficient. A failed window stays failed; a retry is a new window.
 
 **Restoring a failed push (repo 2.26).** A collector run whose push fails uploads `collector-recovery-<run id>` (7-day
 retention). `python scripts/restore_failed_run.py --zip <archive> --sha256 <GitHub digest> --run <id> --artifact <id>`
 verifies the digest and keeps, byte-identical, only rows whose identity the repository lacks under
 `data/restored/collector-<id>/`, with a receipt in `data/restored/receipts.jsonl`; reviewed by pull request. Restored
 rows are not read by forecasts, scores, paper executions or the lab, and the failed run stays a persistence failure.
+A research-lab run whose persist job never ran (2.27, `scripts/preserve_research_artifact.py`) is handled differently:
+the verified archive is kept byte-identical under `data/restored/research-<run>/artifact.zip` and the publication gate
+(`scripts/merge_research.py`) is run as a dry run on a copy of the checkout, with its result in the receipt, but the
+outputs are not merged into the live research files - the lab's freeze time (`t_persisted`) is the computing run's data
+cutoff, and publishing hours later would present the freeze as on time. The next lab run recomputes and freezes them.
 
 **Independent alerting.** The external scheduler's failure notifications cover a refused dispatch call; GitHub's
 failed-run notifications cover a failing dispatcher or service watch. Neither reports a silence of the external

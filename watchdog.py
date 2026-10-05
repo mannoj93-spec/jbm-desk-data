@@ -6,9 +6,11 @@ A failing collector run already fails its own workflow. What it cannot report is
 absence: a disabled schedule, a queue that never drains, or runs that stop committing. This
 check reads the stored run records and distinguishes three states:
 
-  exit 1  stale or missing: no automated run - native schedule or, from repo 2.25, the recovery
-          dispatcher (manual and local runs excluded) - within WATCHDOG_STALE_MIN minutes (default 90,
-          six 15-minute slots). A native-only silence is a warning while recovery runs continue.
+  exit 1  stale or missing: no persisted automated CRITICAL SUCCESS (2.27; before, any automated run) -
+          native schedule or, from repo 2.25, the recovery dispatcher (manual and local runs excluded) -
+          within WATCHDOG_STALE_MIN minutes (default 90, six 15-minute slots). A native-only silence is a
+          warning while recovery runs continue. Stale persisted evidence is not proof of a silent scheduler:
+          runs may not have executed (no runner), failed, or failed to persist.
   exit 2  running but failing: the latest automated run lost critical data (the Binance share
           series, or the whole snapshot: the stage failed or no open-interest book succeeded).
   exit 0  healthy; source-level failures and degraded books in recent runs are printed as
@@ -26,6 +28,9 @@ import cadence
 from storage import read_rows
 
 MINUTE = 60_000
+
+
+ACCEPTANCE_GAP_MIN = 45   # restoration acceptance target, reported separately from the stale limit (repo 2.27)
 
 
 def iso(ms):
@@ -59,13 +64,25 @@ def check(base, now_ms, stale_min=None):
     if not auto:
         return Result(1, "collector missing: no scheduled or recovery collector run has ever been stored", warnings)
     last = auto[-1]
+    good = [r for r in auto if cadence.critical_success(r)]
     age = (now_ms - last["t"]) / MINUTE
     src = "native schedule" if cadence.schedule_evidence(last) else "recovery dispatcher"
     where = (f"last automated run {iso(last['t'])} ({age:.0f} min ago, {src}, {last.get('code_version')}, "
              f"trigger {cadence.trigger(last) or 'not recorded (pre-2.6)'})")
-    if age > stale_min:
-        return Result(1, f"collector stale: silent for {age:.0f} min (limit {stale_min}); {where}; "
-                         "check the Collector workflow, the native schedule and the recovery dispatcher", warnings)
+    # Repo 2.27: staleness is judged on the newest persisted CRITICAL SUCCESS. Fresh failed activity is reported, but it
+    # never makes stale data fresh; and stale persisted evidence does not by itself mean the scheduler was silent.
+    gage = (now_ms - good[-1]["t"]) / MINUTE if good else None
+    if gage is None or gage > stale_min:
+        return Result(1, "collector data stale: " + (f"no persisted critical success for {gage:.0f} min (limit {stale_min}; "
+                         f"last {iso(good[-1]['t'])})" if good else "no persisted critical success stored")
+                         + f"; {where}"
+                         + (" - its latest activity failed" if not cadence.critical_success(last) else "")
+                         + ". Stale persisted evidence: the schedule may be silent, runs may not have executed (no "
+                           "runner), failed or not persisted - check the Collector runs, their jobs and the dispatcher",
+                      warnings)
+    if gage > ACCEPTANCE_GAP_MIN:
+        warnings.append(f"no persisted critical success for {gage:.0f} min: the 45-minute restoration acceptance "
+                        f"target is breached (the {stale_min}-minute watchdog limit is a different rule)")
     native_age = (now_ms - scheduled[-1]["t"]) / MINUTE if scheduled else None
     if native_age is None or native_age > stale_min:
         warnings.append("native schedule silent " + (f"for {native_age:.0f} min (last scheduled run "
@@ -84,8 +101,8 @@ def check(base, now_ms, stale_min=None):
     for gap in cadence.scheduled_gaps(runs, stale_min, since_ms=now_ms - 24 * 60 * MINUTE):
         warnings.append(f"recovered native gap: no scheduled run {iso(gap['start_ms'])} to {iso(gap['end_ms'])} "
                         f"({gap['minutes']:.0f} min, limit {stale_min}); see reports/health.json")
-    for gap in cadence.gaps(runs, stale_min, cadence.automated_evidence, since_ms=now_ms - 24 * 60 * MINUTE):
-        warnings.append(f"recovered service gap: no automated run {iso(gap['start_ms'])} to {iso(gap['end_ms'])} "
+    for gap in cadence.gaps(runs, stale_min, cadence.successful_automated, since_ms=now_ms - 24 * 60 * MINUTE):
+        warnings.append(f"recovered service gap: no automated critical success {iso(gap['start_ms'])} to {iso(gap['end_ms'])} "
                         f"({gap['minutes']:.0f} min, limit {stale_min}); see reports/health.json")
     if critical:
         return Result(2, f"collector running but failing: {where}; latest run lost critical data: "

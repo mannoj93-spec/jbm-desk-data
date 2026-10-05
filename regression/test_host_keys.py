@@ -265,7 +265,7 @@ class WiringTests(unittest.TestCase):
                 if "DESK_WRITER:" in step:
                     self.assertIn("DESK_META_TOKEN: ${{ github.token }}", step, wf.name)
                     n += 1
-        self.assertEqual(n, 9)
+        self.assertEqual(n, 10)        # 2.27: + the collector's yield-receipt persistence step
 
 
 if __name__ == "__main__":
