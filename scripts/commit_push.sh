@@ -30,22 +30,20 @@ bounded() {   # run a network git command within the remaining budget (cap 60 s 
 # write deploy key), push over SSH with that key: deploy keys are the only actor the main-branch ruleset lets
 # bypass its required release check, so data writes keep landing while every other change needs a checked pull
 # request. Without it, push with the workflow token exactly as before (no ruleset may require the check then).
-# GitHub's SSH host keys come from https://api.github.com/meta over HTTPS; if they cannot be read, nothing is
-# pushed rather than trusting an unverified host. DESK_PUSH_URL overrides the SSH remote (tests only).
+# GitHub's SSH host keys come from https://api.github.com/meta over HTTPS (scripts/github_host_keys.py); if no
+# trustworthy keys can be read within the budget, nothing is pushed rather than trusting an unverified host. DESK_PUSH_URL overrides the SSH remote and
+# DESK_META_URL the host-key source (tests only).
 remote=origin
 if [ -n "${DESK_DEPLOY_KEY:-}" ]; then
   sshdir=$(mktemp -d)
   trap 'rm -rf "$sshdir"' EXIT
   printf '%s\n' "$DESK_DEPLOY_KEY" > "$sshdir/key"
   chmod 600 "$sshdir/key"
-  if [ -z "${DESK_PUSH_URL:-}" ]; then
-    if ! python3 - "$sshdir/known_hosts" <<'PY'
-import json, sys, urllib.request
-with urllib.request.urlopen("https://api.github.com/meta", timeout=20) as r:
-    keys = json.load(r)["ssh_keys"]
-open(sys.argv[1], "w").write("".join(f"github.com {k}\n" for k in keys))
-PY
-    then
+  if [ -z "${DESK_PUSH_URL:-}" ] || [ -n "${DESK_META_URL:-}" ]; then   # tests set DESK_META_URL to exercise this path
+    # Repo 2.26: authenticated (the job's token), retried within this budget, validated and reused within the job
+    # (scripts/github_host_keys.py). At most 40 s of the budget, leaving the rest for the push itself.
+    keys_budget=$(left); if [ "$keys_budget" -gt 40 ]; then keys_budget=40; fi
+    if ! python3 "$(dirname "$0")/github_host_keys.py" "$sshdir/known_hosts" --budget "$keys_budget"; then
       echo "Could not read GitHub's SSH host keys; nothing pushed; remote persistence not confirmed." >&2
       exit 1
     fi

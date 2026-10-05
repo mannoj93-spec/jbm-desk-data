@@ -114,8 +114,10 @@ def schedule_evidence(run):
 def automated_evidence(run):
     """Started without a person (repo 2.25): schedule evidence, or the recovery dispatcher as authenticated by
     provenance.py (dispatched by github-actions[bot] with trigger=recovery). A person's dispatch is never automated,
-    whatever it declared."""
-    return schedule_evidence(run) or (is_routine(run) and (run.get("provenance") or {}).get("source") == "recovery")
+    whatever it declared, and from 2.26 neither is a recovery run whose chain a person started (root "human")."""
+    import provenance
+    return schedule_evidence(run) or (is_routine(run) and (run.get("provenance") or {}).get("source") == "recovery"
+                                      and provenance.automated(run.get("provenance")))
 
 
 def gaps(runs, stale_min, evidence, since_ms=None, now_ms=None):
@@ -141,8 +143,9 @@ def coverage(periods, runs, a, b):
     edges = [a] + [r["t"] for r in auto] + [b]
     longest = max((y - x for x, y in zip(edges, edges[1:])), default=b - a)
     def src(r):
+        s = (r.get("provenance") or {}).get("source")
         return ("native-schedule" if schedule_evidence(r) else "recovery" if automated_evidence(r) else
-                (r.get("provenance") or {}).get("source") or trigger(r) or "unknown")
+                "human-assisted" if s == "recovery" else s or trigger(r) or "unknown")
     by = {}
     for r in routine:
         by[src(r)] = by.get(src(r), 0) + 1

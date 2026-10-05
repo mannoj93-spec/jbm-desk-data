@@ -16,8 +16,10 @@ another:
               separately with their recorded state (the report is never re-run from here).
   availability the range status file judged on this check's clock (its own exact expiry rules).
   scoring     matured, eligible RC1D forecasts still unscored (the monitor's backlog rule).
-  monitors    last successful watchdog and range-monitor runs and the newest scheduled run of any workflow
-              (GitHub API, when a token is given); unknown without one. An old success is never current health.
+  monitors    heartbeat (last completed run, any result) and last result of the watchdog and range-monitor, kept
+              apart from their last success (2.26), the dispatcher, and the newest scheduled run of any workflow
+              (GitHub API, when a token is given); unknown without one. An old success is never current health, and
+              a monitor that ran on time and failed has detected a problem - it is not silent.
 
 Modes:  python health.py            read-only: print the JSON, write nothing
         python health.py --record   also write reports/health.{json,md} and append new incidents to
@@ -44,7 +46,7 @@ for p in (str(ROOT), str(ROOT / "desk")):
 import cadence                    # noqa: E402
 from watchdog import load_runs    # noqa: E402
 
-VERSION = "health-1.1.0"
+VERSION = "health-1.2.0"
 UTC = dt.timezone.utc
 LOOKBACK_H = 72                   # decisions and gaps examined (incidents already recorded stay recorded)
 MONITORS = {"watchdog.yml": 90, "range-monitor.yml": 510}
@@ -232,19 +234,9 @@ def monitors(now, token=None, repo=None, opener=None):
         except Exception as exc:                                  # noqa: BLE001 - reported as unknown
             out[wf] = {"state": "unknown", "error": type(exc).__name__}
             continue
-        started = [parse(x.get("run_started_at") or x.get("created_at")) for x in runs]
-        started = [s for s in started if s]
-        ok = [parse(x.get("run_started_at") or x.get("created_at")) for x in runs if x.get("conclusion") == "success"]
-        ok = [s for s in ok if s]
-        last_start, last_ok = (max(started) if started else None), (max(ok) if ok else None)
+        e, last_start = heartbeat(runs, now, MONITORS.get(wf))
         if last_start and (newest is None or last_start > newest):
             newest = last_start
-        e = {"last_scheduled_start_utc": last_start and last_start.strftime("%Y-%m-%dT%H:%M:%SZ"),
-             "last_success_utc": last_ok and last_ok.strftime("%Y-%m-%dT%H:%M:%SZ")}
-        if wf in MONITORS:
-            lim = MONITORS[wf]
-            e["stale_after_min"] = lim
-            e["state"] = "unknown" if last_ok is None else ("stale" if (now - last_ok).total_seconds() / 60 > lim else "fresh")
         out[wf] = e
     wf, lim = DISPATCHER
     try:
@@ -252,19 +244,44 @@ def monitors(now, token=None, repo=None, opener=None):
                                      headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
         with opener(req, timeout=20) as r:
             runs = json.loads(r.read()).get("workflow_runs", [])
-        ok = [parse(x.get("run_started_at") or x.get("created_at")) for x in runs if x.get("conclusion") == "success"]
-        ok = [s for s in ok if s]
-        last_ok = max(ok) if ok else None
-        out[wf] = {"last_success_utc": last_ok and last_ok.strftime("%Y-%m-%dT%H:%M:%SZ"), "stale_after_min": lim,
-                   "events": sorted({x.get("event") for x in runs if x.get("event")}),
-                   "state": "unknown" if last_ok is None else ("stale" if (now - last_ok).total_seconds() / 60 > lim else "fresh")}
+        e, _ = heartbeat(runs, now, lim)
+        e["events"] = sorted({x.get("event") for x in runs if x.get("event")})
+        out[wf] = e
     except Exception as exc:                                      # noqa: BLE001 - reported as unknown
         out[wf] = {"state": "unknown", "error": type(exc).__name__}
     states = [v.get("state") for k, v in out.items() if k in MONITORS]
+    detected = sorted(k for k, v in out.items() if k in MONITORS and v.get("last_result") == "failure")
     return {"source": "GitHub Actions API, scheduled runs", "workflows": out,
             "newest_scheduled_start_utc": newest and newest.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "state": "stale" if "stale" in states else ("unknown" if "unknown" in states or not states else "fresh"),
+            "problems_detected_by": detected,
+            "rule": "state is the heartbeat (last completed run, any result); last_result is what that run found - a "
+                    "fresh monitor that failed detected a problem, it is not silent",
             "dispatcher_state": (out.get(DISPATCHER[0]) or {}).get("state")}
+
+
+def heartbeat(runs, now, limit_min):
+    """(entry, last start) for one workflow's runs (repo 2.26). Heartbeat = the newest COMPLETED run whatever it found;
+    last_result = that run's conclusion; last_success_utc kept separately. Before 2.26 the state used the last
+    success, so a monitor that ran on time and correctly failed on a missed decision read as stale."""
+    def t(x):
+        return parse(x.get("run_started_at") or x.get("created_at"))
+    started = [t(x) for x in runs if t(x)]
+    done = sorted(((parse(x.get("updated_at")) or t(x), x) for x in runs
+                   if (x.get("status") == "completed" or (x.get("status") is None and x.get("conclusion"))) and t(x)),
+                  key=lambda p: p[0])
+    ok = [t(x) for x in runs if x.get("conclusion") == "success" and t(x)]
+    last_start = max(started) if started else None
+    last_done, last_run = done[-1] if done else (None, None)
+    f = lambda d: d and d.strftime("%Y-%m-%dT%H:%M:%SZ")   # noqa: E731
+    e = {"last_scheduled_start_utc": f(last_start), "last_completed_utc": f(last_done),
+         "last_result": last_run.get("conclusion") if last_run else None,
+         "last_run_id": last_run.get("id") if last_run else None, "last_success_utc": f(max(ok) if ok else None)}
+    if limit_min:
+        e["stale_after_min"] = limit_min
+        e["state"] = "unknown" if last_done is None else (
+            "stale" if (now - last_done).total_seconds() / 60 > limit_min else "fresh")
+    return e, last_start
 
 
 # --------------------------------------------------------------------------------------------- assemble
@@ -356,7 +373,7 @@ def markdown(doc):
          + "; ".join(f"{h} {v['state_now']}" for h, v in av["horizons"].items()) + ".", "",
          "**Scoring backlog:** " + ("; ".join(f"{h} {len(v)}" for h, v in doc["scoring_backlog"].items()) or "none") + ".", "",
          f"**Monitors:** {mon['state']} ({mon['source']})"
-         + "".join(f"; {k} last success {v.get('last_success_utc')} ({v.get('state', 'n/a')})" for k, v in mon["workflows"].items() if k in MONITORS)
+         + "".join(f"; {k} heartbeat {v.get('state', 'n/a')} (last run {v.get('last_completed_utc')}: {v.get('last_result')}; last success {v.get('last_success_utc')})" for k, v in mon["workflows"].items() if k in MONITORS)
          + (f"; newest scheduled start of any workflow {mon.get('newest_scheduled_start_utc')}" if mon.get("newest_scheduled_start_utc") else "") + ".", ""]
     return "\n".join(L)
 

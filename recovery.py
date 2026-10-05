@@ -44,9 +44,10 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "recovery-1.1.0"
+VERSION = "recovery-1.2.0"
 UTC = dt.timezone.utc
 API = "https://api.github.com"
+PRODUCTION_REF = "main"
 _sleep = time.sleep                # between API retries; replaced in tests
 
 COLLECTOR_GRACE_MIN = 4
@@ -71,8 +72,19 @@ def iso(t):
 
 
 def title(name, key):
-    """The run-name a recovery dispatch gets (each target workflow's run-name expression produces exactly this)."""
+    """The run-name stem a recovery dispatch gets. From 2.26 each target's run-name appends " via <origin>", so the
+    chain's root is visible in the Actions run list (service_acceptance reads it); is_title matches either form."""
     return f"{name} recovery {key}"
+
+
+def is_title(display, name, key):
+    stem = title(name, key)
+    return isinstance(display, str) and (display == stem or display.startswith(stem + " via "))
+
+
+def via(display):
+    """The origin a recovery run's title carries ("<root run>:<label>[:<parent>]"), or None."""
+    return display.split(" via ", 1)[1] if isinstance(display, str) and " via " in display else None
 
 
 def live(run):
@@ -108,7 +120,9 @@ def decision(now):
 
 
 def plan(now, runs, minutes=None):
-    """[(workflow key, slot key, reason)] due now. runs: {workflow key: [run dicts from the Actions API]}."""
+    """[(workflow key, slot key, reason)] due now. runs: {workflow key: [run dicts from the Actions API]}.
+    Only production-ref runs are considered (production()); a run without head_branch is not production."""
+    runs = production(runs)
     out = []
     # collector
     slot = collector_slot(now, minutes)
@@ -116,14 +130,14 @@ def plan(now, runs, minutes=None):
         rs = runs.get("collector", [])
         key = iso(slot)
         if not any(live(r) and created(r) >= slot for r in rs):
-            if not any(r.get("display_title") == title("Collector", key) for r in rs):
+            if not any(is_title(r.get("display_title"), "Collector", key) for r in rs):
                 out.append(("collector", key, f"no collector run since slot {key}"))
     # range, streams
     d = decision(now)
     age = (now - d).total_seconds() / 60
     key = iso(d)
     rr = [r for r in runs.get("range", []) if live(r) and created(r) >= d]
-    mine = [r for r in runs.get("range", []) if r.get("display_title") == title("Range forecasts", key)]
+    mine = [r for r in runs.get("range", []) if is_title(r.get("display_title"), "Range forecasts", key)]
     if RANGE_GRACE_MIN <= age <= RANGE_LAST_DISPATCH_MIN and len(mine) < RANGE_MAX_DISPATCHES:
         if not rr:
             out.append(("range", key, f"no range run for decision {key} after {age:.0f} min"))
@@ -135,13 +149,13 @@ def plan(now, runs, minutes=None):
     if anchor and age <= STREAMS_LAST_DISPATCH_MIN and now >= anchor + dt.timedelta(minutes=STREAMS_DELAY_MIN):
         ss = runs.get("streams", [])
         if not any(live(r) and created(r) >= anchor - dt.timedelta(minutes=1) for r in ss) and \
-                not any(r.get("display_title") == title("Research streams", key) for r in ss):
+                not any(is_title(r.get("display_title"), "Research streams", key) for r in ss):
             out.append(("streams", key, f"no research-streams run since {iso(anchor)}"))
     # scoring
     sc = [created(r) for r in runs.get("scoring", []) if live(r)]
     if not sc or (now - max(sc)).total_seconds() / 60 > SCORING_STALE_MIN:
         hk = iso(now.replace(minute=0, second=0, microsecond=0))
-        if not any(r.get("display_title") == title("Range scoring", hk) for r in runs.get("scoring", [])):
+        if not any(is_title(r.get("display_title"), "Range scoring", hk) for r in runs.get("scoring", [])):
             out.append(("scoring", hk, "no range-scoring run for "
                                        + (f"{(now - max(sc)).total_seconds() / 60:.0f} min" if sc else "the listed history")))
     return out
@@ -171,15 +185,26 @@ def _request(method, url, token, body=None, opener=None, tries=2):
     raise RuntimeError(f"{method} {url.split('/repos/')[-1]}: {last}")
 
 
-def list_runs(repo, token, opener=None):
+def list_runs(repo, token, opener=None, ref=None):
+    ref = ref or PRODUCTION_REF
     out = {}
     for key, (wf, _) in WORKFLOWS.items():
-        status, body = _request("GET", f"{API}/repos/{repo}/actions/workflows/{wf}/runs?per_page=40", token, opener=opener)
+        status, body = _request("GET", f"{API}/repos/{repo}/actions/workflows/{wf}/runs?per_page=40&branch={ref}",
+                                token, opener=opener)
         if status != 200:
             raise RuntimeError(f"listing {wf}: HTTP {status}")
+        runs = (body or {}).get("workflow_runs")
+        if not isinstance(runs, list):
+            raise RuntimeError(f"listing {wf}: no workflow_runs in the response")
         out[key] = [{k: r.get(k) for k in ("id", "event", "status", "conclusion", "created_at", "updated_at",
-                                            "display_title")} for r in (body or {}).get("workflow_runs", [])]
+                                            "display_title", "head_branch")} for r in runs]
     return out
+
+
+def production(runs, ref=PRODUCTION_REF):
+    """Only runs of the production ref may cover, suppress or anchor recovery (repo 2.26): a run on another branch,
+    or one whose branch is not stated, never counts as production work."""
+    return {k: [r for r in v if r.get("head_branch") == ref] for k, v in runs.items()}
 
 
 def dispatch(repo, token, items, origin, opener=None, ref="main"):
@@ -208,11 +233,14 @@ def covered(base, slot):
 
 
 def origin_label(env=None):
+    """The dispatcher is a chain's root: "<its run id>:<native-schedule | external | human>"."""
     import provenance
     env = os.environ if env is None else env
     src = provenance.source(env)
     if src == "human" and (env.get("DESK_DISPATCH_TRIGGER") or "").strip() == "external":
         src = "external"            # declared by the caller; the token is the owner's, so the label is a declaration
+    if src not in provenance.ROOT_LABELS:
+        src = "human" if env.get("GITHUB_EVENT_NAME") == "workflow_dispatch" else src
     return f"{env.get('GITHUB_RUN_ID', 'local')}:{src}"
 
 
@@ -235,8 +263,9 @@ def main(argv):
         if not (slot and token and repo):
             print("chain needs --slot, GITHUB_TOKEN and GITHUB_REPOSITORY", file=sys.stderr)
             return 2
+        import provenance
         res = dispatch(repo, token, [("streams", slot, "chained from the recovery range run")],
-                       f"{os.environ.get('GITHUB_RUN_ID', 'local')}:range-recovery")
+                       provenance.child_origin())                   # 1.2.0: the chain's root passed on
         print(json.dumps(res))
         if not res[0]["ok"]:
             print(f"::error title=Recovery chain failed::research streams {slot}: {res[0].get('error')}")

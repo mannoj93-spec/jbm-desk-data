@@ -1,4 +1,6 @@
 name: Recovery dispatcher
+# Repo 2.26: the title names a declared external trigger, so lineage is visible in the Actions run list.
+run-name: ${{ inputs.trigger == 'external' && 'Recovery dispatcher (external)' || '' }}
 # Repo 2.25 (docs/OPERATIONS.md, "Recovery dispatcher"). GitHub's native schedule stopped starting most scheduled runs
 # from Oct 3 2026 (docs/incidents/2026-10-03-native-schedule.md). This workflow dispatches collection, range
 # publication, the research streams and range scoring when they are due and no run covered them (recovery.py).

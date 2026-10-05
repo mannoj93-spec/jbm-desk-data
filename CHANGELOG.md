@@ -1,3 +1,19 @@
+# Maintenance, revision 2.26 (crypto-desk 12.4.9 on the 12.4 release family) — 2026-10-05
+
+**Base.** `main` at `ad9df852` (2.25.1 plus data). No research definition, model, contract, `range-job-12.4.0`, PS1
+protocol, clock, calibration, deadline, forecast, score, execution or missed-decision record changes.
+
+| Finding (reproduced) | Verified cause | Change | Tests |
+|---|---|---|---|
+| **Persistence failed after successful work** (5 runs Oct 4 22:52 – Oct 5 10:55) | unauthenticated `api.github.com/meta` host-key lookup in `commit_push.sh` hit the 60/h shared-IP limit: "HTTP Error 403: rate limit exceeded" | `scripts/github_host_keys.py`: job token (`DESK_META_TOKEN` on all 9 persistence steps), retries honouring retry-after/reset within a 40 s share of the budget, key validation, reuse within the job; still strict host checking, fail closed | `test_host_keys` (14, incl. end-to-end through `commit_push.sh` against a mock server) |
+| **Two failed collector runs' observations** | push failed (above) | artifacts 11322590457 / 11326693263 verified against GitHub digests; 13 forward-only rows kept byte-identical in `data/restored/` with a receipt; never counted as on time | `test_restore` (3) |
+| **Acceptance gate passed a 1 h window, credited `critical_ok:false` records, checked people only in the collector** | gate design (2.25) | `service_acceptance` 2.0: >= 24 h completed windows only; persisted critical success; lineage verified against the run list; decisions expected from the schedule; persistence join; people and unknown lineage across the chain; verdict bound to commit, input hash and evidence; "at most 2 of 95" | `test_acceptance` (11) |
+| **Human-started dispatcher's children counted as automated** | `source` alone decided | provenance 1.1.0: root lineage carried through every hop (`<root>:<label>[:<parent>]`), titles end "via <origin>"; human root = human-assisted | `test_recovery.LineageTests` |
+| **Foreign-branch run suppressed main recovery** | listing without branch filter | runs listed with `branch=main`, `head_branch` kept, non-main or unstated runs ignored; malformed listings are errors | `test_recovery.BranchScopeTests` |
+| **Monitor that ran and failed read as stale** | heartbeat used last success | health 1.2.0: heartbeat = last completed run, `last_result` separate; dashboard says "ran; detected a problem" | `test_health.MonitorHeartbeatTests`, `model.test.mjs` |
+| **Monitor incident aging (verified, unchanged)** | 12 h window anchored to last_due, 75-min grace | fixed-clock fixtures: inclusive boundary 09:14/09:15, historical evidence kept, ongoing outage still fails, freshness/integrity/backlog independent | `test_monitor_aging` (6) |
+| **Primary scheduling** | native 76% of collector slots since recovery; external timer 67/67 ticks | decision: external timer -> dispatcher is primary, native schedules a measured fallback; no workflow change for it (`docs/incidents/2026-10-03-native-schedule.md`) | — |
+
 # Maintenance, revision 2.25.1 — 2026-10-04 (recovery chain to the research streams)
 
 **Why.** The first production recovery cycle (Oct 4 20:41–20:47Z: dispatcher run 37233076237 started by a test run of the external

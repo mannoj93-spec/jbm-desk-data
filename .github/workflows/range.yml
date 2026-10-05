@@ -1,5 +1,5 @@
 name: Range forecasts
-run-name: ${{ inputs.trigger == 'recovery' && format('Range forecasts recovery {0}', inputs.slot) || '' }}
+run-name: ${{ inputs.trigger == 'recovery' && format('Range forecasts recovery {0} via {1}', inputs.slot, inputs.origin) || '' }}
 # Crypto-desk range stream (desk/, package 12.2, repo 2.17): contract RC1D (desk/range_contract.py).
 # One run = one attempt for the last 4H close: prepare and freeze a batch of three forecasts in one
 # transaction (range_job.py forecast), push it, confirm the push on the remote BEFORE the window starts
@@ -98,6 +98,7 @@ jobs:
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           DESK_WRITER: range                                   # scripts/writers.json: the outputs this job may push
+          DESK_META_TOKEN: ${{ github.token }}             # authenticated host-key lookup (scripts/github_host_keys.py)
           COMMIT_MESSAGE: Range forecasts
           PERSIST_BUDGET_S: '100'
         run: bash scripts/commit_push.sh registry state/forecast_manifest.json state/registered.json state/range_attempts.jsonl state/range_publications.jsonl state/range_runs.jsonl desk/fits desk/inputs desk/calendars reports/range.md reports/range_status.json
@@ -119,6 +120,7 @@ jobs:
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           DESK_WRITER: range                                   # scripts/writers.json: the outputs this job may push
+          DESK_META_TOKEN: ${{ github.token }}             # authenticated host-key lookup (scripts/github_host_keys.py)
           COMMIT_MESSAGE: Range publication confirmed
           PERSIST_BUDGET_S: '60'
         run: bash scripts/commit_push.sh state/range_attempts.jsonl state/range_publications.jsonl state/range_runs.jsonl reports/range.md reports/range_status.json

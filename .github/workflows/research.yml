@@ -104,6 +104,7 @@ jobs:
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           DESK_WRITER: research                                   # scripts/writers.json: the outputs this job may push
+          DESK_META_TOKEN: ${{ github.token }}             # authenticated host-key lookup (scripts/github_host_keys.py)
           COMMIT_MESSAGE: Update research evidence
           PERSIST_BUDGET_S: '240'
         run: bash scripts/commit_push.sh research/v2 research/evidence reports/research.md reports/skill_proposals.md reports/latest.md state/lab_registrations.json state/lab_run_state.json

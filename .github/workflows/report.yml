@@ -35,6 +35,7 @@ jobs:
         env:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}   # write deploy key; unset = workflow token (scripts/commit_push.sh)
           DESK_WRITER: report                                   # scripts/writers.json: the outputs this job may push
+          DESK_META_TOKEN: ${{ github.token }}             # authenticated host-key lookup (scripts/github_host_keys.py)
         run: bash scripts/commit_push.sh reports registry/scores.jsonl registry/evidence tests/results.jsonl
       - name: Fail if report construction failed
         if: steps.report.outcome == 'failure'

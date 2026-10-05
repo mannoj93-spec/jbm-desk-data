@@ -187,5 +187,23 @@ class HealthTests(unittest.TestCase):
         self.assertEqual(changed, {"reports/health.json", "reports/health.md", "state/incidents.jsonl"})
 
 
+class MonitorHeartbeatTests(unittest.TestCase):
+    """2.26: a monitor that ran on time and failed is a fresh heartbeat with a detected problem, not silence."""
+    def test_recent_failed_check_with_an_old_success(self):
+        now = dt.datetime(2026, 10, 5, 7, 0, tzinfo=UTC)
+        runs = [{"id": 2, "status": "completed", "conclusion": "failure", "created_at": "2026-10-05T06:01:00Z",
+                 "updated_at": "2026-10-05T06:01:40Z"},
+                {"id": 1, "status": "completed", "conclusion": "success", "created_at": "2026-10-04T18:00:00Z",
+                 "updated_at": "2026-10-04T18:00:30Z"}]
+        e, _ = H.heartbeat(runs, now, 510)
+        self.assertEqual((e["state"], e["last_result"], e["last_run_id"]), ("fresh", "failure", 2))
+        self.assertEqual(e["last_success_utc"], "2026-10-04T18:00:00Z")      # still reported, separately
+        late = dt.datetime(2026, 10, 5, 16, 0, tzinfo=UTC)
+        self.assertEqual(H.heartbeat(runs, late, 510)[0]["state"], "stale")     # silence is still silence
+        self.assertEqual(H.heartbeat([], now, 510)[0]["state"], "unknown")
+        running = [{"id": 3, "status": "in_progress", "created_at": "2026-10-05T06:59:00Z"}]
+        self.assertEqual(H.heartbeat(running, now, 510)[0]["state"], "unknown")  # a start is not a completed check
+
+
 if __name__ == "__main__":
     unittest.main()
