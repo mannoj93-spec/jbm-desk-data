@@ -1,3 +1,19 @@
+# Validation record — maintenance, revision 2.27 (crypto-desk 12.4.10 on the 12.4 release family)
+
+Implemented 2026-10-05 20:15–21:30Z on branch `maint-2-27` from `main` at `b2298393`. Container; Python 3.13.
+
+| Check | Result |
+|---|---|
+| Regression suite (`regression/test_*.py`, 24 files) | all OK; new/rewritten: `test_acceptance` 41 (was 11; includes 7 tests from an independent adversarial review run before release - its 6 false passes and crashes now fail or report insufficient), `test_rev227` 15; `test_acceptance` also OK on 3.12 and 3.11; updated expectations: `test_recovery` (2 dispatches per slot, run-name), `test_rev22` (watchdog on persisted success), `test_host_keys`/`test_push_credential` (10 persistence steps) |
+| Desk tests, fixtures | `desk/test_*.py` 11 files OK (2 skipped as before); `test_fixtures.py` pass |
+| Dashboard | `node --test dashboard/model.test.mjs` 18 pass; `test_dashboard` OK |
+| Release and checksums | `make_release.py check` OK (repo 2.27; no desk module changed); `check_checksums.py check` OK |
+| Production-data replay (copy of `main` `b2298393`) | 147 of 147 RC1D forecasts replay; 129 of 129 RC1D scores reproduced from retained evidence; PS1 `verify_chain` ok, 10 executions, 60 of 60 ledger rows, 0 unaccounted; companion report integrity ok, 66 registered |
+| Reviewer counterexamples | launch removed, corrupt actions without executions, fills after the window: each now fails; owner-actor streams 37339803624 resolves to native range 37339238832 (verified); recovery streams 37339631785 timer-corroborated (not strict); external-to-untitled title change changes the evidence hash and the verdict |
+| Acceptance on production (diagnostic) | window 2026-10-04T18:00–10-05T18:00Z, cutoff 20:00Z, commit `b2298393`, Actions evidence sha256 `fd88049f…` (569 runs, complete): **fail** (pre-2.26 gaps, 2 host-key persistence losses, a human streams dispatch, pre-2.26 untitled lineage incl. five range decisions published by recovery runs without lineage titles); identical on offline replay |
+| Artifact 11366790310 | downloaded 20:14Z, sha256 equal to GitHub's digest; gate dry run exit 0; preserved, not published |
+| Not executed here | any workflow change on GitHub (runners unavailable since ~18:55Z); live yield receipts; a timer-provider receipt export; the prospective 24 h window after 2.27 |
+
 # Validation record — maintenance, revision 2.26 (crypto-desk 12.4.9 on the 12.4 release family)
 
 Implemented 2026-10-05 13:10–14:00Z on branch `maint-2-26-1` from `main` at `ad9df852`. Container; Python 3.12.3, 3.11.17.

@@ -101,3 +101,67 @@ expiring 2027. Failure detection: cron-job.org failure e-mail (refused calls), t
 `monitors["recovery.yml"]` (stale after 45 min) and native watchdog runs. Idempotency: per-slot/per-decision keys,
 yields and the jobs' own registration checks. Rollback: disable the cron-job.org job; native schedules continue
 unchanged. Revisit when native delivery has met the 97% target unaided for 7 days, or on GitHub's answer.
+
+## Update 2026-10-05 20:41Z (repo 2.27): three separate incidents, runner-assignment disruption
+
+The 13:30Z snapshot above is kept as written (it predates the 2.26 merge at 14:00:01Z). Assessment clock for this
+update: Actions runs and jobs retrieved 20:13:56Z and 20:41:21Z; GitHub status API read 20:14Z and 20:40Z; main at
+`b2298393` (19:09:31Z), unchanged since.
+
+**1. Native-trigger silence (from Oct 3 ~10-11Z).** Root cause still **unresolved**; nothing in this update bears on it.
+Native schedules delivered runs normally through the afternoon of Oct 5 (17 native collector records 14:00-18:42Z).
+
+**2. Unauthenticated host-key HTTP 403 (Oct 4-5).** Repaired in 2.26 (authenticated `/meta` lookup, bounded retry, job
+cache; strict SSH checking kept) and observed working on every persistence since 14:05Z: 32 collector records 14:00-
+18:42:24.845Z (17 native, 15 recovery), all critical successes; e.g. native run 37357926760 / job 111924965040 (17/17
+books, three host keys, authenticated) and recovery run 37356063801 / job 111918650364. Not involved below.
+
+**3. Runner-assignment disruption (from ~18:55Z Oct 5; ongoing at 20:41Z).** Requests were accepted - runs were
+created on time by the native schedule and by the external timer at every quarter-hour - but their jobs never received
+a GitHub-hosted runner. Of the 35 runs created 18:50-20:41Z, only four jobs received a runner (intake 18:57:52Z,
+research compute 18:58:29Z, the dispatcher's service-watch 19:00:07Z, range scoring 19:09:14Z - the last). Since then:
+25 jobs completed "cancelled" with `runner_id` 0 and no steps (annotation: "The job was not acquired by Runner of type
+hosted even after multiple attempts"), 5 dependent jobs were skipped, 6 jobs are still queued/pending, and 8 runs were
+cancelled with no job (a newer pending run replaced them in their concurrency group). Run conclusions read "failure"
+although nothing executed. Examples: collector 37360591638 / job 111933920534 and 37364503243 / 111947412863; dispatcher
+37359812794 / 111931294778, 37361672591, 37363458987, 37365086250, 37366684223; watchdog 37360527928, 37364114982,
+37366736160; dashboard 37359855328, 37361382158, 37363409446; research 37359675540 (compute succeeded, persist job
+111932497914 never received a runner). GitHub incident `3q1yb5m7ltvb` "Incident with Actions" opened 19:11:58Z
+(investigating; updates 19:15, 19:50 and 20:39Z: delays and job failures in assigning GitHub-hosted runners across
+configurations). The repository symptoms are consistent with it; GitHub has not attributed individual runs.
+
+Effect: newest persisted collection 18:42:24.845Z. The 45-minute restoration acceptance target was breached at 19:27Z
+(77.6 min at 20:00Z, 118 min at 20:41Z); the 90-minute watchdog limit is a separate rule and the watchdog itself could
+not run. The 20:00Z range decision's run (37368399888, created 20:13:31Z) was still queued at 20:41Z; if it starts after
+21:00Z `range_job` refuses it and the decision stays missed. The 20:00Z PS1 decision has no record (its 90-minute
+deadline is 21:30Z). Missed decisions stay missed: no forecast, fill or score is made after its deadline. The provider
+incident may explain the failures; it does not remove the gap from any acceptance window.
+
+**4. Defects found after the review.** No collector, publication, integrity or persistence defect in the executed runs.
+The reviewer's checker defects are corrected in 2.27 (PS1 false passes, lineage, success/yield alignment, evidence
+binding). Research run 37359675540's artifact (11366790310, sha256 `df678efe...c2e1`, verified) passed the publication
+gate in a dry run but was preserved, not published (`data/restored/research-37359675540/`; reason in OPERATIONS.md).
+
+### Architecture recommendation (operator decision)
+
+Everything - native schedules, the external timer's dispatches, the dispatcher's service watch and every job - runs
+on GitHub-hosted runners. A second trigger cannot restore execution when the shared runner pool is unavailable, and
+another workflow-based watchdog would fail the same way. Two honest options:
+
+- **Accept the hosted-runner dependency.** State the service level as: collection and decisions stop during GitHub
+  Actions runner outages (Oct 5: >= 1 h 46 min and counting); every such gap is recorded and fails the acceptance
+  window it falls in; nothing is reconstructed. No new infrastructure. This is the current state.
+- **Continue collecting through these outages.** That requires execution outside the hosted-runner pool:
+  * A *self-hosted Actions runner* (e.g. an always-on small VM or home machine registered to this repository) avoids
+    hosted-runner assignment, but still depends on GitHub's orchestration (schedule events, the dispatch API, job
+    queueing and assignment to self-hosted runners) and on GitHub for persistence. It would not have helped on Oct 3
+    (missing schedule events) and may or may not help in an orchestration-layer Actions incident.
+  * An *independent runtime* - the smallest viable one is a single always-on VM or machine running `collector.py` from a
+    system timer every 15 minutes, writing to a local durable buffer (append-only files) and pushing to the repository
+    with the existing deploy-key path when GitHub is reachable, with the same writer guard and strict host-key checks -
+    removes GitHub from collection itself; persistence still needs GitHub (hence the local buffer, uploaded later and
+    labelled as late), and range/PS1 decisions would need the same treatment to stay on time.
+  Neither is authorized, purchased or deployed here. The specific decision left to the operator: whether to accept
+  GitHub-runner outages as part of the service level, or to authorize one always-on independent host (which, and who
+  runs it), after which a deployment proposal can be implemented. This is separate from the 2.27 checker repairs, which
+  are complete either way.

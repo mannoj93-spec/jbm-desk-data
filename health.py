@@ -18,8 +18,14 @@ another:
   scoring     matured, eligible RC1D forecasts still unscored (the monitor's backlog rule).
   monitors    heartbeat (last completed run, any result) and last result of the watchdog and range-monitor, kept
               apart from their last success (2.26), the dispatcher, and the newest scheduled run of any workflow
-              (GitHub API, when a token is given); unknown without one. An old success is never current health, and
-              a monitor that ran on time and failed has detected a problem - it is not silent.
+              (GitHub API, when a token is given); unknown without one. An old success is never current health. A
+              failed monitor run whose check executed detected a problem; one whose job never received a runner or
+              ran no step could not execute (2.27, job/step evidence) - it detected nothing.
+  2.27        source.service separates data freshness (the newest automated CRITICAL SUCCESS) from activity (the
+              newest automated run record, any result): a fresh failure stays "failing", fresh activity never makes
+              stale data healthy, and the 45-minute restoration acceptance target is reported beside - never merged
+              with - the stale limit. A stale report means no newer report was persisted; it does not by itself say
+              the scheduler was silent (the run may not have executed, may have failed or may not have persisted).
 
 Modes:  python health.py            read-only: print the JSON, write nothing
         python health.py --record   also write reports/health.{json,md} and append new incidents to
@@ -46,7 +52,8 @@ for p in (str(ROOT), str(ROOT / "desk")):
 import cadence                    # noqa: E402
 from watchdog import load_runs    # noqa: E402
 
-VERSION = "health-1.2.0"
+VERSION = "health-1.3.0"
+ACCEPTANCE_GAP_MIN = 45          # restoration acceptance target (scripts/service_acceptance.py) - not the watchdog limit
 UTC = dt.timezone.utc
 LOOKBACK_H = 72                   # decisions and gaps examined (incidents already recorded stay recorded)
 MONITORS = {"watchdog.yml": 90, "range-monitor.yml": 510}
@@ -55,7 +62,7 @@ DISPATCHER = ("recovery.yml", 45)   # repo 2.25: any event; three 15-minute invo
 SCHEDULED_WORKFLOWS = ("collect.yml", "watchdog.yml", "dashboard.yml", "intake.yml", "range-score.yml", "range.yml",
                        "research-streams.yml", "range-monitor.yml", "research.yml")
 INCIDENTS = "state/incidents.jsonl"
-PROBLEM_STATES = ("absent", "failed", "missed", "no decision record")
+PROBLEM_STATES = ("absent", "failed", "missed", "no decision record", "invalid")
 
 
 def iso(ms):
@@ -102,21 +109,41 @@ def source(base, now_ms, stale_min):
     state = "missing" if last is None else ("stale" if age > stale_min else
                                             ("failing" if cadence.failure_summary(sched[-1])[0] else "healthy"))
     manual = [r for r in runs if cadence.is_routine(r) and not cadence.automated_evidence(r) and (not last or r["t"] > last)]
+    # Repo 2.27: data outcome and activity are separate facts. The newest automated activity (any result) is the
+    # heartbeat; the newest automated CRITICAL SUCCESS is the data freshness. A fresh failure stays visible as
+    # "failing"; fresh activity never makes stale data healthy.
     auto = [r for r in runs if cadence.automated_evidence(r)]
-    alast = auto[-1] if auto else None
+    good = [r for r in auto if cadence.critical_success(r)]
+    alast, glast = (auto[-1] if auto else None), (good[-1] if good else None)
     aage = (now_ms - alast["t"]) / 60_000 if alast else None
-    agaps = cadence.gaps(runs, stale_min, cadence.automated_evidence, since_ms=now_ms - LOOKBACK_H * 3_600_000, now_ms=now_ms)
-    service = {"state": "missing" if alast is None else ("stale" if aage > stale_min else
-                                                         ("failing" if cadence.failure_summary(alast)[0] else "healthy")),
-               "last_automated_utc": iso(alast["t"]) if alast else None,
+    gage = (now_ms - glast["t"]) / 60_000 if glast else None
+    data_state = "missing" if glast is None else ("stale" if gage > stale_min else "fresh")
+    latest_failed = bool(alast) and not cadence.critical_success(alast)
+    sstate = ("missing" if alast is None and glast is None else "stale" if data_state != "fresh" else
+              "failing" if latest_failed else "healthy")
+    sgaps = cadence.gaps(runs, stale_min, cadence.successful_automated, since_ms=now_ms - LOOKBACK_H * 3_600_000, now_ms=now_ms)
+    service = {"state": sstate, "data_state": data_state,
+               "last_success_utc": iso(glast["t"]) if glast else None,
+               "data_age_min": round(gage, 1) if gage is not None else None,
+               "last_activity_utc": iso(alast["t"]) if alast else None,
+               "last_activity_result": None if alast is None else ("critical success" if not latest_failed else "critical failure"),
+               "last_automated_utc": iso(alast["t"]) if alast else None,          # 2.25 name: the activity heartbeat
                "last_source": None if alast is None else ("native-schedule" if cadence.schedule_evidence(alast) else "recovery"),
                "age_min": round(aage, 1) if aage is not None else None,
-               "gaps": [dict(g, start_utc=iso(g["start_ms"]), end_utc=iso(g["end_ms"])) for g in agaps],
-               "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts"}
+               "gaps": [dict(g, start_utc=iso(g["start_ms"]), end_utc=iso(g["end_ms"])) for g in sgaps],
+               "acceptance_target": {"max_gap_min": ACCEPTANCE_GAP_MIN,
+                                     "current_gap_min": round(gage, 1) if gage is not None else None,
+                                     "breached_now": gage is None or gage > ACCEPTANCE_GAP_MIN,
+                                     "rule": "restoration acceptance target (45 min between persisted critical "
+                                             "successes); separate from the watchdog's stale limit"},
+               "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; "
+                       "gaps and data freshness use critical successes only (2.27)"}
     periods = cadence.load(base)
     cov = cadence.coverage(periods, runs, now_ms - 24 * 3_600_000, now_ms) if periods else None
     if cov:
         cov = dict(cov, from_utc=iso(cov["from_ms"]), to_utc=iso(cov["to_ms"]))
+        service["acceptance_target"]["longest_successful_gap_24h_min"] = cov["longest_successful_gap_min"]
+        service["acceptance_target"]["breached_24h"] = cov["longest_successful_gap_min"] > ACCEPTANCE_GAP_MIN
     return {"state": state, "last_scheduled_utc": iso(last), "age_min": round(age, 1) if age is not None else None,
             "stale_limit_min": stale_min, "manual_runs_since": len(manual),
             "gaps": [dict(g, start_utc=iso(g["start_ms"]), end_utc=iso(g["end_ms"])) for g in gaps],
@@ -174,7 +201,9 @@ def ps1_decisions(base, now):
             s = f"not expected (lifecycle {st}{' by ' + by if by else ''})"
         elif did in decs:
             a = decs[did].get("action")
-            s = (f"missed: execution ({a})" if did in missed else
+            # 2.27: explicit actions only - an unrecognized action is an invalid record, never a resolved decision
+            s = (f"invalid: unrecognized action {str(a)[:40]!r}" if a not in ("rebalance", "no-rebalance", "missed") else
+                 f"missed: execution ({a})" if did in missed else
                  f"{a}" if a != "rebalance" else ("missed: not executed" if due else "pending"))
         else:
             s = "missed: no decision record (run absent)" if due else "pending"
@@ -235,6 +264,8 @@ def monitors(now, token=None, repo=None, opener=None):
             out[wf] = {"state": "unknown", "error": type(exc).__name__}
             continue
         e, last_start = heartbeat(runs, now, MONITORS.get(wf))
+        if wf in MONITORS and e.get("last_result") not in (None, "success") and e.get("last_run_id"):
+            e.update(execution(e["last_run_id"], token, repo, opener))
         if last_start and (newest is None or last_start > newest):
             newest = last_start
         out[wf] = e
@@ -250,14 +281,36 @@ def monitors(now, token=None, repo=None, opener=None):
     except Exception as exc:                                      # noqa: BLE001 - reported as unknown
         out[wf] = {"state": "unknown", "error": type(exc).__name__}
     states = [v.get("state") for k, v in out.items() if k in MONITORS]
-    detected = sorted(k for k, v in out.items() if k in MONITORS and v.get("last_result") == "failure")
+    detected = sorted(k for k, v in out.items() if k in MONITORS and v.get("last_result") == "failure"
+                      and v.get("last_executed") is True)
+    not_run = sorted(k for k, v in out.items() if k in MONITORS and v.get("last_executed") is False)
     return {"source": "GitHub Actions API, scheduled runs", "workflows": out,
             "newest_scheduled_start_utc": newest and newest.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "state": "stale" if "stale" in states else ("unknown" if "unknown" in states or not states else "fresh"),
-            "problems_detected_by": detected,
-            "rule": "state is the heartbeat (last completed run, any result); last_result is what that run found - a "
-                    "fresh monitor that failed detected a problem, it is not silent",
+            "problems_detected_by": detected, "could_not_execute": not_run,
+            "rule": "state is the heartbeat (last completed run, any result); last_result is how that run ended. A "
+                    "failed run whose check executed detected a problem; one whose job never received a runner or "
+                    "ran no step could not execute (2.27) - neither is silence",
             "dispatcher_state": (out.get(DISPATCHER[0]) or {}).get("state")}
+
+
+def execution(run_id, token, repo, opener=None):
+    """Job/step evidence for one run (repo 2.27): {last_executed: True/False/None, last_execution: text}."""
+    import execution as X
+    opener = opener or urllib.request.urlopen
+    try:
+        req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=50",
+                                     headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
+        with opener(req, timeout=20) as r:
+            jobs = json.loads(r.read()).get("jobs")
+    except Exception as exc:                                      # noqa: BLE001 - reported as unknown
+        return {"last_executed": None, "last_execution": f"unknown (jobs unavailable: {type(exc).__name__})"}
+    if not isinstance(jobs, list):
+        return {"last_executed": None, "last_execution": "unknown (no jobs in the response)"}
+    ran = X.steps_executed(jobs)
+    runner = X.runner_assigned(jobs)
+    return {"last_executed": bool(ran),
+            "last_execution": "check executed" if ran else ("no runner assigned" if runner is False else "no step executed")}
 
 
 def heartbeat(runs, now, limit_min):
@@ -301,8 +354,10 @@ def evaluate(base=ROOT, now_ms=None, token=None, repo=None, opener=None, stale_m
            "availability": availability(base, now),
            "scoring_backlog": rinfo.get("scoring_backlog", {}),
            "monitors": monitors(now, token, repo, opener),
-           "freshness_rule": f"this report is written by the collector run; older than {stale_min} min means the "
-                             "collector (and probably GitHub's scheduler) has been silent - its contents are not current"}
+           "freshness_rule": f"this report is written by the collector run; older than {stale_min} min means no "
+                             "collector run has persisted a newer report - the scheduler may have been silent, the run "
+                             "may not have executed (no runner), may have failed, or may have failed to persist; its "
+                             "contents are not current"}
     return doc
 
 
@@ -358,13 +413,16 @@ def markdown(doc):
          f"**Source:** {s['state']}; last scheduled collector run {s['last_scheduled_utc']} ({s['age_min']} min). "
          f"Silences over {s['stale_limit_min']} min in the last {LOOKBACK_H} h: "
          + ("; ".join(f"{g['start_utc']} to {g['end_utc'] or 'ongoing'} ({g['minutes']:.0f} min)" for g in s["gaps"]) or "none") + ".", "",
-         f"**Service continuity:** {(s.get('service') or {}).get('state')}; last automated run "
-         f"{(s.get('service') or {}).get('last_automated_utc')} ({(s.get('service') or {}).get('last_source')}, "
-         f"{(s.get('service') or {}).get('age_min')} min). "
+         f"**Service continuity:** {(s.get('service') or {}).get('state')}; last persisted critical success "
+         f"{(s.get('service') or {}).get('last_success_utc')} ({(s.get('service') or {}).get('data_age_min')} min); last automated "
+         f"activity {(s.get('service') or {}).get('last_activity_utc')} ({(s.get('service') or {}).get('last_activity_result')}, "
+         f"{(s.get('service') or {}).get('last_source')}). 45-min acceptance target "
+         f"{'BREACHED' if ((s.get('service') or {}).get('acceptance_target') or {}).get('breached_now') else 'met'} now. "
          + (lambda c: (f"Last 24 h: {c['expected_slots']} slots; runs by source "
                        + ", ".join(f"{k} {v}" for k, v in sorted(c['runs_by_source'].items()))
-                       + f"; {c['intervals_with_automated_run']} of {c['intervals']} slot intervals hold an automated run; "
-                       f"longest automated gap {c['longest_automated_gap_min']} min.") if c else "")(s.get("coverage_24h")), "",
+                       + f"; {c['intervals_with_successful_automated_run']} of {c['intervals']} slot intervals hold an "
+                       f"automated critical success ({c['intervals_with_automated_run']} hold any automated activity); "
+                       f"longest gap between successes {c['longest_successful_gap_min']} min.") if c else "")(s.get("coverage_24h")), "",
          "**Range decisions:** " + ("; ".join(f"{k[5:16]} {v}" for k, v in list(doc["decisions"]["range"].items())[-8:]) or "none due") + ".", "",
          "**PS1 decisions:** " + ("; ".join(f"{k[5:16]} {v}" for k, v in list(doc["decisions"]["ps1"].items())[-8:]) or "not launched") + ".", "",
          f"**PS1 report coverage:** {cov.get('report_coverage')} as of {cov.get('report_generated_utc')}; due since and not covered: "
@@ -373,7 +431,9 @@ def markdown(doc):
          + "; ".join(f"{h} {v['state_now']}" for h, v in av["horizons"].items()) + ".", "",
          "**Scoring backlog:** " + ("; ".join(f"{h} {len(v)}" for h, v in doc["scoring_backlog"].items()) or "none") + ".", "",
          f"**Monitors:** {mon['state']} ({mon['source']})"
-         + "".join(f"; {k} heartbeat {v.get('state', 'n/a')} (last run {v.get('last_completed_utc')}: {v.get('last_result')}; last success {v.get('last_success_utc')})" for k, v in mon["workflows"].items() if k in MONITORS)
+         + "".join(f"; {k} heartbeat {v.get('state', 'n/a')} (last run {v.get('last_completed_utc')}: {v.get('last_result')}"
+                   + (f", {v['last_execution']}" if v.get('last_execution') else "") + f"; last success {v.get('last_success_utc')})"
+                   for k, v in mon["workflows"].items() if k in MONITORS)
          + (f"; newest scheduled start of any workflow {mon.get('newest_scheduled_start_utc')}" if mon.get("newest_scheduled_start_utc") else "") + ".", ""]
     return "\n".join(L)
 

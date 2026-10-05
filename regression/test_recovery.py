@@ -59,10 +59,15 @@ class PlanTests(unittest.TestCase):
         self.assertNotIn("collector", [w for w, _, _ in self.plan("2026-10-04T12:10:00Z",
                                                                   collector=[gh("2026-10-04T11:54:00Z")])])
 
-    def test_one_recovery_dispatch_per_slot(self):
-        mine = gh("2026-10-04T12:12:30Z", event="workflow_dispatch", title=R.title("Collector", "2026-10-04T12:07:00Z"),
-                  conclusion="cancelled")
-        self.assertNotIn("collector", [w for w, _, _ in self.plan("2026-10-04T12:14:00Z", collector=[mine])])
+    def test_at_most_two_recovery_dispatches_per_slot(self):
+        # 1.3.0 (repo 2.27): a dead attempt (cancelled, never started, failed) no longer blocks the slot; the cap does
+        title = R.title("Collector", "2026-10-04T12:07:00Z")
+        dead = gh("2026-10-04T12:12:30Z", event="workflow_dispatch", title=title, conclusion="cancelled")
+        self.assertIn("collector", [w for w, _, _ in self.plan("2026-10-04T12:14:00Z", collector=[dead])])
+        dead2 = gh("2026-10-04T12:14:30Z", event="workflow_dispatch", title=title, conclusion="failure")
+        self.assertNotIn("collector", [w for w, _, _ in self.plan("2026-10-04T12:18:00Z", collector=[dead, dead2])])
+        queued = gh("2026-10-04T12:12:30Z", event="workflow_dispatch", title=title, status="queued")
+        self.assertNotIn("collector", [w for w, _, _ in self.plan("2026-10-04T12:14:00Z", collector=[queued])])
 
     def test_range_window_is_derived_from_the_freshness_limit(self):
         self.assertNotIn("range", [w for w, _, _ in self.plan("2026-10-04T12:05:00Z")])     # native :02 + grace
@@ -209,7 +214,8 @@ class YieldAndProvenanceTests(unittest.TestCase):
             slot = t("2026-10-04T12:07:00Z")
             self.assertFalse(R.covered(d, slot))
             storage.append_unique(Path(d) / "data/runs/2026-10.jsonl",
-                                  [{"t": int(slot.timestamp() * 1000) + 120_000, "mode": "routine", "trigger": "schedule"}],
+                                  [{"t": int(slot.timestamp() * 1000) + 120_000, "mode": "routine", "trigger": "schedule",
+                                    "critical_ok": True}],          # 2.27: only a critical success covers
                                   lambda r: r["t"])
             self.assertTrue(R.covered(d, slot))
             self.assertFalse(R.covered(d, slot + dt.timedelta(minutes=15)))
@@ -301,8 +307,9 @@ class WiringTests(unittest.TestCase):
             text = (self.WF / wf).read_text()
             for inp in ("trigger:", "slot:", "origin:"):
                 self.assertIn(f"      {inp}", text, f"{wf} {inp}")
+            # 2.27: research streams' workflow_run runs also name their parent run (lineage), after the recovery case
             self.assertIn(f"run-name: ${{{{ inputs.trigger == 'recovery' && format('{name} recovery {{0}} via {{1}}', "
-                          f"inputs.slot, inputs.origin) || '' }}}}", text)
+                          f"inputs.slot, inputs.origin) || ", text)
             self.assertEqual(R.title(name, "K"), f"{name} recovery K")
             self.assertTrue(R.is_title(f"{name} recovery K via 1:native-schedule", name, "K"))
             self.assertFalse(R.is_title(f"{name} recovery K2", name, "K"))

@@ -157,23 +157,58 @@ test('operational health rows are judged on the viewer clock; a missing report i
 test('service continuity is judged apart from the native schedule (repo 2.25)', () => {
  const base = {generated_utc: '2026-10-04T20:00:00Z', clock: 'runner', decisions: {}, scoring_backlog: {}, monitors: {}};
  const old = Object.fromEntries(opsRows({...base, source: {last_scheduled_utc: '2026-10-04T11:07:58Z'}}, Date.parse('2026-10-04T20:05:00Z')).map(r => [r.area, r]));
- assert.equal(old['Collector service (automated)'].state, 'unknown');           // a pre-2.25 report has no service block
+ assert.equal(old['Collector service (automated activity)'].state, 'unknown');  // a pre-2.25 report has no service block
  const ops = {...base, source: {last_scheduled_utc: '2026-10-04T11:07:58Z', stale_limit_min: 90,
    service: {last_automated_utc: '2026-10-04T19:52:40Z', last_source: 'recovery', gaps: []},
    coverage_24h: {expected_slots: 96, intervals: 95, intervals_with_automated_run: 40, longest_automated_gap_min: 406.5,
                   runs_by_source: {'native-schedule': 5, recovery: 35, human: 1}}}};
  const by = Object.fromEntries(opsRows(ops, Date.parse('2026-10-04T20:05:00Z')).map(r => [r.area, r]));
  assert.equal(by['Collector schedule'].state, 'stale');                         // native silence stays visible
- assert.equal(by['Collector service (automated)'].state, 'within cadence');
+ assert.equal(by['Collector service (automated activity)'].state, 'within cadence');
+ assert.equal(by['Collector data (last persisted critical success)'].state, 'unknown (report before 2.27)');
  assert.match(by['Collection, 24 h to report'].detail, /recovery 35/);
- assert.equal(by['Collection, 24 h to report'].state, '40 of 95 intervals');
+ assert.equal(by['Collection, 24 h to report'].state, '40 of 95 intervals (activity; before 2.27)');
 });
 
-test('a monitor that ran on time and failed is a heartbeat with a detected problem (repo 2.26)', () => {
- const ops = {generated_utc: '2026-10-05T07:00:00Z', clock: 'runner', decisions: {}, scoring_backlog: {}, source: {},
+test('a failed monitor detected a problem only when its check executed (repo 2.26, 2.27)', () => {
+ const mon = extra => ({generated_utc: '2026-10-05T07:00:00Z', clock: 'runner', decisions: {}, scoring_backlog: {}, source: {},
    monitors: {workflows: {'range-monitor.yml': {last_completed_utc: '2026-10-05T06:01:40Z', last_result: 'failure',
-     last_success_utc: '2026-10-04T18:00:00Z', stale_after_min: 510}}}};
- const by = Object.fromEntries(opsRows(ops, Date.parse('2026-10-05T07:05:00Z')).map(r => [r.area, r]));
- assert.equal(by['Monitor range-monitor.yml'].state, 'ran; detected a problem');
- assert.match(by['Monitor range-monitor.yml'].detail, /last success 2026-10-04T18:00:00Z/);
+     last_success_utc: '2026-10-04T18:00:00Z', stale_after_min: 510, ...extra}}}});
+ const row = extra => Object.fromEntries(opsRows(mon(extra), Date.parse('2026-10-05T07:05:00Z')).map(r => [r.area, r]))['Monitor range-monitor.yml'];
+ assert.equal(row({last_executed: true, last_execution: 'check executed'}).state, 'ran; detected a problem');
+ assert.match(row({}).detail, /last success 2026-10-04T18:00:00Z/);
+ // the Oct 5 runner outage: the job never received a runner - nothing was checked
+ assert.equal(row({last_executed: false, last_execution: 'no runner assigned'}).state, 'could not execute (no runner/steps)');
+ assert.match(row({last_executed: false, last_execution: 'no runner assigned'}).detail, /no runner assigned/);
+ assert.equal(row({}).state, 'failed; execution unknown');                       // a 2.26 report cannot tell
+});
+
+test('data outcome and activity are shown apart; a fresh failure stays visible; stale data stays stale (repo 2.27)', () => {
+ const svc = {state: 'failing', data_state: 'fresh', last_success_utc: '2026-10-05T18:27:35Z', last_activity_utc: '2026-10-05T18:42:24Z',
+   last_activity_result: 'critical failure', last_automated_utc: '2026-10-05T18:42:24Z', last_source: 'native-schedule', gaps: [],
+   acceptance_target: {max_gap_min: 45}};
+ const ops = {generated_utc: '2026-10-05T18:44:10Z', clock: 'runner', decisions: {}, scoring_backlog: {}, monitors: {},
+   source: {state: 'failing', last_scheduled_utc: '2026-10-05T18:42:24Z', stale_limit_min: 90, service: svc,
+     coverage_24h: {expected_slots: 96, intervals: 95, intervals_with_automated_run: 95, intervals_with_successful_automated_run: 90,
+                    longest_automated_gap_min: 16, longest_successful_gap_min: 47, automated_critical_failures: 5, runs_by_source: {}}}};
+ const at = t => Object.fromEntries(opsRows(ops, Date.parse(t)).map(r => [r.area, r]));
+ const fresh = at('2026-10-05T18:50:00Z');
+ assert.equal(fresh['Collector schedule'].state, 'failing');                      // 2.26 showed "within cadence"
+ assert.equal(fresh['Collector service (automated activity)'].state, 'failing');
+ assert.equal(fresh['Collector data (last persisted critical success)'].state, 'within cadence');
+ assert.match(fresh['Collector data (last persisted critical success)'].detail, /target met/);
+ assert.equal(fresh['Collection, 24 h to report'].state, '90 of 95 intervals');  // successes, not activity
+ assert.match(fresh['Collection, 24 h to report'].detail, /longest gap 47 min; 5 critical failure/);
+ // 20:00Z, the Oct 5 runner outage: the 18:44 report is still inside its own 90-minute rule, but the newest persisted
+ // success (18:27:35 in this fixture) is past the stale limit and the 45-minute acceptance target is breached
+ const late = at('2026-10-05T20:00:00Z');
+ assert.equal(late['Health report'].state, 'within cadence');
+ assert.equal(late['Collector data (last persisted critical success)'].state, 'stale');
+ assert.match(late['Collector data (last persisted critical success)'].detail, /target breached/);
+ // a fresh dispatch or activity does not make stale data healthy
+ const act = {...ops, source: {...ops.source, service: {...svc, state: 'healthy', last_activity_utc: '2026-10-05T19:59:00Z',
+   last_success_utc: '2026-10-05T18:00:00Z'}}};
+ const by = Object.fromEntries(opsRows(act, Date.parse('2026-10-05T20:00:00Z')).map(r => [r.area, r]));
+ assert.equal(by['Collector service (automated activity)'].state, 'within cadence');
+ assert.match(by['Collector data (last persisted critical success)'].detail, /target breached/);
 });

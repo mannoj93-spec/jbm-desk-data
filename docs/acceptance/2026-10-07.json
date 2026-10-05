@@ -1,0 +1,35 @@
+{
+ "schema": "acceptance-declaration/1",
+ "declared_utc": "2026-10-05T21:10:00Z",
+ "declared_in": "repo 2.27 (branch maint-2-27), before any part of the window was observable",
+ "checker": "acceptance-3.0.0 (scripts/service_acceptance.py at the 2.27 merge commit)",
+ "window": {
+  "from": "2026-10-07T00:00:00Z",
+  "to": "2026-10-08T00:00:00Z"
+ },
+ "evidence_cutoff_utc": "2026-10-08T02:00:00Z",
+ "evaluate_after_utc": "2026-10-08T02:15:00Z",
+ "targets": {
+  "interval_share": 0.97,
+  "intervals": 95,
+  "max_empty_intervals": 2,
+  "longest_gap_min": 45,
+  "range_decisions": "all 6 published eligibly",
+  "ps1": "validated; every expected decision executed once before its deadline, a recorded no-rebalance, or not expected under an operator pause",
+  "execution": "no executed collector run without a stored record or a valid yield proof",
+  "backlog": "empty at the window end",
+  "chain": "no person, no unknown lineage"
+ },
+ "certification": "strict unattended certification requires a timer-provider receipt export for the window (cron-job.org execution history, operator-supplied, --timer-receipts); without it a window meeting every target is reported service_verdict pass, verdict insufficient",
+ "commands": [
+  "GITHUB_REPOSITORY=mannoj93-spec/jbm-desk-data GH_TOKEN=<read token> python scripts/service_acceptance.py --from 2026-10-07T00:00:00Z --to 2026-10-08T00:00:00Z --save-evidence actions-2026-10-07.json [--timer-receipts receipts-2026-10-07.json]",
+  "python scripts/service_acceptance.py --from 2026-10-07T00:00:00Z --to 2026-10-08T00:00:00Z --actions-evidence actions-2026-10-07.json --commit <evaluated commit> [--timer-receipts receipts-2026-10-07.json]"
+ ],
+ "rules": [
+  "the window is not moved, shortened or re-declared after observation",
+  "a provider outage inside it is recorded and counts against it",
+  "if it fails, the result is kept and a retry is a new, separately declared window",
+  "restored or late data never counts"
+ ],
+ "prior_declaration": "the 2026-10-06T00:00Z-10-07T00:00Z window declared with 12.4.9/2.26 stays declared; it is evaluated separately (with the checker on main at evaluation, 3.0 if merged), never replaced by this one"
+}

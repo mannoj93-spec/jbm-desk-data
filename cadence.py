@@ -120,6 +120,19 @@ def automated_evidence(run):
                                       and provenance.automated(run.get("provenance")))
 
 
+def critical_success(run):
+    """The one definition of a successful critical collection (repo 2.27), shared by cadence coverage, health, the
+    watchdog, recovery's yield check and service acceptance: a routine run record that states critical_ok true and
+    whose stored stages show no critical loss (failure_summary). Optional-source degradation does not change it;
+    a record with critical_ok false or absent, a lost snapshot or a critical stage error is not a success."""
+    return is_routine(run) and run.get("critical_ok") is True and not failure_summary(run)[0]
+
+
+def successful_automated(run):
+    """Automated (native or authenticated recovery, provenance-checked) AND critically successful (repo 2.27)."""
+    return automated_evidence(run) and critical_success(run)
+
+
 def gaps(runs, stale_min, evidence, since_ms=None, now_ms=None):
     """Silences longer than stale_min between consecutive runs that satisfy `evidence` (see scheduled_gaps)."""
     sel = sorted((r for r in runs if evidence(r)), key=lambda r: r["t"])
@@ -133,15 +146,24 @@ def gaps(runs, stale_min, evidence, since_ms=None, now_ms=None):
 
 
 def coverage(periods, runs, a, b):
-    """Measured collection coverage over [a, b) (repo 2.25). Counts, never slot matching for single runs:
-    expected nominal slots; routine runs by provenance; slot-to-slot intervals holding at least one automated run
-    record (stored records only, so persisted); the longest interval between automated runs, edges included."""
+    """Measured collection over [a, b) (repo 2.25; success split out in 2.27). Counts, never slot matching for single
+    runs: expected nominal slots; routine runs by provenance; two separately labelled interval measures -
+      activity  intervals holding at least one automated stored run record, whatever it collected (a heartbeat)
+      success   intervals holding at least one automated, critically SUCCESSFUL stored record (critical_success);
+                this is the collection measure: a failed critical record never covers a slot
+    and the longest gap between automated activity and between automated successes, window edges included."""
     routine = sorted((r for r in runs if is_routine(r) and a <= r["t"] < b), key=lambda r: r["t"])
     auto = [r for r in routine if automated_evidence(r)]
+    good = [r for r in auto if critical_success(r)]
     buckets = slot_buckets(periods, a, b)
-    covered = sum(1 for s, e in buckets if any(s <= r["t"] < e for r in auto))
-    edges = [a] + [r["t"] for r in auto] + [b]
-    longest = max((y - x for x, y in zip(edges, edges[1:])), default=b - a)
+
+    def held(sel):
+        return sum(1 for s, e in buckets if any(s <= r["t"] < e for r in sel))
+
+    def longest(sel):
+        edges = [a] + [r["t"] for r in sel] + [b]
+        return round(max((y - x for x, y in zip(edges, edges[1:])), default=b - a) / 60_000, 1)
+
     def src(r):
         s = (r.get("provenance") or {}).get("source")
         return ("native-schedule" if schedule_evidence(r) else "recovery" if automated_evidence(r) else
@@ -150,8 +172,11 @@ def coverage(periods, runs, a, b):
     for r in routine:
         by[src(r)] = by.get(src(r), 0) + 1
     return {"from_ms": a, "to_ms": b, "expected_slots": len(slots(periods, a, b)), "runs_by_source": by,
-            "automated_runs": len(auto), "intervals": len(buckets), "intervals_with_automated_run": covered,
-            "longest_automated_gap_min": round(longest / 60_000, 1)}
+            "automated_runs": len(auto), "automated_critical_failures": len(auto) - len(good),
+            "intervals": len(buckets),
+            "intervals_with_automated_run": held(auto), "longest_automated_gap_min": longest(auto),
+            "intervals_with_successful_automated_run": held(good), "longest_successful_gap_min": longest(good),
+            "rule": "activity = any automated stored record (heartbeat); success = critical_success records only"}
 
 
 def scheduled_gaps(runs, stale_min, since_ms=None, now_ms=None):

@@ -80,7 +80,7 @@ class PushCredentialTests(unittest.TestCase):
                 # repo 2.25: every persistence step names its writer (scripts/writers.json)
                 self.assertEqual(pushes, bool(re.search(r'\n\s*DESK_WRITER: [a-z-]+', step)), f'{wf.name}: {step[:60]}')
                 with_key += has_key
-        self.assertEqual(with_key, 9)
+        self.assertEqual(with_key, 10)   # 2.27: + the collector's yield-receipt persistence step
 
 if __name__ == '__main__':
     unittest.main()

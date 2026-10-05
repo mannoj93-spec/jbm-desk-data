@@ -1,0 +1,195 @@
+{
+ "37357926760": [
+  {
+   "completed_at": "2026-10-05T18:44:26Z",
+   "conclusion": "success",
+   "created_at": "2026-10-05T18:42:07Z",
+   "id": 111924965040,
+   "name": "collect",
+   "run_attempt": 1,
+   "run_id": 37357926760,
+   "runner_id": 1000003169,
+   "started_at": "2026-10-05T18:42:10Z",
+   "status": "completed",
+   "steps": [
+    {
+     "completed_at": "2026-10-05T18:42:12Z",
+     "conclusion": "success",
+     "name": "Set up job",
+     "number": 1,
+     "started_at": "2026-10-05T18:42:11Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:42:24Z",
+     "conclusion": "success",
+     "name": "Run actions/checkout@v5",
+     "number": 2,
+     "started_at": "2026-10-05T18:42:12Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:42:24Z",
+     "conclusion": "success",
+     "name": "Run actions/setup-python@v6",
+     "number": 3,
+     "started_at": "2026-10-05T18:42:24Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:42:24Z",
+     "conclusion": "skipped",
+     "name": "Recovery yields when its slot is already collected",
+     "number": 4,
+     "started_at": "2026-10-05T18:42:24Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:44:10Z",
+     "conclusion": "success",
+     "name": "Collect",
+     "number": 5,
+     "started_at": "2026-10-05T18:42:24Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:44:20Z",
+     "conclusion": "success",
+     "name": "Record operational health",
+     "number": 6,
+     "started_at": "2026-10-05T18:44:10Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:44:24Z",
+     "conclusion": "success",
+     "name": "Persist completed series and failure diagnostics",
+     "number": 7,
+     "started_at": "2026-10-05T18:44:20Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:44:24Z",
+     "conclusion": "skipped",
+     "name": "Fail after preserving a partial run",
+     "number": 8,
+     "started_at": "2026-10-05T18:44:24Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:44:24Z",
+     "conclusion": "skipped",
+     "name": "Preserve data on failure",
+     "number": 9,
+     "started_at": "2026-10-05T18:44:24Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:44:25Z",
+     "conclusion": "success",
+     "name": "Post Run actions/setup-python@v6",
+     "number": 17,
+     "started_at": "2026-10-05T18:44:24Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:44:25Z",
+     "conclusion": "success",
+     "name": "Post Run actions/checkout@v5",
+     "number": 18,
+     "started_at": "2026-10-05T18:44:25Z",
+     "status": "completed"
+    },
+    {
+     "completed_at": "2026-10-05T18:44:25Z",
+     "conclusion": "success",
+     "name": "Complete job",
+     "number": 19,
+     "started_at": "2026-10-05T18:44:25Z",
+     "status": "completed"
+    }
+   ]
+  }
+ ],
+ "37357926760_run": {
+  "actor": "mannoj93-spec",
+  "conclusion": "success",
+  "created_at": "2026-10-05T18:42:07Z",
+  "display_title": "Collector",
+  "event": "schedule",
+  "head_branch": "main",
+  "head_sha": "1de96965d25b7955275a183147b60ce80c68a605",
+  "id": 37357926760,
+  "name": "Collector",
+  "path": ".github/workflows/collect.yml",
+  "run_attempt": 1,
+  "run_started_at": "2026-10-05T18:42:07Z",
+  "status": "completed",
+  "triggering_actor": "mannoj93-spec",
+  "updated_at": "2026-10-05T18:44:27Z"
+ },
+ "37360591638": [
+  {
+   "completed_at": "2026-10-05T19:39:40Z",
+   "conclusion": "cancelled",
+   "created_at": "2026-10-05T19:03:19Z",
+   "id": 111933920534,
+   "name": "collect",
+   "run_attempt": 1,
+   "run_id": 37360591638,
+   "runner_id": 0,
+   "started_at": "2026-10-05T19:03:19Z",
+   "status": "completed",
+   "steps": []
+  }
+ ],
+ "37360591638_run": {
+  "actor": "mannoj93-spec",
+  "conclusion": "failure",
+  "created_at": "2026-10-05T19:03:19Z",
+  "display_title": "Collector",
+  "event": "schedule",
+  "head_branch": "main",
+  "head_sha": "82b3ab0c03239b17a7b44a0f35dfe796227e0d31",
+  "id": 37360591638,
+  "name": "Collector",
+  "path": ".github/workflows/collect.yml",
+  "run_attempt": 1,
+  "run_started_at": "2026-10-05T19:03:19Z",
+  "status": "completed",
+  "triggering_actor": "mannoj93-spec",
+  "updated_at": "2026-10-05T19:39:41Z"
+ },
+ "37364503243": [
+  {
+   "completed_at": "2026-10-05T19:54:43Z",
+   "conclusion": "cancelled",
+   "created_at": "2026-10-05T19:39:41Z",
+   "id": 111947412863,
+   "name": "collect",
+   "run_attempt": 1,
+   "run_id": 37364503243,
+   "runner_id": 0,
+   "started_at": "2026-10-05T19:39:41Z",
+   "status": "completed",
+   "steps": []
+  }
+ ],
+ "37364503243_run": {
+  "actor": "mannoj93-spec",
+  "conclusion": "failure",
+  "created_at": "2026-10-05T19:36:28Z",
+  "display_title": "Collector",
+  "event": "schedule",
+  "head_branch": "main",
+  "head_sha": "b229839340fb2c6f864593e4df06fc1bf94e88f2",
+  "id": 37364503243,
+  "name": "Collector",
+  "path": ".github/workflows/collect.yml",
+  "run_attempt": 1,
+  "run_started_at": "2026-10-05T19:36:28Z",
+  "status": "completed",
+  "triggering_actor": "mannoj93-spec",
+  "updated_at": "2026-10-05T19:54:44Z"
+ }
+}

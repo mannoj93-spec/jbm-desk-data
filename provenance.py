@@ -19,13 +19,29 @@ range -> streams all name the run that started the chain and what started it. A 
 dispatcher run is human-assisted, never automated. A root label is a declaration until checked against the Actions
 API (scripts/service_acceptance.py): "native-schedule" verifies when that run's event is schedule; "external" (the
 owner's token from an outside timer) stays declared unless timer evidence corroborates it; anything else is unknown.
+
+1.2.0 (repo 2.27) records the actual parent of a chained ("workflow_run") run: research-streams' run-name carries
+GitHub's event payload ("Research streams after run <id> attempt <n>"), and workflow_run_parent() reads it back for
+service_acceptance, which verifies the named parent against the Actions run list (workflow, branch, completion time)
+and gives the child the parent's initiation. Actor identity is never lineage.
 """
 from __future__ import annotations
 
 import os
+import re
 
 BOT = "github-actions[bot]"
-VERSION = "provenance-1.1.0"
+VERSION = "provenance-1.2.0"
+# workflow_run children and the workflows allowed to start them (their `on: workflow_run: workflows:` lists)
+WORKFLOW_RUN_PARENTS = {"research-streams.yml": ("range.yml",),
+                        "dashboard.yml": ("research.yml", "range-score.yml", "research-streams.yml")}
+_AFTER = re.compile(r" after run (\d+) attempt (\d+)$")
+
+
+def workflow_run_parent(display_title):
+    """(parent run id, parent attempt) named by a chained run's title, else None (titles before repo 2.27)."""
+    m = _AFTER.search(display_title or "")
+    return (m.group(1), int(m.group(2))) if m else None
 
 
 def source(env=None) -> str:

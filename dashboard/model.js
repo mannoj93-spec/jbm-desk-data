@@ -147,34 +147,56 @@ export function opsRows(ops, now = Date.now()) {
   const age = (now - Date.parse(ops.generated_utc)) / 60000;
   const reportState = !Number.isFinite(age) ? 'unknown' : age < -1 ? 'clock mismatch' : age > HEALTH_STALE_MIN ? 'stale' : 'within cadence';
   const src = ops.source || {};
-  const srcAge = (now - Date.parse(src.last_scheduled_utc)) / 60000;
-  const srcState = !Number.isFinite(srcAge) ? 'unknown' : srcAge > (src.stale_limit_min || HEALTH_STALE_MIN) ? 'stale' : 'within cadence';
+  const limit = src.stale_limit_min || HEALTH_STALE_MIN;
+  // Repo 2.27: the age of a timestamp is judged on the viewer's clock; a failure state the report recorded stays
+  // visible while the evidence is fresh (a fresh failure is never shown as "within cadence"), and stale evidence is
+  // stale whatever the report said. Reports before 2.27 carry no data/activity split: their states are shown as such.
+  const judged = (stamp, recorded) => {
+    const a = (now - Date.parse(stamp)) / 60000;
+    if (!Number.isFinite(a)) return 'unknown';
+    if (a > limit) return 'stale';
+    return recorded && !['healthy', 'fresh'].includes(recorded) ? recorded : 'within cadence';
+  };
+  const srcState = judged(src.last_scheduled_utc, src.state);
   const gaps = (src.gaps || []).map(g => `${g.start_utc} → ${g.end_utc || 'ongoing at report'} (${Math.round(g.minutes)} min)`);
   const last = obj => Object.entries(obj || {}).slice(-6).map(([k, v]) => `${k.slice(5, 16)} ${v}`).join(' · ') || 'none';
-  const problems = obj => Object.values(obj || {}).filter(v => /^(absent|failed|missed)/.test(v)).length;
+  const problems = obj => Object.values(obj || {}).filter(v => /^(absent|failed|missed|invalid)/.test(v)).length;
   const mon = ops.monitors || {};
   const monRows = Object.entries(mon.workflows || {}).filter(([, v]) => v.stale_after_min).map(([k, v]) => {
     // Repo 2.26: heartbeat = last completed run, whatever it found; reports before 2.26 carry only last_success_utc.
+    // Repo 2.27: a failed run is "detected a problem" only when its check executed (job/step evidence); a run whose
+    // job never received a runner could not execute; without that evidence the failure's cause is unknown.
     const beat = v.last_completed_utc || v.last_success_utc;
     const a = (now - Date.parse(beat)) / 60000;
+    const failed = v.last_result && v.last_result !== 'success';
     const st = !Number.isFinite(a) ? 'unknown' : a > v.stale_after_min ? 'stale'
-      : v.last_result === 'failure' ? 'ran; detected a problem' : 'within cadence';
+      : !failed ? 'within cadence'
+      : v.last_executed === true ? 'ran; detected a problem'
+      : v.last_executed === false ? 'could not execute (no runner/steps)'
+      : 'failed; execution unknown';
     return {area: `Monitor ${k}`, state: st,
-            detail: v.last_completed_utc ? `last run ${v.last_completed_utc} (${v.last_result || '—'}); last success ${v.last_success_utc || 'none'}`
+            detail: v.last_completed_utc ? `last run ${v.last_completed_utc} (${v.last_result || '—'}${v.last_execution ? '; ' + v.last_execution : ''}); last success ${v.last_success_utc || 'none'}`
                                          : `last success ${v.last_success_utc || 'unknown'}`};
   });
   const cov = ops.ps1_coverage || {};
   // Repo 2.25: service continuity (native or recovery-dispatcher runs) is judged apart from the native schedule;
   // a person's dispatch counts as neither. Reports written before 2.25 carry no service block: unknown.
+  // Repo 2.27: data (last persisted critical success) and activity (last automated run, any result) are separate rows.
   const svc = src.service || null;
-  const svcAge = svc ? (now - Date.parse(svc.last_automated_utc)) / 60000 : NaN;
-  const svcState = !Number.isFinite(svcAge) ? 'unknown' : svcAge > (src.stale_limit_min || HEALTH_STALE_MIN) ? 'stale' : 'within cadence';
+  const hasSplit = svc && 'last_success_utc' in svc;
+  const dataState = !svc ? 'unknown' : hasSplit ? judged(svc.last_success_utc, null) : 'unknown (report before 2.27)';
+  const actState = !svc ? 'unknown' : judged(svc.last_activity_utc || svc.last_automated_utc, svc.state);
+  const tgt = svc?.acceptance_target;
+  const dataAge = hasSplit ? (now - Date.parse(svc.last_success_utc)) / 60000 : NaN;
   const c24 = src.coverage_24h;
   const svcRows = [
-    {area: 'Collector service (automated)', state: svcState,
-     detail: svc ? `last automated run ${svc.last_automated_utc || 'unknown'} (${svc.last_source || '—'}); ${(svc.gaps || []).length} silence(s) in 72 h` : 'not in this report (before repo 2.25)'},
-    ...(c24 ? [{area: 'Collection, 24 h to report', state: `${c24.intervals_with_automated_run} of ${c24.intervals} intervals`,
-               detail: `${c24.expected_slots} slots; runs ${Object.entries(c24.runs_by_source || {}).map(([k, v]) => `${k} ${v}`).join(', ') || 'none'}; longest automated gap ${c24.longest_automated_gap_min} min`}] : []),
+    {area: 'Collector data (last persisted critical success)', state: dataState,
+     detail: hasSplit ? `${svc.last_success_utc || 'none'}; 45-min acceptance target ${Number.isFinite(dataAge) && dataAge <= (tgt?.max_gap_min || 45) ? 'met' : 'breached'} on this clock (watchdog limit ${limit} min is separate)` : 'not in this report'},
+    {area: 'Collector service (automated activity)', state: actState,
+     detail: svc ? `last automated run ${svc.last_activity_utc || svc.last_automated_utc || 'unknown'} (${svc.last_activity_result || svc.last_source || '—'}); ${(svc.gaps || []).length} silence(s) in 72 h` : 'not in this report (before repo 2.25)'},
+    ...(c24 ? [{area: 'Collection, 24 h to report',
+               state: `${c24.intervals_with_successful_automated_run ?? c24.intervals_with_automated_run} of ${c24.intervals} intervals${c24.intervals_with_successful_automated_run == null ? ' (activity; before 2.27)' : ''}`,
+               detail: `${c24.expected_slots} slots; runs ${Object.entries(c24.runs_by_source || {}).map(([k, v]) => `${k} ${v}`).join(', ') || 'none'}; longest gap ${c24.longest_successful_gap_min ?? c24.longest_automated_gap_min} min${c24.automated_critical_failures ? `; ${c24.automated_critical_failures} critical failure(s)` : ''}`}] : []),
   ];
   return [
     {area: 'Health report', state: reportState, detail: `generated ${ops.generated_utc}; ${ops.clock}`},
