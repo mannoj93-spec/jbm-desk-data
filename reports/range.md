@@ -4,7 +4,7 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-10-05T23:50:48.585Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-06T01:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-10-06T00:12:07.713Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-06T05:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
@@ -14,7 +14,7 @@ Generated 2026-10-05T23:50:48.585Z by reader-12.4.6; contract `RC1D/contract-12.
 | 24h | stale | range-rc1d-24h-20261005T1600Z | 2026-10-05T16:25:00Z → 2026-10-06T16:25:00Z | 2026-10-05T21:15:00Z | expired at 2026-10-05T21:15:00Z (a newer decision was due; no newer forecast is current) |
 | 72h | stale | range-rc1d-72h-20261005T1600Z | 2026-10-05T16:25:00Z → 2026-10-08T16:25:00Z | 2026-10-05T21:15:00Z | expired at 2026-10-05T21:15:00Z (a newer decision was due; no newer forecast is current) |
 
-Due production decisions: 59; outcomes: failed 1, missing 5, registered-pending 10, scored 39, skipped 4.
+Current decision 2026-10-06T00:00:00Z: registered-pending (frozen; publication confirmation pending). Due production decisions: 59; outcomes: failed 1, missing 5, registered-pending 10, scored 39, skipped 4.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
@@ -36,9 +36,9 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 
 | horizon | waiting maturity | ready | overdue | scoring failed | scored | ineligible |
 |---|---|---|---|---|---|---|
-| 4h | 0 | 0 | 0 | 0 | 49 | 0 |
-| 24h | 5 | 0 | 0 | 0 | 44 | 0 |
-| 72h | 10 | 0 | 0 | 0 | 39 | 0 |
+| 4h | 1 | 0 | 0 | 0 | 49 | 0 |
+| 24h | 6 | 0 | 0 | 0 | 44 | 0 |
+| 72h | 11 | 0 | 0 | 0 | 39 | 0 |
 
 ## Recent decisions (history)
 
