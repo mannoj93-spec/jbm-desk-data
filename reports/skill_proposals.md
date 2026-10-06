@@ -1,6 +1,6 @@
 # Proposed skill changes
 
-Generated 2026-10-05T12:57Z (UTC). For human review; nothing here edits a skill file. A proposal is a conditional base rate for a person to consider, not evidence of a trading edge.
+Generated 2026-10-06T00:55Z (UTC). For human review; nothing here edits a skill file. A proposal is a conditional base rate for a person to consider, not evidence of a trading edge.
 
 A change is proposed only for a design whose CURRENT evaluation version is **supported** under the lab-2.1+ promotion rules (data quality, retained observations and dependence blocks, multiplicity-adjusted effect, out-of-sample baseline added value, comparability, stability) at a RECORDED checkpoint whose manifest re-verifies; the wording quotes that checkpoint, not later data. Only the primary horizon, fixed in the design before any data, decides checkpoints, status and skill proposals; secondary horizons are descriptive and cannot override a failed primary or trigger a proposal on their own.
 
@@ -13,12 +13,12 @@ A change is proposed only for a design whose CURRENT evaluation version is **sup
 | Design @ version | Status | Why no proposal |
 |---|---|---|
 | A1-flow-absorption @ ev-c368833b5ae6 | under prospective evaluation | 2/100 retained test observations before checkpoint 1 |
-| B1-underwater-adds @ ev-125c86066f05 | exploratory | no evaluation observations yet; 971 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence) |
-| C1-liquidation-cluster @ ev-eb20553bce1c | under prospective evaluation | 2/100 retained test observations before checkpoint 1; 989 sampled snapshots; the design needs 1344 |
-| D1-active-twap @ ev-2b023a90293f | exploratory | no evaluation observations yet; 8208 twapHistory checks, 277 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs |
+| B1-underwater-adds @ ev-125c86066f05 | exploratory | no evaluation observations yet; 1028 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence) |
+| C1-liquidation-cluster @ ev-eb20553bce1c | under prospective evaluation | 2/100 retained test observations before checkpoint 1; 1047 sampled snapshots; the design needs 1344 |
+| D1-active-twap @ ev-2b023a90293f | exploratory | no evaluation observations yet; 8685 twapHistory checks, 277 programs observed (2 BTC), 0 qualifying; the design needs 30 active BTC programs |
 | E1-liquidity-recovery @ ev-6f279983100b | exploratory | no evaluation observations yet; streaming service not deployed or its data not mounted (STREAM_DATA_DIR); second-scale depth is not observable by the 15-minute collector |
-| F1-options-perp-disagreement @ ev-1c53cfe81c9f | exploratory | no evaluation observations yet; 1026 option records (555 with a trailing z-score); the design needs 1344 |
-| G1-alt-stress-propagation @ ev-5cbc55c34b6d | under prospective evaluation | 3/100 retained test observations before checkpoint 1; 12.7 days of stored bars; the design needs 14 |
+| F1-options-perp-disagreement @ ev-1c53cfe81c9f | exploratory | no evaluation observations yet; 1084 option records (613 with a trailing z-score); the design needs 1344 |
+| G1-alt-stress-propagation @ ev-5cbc55c34b6d | under prospective evaluation | 4/100 retained test observations before checkpoint 1; 13.2 days of stored bars; the design needs 14 |
 | H1-deleveraging-stress @ ev-02fcecefd1bf | exploratory | no evaluation observations yet |
 
 Reanalysis and reconstruction results are hypotheses, never grounds for a rule.
