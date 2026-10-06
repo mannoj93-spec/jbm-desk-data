@@ -73,12 +73,12 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-10-06T19:44:45Z",
+ "generated_utc": "2026-10-06T19:47:21Z",
  "job": "health-1.3.0",
  "monitors": {
   "could_not_execute": [],
   "dispatcher_state": "fresh",
-  "newest_scheduled_start_utc": "2026-10-06T19:31:08Z",
+  "newest_scheduled_start_utc": "2026-10-06T19:44:57Z",
   "problems_detected_by": [],
   "rule": "state is the heartbeat (last completed run, any result); last_result is how that run ended. A failed run whose check executed detected a problem; one whose job never received a runner or ran no step could not execute (2.27) - neither is silence",
   "source": "GitHub Actions API, scheduled runs",
@@ -88,7 +88,7 @@
     "last_completed_utc": "2026-10-06T19:33:25Z",
     "last_result": "success",
     "last_run_id": 37519570984,
-    "last_scheduled_start_utc": "2026-10-06T19:31:08Z",
+    "last_scheduled_start_utc": "2026-10-06T19:44:57Z",
     "last_success_utc": "2026-10-06T19:31:08Z"
    },
    "dashboard.yml": {
@@ -168,7 +168,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 159.8,
+  "report_age_min": 162.4,
   "report_coverage": 0.6522,
   "report_generated_utc": "2026-10-06T17:04:54.924Z",
   "report_scheduled_decisions": 23,
@@ -178,25 +178,25 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 13.3,
+  "age_min": 1.8,
   "coverage_24h": {
    "automated_critical_failures": 0,
-   "automated_runs": 161,
+   "automated_runs": 162,
    "expected_slots": 96,
-   "from_ms": 1791229485812,
-   "from_utc": "2026-10-05T19:44:45Z",
+   "from_ms": 1791229641555,
+   "from_utc": "2026-10-05T19:47:21Z",
    "intervals": 95,
    "intervals_with_automated_run": 89,
    "intervals_with_successful_automated_run": 89,
-   "longest_automated_gap_min": 110.1,
-   "longest_successful_gap_min": 110.1,
+   "longest_automated_gap_min": 107.5,
+   "longest_successful_gap_min": 107.5,
    "rule": "activity = any automated stored record (heartbeat); success = critical_success records only",
    "runs_by_source": {
-    "native-schedule": 85,
+    "native-schedule": 86,
     "recovery": 76
    },
-   "to_ms": 1791315885812,
-   "to_utc": "2026-10-06T19:44:45Z"
+   "to_ms": 1791316041555,
+   "to_utc": "2026-10-06T19:47:21Z"
   },
   "gaps": [
    {
@@ -249,20 +249,20 @@
     "start_utc": "2026-10-05T18:42:24Z"
    }
   ],
-  "last_scheduled_utc": "2026-10-06T19:31:30Z",
+  "last_scheduled_utc": "2026-10-06T19:45:31Z",
   "manual_runs_since": 0,
   "rule": "scheduled runs only (manual, local and recovery runs do not close a scheduled gap)",
   "service": {
    "acceptance_target": {
     "breached_24h": true,
     "breached_now": false,
-    "current_gap_min": 2.1,
-    "longest_successful_gap_24h_min": 110.1,
+    "current_gap_min": 1.8,
+    "longest_successful_gap_24h_min": 107.5,
     "max_gap_min": 45,
     "rule": "restoration acceptance target (45 min between persisted critical successes); separate from the watchdog's stale limit"
    },
-   "age_min": 2.1,
-   "data_age_min": 2.1,
+   "age_min": 1.8,
+   "data_age_min": 1.8,
    "data_state": "fresh",
    "gaps": [
     {
@@ -316,10 +316,10 @@
     }
    ],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-10-06T19:42:37Z",
-   "last_automated_utc": "2026-10-06T19:42:37Z",
-   "last_source": "recovery",
-   "last_success_utc": "2026-10-06T19:42:37Z",
+   "last_activity_utc": "2026-10-06T19:45:31Z",
+   "last_automated_utc": "2026-10-06T19:45:31Z",
+   "last_source": "native-schedule",
+   "last_success_utc": "2026-10-06T19:45:31Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
