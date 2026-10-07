@@ -1,11 +1,19 @@
 {
  "schema": "timer-declaration/1",
  "provider": "cron-job.org",
- "job_id": null,
+ "job_id": "8579326",
  "target": "POST https://api.github.com/repos/mannoj93-spec/jbm-desk-data/actions/workflows/recovery.yml/dispatches (ref main, inputs.trigger=external)",
  "cadence": "minutes 12, 27, 42, 57 of every hour (UTC)",
- "status": "job_id not yet pinned: the operator reads it from the cron-job.org console (job settings URL) and records it here in a reviewed commit. Until then timer-receipt exports are rejected and strict unattended certification stays insufficient.",
+ "status": "pinned 2026-10-07 from the cron-job.org console (job URL console.cron-job.org/jobs/8579326), read in the operator's signed-in browser at his request; schedule timezone America/New_York, minutes 12/27/42/57",
  "history": [
-  {"date": "2026-10-07", "change": "declaration created (repo 2.28); job id pending operator"}
- ]
+  {
+   "date": "2026-10-07",
+   "change": "declaration created (repo 2.28); job id pending operator"
+  },
+  {
+   "date": "2026-10-07",
+   "change": "job id 8579326 pinned (repo 2.28.1); first export: docs/acceptance/receipts/2026-10-07-cron-job-org.json"
+  }
+ ],
+ "job_title": "JBM recovery dispatcher"
 }
