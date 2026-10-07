@@ -51,3 +51,29 @@ The cron-job.org execution history for the job that calls
 body or error, duration and any retry; plus the job id, to pin in `docs/acceptance/timer.json`. A 2xx at 15:12/16:57
 would place the loss on GitHub's side; a failure or timeout recorded by the provider would show the request was sent
 and refused; no execution would point at the provider.
+
+## Update 2026-10-07 22:45Z (repo 2.28.1): attributed from the provider's history
+
+The operator signed in to cron-job.org and asked for the history to be read. Job **8579326** ("JBM recovery
+dispatcher", schedule in America/New_York) is now pinned in `docs/acceptance/timer.json`; its execution history,
+10:12Z-22:27Z Oct 7 (50 executions, all the console still retained), is in
+`docs/acceptance/receipts/2026-10-07-cron-job-org.json`.
+
+| Opportunity | cron-job.org | GitHub |
+|---|---|---|
+| 15:12Z | sent at 15:12:00.892Z; **HTTP 500 Internal Server Error** after 557 ms | no run |
+| 16:12Z | sent at 16:12:00.972Z; **no complete response within the 30 s timeout** | run 37650301673 created 16:13:06Z (65 s later) |
+| 16:57Z | sent at 16:57:00.592Z; **HTTP 500 Internal Server Error** after 734 ms | no run |
+| other 47 | HTTP 204 No Content in 1.5-2.4 s | one run each, created 0.4-1.5 s after the request; no unexplained dispatcher run |
+
+**Attribution.** The timer sent every request on time. GitHub refused the two missing dispatches with HTTP 500, inside
+its own stated impact windows (incidents `djlmxz2zd0j7` 15:06-15:16Z and `qpfv5p86dmrl` 16:52-17:01Z), and at 16:12Z
+accepted the request but answered too slowly, creating the run 65 s later. The cause of the gaps is GitHub's API
+during its incidents, not the timer and not this repository. The provider does not retry a failed execution; the
+native dispatcher's fallback is what covered 16:57 (collection 17:05:07Z); 15:12's interval stayed empty.
+
+**Limits.** Response bodies were not stored (the job's "save responses" option is off), so GitHub's error text is not
+available. Executions before 10:12Z on Oct 7 and the whole Oct 6 window had already aged out of the console, so the
+dispatcher runs of those hours stay timer-corroborated, not receipted. The request headers were not read (they hold
+the token); method, ref and inputs are confirmed by GitHub having created a `workflow_dispatch` run with
+`trigger=external` on `main` for every 204.

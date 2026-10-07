@@ -175,7 +175,7 @@ absent arrivals during GitHub incidents (`docs/incidents/2026-10-07-external-tim
 **Dependency limitation (repo 2.27).** The external timer, the dispatcher, its service watch, the native schedules and
 every job run on GitHub-hosted runners. When GitHub cannot assign runners (incident 3q1yb5m7ltvb, Oct 5 2026 from ~18:55Z),
 no trigger restores execution and no workflow-based alert can run; the outage stays in the acceptance record whatever
-its cause. See the incident file for the decision this leaves to the operator.
+its cause. **Operator decision (Oct 7 2026): the dependency is accepted** — GitHub runner and API outages are part of the service level, every resulting gap is recorded and counts against its window, and no independent host is run (so E1's second-scale recorder stays undeployed).
 
 Activation (operator, once): (1) create a fine-grained personal access token limited to this repository with
 **Actions: Read and write** only (Metadata read is implied), expiry ≤ 1 year; (2) create a cron job at an external
@@ -225,7 +225,7 @@ roots outside the window are fetched individually. **Strict unattended certifica
 external dispatches matched one-to-one to an execution in a validated timer-provider export (`--timer-receipts`,
 schema `timer-receipts/1`, bound by hash: provider and job id equal to the pinned `docs/acceptance/timer.json`, target
 this repository's recovery.yml dispatch POST on main with trigger=external, export provenance, unique ids, HTTP 2xx -
-any defect rejects the whole export; the job id is not yet pinned, so no export is accepted until the operator pins it);
+any defect rejects the whole export; job 8579326 pinned Oct 7 2026; the console keeps only ~50 executions (~12.5 h), so an export must be read within about half a day of the window it covers);
 "timer-corroborated" (owner token, on the cadence, no receipt) supports continuity but not certification, so a window
 whose targets pass on corroboration alone is reported `service_verdict: pass`, `verdict: insufficient`. The output binds
 the checker version and code hashes, the evaluated commit, every consulted file's hash and the normalized Actions

@@ -1,0 +1,483 @@
+{
+ "schema": "timer-receipts/1",
+ "provider": "cron-job.org",
+ "job_id": "8579326",
+ "job": {
+  "title": "JBM recovery dispatcher",
+  "timezone": "America/New_York (console display and schedule)",
+  "schedule": "minutes 12, 27, 42, 57",
+  "save_responses": false
+ },
+ "target": {
+  "url": "https://api.github.com/repos/mannoj93-spec/jbm-desk-data/actions/workflows/recovery.yml/dispatches",
+  "method": "POST",
+  "ref": "main",
+  "inputs": {
+   "trigger": "external"
+  },
+  "verified": "URL read from the job and execution details; method, ref and inputs per the activation spec (docs/OPERATIONS.md) and confirmed by GitHub: every 204 here has a matching workflow_dispatch run with trigger external on main - request headers were deliberately not read (they hold the token)"
+ },
+ "export": {
+  "exported_utc": "2026-10-07T22:45:00Z",
+  "method": "cron-job.org console execution history (job 8579326), read through Claude in Chrome in the operator's signed-in browser; transcribed, executed_utc = scheduled + displayed jitter (ms)",
+  "coverage": {
+   "from_scheduled_utc": "2026-10-07T10:12:00Z",
+   "to_scheduled_utc": "2026-10-07T22:27:00Z",
+   "executions": 50,
+   "limit": "the console retains only the most recent ~50 executions (~12.5 h); executions before 2026-10-07T10:12Z (the rest of the Oct 7 window and the whole Oct 6 window) were no longer retrievable"
+  },
+  "response_bodies": "not stored (job option 'Save responses in job history' is off)"
+ },
+ "executions": [
+  {
+   "id": "8579326@2026-10-07T10:12Z",
+   "scheduled_utc": "2026-10-07T10:12:00Z",
+   "executed_utc": "2026-10-07T10:12:00.895Z",
+   "jitter_ms": 895,
+   "duration_s": 1.63,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T10:27Z",
+   "scheduled_utc": "2026-10-07T10:27:00Z",
+   "executed_utc": "2026-10-07T10:27:00.595Z",
+   "jitter_ms": 595,
+   "duration_s": 1.7,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T10:42Z",
+   "scheduled_utc": "2026-10-07T10:42:00Z",
+   "executed_utc": "2026-10-07T10:42:01.190Z",
+   "jitter_ms": 1190,
+   "duration_s": 1.9,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T10:57Z",
+   "scheduled_utc": "2026-10-07T10:57:00Z",
+   "executed_utc": "2026-10-07T10:57:00.515Z",
+   "jitter_ms": 515,
+   "duration_s": 1.83,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T11:12Z",
+   "scheduled_utc": "2026-10-07T11:12:00Z",
+   "executed_utc": "2026-10-07T11:12:00.924Z",
+   "jitter_ms": 924,
+   "duration_s": 1.47,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T11:27Z",
+   "scheduled_utc": "2026-10-07T11:27:00Z",
+   "executed_utc": "2026-10-07T11:27:00.683Z",
+   "jitter_ms": 683,
+   "duration_s": 1.72,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T11:42Z",
+   "scheduled_utc": "2026-10-07T11:42:00Z",
+   "executed_utc": "2026-10-07T11:42:00.983Z",
+   "jitter_ms": 983,
+   "duration_s": 2.11,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T11:57Z",
+   "scheduled_utc": "2026-10-07T11:57:00Z",
+   "executed_utc": "2026-10-07T11:57:00.598Z",
+   "jitter_ms": 598,
+   "duration_s": 2.35,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T12:12Z",
+   "scheduled_utc": "2026-10-07T12:12:00Z",
+   "executed_utc": "2026-10-07T12:12:00.920Z",
+   "jitter_ms": 920,
+   "duration_s": 1.78,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T12:27Z",
+   "scheduled_utc": "2026-10-07T12:27:00Z",
+   "executed_utc": "2026-10-07T12:27:00.619Z",
+   "jitter_ms": 619,
+   "duration_s": 1.74,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T12:42Z",
+   "scheduled_utc": "2026-10-07T12:42:00Z",
+   "executed_utc": "2026-10-07T12:42:00.960Z",
+   "jitter_ms": 960,
+   "duration_s": 1.58,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T12:57Z",
+   "scheduled_utc": "2026-10-07T12:57:00Z",
+   "executed_utc": "2026-10-07T12:57:00.560Z",
+   "jitter_ms": 560,
+   "duration_s": 2.01,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T13:12Z",
+   "scheduled_utc": "2026-10-07T13:12:00Z",
+   "executed_utc": "2026-10-07T13:12:00.940Z",
+   "jitter_ms": 940,
+   "duration_s": 1.56,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T13:27Z",
+   "scheduled_utc": "2026-10-07T13:27:00Z",
+   "executed_utc": "2026-10-07T13:27:00.578Z",
+   "jitter_ms": 578,
+   "duration_s": 2.0,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T13:42Z",
+   "scheduled_utc": "2026-10-07T13:42:00Z",
+   "executed_utc": "2026-10-07T13:42:01.160Z",
+   "jitter_ms": 1160,
+   "duration_s": 1.92,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T13:57Z",
+   "scheduled_utc": "2026-10-07T13:57:00Z",
+   "executed_utc": "2026-10-07T13:57:00.570Z",
+   "jitter_ms": 570,
+   "duration_s": 1.83,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T14:12Z",
+   "scheduled_utc": "2026-10-07T14:12:00Z",
+   "executed_utc": "2026-10-07T14:12:00.901Z",
+   "jitter_ms": 901,
+   "duration_s": 1.81,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T14:27Z",
+   "scheduled_utc": "2026-10-07T14:27:00Z",
+   "executed_utc": "2026-10-07T14:27:00.600Z",
+   "jitter_ms": 600,
+   "duration_s": 1.94,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T14:42Z",
+   "scheduled_utc": "2026-10-07T14:42:00Z",
+   "executed_utc": "2026-10-07T14:42:00.948Z",
+   "jitter_ms": 948,
+   "duration_s": 1.9,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T14:57Z",
+   "scheduled_utc": "2026-10-07T14:57:00Z",
+   "executed_utc": "2026-10-07T14:57:00.580Z",
+   "jitter_ms": 580,
+   "duration_s": 2.12,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T15:12Z",
+   "scheduled_utc": "2026-10-07T15:12:00Z",
+   "executed_utc": "2026-10-07T15:12:00.892Z",
+   "jitter_ms": 892,
+   "duration_s": 0.557,
+   "status": 500,
+   "result": "500 Internal Server Error"
+  },
+  {
+   "id": "8579326@2026-10-07T15:27Z",
+   "scheduled_utc": "2026-10-07T15:27:00Z",
+   "executed_utc": "2026-10-07T15:27:00.543Z",
+   "jitter_ms": 543,
+   "duration_s": 1.86,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T15:42Z",
+   "scheduled_utc": "2026-10-07T15:42:00Z",
+   "executed_utc": "2026-10-07T15:42:00.957Z",
+   "jitter_ms": 957,
+   "duration_s": 1.55,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T15:57Z",
+   "scheduled_utc": "2026-10-07T15:57:00Z",
+   "executed_utc": "2026-10-07T15:57:00.583Z",
+   "jitter_ms": 583,
+   "duration_s": 1.82,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T16:12Z",
+   "scheduled_utc": "2026-10-07T16:12:00Z",
+   "executed_utc": "2026-10-07T16:12:00.964Z",
+   "jitter_ms": 964,
+   "duration_s": 30.0,
+   "status": null,
+   "result": "no complete response within the job's 30 s timeout"
+  },
+  {
+   "id": "8579326@2026-10-07T16:27Z",
+   "scheduled_utc": "2026-10-07T16:27:00Z",
+   "executed_utc": "2026-10-07T16:27:00.585Z",
+   "jitter_ms": 585,
+   "duration_s": 2.05,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T16:42Z",
+   "scheduled_utc": "2026-10-07T16:42:00Z",
+   "executed_utc": "2026-10-07T16:42:00.940Z",
+   "jitter_ms": 940,
+   "duration_s": 1.59,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T16:57Z",
+   "scheduled_utc": "2026-10-07T16:57:00Z",
+   "executed_utc": "2026-10-07T16:57:00.571Z",
+   "jitter_ms": 571,
+   "duration_s": 0.734,
+   "status": 500,
+   "result": "500 Internal Server Error"
+  },
+  {
+   "id": "8579326@2026-10-07T17:12Z",
+   "scheduled_utc": "2026-10-07T17:12:00Z",
+   "executed_utc": "2026-10-07T17:12:00.922Z",
+   "jitter_ms": 922,
+   "duration_s": 1.8,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T17:27Z",
+   "scheduled_utc": "2026-10-07T17:27:00Z",
+   "executed_utc": "2026-10-07T17:27:00.571Z",
+   "jitter_ms": 571,
+   "duration_s": 1.93,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T17:42Z",
+   "scheduled_utc": "2026-10-07T17:42:00Z",
+   "executed_utc": "2026-10-07T17:42:01.180Z",
+   "jitter_ms": 1180,
+   "duration_s": 2.08,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T17:57Z",
+   "scheduled_utc": "2026-10-07T17:57:00Z",
+   "executed_utc": "2026-10-07T17:57:00.688Z",
+   "jitter_ms": 688,
+   "duration_s": 1.6,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T18:12Z",
+   "scheduled_utc": "2026-10-07T18:12:00Z",
+   "executed_utc": "2026-10-07T18:12:00.925Z",
+   "jitter_ms": 925,
+   "duration_s": 1.62,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T18:27Z",
+   "scheduled_utc": "2026-10-07T18:27:00Z",
+   "executed_utc": "2026-10-07T18:27:00.687Z",
+   "jitter_ms": 687,
+   "duration_s": 1.83,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T18:42Z",
+   "scheduled_utc": "2026-10-07T18:42:00Z",
+   "executed_utc": "2026-10-07T18:42:00.970Z",
+   "jitter_ms": 970,
+   "duration_s": 1.59,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T18:57Z",
+   "scheduled_utc": "2026-10-07T18:57:00Z",
+   "executed_utc": "2026-10-07T18:57:00.572Z",
+   "jitter_ms": 572,
+   "duration_s": 1.7,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T19:12Z",
+   "scheduled_utc": "2026-10-07T19:12:00Z",
+   "executed_utc": "2026-10-07T19:12:00.995Z",
+   "jitter_ms": 995,
+   "duration_s": 1.78,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T19:27Z",
+   "scheduled_utc": "2026-10-07T19:27:00Z",
+   "executed_utc": "2026-10-07T19:27:00.518Z",
+   "jitter_ms": 518,
+   "duration_s": 1.78,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T19:42Z",
+   "scheduled_utc": "2026-10-07T19:42:00Z",
+   "executed_utc": "2026-10-07T19:42:00.944Z",
+   "jitter_ms": 944,
+   "duration_s": 1.86,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T19:57Z",
+   "scheduled_utc": "2026-10-07T19:57:00Z",
+   "executed_utc": "2026-10-07T19:57:00.578Z",
+   "jitter_ms": 578,
+   "duration_s": 1.79,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T20:12Z",
+   "scheduled_utc": "2026-10-07T20:12:00Z",
+   "executed_utc": "2026-10-07T20:12:00.972Z",
+   "jitter_ms": 972,
+   "duration_s": 1.6,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T20:27Z",
+   "scheduled_utc": "2026-10-07T20:27:00Z",
+   "executed_utc": "2026-10-07T20:27:00.700Z",
+   "jitter_ms": 700,
+   "duration_s": 1.79,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T20:42Z",
+   "scheduled_utc": "2026-10-07T20:42:00Z",
+   "executed_utc": "2026-10-07T20:42:00.965Z",
+   "jitter_ms": 965,
+   "duration_s": 1.59,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T20:57Z",
+   "scheduled_utc": "2026-10-07T20:57:00Z",
+   "executed_utc": "2026-10-07T20:57:00.592Z",
+   "jitter_ms": 592,
+   "duration_s": 1.68,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T21:12Z",
+   "scheduled_utc": "2026-10-07T21:12:00Z",
+   "executed_utc": "2026-10-07T21:12:00.921Z",
+   "jitter_ms": 921,
+   "duration_s": 1.59,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T21:27Z",
+   "scheduled_utc": "2026-10-07T21:27:00Z",
+   "executed_utc": "2026-10-07T21:27:00.651Z",
+   "jitter_ms": 651,
+   "duration_s": 1.62,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T21:42Z",
+   "scheduled_utc": "2026-10-07T21:42:00Z",
+   "executed_utc": "2026-10-07T21:42:00.996Z",
+   "jitter_ms": 996,
+   "duration_s": 1.69,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T21:57Z",
+   "scheduled_utc": "2026-10-07T21:57:00Z",
+   "executed_utc": "2026-10-07T21:57:00.553Z",
+   "jitter_ms": 553,
+   "duration_s": 1.79,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T22:12Z",
+   "scheduled_utc": "2026-10-07T22:12:00Z",
+   "executed_utc": "2026-10-07T22:12:01.080Z",
+   "jitter_ms": 1080,
+   "duration_s": 1.82,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  },
+  {
+   "id": "8579326@2026-10-07T22:27Z",
+   "scheduled_utc": "2026-10-07T22:27:00Z",
+   "executed_utc": "2026-10-07T22:27:00.622Z",
+   "jitter_ms": 622,
+   "duration_s": 2.0,
+   "status": 204,
+   "result": "Successful (204 No Content)"
+  }
+ ]
+}
