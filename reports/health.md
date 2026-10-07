@@ -1,10 +1,10 @@
 # Operational health
 
-Generated 2026-10-07T19:34:43Z by health-1.3.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-10-07T19:44:55Z by health-1.3.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Source:** healthy; last scheduled collector run 2026-10-07T19:32:51Z (1.9 min). Silences over 90 min in the last 72 h: 2026-10-04T18:01:32Z to 2026-10-04T21:10:45Z (189 min); 2026-10-05T18:42:24Z to 2026-10-05T21:34:49Z (172 min).
+**Source:** healthy; last scheduled collector run 2026-10-07T19:32:51Z (12.1 min). Silences over 90 min in the last 72 h: 2026-10-04T18:01:32Z to 2026-10-04T21:10:45Z (189 min); 2026-10-05T18:42:24Z to 2026-10-05T21:34:49Z (172 min).
 
-**Service continuity:** healthy; last persisted critical success 2026-10-07T19:32:51Z (1.9 min); last automated activity 2026-10-07T19:32:51Z (critical success, native-schedule). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 85, recovery 81; 94 of 95 slot intervals hold an automated critical success (94 hold any automated activity); longest gap between successes 25.7 min.
+**Service continuity:** healthy; last persisted critical success 2026-10-07T19:42:43Z (2.2 min); last automated activity 2026-10-07T19:42:43Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 85, recovery 81; 94 of 95 slot intervals hold an automated critical success (94 hold any automated activity); longest gap between successes 25.7 min.
 
 **Range decisions:** 10-06T12:00 published; 10-06T16:00 published; 10-06T20:00 published; 10-07T00:00 published; 10-07T04:00 published; 10-07T08:00 published; 10-07T12:00 published; 10-07T16:00 published.
 
