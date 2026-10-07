@@ -25,6 +25,10 @@ class Fixture(unittest.TestCase):
         d = Path(self.tmp.name)
         self.origin, self.work, self.other = d / 'origin.git', d / 'work', d / 'other'
         subprocess.run(['git', 'init', '-q', '--bare', '-b', 'main', str(self.origin)], check=True)
+        # no detached auto-gc after a push: it can still be writing origin.git/objects/pack when tearDown removes
+        # the fixture (CI, Oct 7 2026: "Directory not empty: .../origin.git/objects/pack")
+        for k, v in (('receive.autogc', 'false'), ('gc.auto', '0'), ('maintenance.auto', 'false')):
+            git(self.origin, 'config', k, v)
         subprocess.run(['git', 'clone', '-q', str(self.origin), str(self.work)], check=True, capture_output=True)
         git(self.work, 'checkout', '-q', '-b', 'main')
         for rel, text in {'data/a.jsonl': '{}\n', 'collector.py': 'print(1)\n', 'registry/README.md': 'r\n',

@@ -1,21 +1,29 @@
 #!/usr/bin/env python3
-"""service_acceptance - the 24-hour infrastructure acceptance check for restored unattended operation (repo 2.27).
+"""service_acceptance - the 24-hour infrastructure acceptance check for restored unattended operation (repo 2.28).
 
     python scripts/service_acceptance.py --from ISO [--to ISO] [--cutoff ISO] [--now ISO]
            [--actions-evidence FILE | (fetch with GITHUB_TOKEN/GH_TOKEN + GITHUB_REPOSITORY) [--save-evidence FILE]]
            [--timer-receipts FILE] [--commit SHA]
 
-Read-only. An infrastructure check, not a research criterion. acceptance-3.0.0 (repo 2.27) replaces 2.0.0 after an
-independent review reproduced false passes (PS1, lineage, yields) and unbound inputs.
+Read-only. An infrastructure check, not a research criterion. acceptance-3.1.0 (repo 2.28) replaces 3.0.0 after an
+independent review reproduced five false passes in it: a healthy World with no git history passed; records first
+committed an hour after the window passed; a range publication row marked eligible:true with its start/confirmation
+moved after the window passed; receipts from an unrelated job/target produced timer-receipt; and (health) a monitor
+whose setup ran but whose check was skipped read "check executed". 3.0.0 replaced 2.0.0 (repo 2.27).
 
 Four clocks are kept apart:
   window      [--from, --to): the service period measured (>= 24 h, else invalid)
   deadlines   per decision: a 4H range decision's 75-minute run window, a PS1 decision's 90-minute execution
               deadline. A decision is judged only if its deadline falls inside the window (deadline-based inclusion)
-  cutoff      the evidence-availability cutoff (default: window end + 120 min). Repository evidence is read AS OF
-              THE LAST COMMIT ON THE EVALUATED BRANCH WHOSE COMMITTER TIME IS <= THE CUTOFF (git), so a fill,
-              confirmation, record, receipt or score written later cannot repair the window. Committer time is not
-              push time; that limit is stated in the output. Outside a git checkout availability is "unestablished".
+  cutoff      the evidence-availability cutoff (default: window end + 120 min; audit time, not operating time).
+              Repository evidence is read AS OF THE LAST PUSH TO MAIN AT OR BEFORE THE CUTOFF, from GitHub's
+              repository activity API (server-recorded push time, before/after sha) - committer time is never used.
+  availability  3.1.0: an output counts only when durably available on time: a collector record first pushed to
+              main within 15 min of its record time; a PS1 execution/no-rebalance/lifecycle row first pushed before
+              the decision's deadline + 15 min (execution) or deadline (no-rebalance, pause); a range forecast's
+              manifest registration first pushed strictly before its window start. The first push whose diff added
+              the row is its availability. Without a complete push history (pushes_complete) availability is
+              "unestablished": the verdict is insufficient, never pass.
   evaluation  --now (default: the clock). Before the cutoff the verdict is pending.
 
 Verdicts (exit 0 pass, 1 fail, 2 invalid, 3 pending, 4 insufficient evidence):
@@ -45,8 +53,12 @@ Targets (stated before observing; unchanged in substance since 2.25):
                                       titles; earlier runs: the unique completed parent workflow run on main within
                                       180 s before it) verifies, taking the parent's initiation; a recovery chain
                                       whose root (and named intermediate parent) resolve to a verified root
-                  timer-receipt       an external-titled dispatcher run matched one-to-one to an independent timer
-                                      provider receipt (--timer-receipts, bound by hash)
+                  timer-receipt       an external-titled dispatcher run matched one-to-one (created 5 s before to
+                                      30 s after) to an execution in a VALIDATED provider export
+                                      (--timer-receipts, schema timer-receipts/1: provider and job id equal to the
+                                      pinned docs/acceptance/timer.json, target = this repository's recovery.yml
+                                      dispatch POST on main with trigger=external, export provenance, unique ids,
+                                      HTTP 2xx). Any defect rejects the whole export.
                   timer-corroborated  external-titled and within 90 s after :12/:27/:42/:57 but no receipt: the
                                       owner's credential cannot exclude a person submitting the same inputs then
                   declared-external   external-titled off the timer
@@ -56,7 +68,8 @@ Targets (stated before observing; unchanged in substance since 2.25):
                 certification counts only verified and timer-receipt. Any human or declared-external run in the
                 critical chain (collector, dispatcher, range, streams, scoring), or any unknown one, fails.
   decisions     derived from the schedule, never from the records present: every 4H range decision is published
-                eligibly; PS1 (only after its launch, validated - see ps1_evaluate) is executed once by a verified
+                eligibly - validated through the strict RC1D contract (range_reader._verify, validate_rc1d with
+                the publication, range_contract.eligibility), never through a stored `eligible` flag; PS1 (only after its launch, validated - see ps1_evaluate) is executed once by a verified
                 chain execution filled before its deadline, or a recorded no-rebalance, or not expected under an
                 operator pause/termination at that time. Unknown actions, invalid chains, duplicates, late fills and
                 missing or contradictory launch evidence fail.
@@ -84,6 +97,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -97,13 +111,17 @@ import provenance                 # noqa: E402
 import recovery                   # noqa: E402
 from watchdog import load_runs    # noqa: E402
 
-VERSION = "acceptance-3.0.0"
+VERSION = "acceptance-3.1.0"
 UTC = dt.timezone.utc
 MIN_WINDOW_H = 24
 TARGETS = {"interval_share": 0.97, "longest_gap_min": 45}
 RANGE_GRACE_MIN = 75
 PS1_DEADLINE_MIN = 90
-CUTOFF_GRACE_MIN = 120            # default evidence-availability cutoff after the window end
+CUTOFF_GRACE_MIN = 120            # default evidence-availability cutoff after the window end (audit time, not operating time)
+DELIVERY_MIN = 15                 # 3.1.0: an output counts only if first pushed to main within this many minutes of its
+                                  # event time (collector record t; PS1 execution deadline); range registration before start
+RECEIPT_SCHEMA = "timer-receipts/1"
+DISPATCH_URL = "https://api.github.com/repos/{repo}/actions/workflows/recovery.yml/dispatches"
 TIMER_MINUTES = (12, 27, 42, 57)
 TIMER_TOLERANCE_S = 90
 RECEIPT_TOLERANCE_S = 30
@@ -120,7 +138,7 @@ CONSULTED = ("cadence.json", "desk/release.json", "desk/deployments.jsonl", "sta
              "state/range_runs.jsonl", "state/range_publications.jsonl", "state/forecast_manifest.json",
              "reports/range_status.json", "registry/scores.jsonl", "state/recovery_yields.jsonl",
              "desk/research/ps1/protocol.json", "data/restored/receipts.jsonl")
-CONSULTED_TREES = ("data/runs", "streams/ps1")
+CONSULTED_TREES = ("data/runs", "streams/ps1", "registry/frozen")
 CODE = ("scripts/service_acceptance.py", "cadence.py", "execution.py", "provenance.py", "recovery.py", "watchdog.py",
         "health.py", "storage.py", "desk/paper_ps1.py", "desk/range_monitor.py", "desk/stream_util.py",
         "desk/research/ps1/protocol.json")      # the checkout's protocol: paper_ps1.verify_chain reads it
@@ -205,11 +223,42 @@ def fetch_evidence(repo, token, start, end, now=None, opener=None):
             break
         page += 1
     ids = [r["id"] for r in runs]
-    return {"schema": "actions-evidence/1", "repo": repo, "retrieved_utc": iso(now or dt.datetime.now(UTC)),
+    pushes, pcomplete = fetch_pushes(repo, token, lo, opener)
+    return {"schema": "actions-evidence/2", "repo": repo, "retrieved_utc": iso(now or dt.datetime.now(UTC)),
             "query": {"created_from": iso(lo), "created_to": iso(hi), "per_page": 100, "branch": None},
             "pages": pages, "total_count": total,
             "complete": total is not None and len(runs) >= total and len(set(ids)) == len(ids),
-            "runs": runs, "extra_runs": [], "jobs": {}, "jobs_requested": [], "jobs_complete": True}
+            "runs": runs, "extra_runs": [], "jobs": {}, "jobs_requested": [], "jobs_complete": True,
+            "pushes": pushes, "pushes_complete": pcomplete,
+            "pushes_query": {"ref": "refs/heads/main", "from": iso(lo), "source": "GET /repos/{repo}/activity"}}
+
+
+def fetch_pushes(repo, token, since, opener=None, max_pages=60):
+    """Every ref update of main back to `since` from GitHub's repository activity API - the server's own push times
+    (3.1.0). Returns (normalized pushes, complete: the pages reached back past `since`)."""
+    url = f"https://api.github.com/repos/{repo}/activity?ref=refs%2Fheads%2Fmain&per_page=100"
+    out, reached = [], False
+    for _ in range(max_pages):
+        req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json",
+                                                   "X-GitHub-Api-Version": "2022-11-28"})
+        with (opener or urllib.request.urlopen)(req, timeout=30) as r:
+            body, link = json.loads(r.read()), r.headers.get("Link") or ""
+        for a in body:
+            out.append({"id": a.get("id"), "timestamp": a.get("timestamp"), "before": a.get("before"), "after": a.get("after"),
+                        "ref": a.get("ref"), "activity_type": a.get("activity_type")})
+        if body and (parse(body[-1].get("timestamp")) or since) < since:
+            reached = True
+            break
+        nxt = [p.split(";")[0].strip("<> ") for p in link.split(",") if 'rel="next"' in p]
+        if not body or not nxt:
+            reached = not body or reached
+            break
+        cursor = urllib.parse.parse_qs(urllib.parse.urlparse(nxt[0]).query).get("after")
+        if not cursor:
+            break
+        url = (f"https://api.github.com/repos/{repo}/activity?ref=refs%2Fheads%2Fmain&per_page=100&after="
+               + urllib.parse.quote(cursor[0]))                   # same path as the first page (the Link uses /repositories/)
+    return out, reached
 
 
 def complete_evidence(ev, need_runs, need_jobs, token, opener=None):
@@ -258,8 +307,8 @@ class Lineage:
         """{dispatcher run id: receipt index}: external-titled dispatcher runs matched one-to-one to timer receipts."""
         if not receipts:
             return {}
-        exe = [(i, parse(e.get("executed_utc"))) for i, e in enumerate(receipts.get("executions") or [])
-               if isinstance(e, dict) and e.get("status") in (200, 201, 204)]
+        exe = [(i, parse(e.get("executed_utc"))) for i, e in enumerate(receipts)
+               if isinstance(e, dict) and isinstance(e.get("status"), int) and 200 <= e["status"] < 300]
         exe = [(i, t) for i, t in exe if t]
         disp = sorted((r for r in self.runs if wf_of(r) == "recovery.yml" and r.get("event") == "workflow_dispatch"
                        and (r.get("display_title") or "").endswith("(external)")), key=lambda r: r.get("created_at") or "")
@@ -377,17 +426,25 @@ def git(base, *args):
     return r.stdout if r.returncode == 0 else None
 
 
-def snapshot(base, cutoff, commit=None):
-    """(directory, info): the consulted repository files as of the cutoff. In a git checkout: the last first-parent
-    commit of HEAD (or --commit) with committer time <= cutoff, extracted to a temporary directory. Otherwise the
-    working tree, with availability at the cutoff unestablished."""
+def snapshot(base, cutoff, commit=None, pushes=None):
+    """(directory, info): the consulted repository files as of the cutoff. 3.1.0: with push evidence, the `after`
+    commit of the last push to main at or before the cutoff (GitHub's own push time). Without it, the last
+    first-parent commit with committer time <= cutoff is read and labelled "availability unestablished" - committer
+    time is not push time. Outside a git checkout: the working tree, unestablished."""
     base = Path(base)
-    head = commit or "HEAD"
-    out = git(base, "rev-list", "-1", "--first-parent", f"--before={iso(cutoff)}", head) if (base / ".git").exists() else None
-    if not out:
-        return base, {"commit": None, "method": "working tree (not a git checkout): availability at the cutoff is "
-                                                "not established"}
-    sha = out.decode().strip()
+    if not (base / ".git").exists():
+        return base, {"commit": None, "availability": "unestablished",
+                      "method": "working tree (not a git checkout): availability at the cutoff is not established"}
+    hist = PushHistory(base, pushes)
+    if hist.known and hist.sha_at(cutoff):
+        sha, method, avail = hist.sha_at(cutoff), "after-commit of the last push to main at or before the cutoff " \
+                                                  "(GitHub activity API push time)", "push history"
+    else:
+        out = git(base, "rev-list", "-1", "--first-parent", f"--before={iso(cutoff)}", commit or "HEAD")
+        if not out:
+            return base, {"commit": None, "availability": "unestablished", "method": "no commit before the cutoff"}
+        sha = out.decode().strip()
+        method, avail = "last first-parent commit with committer time <= cutoff (committer time, not push time)", "unestablished"
     ctime = (git(base, "show", "-s", "--format=%cI", sha) or b"").decode().strip()
     listed = (git(base, "ls-tree", "-r", "--name-only", sha) or b"").decode().splitlines()
     want = [p for p in listed if p in CONSULTED or p.startswith(tuple(t + "/" for t in CONSULTED_TREES))]
@@ -397,8 +454,7 @@ def snapshot(base, cutoff, commit=None):
         if data is not None:
             (tmp / p).parent.mkdir(parents=True, exist_ok=True)
             (tmp / p).write_bytes(data)
-    return tmp, {"commit": sha, "commit_time": ctime,
-                 "method": "last first-parent commit with committer time <= cutoff (committer time, not push time)"}
+    return tmp, {"commit": sha, "commit_time": ctime, "method": method, "availability": avail}
 
 
 def consulted_files(snap):
@@ -415,26 +471,80 @@ def code_digest():
 
 
 # ------------------------------------------------------------------------------------------- decisions
-def range_decisions(base, start, end, runs_of=None):
-    """Expected 4H decisions whose 75-minute run window ends inside [start, end]: published eligibly or missed.
-    runs_of (optional dict) receives the publishing attempts' run ids, for lineage."""
+HORIZONS = ("4h", "24h", "72h")
+
+
+def range_decisions(base, start, end, runs_of=None, history=None):
+    """Expected 4H decisions whose 75-minute run window ends inside [start, end] (3.1.0: validated through the strict
+    RC1D contract, never through an `eligible: true` flag). A decision is published when one production attempt's
+    first confirmation row lists the decision's three forecasts and each of them (range_reader._verify: manifest
+    entry, frozen bytes and hash, schema, validate_rc1d with this publication) is eligible by
+    range_contract.eligibility - registered and confirmed strictly before its window start - AND its manifest entry
+    was first pushed to main before that start (push history). Without push history the state is
+    "published (availability unestablished)". runs_of (optional dict) receives the publishing attempts' run ids."""
+    import range_contract as C
+    import range_reader as RR
     runs_of = {} if runs_of is None else runs_of
-    attempts = [a for a in rows(Path(base) / "state/range_attempts.jsonl")
+    history = history or PushHistory()
+    base = Path(base)
+    if str(base) not in sys.path:
+        sys.path.append(str(base))
+    attempts = [a for a in rows(base / "state/range_attempts.jsonl")
                 if isinstance(a.get("run"), dict) and a["run"].get("production")]
-    eligible = {p.get("attempt") for p in rows(Path(base) / "state/range_publications.jsonl") if p.get("eligible") is True}
+    pubs, _ = RR._publications(base)
+    try:
+        manifest = json.loads((base / "state/forecast_manifest.json").read_text())
+    except (OSError, ValueError):
+        manifest = {}
+    first_key = history.first_seen_keys("state/forecast_manifest.json") if history.known else None
+    contract = C.contract_id("RC1D")
     out, d = {}, (start - dt.timedelta(minutes=RANGE_GRACE_MIN)).replace(minute=0, second=0, microsecond=0)
     while d.hour % 4 or d + dt.timedelta(minutes=RANGE_GRACE_MIN) < start:      # deadline inside the window
         d += dt.timedelta(hours=1)
     while d + dt.timedelta(minutes=RANGE_GRACE_MIN) <= end:
         mine = [a for a in attempts if a.get("decision_utc") == iso(d)]
-        pub = [a for a in mine if a.get("attempt") in eligible]
-        if pub:
-            out[iso(d)] = "published"
-            runs_of[iso(d)] = [str((a.get("run") or {}).get("run_id") or "") for a in pub]
-        elif mine:
-            out[iso(d)] = f"missed: {mine[-1].get('state')}"
+        want = {f"range-rc1d-{h}-{d:%Y%m%dT%H%MZ}" for h in HORIZONS}
+        best, why = None, "absent"
+        for a in mine:
+            pub = pubs.get(a.get("attempt"))
+            if not isinstance(pub, dict):
+                why = f"no confirmation row ({a.get('state')})"
+                continue
+            if set(pub.get("ids") or []) != want:
+                why = "confirmation does not list exactly the decision's three forecasts"
+                continue
+            problems, unest = [], False
+            for fid in sorted(want):
+                entry = manifest.get(fid) if isinstance(manifest, dict) else None
+                try:
+                    doc = RR._verify(base, fid, entry, contract, pub)
+                except (ValueError, OSError, KeyError, TypeError) as exc:
+                    problems.append(f"{fid}: {exc}")
+                    continue
+                if entry.get("attempt") != a.get("attempt"):
+                    problems.append(f"{fid}: manifest attempt differs from the publishing attempt")
+                    continue
+                start_ms = C.ms(C.parse_utc(doc["start_utc"]))
+                state, reason = C.eligibility(start_ms, entry, pub)
+                if state != "eligible":
+                    problems.append(f"{fid}: {state} ({reason})")
+                    continue
+                if first_key is None:
+                    unest = True
+                elif not (first_key.get(fid) and C.ms(first_key[fid]) < start_ms):
+                    problems.append(f"{fid}: registration first pushed to main "
+                                    f"{iso(first_key[fid]) if first_key.get(fid) else 'never'}, not before its window start")
+            if problems:
+                why = "invalid: " + "; ".join(problems)[:300]
+                continue
+            best = (a, unest)
+            break
+        if best:
+            a, unest = best
+            out[iso(d)] = "published (availability unestablished)" if unest else "published"
+            runs_of[iso(d)] = [str((a.get("run") or {}).get("run_id") or "")]
         else:
-            out[iso(d)] = "missed: absent"
+            out[iso(d)] = f"missed: {why}" if not why.startswith("invalid") else why
         d += dt.timedelta(hours=4)
     return out
 
@@ -445,6 +555,12 @@ PS1_VALID = ("executed", "no-rebalance (recorded)")
 def ps1_ok(state):
     """Explicit valid outcomes only (2.27; 2.26 accepted anything not on a rejection list)."""
     return state in PS1_VALID or state.startswith("not expected (lifecycle ")
+
+
+def unestablished(state):
+    """A decision whose outcome may be valid but whose timely availability cannot be shown (3.1.0): never a pass,
+    and not a recorded failure either - the verdict is insufficient evidence."""
+    return "availability unestablished" in state
 
 
 def _lifecycle_at(life, t_ms):
@@ -475,21 +591,112 @@ def lifecycle_chain(rows_):
     return good, problems
 
 
-class History:
-    """Repository file contents as of a time (last first-parent commit at or before it), when the evaluated base is
-    a git checkout; .known is False otherwise (then availability before a deadline cannot be established)."""
-    def __init__(self, base=None, head=None):
-        self.base, self.head = (Path(base) if base else None), head
-        self.known = bool(self.base and head and (self.base / ".git").exists())
+class PushHistory:
+    """First durable availability from GitHub's ref-update activity for main (acceptance 3.1.0). A file's content at
+    time T is its content at the `after` commit of the last push at or before T; a row's first availability is the
+    first push whose diff added it. Committer time is never used. .known is False without push evidence or without the
+    pushed commits in the local repository - availability is then unestablished, never assumed."""
+    def __init__(self, base=None, pushes=None):
+        self.base = Path(base) if base else None
+        ok = [(parse(p.get("timestamp")), p.get("after"), p.get("before")) for p in pushes or []
+              if p.get("ref") in (None, "refs/heads/main") and p.get("after")]
+        self.pushes = sorted((t, a, b) for t, a, b in ok if t)
+        self.known = bool(self.base and (self.base / ".git").exists() and self.pushes
+                          and all(git(self.base, "cat-file", "-e", a + "^{commit}") is not None for _, a, _ in self.pushes[-3:]))
+        self._seen = {}
+
+    def sha_at(self, when):
+        prior = [a for t, a, _ in self.pushes if t <= when]
+        return prior[-1] if prior else None
 
     def text(self, path, when):
         if not self.known:
             return None
-        c = git(self.base, "rev-list", "-1", "--first-parent", f"--before={iso(when)}", self.head)
-        if not c:
+        sha = self.sha_at(when)
+        if sha is None:
             return ""
-        out = git(self.base, "show", f"{c.decode().strip()}:{path}")
+        out = git(self.base, "show", f"{sha}:{path}")
         return out.decode() if out is not None else ""
+
+    def first_seen(self, path, key):
+        """{key(row): first push time} for the JSON-lines file `path` (rows added by each push's diff)."""
+        if (path, key) in self._seen:
+            return self._seen[(path, key)]
+        first = {}
+        for t, after, before in self.pushes:
+            if before and git(self.base, "cat-file", "-e", before + "^{commit}") is not None:
+                d = git(self.base, "diff", "--unified=0", "--no-color", before, after, "--", path)
+                lines = [l[1:] for l in (d or b"").decode().splitlines() if l.startswith("+") and not l.startswith("+++")]
+            else:
+                lines = (git(self.base, "show", f"{after}:{path}") or b"").decode().splitlines()
+            for l in lines:
+                try:
+                    k = key(json.loads(l))
+                except (ValueError, TypeError, AttributeError, KeyError):
+                    continue
+                first.setdefault(k, t)
+        self._seen[(path, key)] = first
+        return first
+
+    def first_seen_keys(self, path):
+        """{top-level key: first push time} for a JSON-object file (the forecast manifest)."""
+        if (path, None) in self._seen:
+            return self._seen[(path, None)]
+        first, prev = {}, None
+        for t, after, before in self.pushes:
+            if prev is not None and before and git(self.base, "diff", "--quiet", before, after, "--", path) is not None:
+                continue                                          # unchanged by this push
+            try:
+                doc = json.loads((git(self.base, "show", f"{after}:{path}") or b"{}").decode() or "{}")
+            except ValueError:
+                doc = {}
+            for k in doc if isinstance(doc, dict) else []:
+                first.setdefault(k, t)
+            prev = after
+        self._seen[(path, None)] = first
+        return first
+
+
+def validate_receipts(doc, repo, declared=None):
+    """(executions, problems) for a timer-provider receipt export (3.1.0). Required: schema timer-receipts/1; a
+    provider and job id equal to the declared ones in docs/acceptance/timer.json (an unpinned declaration accepts
+    nothing - the operator pins the job id from the provider's console); a target that is this
+    repository's recovery.yml dispatch URL, method POST, ref main and input trigger=external; export provenance
+    (exported_utc, method); per execution a unique id, executed_utc and an HTTP 2xx result. Any failure rejects the
+    whole export: a timestamp and an HTTP success for some other target never establish unattended initiation."""
+    if not isinstance(doc, dict):
+        return [], ["receipts are not an object"]
+    probs = []
+    declared = declared or {}
+    if doc.get("schema") != RECEIPT_SCHEMA:
+        probs.append(f"schema {doc.get('schema')!r} is not {RECEIPT_SCHEMA}")
+    if not doc.get("provider") or not doc.get("job_id"):
+        probs.append("provider or job id missing")
+    for k in ("provider", "job_id"):
+        if declared.get(k) in (None, ""):
+            probs.append(f"declared timer {k} not pinned (docs/acceptance/timer.json): no export can be bound to it")
+        elif str(doc.get(k)) != str(declared[k]):
+            probs.append(f"{k} {doc.get(k)!r} is not the declared {declared[k]!r}")
+    tgt = doc.get("target") or {}
+    if tgt.get("url") != DISPATCH_URL.format(repo=repo) or str(tgt.get("method", "")).upper() != "POST":
+        probs.append("target is not this repository's recovery.yml dispatch endpoint (POST)")
+    if tgt.get("ref") != "main" or (tgt.get("inputs") or {}).get("trigger") != "external":
+        probs.append("target ref/inputs are not main / trigger=external")
+    exp = doc.get("export") or {}
+    if not exp.get("exported_utc") or not exp.get("method"):
+        probs.append("export provenance (exported_utc, method) missing")
+    exe, ids = [], set()
+    for e in doc.get("executions") or []:
+        if not isinstance(e, dict) or not e.get("id") or parse(e.get("executed_utc")) is None:
+            probs.append("an execution lacks an id or executed_utc")
+            continue
+        if str(e["id"]) in ids:
+            probs.append(f"execution id {e['id']} repeated")
+            continue
+        ids.add(str(e["id"]))
+        if isinstance(e.get("status"), int) and 200 <= e["status"] < 300:
+            exe.append(e)
+    return ([] if probs else exe), probs
 
 
 def ps1_evaluate(base, start, end, cutoff, history=None):
@@ -500,7 +707,7 @@ def ps1_evaluate(base, start, end, cutoff, history=None):
     when its row is valid AND was in the repository before the decision's deadline (git history); without history
     that availability is unestablished and the decision is not resolved."""
     import paper_ps1 as P
-    history = history or History()
+    history = history or PushHistory()
     base = Path(base)
     root = base / P.ROOT
     problems = []
@@ -560,8 +767,10 @@ def ps1_evaluate(base, start, end, cutoff, history=None):
         by_dec.setdefault(r.get("decision_id"), {}).setdefault(r.get("execution_id"), []).append(r)
     final_t = {eid: st[-1].get("t_ms") for eid, st in P.exec_states(base).items() if st}
 
+    exec_avail = history.first_seen(f"{P.ROOT}/executions.jsonl", lambda r: r.get("execution_id")) if history.known else None
+
     def available_by(line_match, deadline_dt, path):
-        """True / False when git history is available; None (unestablished) otherwise."""
+        """True / False when push history is available; None (unestablished) otherwise."""
         if not history.known:
             return None
         text = history.text(f"{P.ROOT}/{path}", deadline_dt)
@@ -580,6 +789,11 @@ def ps1_evaluate(base, start, end, cutoff, history=None):
                          if all(isinstance(r.get("fill_time_ms"), int) and r["fill_time_ms"] <= deadline for r in rs)
                          and isinstance(final_t.get(eid), int) and final_t[eid] <= cut}
                 late = set(by_dec.get(did, {})) - set(execs)
+                if exec_avail is not None:                        # first pushed within the delivery allowance
+                    pushed_late = {e for e in execs if not (exec_avail.get(e) and
+                                   exec_avail[e] <= dl_dt + dt.timedelta(minutes=DELIVERY_MIN))}
+                    execs = {e: v for e, v in execs.items() if e not in pushed_late}
+                    late |= pushed_late
                 d = decs.get(did)
                 if len(by_dec.get(did, {})) > 1:
                     dup[k] = len(by_dec[did])
@@ -592,7 +806,8 @@ def ps1_evaluate(base, start, end, cutoff, history=None):
                 elif d is None:
                     s_ = "missed: no decision record"
                 elif d.get("action") == "rebalance":
-                    s_ = ("executed" if len(execs) == 1 else
+                    s_ = ("executed (availability unestablished)" if len(execs) == 1 and exec_avail is None else
+                          "executed" if len(execs) == 1 else
                           "invalid: duplicate execution" if len(execs) > 1 else
                           "missed: filled after the deadline or the cutoff" if late else
                           "missed: not executed by the deadline")
@@ -694,8 +909,11 @@ def measure(base, start, end, now, evidence=None, receipts=None, cutoff=None, co
         doc.update(verdict="invalid", reason=f"evidence cutoff must lie in [window end, window end + {CUTOFF_GRACE_MIN} min]: "
                                              "a later cutoff would admit late evidence")
         return doc
-    snap, sinfo = snapshot(base, cutoff, commit)
-    hist = History(base, sinfo.get("commit")) if sinfo.get("commit") else History()
+    pushes = (evidence or {}).get("pushes")
+    snap, sinfo = snapshot(base, cutoff, commit, pushes)
+    hist = PushHistory(base, [p for p in pushes or [] if (parse(p.get("timestamp")) or cutoff) <= cutoff])
+    if sinfo.get("availability") != "push history" or not (evidence or {}).get("pushes_complete"):
+        hist = PushHistory()                                      # unestablished: never assumed
     try:
         return _measure(doc, snap, sinfo, start, end, now, evidence, receipts, cutoff, hist)
     except (ValueError, KeyError, TypeError, AttributeError, IndexError) as exc:
@@ -721,24 +939,44 @@ def bound_record(rec, run, seen):
     return None
 
 
+def declared_timer():
+    try:
+        return json.loads((ROOT / "docs/acceptance/timer.json").read_text())
+    except (OSError, ValueError):
+        return {}
+
+
 def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None):
+    hist = hist or PushHistory()
+    repo = (ev or {}).get("repo") or "mannoj93-spec/jbm-desk-data"
+    rexe, rprob = validate_receipts(receipts, repo, declared_timer()) if receipts is not None else ([], [])
     doc["inputs"] = {"repository": sinfo, "files_sha256": consulted_files(base),
                      "actions": None if ev is None else {
                          "sha256": canonical_sha(ev), "retrieved_utc": ev.get("retrieved_utc"), "query": ev.get("query"),
                          "runs": len(ev.get("runs") or []), "extra_runs": len(ev.get("extra_runs") or []),
                          "complete": bool(ev.get("complete")), "jobs_complete": bool(ev.get("jobs_complete")),
                          "missing_runs": ev.get("missing_runs") or []},
-                     "timer_receipts": None if receipts is None else {"sha256": canonical_sha(receipts),
-                                                                      "provider": receipts.get("provider"),
-                                                                      "executions": len(receipts.get("executions") or [])}}
+                     "timer_receipts": None if receipts is None else {
+                         "sha256": canonical_sha(receipts), "provider": receipts.get("provider") if isinstance(receipts, dict) else None,
+                         "job_id": receipts.get("job_id") if isinstance(receipts, dict) else None,
+                         "accepted_executions": len(rexe), "rejected": rprob},
+                     "timer_declaration": {"declared": declared_timer(), "sha256": canonical_sha(declared_timer())},
+                     "availability": {"method": "GitHub activity API pushes to main" if hist.known else "unestablished",
+                                      "pushes_used": len(hist.pushes), "delivery_allowance_min": DELIVERY_MIN}}
+    if ev is not None:
+        doc["inputs"]["actions"].update(pushes=len(ev.get("pushes") or []), pushes_complete=bool(ev.get("pushes_complete")))
     runs = (ev["runs"] + ev["extra_runs"]) if ev else []
-    L = Lineage(runs, receipts)
+    L = Lineage(runs, rexe)
     by_id = L.by_id
     a, b = ms(start), ms(end)
     all_recs = load_runs(base)
     recs = [r for r in all_recs if a <= r["t"] < b and cadence.is_routine(r)]
     buckets = cadence.slot_buckets(cadence.load(base), a, b)
-    cont, strict, inits, crit_fail, degraded, unbound = [], [], {}, [], 0, []
+    cont, strict, inits, crit_fail, degraded, unbound, late = [], [], {}, [], 0, [], []
+    first = {}
+    if hist.known:
+        for f in sorted((base / "data/runs").glob("*.jsonl")) if (base / "data/runs").exists() else []:
+            first.update(hist.first_seen(f"data/runs/{f.name}", lambda r: (str(r.get("run_id")), r.get("t"))))
     seen = {}
     for r in recs:
         seen[str(r.get("run_id"))] = seen.get(str(r.get("run_id")), 0) + 1
@@ -755,6 +993,11 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None)
             crit_fail.append(r.get("run_id"))
             continue
         degraded += bool(cadence.failure_summary(r)[1])
+        if hist.known:                                            # first durable availability (push time)
+            fa = first.get((str(r.get("run_id")), r["t"]))
+            if fa is None or ms(fa) > r["t"] + DELIVERY_MIN * 60_000 or fa > cutoff:
+                late.append({"run_id": r.get("run_id"), "t": r["t"], "first_pushed": iso(fa) if fa else None})
+                continue
         if label in CONTINUITY:
             cont.append(r["t"])
         if label in STRICT:
@@ -771,6 +1014,9 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None)
                          "longest_gap_min": gap, "records": len(recs), "by_initiation": inits,
                          "critical_failures": crit_fail, "degraded_optional_records": degraded,
                          "records_not_bound_to_their_run": unbound,
+                         "records_not_delivered_in_time": late,
+                         "availability": ("first pushed within " + str(DELIVERY_MIN) + " min of the record time (push history)")
+                         if hist.known else "unestablished: stored timestamps only (diagnostic, never a certification)",
                          "strict": {"intervals_with_critical_success": s_held, "share": round(s_share, 4),
                                     "longest_gap_min": s_gap},
                          "rule": "continuity counts verified, timer-receipt and timer-corroborated starts; strict "
@@ -810,7 +1056,7 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None)
                         "rule": "never-started / failed-before-execution = missed execution (no observation existed); "
                                 "executed-no-output = output or persistence failure; a yield needs a valid receipt"}
     pub_runs = {}
-    rd = range_decisions(base, start, end, pub_runs)
+    rd = range_decisions(base, start, end, pub_runs, hist)
     range_lineage = {}
     for k, ids in pub_runs.items():
         labs = [L.classify(by_id.get(i))[0] if ev else "unknown" for i in ids]
@@ -844,17 +1090,22 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None)
     checks = {
         "collection_intervals": share >= TARGETS["interval_share"],
         "longest_gap": gap <= TARGETS["longest_gap_min"],
-        "range_decisions_published": bool(rd) and all(v == "published" for v in rd.values()),
+        "range_decisions_published": bool(rd) and all(v.startswith("published") and "published by" not in v
+                                                      for v in rd.values()),
         "ps1_evidence_valid": p1["evidence_ok"] and not p1["status"].startswith("invalid"),
-        "ps1_decisions_resolved": all(ps1_ok(v) for v in p1["decisions"].values()) and not p1["duplicates"],
+        "ps1_decisions_resolved": all(ps1_ok(v) or unestablished(v) for v in p1["decisions"].values())
+                                  and not p1["duplicates"],
         "no_lost_output": not lost,
         "scoring_backlog_empty": not doc["scoring_backlog"],
         "no_person_in_chain": not people,
         "chain_lineage_known": not unknown,
     }
     doc["checks"] = checks
+    unest = (not hist.known or any(unestablished(v) for v in p1["decisions"].values())
+             or any("availability unestablished" in v for v in rd.values()))
     service = "pass" if all(checks.values()) else "fail"
-    strict_ok = s_share >= TARGETS["interval_share"] and s_gap <= TARGETS["longest_gap_min"] and tc == 0
+    strict_ok = (s_share >= TARGETS["interval_share"] and s_gap <= TARGETS["longest_gap_min"] and tc == 0
+                 and not unest)
     doc["service_verdict"] = service
     doc["unattended_certification"] = ("established" if strict_ok and service == "pass" else
                                        "not applicable (service failed)" if service == "fail" else
@@ -867,15 +1118,23 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None)
         doc.update(verdict="insufficient", reason="job/step evidence missing for collector runs without a stored record")
     elif service == "fail":
         doc.update(verdict="fail")
+    elif unest:
+        doc.update(verdict="insufficient",
+                   reason="service targets met on stored timestamps, but first durable availability is unestablished "
+                          "(no complete push history from GitHub's activity API): timely delivery is not shown, so "
+                          "neither continuity nor unattended operation is certified")
+        doc["service_verdict"] = "unestablished (availability)"
     elif not strict_ok:
         doc.update(verdict="insufficient",
                    reason=f"service targets met, but strict unattended certification is not established: {tc} critical-"
                           "chain run(s) are only timer-corroborated (owner credential; no independent provider "
-                          "receipt) - supply --timer-receipts from the timer provider to bind them")
+                          "receipt) - supply --timer-receipts from the timer provider to bind them"
+                          + (f"; receipts rejected: {'; '.join(rprob)[:300]}" if rprob else ""))
     else:
         doc.update(verdict="pass")
     doc["note"] = ("restored data never counts; a pass says nothing about the original native-schedule root cause; "
-                   "repository availability is committer time at the cutoff, not push time")
+                   "availability is GitHub's recorded push time to main (activity API), not committer time; a push "
+                   "record shows when the commit reached main, not when any observation was made")
     return doc
 
 
@@ -899,7 +1158,7 @@ def main(argv):
     elif (os.environ.get("GITHUB_TOKEN") or os.environ.get("GH_TOKEN")) and os.environ.get("GITHUB_REPOSITORY"):
         token = os.environ.get("GITHUB_TOKEN") or os.environ["GH_TOKEN"]
         ev = fetch_evidence(os.environ["GITHUB_REPOSITORY"], token, start, end)
-        snap, _ = snapshot(ROOT, min(cutoff, now), arg("--commit"))
+        snap, _ = snapshot(ROOT, min(cutoff, now), arg("--commit"), ev.get("pushes"))
         try:
             for _ in range(3):                                    # roots of roots: bounded
                 need_runs, need_jobs = needs(snap, start, end, ev)
@@ -909,7 +1168,8 @@ def main(argv):
                 shutil.rmtree(snap, ignore_errors=True)
         if arg("--save-evidence"):
             Path(arg("--save-evidence")).write_text(json.dumps(ev, indent=1, sort_keys=True) + "\n")
-    doc = measure(ROOT, start, end, now, ev, receipts, cutoff, arg("--commit"))
+    base = Path(arg("--repo")) if arg("--repo") else ROOT
+    doc = measure(base, start, end, now, ev, receipts, cutoff, arg("--commit"))
     print(json.dumps(doc, indent=1, sort_keys=True))
     return {"pass": 0, "fail": 1, "invalid": 2, "pending": 3, "insufficient": 4}[doc["verdict"]]
 

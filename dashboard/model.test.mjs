@@ -170,17 +170,36 @@ test('service continuity is judged apart from the native schedule (repo 2.25)', 
  assert.equal(by['Collection, 24 h to report'].state, '40 of 95 intervals (activity; before 2.27)');
 });
 
-test('a failed monitor detected a problem only when its check executed (repo 2.26, 2.27)', () => {
+test('a failed monitor detected a problem only when its check step ran and reported one (repo 2.26-2.28)', () => {
  const mon = extra => ({generated_utc: '2026-10-05T07:00:00Z', clock: 'runner', decisions: {}, scoring_backlog: {}, source: {},
    monitors: {workflows: {'range-monitor.yml': {last_completed_utc: '2026-10-05T06:01:40Z', last_result: 'failure',
      last_success_utc: '2026-10-04T18:00:00Z', stale_after_min: 510, ...extra}}}});
  const row = extra => Object.fromEntries(opsRows(mon(extra), Date.parse('2026-10-05T07:05:00Z')).map(r => [r.area, r]))['Monitor range-monitor.yml'];
- assert.equal(row({last_executed: true, last_execution: 'check executed'}).state, 'ran; detected a problem');
+ assert.equal(row({last_executed: true, last_check: 'found a problem', last_execution: 'found a problem: decision missed'}).state,
+              'ran its check; found a problem');
+ assert.equal(row({last_executed: true, last_check: 'check failed'}).state, 'ran its check; failed without a finding');
+ // 2.28 review: setup ran, checkout failed, the check was skipped - 2.27 called this "check executed"
+ assert.equal(row({last_executed: false, last_check: 'failed before checking'}).state, 'failed before checking');
+ assert.equal(row({last_executed: false, last_check: 'check skipped'}).state, 'check skipped');
  assert.match(row({}).detail, /last success 2026-10-04T18:00:00Z/);
  // the Oct 5 runner outage: the job never received a runner - nothing was checked
- assert.equal(row({last_executed: false, last_execution: 'no runner assigned'}).state, 'could not execute (no runner/steps)');
+ assert.equal(row({last_executed: false, last_check: 'no runner', last_execution: 'no runner'}).state, 'could not execute (no runner)');
+ assert.equal(row({last_executed: false, last_execution: 'no runner assigned'}).state, 'could not execute (no runner/steps)');  // 2.27 report
  assert.match(row({last_executed: false, last_execution: 'no runner assigned'}).detail, /no runner assigned/);
- assert.equal(row({}).state, 'failed; execution unknown');                       // a 2.26 report cannot tell
+ // a 2.27 report's "check executed" counted setup steps: it cannot show the check ran
+ assert.equal(row({last_executed: true, last_execution: 'check executed'}).state, 'failed; check evidence unknown (report before 2.28)');
+ assert.equal(row({}).state, 'failed; check evidence unknown (report before 2.28)');
+});
+
+test('external timer arrivals are shown apart from the native dispatcher and service health (repo 2.28)', () => {
+ const ops = {generated_utc: '2026-10-07T18:00:00Z', clock: 'runner', decisions: {}, scoring_backlog: {}, source: {},
+   monitors: {workflows: {}, dispatcher_state: 'fresh', external_timer: {window_h: 24, opportunities: 95, on_time: 93,
+     delayed: [], absent: ['2026-10-07T15:12:00Z', '2026-10-07T16:57:00Z'], last_arrival_utc: '2026-10-07T17:42:58Z', state: 'gaps'}}};
+ const by = Object.fromEntries(opsRows(ops, Date.parse('2026-10-07T18:05:00Z')).map(r => [r.area, r]));
+ assert.equal(by['External timer (primary trigger)'].state, '2 absent, 0 delayed in 24 h');
+ assert.match(by['External timer (primary trigger)'].detail, /93 of 95 on time.*absent 10-07T15:12, 10-07T16:57 \(arrivals only\)/);
+ const none = Object.fromEntries(opsRows({...ops, monitors: {workflows: {}}}, Date.parse('2026-10-07T18:05:00Z')).map(r => [r.area, r]));
+ assert.equal(none['External timer (primary trigger)'], undefined);              // pre-2.28 report: no row invented
 });
 
 test('data outcome and activity are shown apart; a fresh failure stays visible; stale data stays stale (repo 2.27)', () => {

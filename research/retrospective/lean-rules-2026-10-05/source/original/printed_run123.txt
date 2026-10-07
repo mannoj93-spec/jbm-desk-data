@@ -1,0 +1,95 @@
+bars 14814: 2020-01-01T00:00:00Z -> 2026-10-05T00:00:00Z; OI rows 209376 (ok days 727); funding 7411
+
+=== PRIMARY: N=24, T=0.353% price, 24h horizon, 10bp cost ===
+FULL 2020-03..2026-10 V0                       n=1089 (3.17/wk, 633 non-ovl) hit 48.6%  net   +7.4bp  drift-adj   +5.6bp 95%CI [-23,+32] 
+FULL 2020-03..2026-10 V1                       n= 514 (1.49/wk, 431 non-ovl) hit 44.0%  net  -21.5bp  drift-adj  -23.1bp 95%CI [-50,+4] 
+LAST 24M V0                                    n= 363 (3.47/wk, 210 non-ovl) hit 49.6%  net  -18.6bp  drift-adj  -19.3bp 95%CI [-52,+14] 
+LAST 24M V1                                    n= 170 (1.63/wk, 142 non-ovl) hit 45.9%  net  -25.8bp  drift-adj  -26.1bp 95%CI [-65,+13] 
+LAST 24M V2                                    n=  84 (0.80/wk, 74 non-ovl) hit 41.7%  net  -23.4bp  drift-adj  -23.3bp 95%CI [-71,+28] (OI-missing bars 2)
+LAST 24M V3                                    n=  84 (0.80/wk, 74 non-ovl) hit 41.7%  net  -23.4bp  drift-adj  -23.3bp 95%CI [-71,+28] (OI-missing bars 2)
+=== Q1: S-04 directly. After a bar moving > T, return in the move's direction (no cost) ===
+FULL     T=pct h= 4h  big moves: n= 8588 cont 44.7% mean   -1.7bp CI[-5,+1] | all bars: n=14447 cont 45.6% mean   -2.0bp CI[-4,-0]
+FULL     T=pct h=24h  big moves: n= 8588 cont 47.8% mean   -2.3bp CI[-9,+4] | all bars: n=14447 cont 48.4% mean   -1.8bp CI[-6,+3]
+FULL     T=sig h= 4h  big moves: n= 6965 cont 44.7% mean   -0.8bp CI[-4,+2] | all bars: n=14447 cont 45.6% mean   -2.0bp CI[-4,-0]
+FULL     T=sig h=24h  big moves: n= 6965 cont 48.0% mean   +1.1bp CI[-6,+8] | all bars: n=14447 cont 48.4% mean   -1.8bp CI[-6,+3]
+LAST 24M T=pct h= 4h  big moves: n= 2425 cont 46.4% mean   -0.0bp CI[-5,+5] | all bars: n= 4392 cont 46.6% mean   -0.6bp CI[-3,+2]
+LAST 24M T=pct h=24h  big moves: n= 2425 cont 49.1% mean   -2.2bp CI[-11,+8] | all bars: n= 4392 cont 49.4% mean   +1.3bp CI[-5,+8]
+LAST 24M T=sig h= 4h  big moves: n= 2184 cont 46.6% mean   +0.8bp CI[-3,+5] | all bars: n= 4392 cont 46.6% mean   -0.6bp CI[-3,+2]
+LAST 24M T=sig h=24h  big moves: n= 2184 cont 49.4% mean   -1.5bp CI[-11,+8] | all bars: n= 4392 cont 49.4% mean   +1.3bp CI[-5,+8]
+LAST 6M  T=pct h= 4h  big moves: n=  551 cont 45.4% mean   -3.3bp CI[-10,+3] | all bars: n= 1098 cont 45.1% mean   -3.2bp CI[-8,+1]
+LAST 6M  T=pct h=24h  big moves: n=  551 cont 50.3% mean   +3.7bp CI[-18,+30] | all bars: n= 1098 cont 49.4% mean   +2.2bp CI[-9,+16]
+LAST 6M  T=sig h= 4h  big moves: n=  530 cont 45.8% mean   -0.0bp CI[-8,+8] | all bars: n= 1098 cont 45.1% mean   -3.2bp CI[-8,+1]
+LAST 6M  T=sig h=24h  big moves: n=  530 cont 50.6% mean   +5.6bp CI[-16,+30] | all bars: n= 1098 cont 49.4% mean   +2.2bp CI[-9,+16]
+
+=== What S-04 removed: breakouts on a >T bar, entered immediately vs deferred outcome (N=24, pct, 24h, 10bp) ===
+FULL breakouts on big bars (immediate)         n=1052 (3.06/wk, 623 non-ovl) hit 48.2%  net   +6.5bp  drift-adj   +4.8bp 95%CI [-24,+32] 
+FULL breakouts on normal bars                  n=  37 (0.11/wk, 36 non-ovl) hit 59.5%  net  +32.6bp  drift-adj  +28.7bp 95%CI [-55,+112] 
+FULL deferred-then-converted                   n= 477 (1.39/wk, 412 non-ovl) hit 42.8%  net  -25.7bp  drift-adj  -27.1bp 95%CI [-56,+2] 
+LAST 24M breakouts on big bars (immediate)     n= 342 (3.27/wk, 204 non-ovl) hit 48.8%  net  -21.6bp  drift-adj  -22.2bp 95%CI [-56,+11] 
+LAST 24M breakouts on normal bars              n=  21 (0.20/wk, 20 non-ovl) hit 61.9%  net  +29.5bp  drift-adj  +28.4bp 95%CI [-60,+100] 
+LAST 24M deferred-then-converted               n= 149 (1.42/wk, 131 non-ovl) hit 43.6%  net  -33.6bp  drift-adj  -33.8bp 95%CI [-74,+10] 
+
+=== Sensitivity grid (secondary; 4 x 2 x 2 cells per sample, multiplicity applies) ===
+FULL N=24 T=pct h=4h V0                        n=1089 (3.17/wk, 1089 non-ovl) hit 45.5%  net   -5.0bp  drift-adj   -5.3bp 95%CI [-14,+4] 
+FULL N=24 T=pct h=4h V1                        n= 514 (1.49/wk, 514 non-ovl) hit 48.6%  net  -12.3bp  drift-adj  -12.5bp 95%CI [-23,-1] 
+FULL N=24 T=pct h=24h V0                       n=1089 (3.17/wk, 633 non-ovl) hit 48.6%  net   +7.4bp  drift-adj   +5.6bp 95%CI [-23,+32] 
+FULL N=24 T=pct h=24h V1                       n= 514 (1.49/wk, 431 non-ovl) hit 44.0%  net  -21.5bp  drift-adj  -23.1bp 95%CI [-50,+4] 
+FULL N=24 T=sig h=4h V0                        n=1089 (3.17/wk, 1089 non-ovl) hit 45.5%  net   -5.0bp  drift-adj   -5.3bp 95%CI [-14,+4] 
+FULL N=24 T=sig h=4h V1                        n= 539 (1.57/wk, 539 non-ovl) hit 48.6%  net  -11.8bp  drift-adj  -12.1bp 95%CI [-23,-2] 
+FULL N=24 T=sig h=24h V0                       n=1089 (3.17/wk, 633 non-ovl) hit 48.6%  net   +7.4bp  drift-adj   +5.6bp 95%CI [-23,+32] 
+FULL N=24 T=sig h=24h V1                       n= 539 (1.57/wk, 447 non-ovl) hit 43.4%  net  -22.4bp  drift-adj  -24.0bp 95%CI [-52,+3] 
+FULL N=42 T=pct h=4h V0                        n= 786 (2.28/wk, 786 non-ovl) hit 46.8%  net   -3.3bp  drift-adj   -3.6bp 95%CI [-14,+7] 
+FULL N=42 T=pct h=4h V1                        n= 362 (1.05/wk, 362 non-ovl) hit 48.6%  net   -7.7bp  drift-adj   -8.0bp 95%CI [-22,+6] 
+FULL N=42 T=pct h=24h V0                       n= 786 (2.28/wk, 458 non-ovl) hit 49.5%  net  +19.4bp  drift-adj  +17.3bp 95%CI [-17,+50] 
+FULL N=42 T=pct h=24h V1                       n= 362 (1.05/wk, 308 non-ovl) hit 43.4%  net  -10.9bp  drift-adj  -12.8bp 95%CI [-49,+23] 
+FULL N=42 T=sig h=4h V0                        n= 786 (2.28/wk, 786 non-ovl) hit 46.8%  net   -3.3bp  drift-adj   -3.6bp 95%CI [-14,+7] 
+FULL N=42 T=sig h=4h V1                        n= 378 (1.10/wk, 378 non-ovl) hit 49.7%  net   -7.3bp  drift-adj   -7.6bp 95%CI [-21,+6] 
+FULL N=42 T=sig h=24h V0                       n= 786 (2.28/wk, 458 non-ovl) hit 49.5%  net  +19.4bp  drift-adj  +17.3bp 95%CI [-17,+50] 
+FULL N=42 T=sig h=24h V1                       n= 378 (1.10/wk, 319 non-ovl) hit 42.9%  net  -11.6bp  drift-adj  -13.5bp 95%CI [-49,+22] 
+LAST 24M N=24 T=pct h=4h V0                    n= 363 (3.47/wk, 363 non-ovl) hit 45.2%  net  -15.0bp  drift-adj  -15.1bp 95%CI [-26,-4] 
+LAST 24M N=24 T=pct h=4h V1                    n= 170 (1.63/wk, 170 non-ovl) hit 44.7%  net  -24.5bp  drift-adj  -24.6bp 95%CI [-38,-13] 
+LAST 24M N=24 T=pct h=24h V0                   n= 363 (3.47/wk, 210 non-ovl) hit 49.6%  net  -18.6bp  drift-adj  -19.3bp 95%CI [-52,+14] 
+LAST 24M N=24 T=pct h=24h V1                   n= 170 (1.63/wk, 142 non-ovl) hit 45.9%  net  -25.8bp  drift-adj  -26.1bp 95%CI [-65,+13] 
+LAST 24M N=24 T=sig h=4h V0                    n= 363 (3.47/wk, 363 non-ovl) hit 45.2%  net  -15.0bp  drift-adj  -15.1bp 95%CI [-26,-4] 
+LAST 24M N=24 T=sig h=4h V1                    n= 181 (1.73/wk, 181 non-ovl) hit 45.3%  net  -21.3bp  drift-adj  -21.3bp 95%CI [-35,-9] 
+LAST 24M N=24 T=sig h=24h V0                   n= 363 (3.47/wk, 210 non-ovl) hit 49.6%  net  -18.6bp  drift-adj  -19.3bp 95%CI [-52,+14] 
+LAST 24M N=24 T=sig h=24h V1                   n= 181 (1.73/wk, 148 non-ovl) hit 47.0%  net  -16.0bp  drift-adj  -16.3bp 95%CI [-57,+26] 
+LAST 24M N=42 T=pct h=4h V0                    n= 254 (2.43/wk, 254 non-ovl) hit 46.5%  net  -12.3bp  drift-adj  -12.5bp 95%CI [-25,+0] 
+LAST 24M N=42 T=pct h=4h V1                    n= 112 (1.07/wk, 112 non-ovl) hit 44.6%  net  -18.5bp  drift-adj  -18.6bp 95%CI [-33,-4] 
+LAST 24M N=42 T=pct h=24h V0                   n= 254 (2.43/wk, 145 non-ovl) hit 49.2%  net  -18.6bp  drift-adj  -19.4bp 95%CI [-63,+23] 
+LAST 24M N=42 T=pct h=24h V1                   n= 112 (1.07/wk, 96 non-ovl) hit 46.4%  net  -18.1bp  drift-adj  -18.5bp 95%CI [-71,+34] 
+LAST 24M N=42 T=sig h=4h V0                    n= 254 (2.43/wk, 254 non-ovl) hit 46.5%  net  -12.3bp  drift-adj  -12.5bp 95%CI [-25,+0] 
+LAST 24M N=42 T=sig h=4h V1                    n= 117 (1.12/wk, 117 non-ovl) hit 47.0%  net  -16.4bp  drift-adj  -16.4bp 95%CI [-32,-2] 
+LAST 24M N=42 T=sig h=24h V0                   n= 254 (2.43/wk, 145 non-ovl) hit 49.2%  net  -18.6bp  drift-adj  -19.4bp 95%CI [-63,+23] 
+LAST 24M N=42 T=sig h=24h V1                   n= 117 (1.12/wk, 100 non-ovl) hit 46.2%  net  -10.5bp  drift-adj  -10.8bp 95%CI [-70,+52] 
+LAST 6M N=24 T=pct h=4h V0                     n=  84 (3.21/wk, 84 non-ovl) hit 44.0%  net  -19.3bp  drift-adj  -19.9bp 95%CI [-39,-0] 
+LAST 6M N=24 T=pct h=4h V1                     n=  45 (1.72/wk, 45 non-ovl) hit 48.9%  net  -14.5bp  drift-adj  -14.9bp 95%CI [-32,+2] 
+LAST 6M N=24 T=pct h=24h V0                    n=  84 (3.21/wk, 52 non-ovl) hit 50.0%  net   +0.7bp  drift-adj   -3.0bp 95%CI [-77,+79] 
+LAST 6M N=24 T=pct h=24h V1                    n=  45 (1.72/wk, 37 non-ovl) hit 51.1%  net  +29.1bp  drift-adj  +27.1bp 95%CI [-59,+121] 
+LAST 6M N=24 T=sig h=4h V0                     n=  84 (3.21/wk, 84 non-ovl) hit 44.0%  net  -19.3bp  drift-adj  -19.9bp 95%CI [-39,-0] 
+LAST 6M N=24 T=sig h=4h V1                     n=  47 (1.80/wk, 47 non-ovl) hit 48.9%  net   -8.5bp  drift-adj   -8.9bp 95%CI [-29,+14] 
+LAST 6M N=24 T=sig h=24h V0                    n=  84 (3.21/wk, 52 non-ovl) hit 50.0%  net   +0.7bp  drift-adj   -3.0bp 95%CI [-77,+79] 
+LAST 6M N=24 T=sig h=24h V1                    n=  47 (1.80/wk, 37 non-ovl) hit 48.9%  net  +37.9bp  drift-adj  +35.4bp 95%CI [-64,+147] 
+LAST 6M N=42 T=pct h=4h V0                     n=  60 (2.30/wk, 60 non-ovl) hit 41.7%  net  -17.4bp  drift-adj  -18.1bp 95%CI [-41,+5] 
+LAST 6M N=42 T=pct h=4h V1                     n=  31 (1.19/wk, 31 non-ovl) hit 54.8%  net   -9.7bp  drift-adj  -10.2bp 95%CI [-33,+11] 
+LAST 6M N=42 T=pct h=24h V0                    n=  60 (2.30/wk, 38 non-ovl) hit 48.3%  net  +21.5bp  drift-adj  +17.2bp 95%CI [-84,+127] 
+LAST 6M N=42 T=pct h=24h V1                    n=  31 (1.19/wk, 26 non-ovl) hit 48.4%  net  +60.2bp  drift-adj  +57.3bp 95%CI [-59,+180] 
+LAST 6M N=42 T=sig h=4h V0                     n=  60 (2.30/wk, 60 non-ovl) hit 41.7%  net  -17.4bp  drift-adj  -18.1bp 95%CI [-41,+5] 
+LAST 6M N=42 T=sig h=4h V1                     n=  32 (1.22/wk, 32 non-ovl) hit 56.2%  net   -3.9bp  drift-adj   -4.4bp 95%CI [-32,+23] 
+LAST 6M N=42 T=sig h=24h V0                    n=  60 (2.30/wk, 38 non-ovl) hit 48.3%  net  +21.5bp  drift-adj  +17.2bp 95%CI [-84,+127] 
+LAST 6M N=42 T=sig h=24h V1                    n=  32 (1.22/wk, 26 non-ovl) hit 46.9%  net  +77.9bp  drift-adj  +74.6bp 95%CI [-63,+216] 
+max rel diff hand sigma vs jm.sd_c2c (sampled): 3.9755014737176005e-16
+FULL share of bars > 0.5*park6: 0.488
+FULL N=24 T=0.5*park6 h=24h V0                 n=1089 (3.17/wk, 633 non-ovl) hit 48.6%  net   +7.4bp  drift-adj   +5.6bp 95%CI [-23,+32] 
+FULL N=24 T=0.5*park6 h=24h V1                 n= 559 (1.62/wk, 452 non-ovl) hit 43.3%  net  -23.3bp  drift-adj  -25.0bp 95%CI [-54,+5] 
+LAST 24M share of bars > 0.5*park6: 0.509
+LAST 24M N=24 T=0.5*park6 h=24h V0             n= 363 (3.47/wk, 210 non-ovl) hit 49.6%  net  -18.6bp  drift-adj  -19.3bp 95%CI [-52,+14] 
+LAST 24M N=24 T=0.5*park6 h=24h V1             n= 184 (1.76/wk, 149 non-ovl) hit 44.6%  net  -28.6bp  drift-adj  -29.1bp 95%CI [-74,+14] 
+
+=== naive containment: next 4H close within +/-h of the current close ===
+FULL     n=14448: ±0.50% 51.8% [51.0,52.6] | ±0.60% 58.1% [57.3,58.9] | ±0.75% 65.4% [64.6,66.2] | ±0.90% 71.3% [70.5,72.0] | ±1.00% 74.4% [73.7,75.1] | ±1.25% 80.9% [80.2,81.5]
+         operative-σ bands (Parkinson 6-bar at issue): ±1.0σp6 76.0% | ±1.5σp6 87.4% | ±2.0σp6 92.8%
+LAST 24M n=4392: ±0.50% 56.9% [55.5,58.4] | ±0.60% 64.3% [62.8,65.7] | ±0.75% 72.1% [70.8,73.4] | ±0.90% 78.2% [77.0,79.4] | ±1.00% 81.0% [79.8,82.1] | ±1.25% 87.1% [86.0,88.0]
+         operative-σ bands (Parkinson 6-bar at issue): ±1.0σp6 74.5% | ±1.5σp6 86.8% | ±2.0σp6 92.3%
+LAST 6M  n=1098: ±0.50% 61.8% [58.9,64.7] | ±0.60% 68.9% [66.1,71.6] | ±0.75% 78.0% [75.4,80.3] | ±0.90% 83.4% [81.1,85.5] | ±1.00% 86.0% [83.8,87.9] | ±1.25% 91.2% [89.3,92.7]
+         operative-σ bands (Parkinson 6-bar at issue): ±1.0σp6 75.0% | ±1.5σp6 87.7% | ±2.0σp6 92.9%

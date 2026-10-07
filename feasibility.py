@@ -28,7 +28,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "feasibility-1.1.0"
+VERSION = "feasibility-1.2.0"
 BASE = Path(__file__).resolve().parent
 UTC = dt.timezone.utc
 MIN_EVENTS_FOR_ETA = 5
@@ -92,8 +92,23 @@ def eta_days(need: int, have: int, n_events: int, exposure_days: float):
     return {"central": gap / rate, "slow": gap / lo if lo > 0 else None, "fast": gap / hi}
 
 
-WARMUP = re.compile(r"(?P<have>[\d.]+)\s+(?P<what>[a-z][a-z \-]*?)(?: \([^)]*\))?;? the design needs (?P<need>[\d.]+)")
+WARMUP = re.compile(r"(?P<have>[\d.]+)\s+(?P<what>[a-z][a-z \-]*?)(?: \((?P<paren>[^)]*)\))?;? the design needs (?P<need>[\d.]+)")
+USABLE = re.compile(r"^(?P<n>\d+) with (?P<what>.+)$")      # "(859 with a trailing z-score)": the usable subset
 ZERO_QUAL = re.compile(r"(?P<have>\d+) qualifying; the design needs (?P<need>\d+)")
+
+
+def warmup_counts(reasons):
+    """(have, need, unit, raw_acquired) from a lab's warm-up reason, or None. feasibility-1.2.0: when the reason names a
+    usable subset - "1347 option records (859 with a trailing z-score); the design needs 1344" - the threshold applies
+    to that subset, so have = 859 and the 1347 raw records are reported apart (1.1.0 compared 1347 with 1344)."""
+    w = WARMUP.search(" ".join(reasons))
+    if not w:
+        return None
+    have, need, unit, raw = float(w.group("have")), float(w.group("need")), w.group("what").strip(), None
+    u = USABLE.match((w.group("paren") or "").strip())
+    if u:
+        raw, have, unit = have, float(u.group("n")), f"{unit} with {u.group('what')}"
+    return have, need, unit, raw
 
 
 def _collector_start(base) -> dt.datetime | None:
@@ -169,10 +184,14 @@ def lab_designs(base, now) -> list:
                        f"warm-up not complete per the lab ({'; '.join(reasons)}); no retained test observation yet")
                 w = WARMUP.search(" ".join(reasons))
                 if w and started:
-                    have, need = float(w.group("have")), float(w.group("need"))
+                    have, need, unit, raw = warmup_counts(reasons)
                     elapsed = (cut - started).total_seconds() / 86400
                     rate = have / elapsed if elapsed > 0 else 0
-                    row["warmup"] = {"have": have, "need": need, "unit": w.group("what").strip(),
+                    row["warmup"] = {"have": have, "need": need, "unit": unit,
+                                     "raw_acquired": raw,
+                                     "counts": "have = usable inputs the design's threshold counts; raw_acquired = all "
+                                               "records collected (not usable until they qualify); neither is a retained "
+                                               "evaluation observation (test_evaluation_phase.retained)",
                                      "observed_accumulation_per_day": round(rate, 2),
                                      "days_to_complete_at_observed_rate": round((need - have) / rate, 1) if rate > 0 else None,
                                      "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after"}
@@ -333,7 +352,9 @@ def markdown(doc) -> str:
               f"- Recorded counters: {json.dumps(r['recorded_counters'], sort_keys=True)}"]
         if r.get("warmup"):
             w = r["warmup"]
-            L.append(f"- Warm-up: {w['have']:g} of {w['need']:g} {w['unit']}; observed {w['observed_accumulation_per_day']}/day → "
+            L.append(f"- Warm-up: {w['have']:g} of {w['need']:g} {w['unit']}"
+                     + (f" ({w['raw_acquired']:g} raw records acquired)" if w.get('raw_acquired') is not None else "")
+                     + f"; observed {w['observed_accumulation_per_day']}/day → "
                      f"{w['days_to_complete_at_observed_rate']} more days at that rate ({w['basis']})")
         if r.get("time_to_checkpoint_note"):
             L.append(f"- Checkpoint 1: {r['time_to_checkpoint_note']}")

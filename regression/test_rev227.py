@@ -216,9 +216,13 @@ class HealthAndWatchdogTests(unittest.TestCase):
                                                        "created_at": "2026-10-05T19:57:31Z",
                                                        "updated_at": "2026-10-05T20:12:33Z"}]}).encode())
         m = H.monitors(t("2026-10-05T20:15:00Z"), "tok", "o/r", opener)
-        self.assertEqual((m["workflows"]["watchdog.yml"]["last_executed"], m["could_not_execute"]), (False, ["watchdog.yml"]))
-        self.assertEqual(m["workflows"]["watchdog.yml"]["last_execution"], "no runner assigned")
-        self.assertEqual(m["problems_detected_by"], ["range-monitor.yml"])                # its check did execute
+        self.assertEqual(m["workflows"]["watchdog.yml"]["last_executed"], False)
+        self.assertEqual(m["workflows"]["watchdog.yml"]["last_execution"], "no runner")
+        # 2.28: the other run's jobs (a collector job standing in) ran setup steps but no range check step; 2.27 called
+        # that "check executed" and a detection (review counterexample 5) - it detected nothing
+        self.assertEqual(m["workflows"]["range-monitor.yml"]["last_check"], "failed before checking")
+        self.assertEqual(m["could_not_execute"], ["range-monitor.yml", "watchdog.yml"])
+        self.assertEqual(m["problems_detected_by"], [])
 
     def test_unknown_ps1_action_is_an_invalid_problem_state(self):
         base = self.d

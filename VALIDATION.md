@@ -1,3 +1,22 @@
+# Validation record — maintenance, revision 2.28 (crypto-desk 12.4.12 on the 12.4 release family)
+
+Implemented 2026-10-07 on branch `maint-2-28` from `main` at `d9eb3d16`. Container; Python 3.13.
+
+| Check | Result |
+|---|---|
+| Regression suite (`python -m unittest discover -s regression`) | 897 tests, 2 skipped; all pass after the final `SHA256SUMS` refresh (the one failure in the full run was `test_checksums` on CHANGELOG/VALIDATION edited after the refresh; re-run OK) |
+| New / changed tests | `test_acceptance` 48 (was 41 on the branch; FalsePassTests 7: five reproduced false passes, the 15-minute boundary, manifest pushed at window start, ten receipt variants, offline replay with pushes and receipts); `test_rev228` 8 (check-step outcomes incl. the reviewer's skipped-check job, annotations, real Oct 6-7 dispatcher runs: 15:12/16:57 absent with the native dispatcher fresh, F1 warm-up counts); `test_rev227` monitor test updated to 2.28 semantics |
+| Desk tests, fixtures, O21 | `desk/test_*.py` 11 files OK (2 skipped as before); `test_fixtures.py` pass; `o21_reanalysis.py verify` PASS |
+| Dashboard | `node --test dashboard/model.test.mjs` 19 pass; `node --check dashboard/app.js` OK; `test_dashboard` OK |
+| Release and checksums | `make_release.py check` OK (repo 2.28; no shared module changed); `check_checksums.py check` OK (259 entries; the first PR run failed this gate because files were untracked at refresh time - refreshed after commit) |
+| Production-data replay (copy of `main` `63400626`, Oct 7 19:58Z, with the 2.28 files overlaid) | 180 of 180 RC1D forecasts replay; 156 of 156 RC1D scores reproduced from retained evidence; PS1 `verify_chain` ok, 21 executions, 126 of 126 ledger rows, 0 unaccounted; companion 99 registered, 0 integrity failures now |
+| Acceptance, Oct 6 window | result of record (3.0.0, scheduled check Oct 7 02:22Z): insufficient, service pass; supplementary 3.1.0 offline audit with 406 pushes: identical numbers, 0 late records, all 18 forecasts strictly valid (`docs/acceptance/results/2026-10-06/`) |
+| Acceptance, Oct 7 window | pending (evaluate after Oct 8 02:15Z; both checkers per the amended declaration) |
+| Research bundle | `research/retrospective/lean-rules-2026-10-05/replay.py`: module and input hashes OK, run-run4 every line identical → REPLAY MATCH |
+| Timer evidence | GitHub side only: 127 dispatcher runs Oct 7 00:00-20:00Z; GitHub status incidents retrieved 20:02Z; cron-job.org console not signed in - provider history not read |
+| Fresh-context runs (12.4.12 draft, read-only fixture, unchanged after) | 6 of 6 pass: registration-order counterexample → late; asymmetric mid-bar call → baseline unavailable; 21/27 not called equivalence; timer gaps unattributed, Oct 6 not a pass, no new watchdog; 100 calls/6 weeks → no interval; F1 859 of 1,344 usable. Finding: v2's baseline covers none of the calls made so far (v3 is an operator decision) |
+| Not executed here | any workflow change on GitHub before merge; a provider receipt export; the native scheduler's root cause; package installation (12.4.12 generated, not installed) |
+
 # Validation record — maintenance, revision 2.27 (crypto-desk 12.4.10 on the 12.4 release family)
 
 Implemented 2026-10-05 20:15–21:30Z on branch `maint-2-27` from `main` at `b2298393`. Container; Python 3.13.
