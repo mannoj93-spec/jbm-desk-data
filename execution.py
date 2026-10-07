@@ -93,3 +93,44 @@ def phase(st):
 
 
 NOT_EXECUTED = ("never-started", "failed-before-execution")
+
+
+# ---------------------------------------------------------------------------------------------- monitor checks
+EXIT_ONLY = ("Process completed with exit code",)
+
+
+def check_outcome(jobs, step_name, annotations=None):
+    """What a monitor run's CHECK did (repo 2.28), from job/step evidence - setup steps executing is not the check
+    executing. Returns (outcome, executed) with outcome one of:
+      passed                 the check step ran and succeeded
+      found a problem        the check step ran and failed, and the job carries a finding annotation
+      check failed           the check step ran and failed with no finding reported (a crash cannot be excluded)
+      failed before checking the job ran, the check step never started (an earlier step failed or it was skipped
+                             after a failure)
+      check skipped          the check step was skipped although nothing before it failed
+      no runner              no job received a runner
+      running                the check step is in progress
+      unknown                no job/step evidence
+    `annotations`: the failing job's check-run annotations (messages), when retrieved."""
+    if jobs is None:
+        return "unknown", None
+    if runner_assigned(jobs) is False:
+        return "no runner", False
+    steps = [s for j in jobs for s in (j.get("steps") or [])]
+    names = [s.get("name") for s in steps]
+    if step_name not in names:
+        return ("failed before checking", False) if steps else ("unknown", None)
+    i = names.index(step_name)
+    st = steps[i]
+    c = st.get("conclusion")
+    if st.get("status") == "in_progress":
+        return "running", True
+    if c == "success":
+        return "passed", True
+    if c == "failure" and st.get("started_at"):
+        found = [a for a in (annotations or []) if a and not str(a).startswith(EXIT_ONLY)]
+        return ("found a problem" if found else "check failed"), True
+    earlier_failed = any(s.get("conclusion") in ("failure", "cancelled", "timed_out") for s in steps[:i])
+    if c in ("skipped", None) or not st.get("started_at"):
+        return ("failed before checking" if earlier_failed else "check skipped"), False
+    return "check failed", True

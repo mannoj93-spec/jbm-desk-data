@@ -1,0 +1,50 @@
+=== P1 (post-hoc): continuation after bars > T vs bars <= T (complement), in the bar's direction, no cost ===
+FULL     T=pct    h= 4h big n= 8588 cont 44.7% mean   -1.7 | small n= 5859 cont 46.9% mean   -2.3 | diff cont -2.3pp [-3.7,-0.7] mean  +0.6bp [-3.1,+4.5]
+FULL     T=pct    h=24h big n= 8588 cont 47.8% mean   -2.3 | small n= 5859 cont 49.2% mean   -1.1 | diff cont -1.3pp [-3.0,+0.3] mean  -1.2bp [-10.2,+7.5]
+FULL     T=c2c0.5 h= 4h big n= 7020 cont 44.7% mean   -0.9 | small n= 7427 cont 46.4% mean   -2.9 | diff cont -1.7pp [-3.2,-0.1] mean  +2.0bp [-2.0,+6.0]
+FULL     T=c2c0.5 h=24h big n= 7020 cont 48.0% mean   +0.8 | small n= 7427 cont 48.7% mean   -4.2 | diff cont -0.7pp [-2.3,+0.9] mean  +5.0bp [-4.4,+14.4]
+FULL     T=p6_0.5 h= 4h big n= 7268 cont 44.9% mean   -1.0 | small n= 7179 cont 46.3% mean   -2.9 | diff cont -1.5pp [-3.0,+0.2] mean  +1.9bp [-1.8,+5.5]
+FULL     T=p6_0.5 h=24h big n= 7268 cont 47.9% mean   +0.3 | small n= 7179 cont 48.9% mean   -3.9 | diff cont -1.0pp [-2.7,+0.7] mean  +4.3bp [-5.2,+13.6]
+FULL     T=c2c1   h= 4h big n= 3340 cont 45.2% mean   -0.2 | small n=11107 cont 45.7% mean   -2.5 | diff cont -0.5pp [-2.3,+1.6] mean  +2.3bp [-2.3,+6.9]
+FULL     T=c2c1   h=24h big n= 3340 cont 47.5% mean   +1.9 | small n=11107 cont 48.7% mean   -2.9 | diff cont -1.2pp [-3.0,+0.7] mean  +4.7bp [-7.5,+17.2]
+FULL     T=c2c2   h= 4h big n=  909 cont 49.4% mean   +8.3 | small n=13538 cont 45.3% mean   -2.7 | diff cont +4.1pp [+0.8,+7.1] mean +11.0bp [+1.9,+20.5]
+FULL     T=c2c2   h=24h big n=  909 cont 50.7% mean  +16.4 | small n=13538 cont 48.2% mean   -3.0 | diff cont +2.5pp [-1.1,+6.0] mean +19.4bp [-7.0,+47.0]
+LAST 24M T=pct    h= 4h big n= 2425 cont 46.4% mean   -0.0 | small n= 1967 cont 46.8% mean   -1.4 | diff cont -0.3pp [-3.1,+2.5] mean  +1.4bp [-4.5,+7.7]
+LAST 24M T=pct    h=24h big n= 2425 cont 49.1% mean   -2.2 | small n= 1967 cont 49.7% mean   +5.5 | diff cont -0.6pp [-3.5,+2.4] mean  -7.7bp [-20.6,+5.7]
+LAST 24M T=c2c0.5 h= 4h big n= 2198 cont 46.5% mean   +0.6 | small n= 2194 cont 46.7% mean   -1.9 | diff cont -0.2pp [-2.8,+2.5] mean  +2.4bp [-2.7,+7.6]
+LAST 24M T=c2c0.5 h=24h big n= 2198 cont 49.3% mean   -2.2 | small n= 2194 cont 49.4% mean   +4.8 | diff cont -0.1pp [-2.8,+2.8] mean  -7.0bp [-19.1,+6.2]
+LAST 24M T=p6_0.5 h= 4h big n= 2312 cont 46.5% mean   +1.0 | small n= 2080 cont 46.6% mean   -2.5 | diff cont -0.1pp [-3.2,+3.0] mean  +3.5bp [-2.1,+8.9]
+LAST 24M T=p6_0.5 h=24h big n= 2312 cont 49.8% mean   +1.6 | small n= 2080 cont 48.8% mean   +1.0 | diff cont +1.0pp [-1.9,+3.9] mean  +0.6bp [-11.6,+14.0]
+LAST 24M T=c2c1   h= 4h big n= 1063 cont 47.7% mean   +0.2 | small n= 3329 cont 46.2% mean   -0.9 | diff cont +1.5pp [-2.0,+4.8] mean  +1.1bp [-4.7,+7.1]
+LAST 24M T=c2c1   h=24h big n= 1063 cont 49.9% mean   -1.8 | small n= 3329 cont 49.2% mean   +2.2 | diff cont +0.7pp [-2.6,+3.8] mean  -4.0bp [-16.9,+9.1]
+LAST 24M T=c2c2   h= 4h big n=  272 cont 47.1% mean   -3.3 | small n= 4120 cont 46.6% mean   -0.5 | diff cont +0.5pp [-5.8,+6.6] mean  -2.8bp [-14.8,+9.9]
+LAST 24M T=c2c2   h=24h big n=  272 cont 49.6% mean  -17.4 | small n= 4120 cont 49.3% mean   +2.5 | diff cont +0.3pp [-6.2,+6.8] mean -20.0bp [-56.7,+16.0]
+
+=== P2 (post-hoc): paired deferral test on the same breakout signals (N=24, 24h, 10 bp) ===
+each V0 signal on a bar > T: immediate = enter at that close; deferred = S-04 path (enter at conversion close, else no trade = 0)
+FULL     T=pct   signals 1052 converted 655 (62%) | per signal: immediate   +6.5bp, deferred   -7.3bp, diff  -13.8 [-35.2,+7.2] | immediate outcome of dropped signals   +8.6bp (n=397), of converted   +5.2bp
+FULL     T=c2c1  signals 847 converted 613 (72%) | per signal: immediate   +5.2bp, deferred   -7.7bp, diff  -12.8 [-33.2,+7.5] | immediate outcome of dropped signals  -36.0bp (n=234), of converted  +20.9bp
+FULL     T=c2c2  signals 449 converted 384 (86%) | per signal: immediate  +15.8bp, deferred   +0.9bp, diff  -14.9 [-36.6,+5.9] | immediate outcome of dropped signals -110.5bp (n=65), of converted  +37.2bp
+LAST 24M T=pct   signals 342 converted 208 (61%) | per signal: immediate  -21.6bp, deferred  -19.3bp, diff   +2.3 [-21.6,+25.5] | immediate outcome of dropped signals  -14.4bp (n=134), of converted  -26.2bp
+LAST 24M T=c2c1  signals 264 converted 192 (73%) | per signal: immediate  -28.9bp, deferred  -12.2bp, diff  +16.7 [-4.4,+38.4] | immediate outcome of dropped signals -107.8bp (n=72), of converted   +0.7bp
+LAST 24M T=c2c2  signals 132 converted 110 (83%) | per signal: immediate  -44.9bp, deferred  -30.0bp, diff  +14.8 [-14.0,+41.1] | immediate outcome of dropped signals -106.1bp (n=22), of converted  -32.6bp
+
+=== P3 (post-hoc): V0 vs V1 at larger thresholds (N=24, 24h, 10bp) ===
+FULL T=c2c1 V0                                 n=1089 (3.17/wk, 633 non-ovl) hit 48.6%  net   +7.4bp  drift-adj   +5.6bp 95%CI [-23,+32] 
+FULL T=c2c1 V1                                 n= 667 (1.94/wk, 498 non-ovl) hit 45.3%  net  -14.9bp  drift-adj  -16.8bp 95%CI [-45,+9] 
+FULL T=c2c2 V0                                 n=1089 (3.17/wk, 633 non-ovl) hit 48.6%  net   +7.4bp  drift-adj   +5.6bp 95%CI [-23,+32] 
+FULL T=c2c2 V1                                 n= 903 (2.62/wk, 593 non-ovl) hit 45.6%  net   -3.6bp  drift-adj   -5.6bp 95%CI [-33,+20] 
+LAST 24M T=c2c1 V0                             n= 363 (3.47/wk, 210 non-ovl) hit 49.6%  net  -18.6bp  drift-adj  -19.3bp 95%CI [-52,+14] 
+LAST 24M T=c2c1 V1                             n= 228 (2.18/wk, 165 non-ovl) hit 50.0%  net   -2.7bp  drift-adj   -3.5bp 95%CI [-41,+32] 
+LAST 24M T=c2c2 V0                             n= 363 (3.47/wk, 210 non-ovl) hit 49.6%  net  -18.6bp  drift-adj  -19.3bp 95%CI [-52,+14] 
+LAST 24M T=c2c2 V1                             n= 303 (2.90/wk, 195 non-ovl) hit 48.5%  net   -5.6bp  drift-adj   -6.4bp 95%CI [-44,+29] 
+
+=== U7 (recorded): Binance BTCUSDT funding per settlement, Oct 2 2024 - Oct 4 2026 ===
+n=2196: exactly +1.000 bp 403 (18.4%); above +1 bp 57 (2.6%); in [-1,+1) bp 1727 (78.6%); below -1 bp 9 (0.4%); <= +1 bp 2139 (97.4%)
+
+=== U6 (recomputed, Parkinson 6-bar including the issue bar) ===
+FULL 14448 ±1.0σ 76.4% | ±1.5σ 87.8% | ±2.0σ 93.1%
+LAST 24M 4392 ±1.0σ 74.7% | ±1.5σ 87.3% | ±2.0σ 92.9%
+LAST 6M 1098 ±1.0σ 74.8% | ±1.5σ 88.0% | ±2.0σ 93.1%
+
+=== containment record 21/27: Wilson 95% === [59.2, 89.4]

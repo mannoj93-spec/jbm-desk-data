@@ -169,15 +169,26 @@ export function opsRows(ops, now = Date.now()) {
     const beat = v.last_completed_utc || v.last_success_utc;
     const a = (now - Date.parse(beat)) / 60000;
     const failed = v.last_result && v.last_result !== 'success';
+    // Repo 2.28: the check step itself is read (last_check); setup running is not the check running.
+    const CHECK = {'found a problem': 'ran its check; found a problem', 'check failed': 'ran its check; failed without a finding',
+                   'failed before checking': 'failed before checking', 'check skipped': 'check skipped',
+                   'no runner': 'could not execute (no runner)', 'running': 'check running', unknown: 'failed; check evidence unknown'};
     const st = !Number.isFinite(a) ? 'unknown' : a > v.stale_after_min ? 'stale'
       : !failed ? 'within cadence'
-      : v.last_executed === true ? 'ran; detected a problem'
+      : v.last_check ? (CHECK[v.last_check] || `failed; ${v.last_check}`)
       : v.last_executed === false ? 'could not execute (no runner/steps)'
-      : 'failed; execution unknown';
+      : 'failed; check evidence unknown (report before 2.28)';
     return {area: `Monitor ${k}`, state: st,
             detail: v.last_completed_utc ? `last run ${v.last_completed_utc} (${v.last_result || '—'}${v.last_execution ? '; ' + v.last_execution : ''}); last success ${v.last_success_utc || 'none'}`
                                          : `last success ${v.last_success_utc || 'unknown'}`};
   });
+  // Repo 2.28: arrivals of the designated primary trigger (external timer), apart from the native dispatcher and from
+  // overall service health - fallback keeping service healthy never hides missing primary arrivals.
+  const tm = mon.external_timer;
+  const timerRows = tm && 'opportunities' in tm ? [{area: 'External timer (primary trigger)',
+    state: tm.absent?.length || tm.delayed?.length ? `${tm.absent.length} absent, ${tm.delayed.length} delayed in ${tm.window_h} h` : tm.state,
+    detail: `${tm.on_time} of ${tm.opportunities} on time; last arrival ${tm.last_arrival_utc || 'none'}` +
+            (tm.absent?.length ? `; absent ${tm.absent.slice(-4).map(x => x.slice(5, 16)).join(', ')}` : '') + ' (arrivals only)'}] : [];
   const cov = ops.ps1_coverage || {};
   // Repo 2.25: service continuity (native or recovery-dispatcher runs) is judged apart from the native schedule;
   // a person's dispatch counts as neither. Reports written before 2.25 carry no service block: unknown.
@@ -209,6 +220,7 @@ export function opsRows(ops, now = Date.now()) {
      detail: `coverage ${cov.report_coverage ?? '—'} as of ${cov.report_generated_utc || '—'}`},
     {area: 'Scoring backlog', state: Object.keys(ops.scoring_backlog || {}).length ? 'backlog' : 'none', detail: Object.entries(ops.scoring_backlog || {}).map(([h, v]) => `${h} ${v.length}`).join(' · ') || '—'},
     ...(monRows.length ? monRows : [{area: 'Monitors', state: 'unknown', detail: mon.source || 'not reported'}]),
+    ...timerRows,
   ];
 }
 

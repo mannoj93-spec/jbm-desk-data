@@ -1,3 +1,22 @@
+# Maintenance, revision 2.28 (crypto-desk 12.4.12 on the 12.4 release family) — 2026-10-07
+
+**Base.** `main` at `d9eb3d16` (2.27 merged Oct 5 21:46Z as `f242b90e`, plus data). No research definition, model,
+contract, `range-job-12.4.0`, PS1 protocol, lab design, calibration, cost, eligibility, deadline, forecast, score,
+execution or missed-decision record changes. Collection, recovery, persistence and the 2.27 execution-stage logic are
+unchanged.
+
+| Finding (reproduced) | Verified cause | Change | Tests |
+|---|---|---|---|
+| **Acceptance passed a healthy World with no git history** | 3.0.0 fell back to stored timestamps | acceptance-3.1.0: repository read at the after-commit of the last push to main at the cutoff (GitHub activity API); no complete push history → `insufficient`, never `pass` | `test_acceptance.FalsePassTests` fp1 |
+| **Records first committed an hour after the window passed** | availability never checked | a collector record counts only if the push that added it reached main within 15 min of its time (boundary: exactly 15:00 counts, 15:00 + 1 ms does not) | fp2, boundary |
+| **Range publication `eligible:true` with start/confirmation after the window passed** | flag trusted | strict RC1D validation (`range_reader._verify`, `validate_rc1d`, `range_contract.eligibility`) and manifest key first pushed strictly before window start | fp3, manifest-at-start |
+| **Unrelated receipts produced `timer-receipt`** | receipt format unvalidated | `timer-receipts/1`: pinned provider/job (`docs/acceptance/timer.json`), this repo's recovery.yml dispatch target, export provenance, unique ids, 2xx; any defect rejects the export | fp4 (10 variants) |
+| **Monitor with setup ok, checkout failed, check skipped read "check executed"** | any executed step counted | `execution.check_outcome`, health-1.4.0: detected only when the check step ran, failed and carries a finding annotation | `test_rev228`, `test_rev227` (updated), `model.test.mjs` (19) |
+| **External-timer gaps hidden by healthy service** (Oct 7 15:12Z, 16:57Z absent) | no arrival-level view | `monitors.external_timer` per opportunity, apart from native dispatcher, execution and persisted success; dashboard row; `docs/incidents/2026-10-07-external-timer-gaps.md` | `test_rev228` (real dispatcher runs) |
+| **F1 warm-up compared raw records with a usable-record threshold** | parser took the first number | feasibility-1.2.0: `have` = usable (trailing z-score) records, raw reported apart | `test_rev228.FeasibilityWarmupTests` |
+| **Retrospective lean-rule research not reproducible by a reviewer** | bundle outside the repository | `research/retrospective/lean-rules-2026-10-05/` with retained inputs, hashes and `replay.py` (REPLAY MATCH) | replay |
+| **Declared windows** | — | Oct 6 result of record (3.0.0) and evidence preserved, supplementary 3.1.0 audit labelled; Oct 7 declaration amended append-only (both checkers; credited only if both pass) | `docs/acceptance/` |
+
 # Maintenance, revision 2.27 (crypto-desk 12.4.10 on the 12.4 release family) — 2026-10-05
 
 **Base.** `main` at `b2298393` (2.26 plus data; no implementation change since PR #34). No research definition, model,

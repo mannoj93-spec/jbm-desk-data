@@ -1,0 +1,178 @@
+{
+ "chain": {
+  "by_initiation": {
+   "timer-corroborated": 183,
+   "verified": 213
+  },
+  "lineage_unknown": [],
+  "not_main_ignored": [],
+  "person_or_unverified_external": [],
+  "runs": 396
+ },
+ "checker": "acceptance-3.0.0",
+ "checks": {
+  "chain_lineage_known": true,
+  "collection_intervals": true,
+  "longest_gap": true,
+  "no_lost_output": true,
+  "no_person_in_chain": true,
+  "ps1_decisions_resolved": true,
+  "ps1_evidence_valid": true,
+  "range_decisions_published": true,
+  "scoring_backlog_empty": true
+ },
+ "clocks": {
+  "deadlines": {
+   "inclusion": "a decision is judged when its deadline falls inside the window",
+   "ps1_execution_min": 90,
+   "range_run_window_min": 75
+  },
+  "evaluated_utc": "2026-10-07T02:22:19Z",
+  "evidence_cutoff_utc": "2026-10-07T02:00:00Z",
+  "window": [
+   "2026-10-06T00:00:00Z",
+   "2026-10-07T00:00:00Z"
+  ]
+ },
+ "code_sha256": {
+  "cadence.py": "b865d2f480da960fd906046bbbf0d9f38386238ab5bd94752b325bc8c6424873",
+  "desk/paper_ps1.py": "2bf59f1f84207a56deff03215d0bd59a89d8afde1c3ff5af740a1bdbe63082b5",
+  "desk/range_monitor.py": "6ed747993ba89f29eb8aa19cf36c9f96d86086ed1784948da6bdb59d6533c0be",
+  "desk/research/ps1/protocol.json": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
+  "desk/stream_util.py": "bd9df9806a2ceb6796aa02597d474a04b1f60b5919216e692e9260a0405ba1a9",
+  "execution.py": "e072fa3b476780dfe7142aaff82e138cf440ffe9076e13538ae7ca1a5c643d41",
+  "health.py": "897567e2ba3e9093a2c21ef6db7f28b4334b33e901a2ac7f6f108d30ecf52026",
+  "provenance.py": "3060f0cefa02aa0c371e2537e0877fb65d62c1168f684d0cf3d9ffd6246eaf80",
+  "recovery.py": "3424b9dd1642daca499ebad5a293fb22e4e8c5e83652a88b0e1a1bcf77c732f3",
+  "scripts/service_acceptance.py": "f3da7d26af916353c11f6197695298e49d937f72a6d71378332be016d3a356bc",
+  "storage.py": "59ebb4684a24fd28841689318fdcbdc1cafe22143979f70a84dc597e6b71c831",
+  "watchdog.py": "e15859f8afdd9c207970f7f3419b971292214e58af3227f1245cb52a0a551571"
+ },
+ "collection": {
+  "allowed_empty": 2,
+  "by_initiation": {
+   "timer-corroborated": 73,
+   "verified": 101
+  },
+  "critical_failures": [],
+  "degraded_optional_records": 2,
+  "intervals": 95,
+  "intervals_with_critical_success": 95,
+  "longest_gap_min": 19.7,
+  "records": 174,
+  "records_not_bound_to_their_run": [],
+  "rule": "continuity counts verified, timer-receipt and timer-corroborated starts; strict counts verified and timer-receipt only",
+  "share": 1.0,
+  "strict": {
+   "intervals_with_critical_success": 91,
+   "longest_gap_min": 26.1,
+   "share": 0.9579
+  }
+ },
+ "decisions": {
+  "ps1": {
+   "2026-10-06T00:00:00Z": "executed",
+   "2026-10-06T04:00:00Z": "executed",
+   "2026-10-06T08:00:00Z": "executed",
+   "2026-10-06T12:00:00Z": "executed",
+   "2026-10-06T16:00:00Z": "executed",
+   "2026-10-06T20:00:00Z": "executed"
+  },
+  "ps1_chain": {
+   "ok": true,
+   "physical_rows": 102,
+   "verified": 17
+  },
+  "ps1_duplicate_executions": {},
+  "ps1_problems": [],
+  "ps1_status": "launched",
+  "range": {
+   "2026-10-06T00:00:00Z": "published",
+   "2026-10-06T04:00:00Z": "published",
+   "2026-10-06T08:00:00Z": "published",
+   "2026-10-06T12:00:00Z": "published",
+   "2026-10-06T16:00:00Z": "published",
+   "2026-10-06T20:00:00Z": "published"
+  },
+  "range_initiation": {
+   "2026-10-06T00:00:00Z": "verified",
+   "2026-10-06T04:00:00Z": "timer-corroborated",
+   "2026-10-06T08:00:00Z": "timer-corroborated",
+   "2026-10-06T12:00:00Z": "timer-corroborated",
+   "2026-10-06T16:00:00Z": "timer-corroborated",
+   "2026-10-06T20:00:00Z": "timer-corroborated"
+  }
+ },
+ "execution": {
+  "by_phase": {
+   "persisted-success": 174,
+   "yielded": 6
+  },
+  "collector_runs": 180,
+  "executed_without_stored_output": [],
+  "never_executed": [],
+  "not_finished_at_evaluation": [],
+  "restored_later_not_counted": [],
+  "rule": "never-started / failed-before-execution = missed execution (no observation existed); executed-no-output = output or persistence failure; a yield needs a valid receipt",
+  "stage_unknown": [],
+  "valid_yield_receipts": 6,
+  "yields_proven_by_job_evidence": 0
+ },
+ "inputs": {
+  "actions": {
+   "complete": true,
+   "extra_runs": 0,
+   "jobs_complete": true,
+   "missing_runs": [],
+   "query": {
+    "branch": null,
+    "created_from": "2026-10-05T18:00:00Z",
+    "created_to": "2026-10-07T03:00:00Z",
+    "per_page": 100
+   },
+   "retrieved_utc": "2026-10-07T02:22:35Z",
+   "runs": 759,
+   "sha256": "c3eb7d775cac45a7d89f14734948b518b73c669ea22d83cc39bc7d102872195d"
+  },
+  "files_sha256": {
+   "cadence.json": "6f6a7d14c7e942ba308c116394eb68836fb41482dff210f9de553cadbe404d39",
+   "data/restored/receipts.jsonl": "52b1bd0218d18d84f50e87e2b3b88973689ac030e9e06763169da015d9097b42",
+   "data/runs/2026-09.jsonl": "85d691fc8140c3809f7125d7017d8431bc987ac1352d5d9e2db722b180b51133",
+   "data/runs/2026-10.jsonl": "d61c0a618e73907f73291b415f149a230e493582eb7ec0b0cba1eb05248935ea",
+   "desk/deployments.jsonl": "0e8bfe05a1714b20ec3b65e803a7b4afac50a0358f1918a2ccf580412c3b3f85",
+   "desk/release.json": "5d39dfe22019d8fc0a8f91eb658ffc767d39e8e4d1884a6c18b45436ce26cd94",
+   "desk/research/ps1/protocol.json": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
+   "registry/scores.jsonl": "3f3a457fb6f551b4cc6d5020d754d91ae20a97db25e8912b44742895ffd61fc1",
+   "reports/range_status.json": "a7d5dd439fe310dcc092ee3a17cead5914d88c82a70cc8157ac3968328399d4c",
+   "state/forecast_manifest.json": "5cc521b5d4a37c2de80e19140715116c91f9a50acd1ed893d1b55aad138b16be",
+   "state/range_attempts.jsonl": "8ac780783e78beb4738e43b9a5d230fbbccbedc2c9a65e2dcc994eb616e094b5",
+   "state/range_publications.jsonl": "5f70ec41b422b11da091afce2e4212a8d768b60a3fe2509adfb201876379f059",
+   "state/range_runs.jsonl": "866c81a49207468e3f3ee5d4f22bdb5a8e9960e682f785f6bf87d5e4e9402d4e",
+   "state/recovery_yields.jsonl": "f02b64200d47609d2752e9279393f71bfed3047e2604b1f2be334267525d6d3d",
+   "streams/ps1/confirmations.jsonl": "63fd23422434598077be9ad6b76719bca050412ccb2cc28c257f5457a5cee1fe",
+   "streams/ps1/decisions.jsonl": "09542435008b01a35038d8bb2e8b0226120721bf673c910ac62eb55a024f2243",
+   "streams/ps1/execution_states.jsonl": "375915c31e62b6557e0e729b7267c6a0437862f3bb9cb9d1d4a2b1b2b044bb47",
+   "streams/ps1/executions.jsonl": "cca3ca49ae8971d5cadb5ad45b3c4fb9409d64a0f699d3282a10e64d2566c84d",
+   "streams/ps1/launch.json": "f767596162cc871ad318f2561faf21e7ba578b89327a1d977a89c747c407a4de",
+   "streams/ps1/lifecycle.jsonl": "471b17e1aeec10e0bf2a18a4256156dc160075fe9f73587e0e117387dc859164",
+   "streams/ps1/quotes.jsonl": "199611e0d22c80a44af9f73e70718856163726248b83ba61c4819843b6efca28",
+   "streams/ps1/runs.jsonl": "96f2375aa914f2bf1067f8e79bbe4a873f73865d939f24c11e111e74311e600c"
+  },
+  "repository": {
+   "commit": "6ce0e82ab9a388d3da9f2c87ba3c8e4c042ea830",
+   "commit_time": "2026-10-07T01:59:39+00:00",
+   "method": "last first-parent commit with committer time <= cutoff (committer time, not push time)"
+  },
+  "timer_receipts": null
+ },
+ "note": "restored data never counts; a pass says nothing about the original native-schedule root cause; repository availability is committer time at the cutoff, not push time",
+ "reason": "service targets met, but strict unattended certification is not established: 188 critical-chain run(s) are only timer-corroborated (owner credential; no independent provider receipt) - supply --timer-receipts from the timer provider to bind them",
+ "scoring_backlog": {},
+ "service_verdict": "pass",
+ "targets": {
+  "interval_share": 0.97,
+  "longest_gap_min": 45
+ },
+ "unattended_certification": "insufficient evidence",
+ "verdict": "insufficient"
+}

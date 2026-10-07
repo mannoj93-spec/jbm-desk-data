@@ -31,5 +31,19 @@
   "if it fails, the result is kept and a retry is a new, separately declared window",
   "restored or late data never counts"
  ],
- "prior_declaration": "the 2026-10-06T00:00Z-10-07T00:00Z window declared with 12.4.9/2.26 stays declared; it is evaluated separately (with the checker on main at evaluation, 3.0 if merged), never replaced by this one"
+ "prior_declaration": "the 2026-10-06T00:00Z-10-07T00:00Z window declared with 12.4.9/2.26 stays declared; it is evaluated separately (with the checker on main at evaluation, 3.0 if merged), never replaced by this one",
+ "amendments": [
+  {
+   "date_utc": "2026-10-07T20:10:00Z",
+   "repo": "2.28",
+   "observed_before_amendment": "the window was in progress (about 20 of 24 h elapsed); no verdict had been computed",
+   "change": "evaluation rule only - window, cutoff, targets and the declared checker are unchanged",
+   "rule": "the declared checker (acceptance-3.0.0 at the 2.27 merge commit) is run as declared and its result is recorded as the result of record; acceptance-3.1.0 (repo 2.28) evaluates the same window and cutoff as a corrected audit, recorded alongside. Because 3.0.0 has five known false-pass modes, the window is credited as a pass only if BOTH pass; a 3.0.0 pass that 3.1.0 does not confirm is reported as not established. The amendment can only make a pass harder, never easier.",
+   "known_events_inside_the_window": [
+    "2026-10-07 15:12Z external-timer opportunity: no dispatcher arrival on GitHub (GitHub incident djlmxz2zd0j7 states widespread impact 15:06-15:16Z); collection interval 15:07-15:22Z empty (15:02:00 -> 15:27:42, 25.7 min)",
+    "2026-10-07 16:57Z external-timer opportunity: no arrival (GitHub incident qpfv5p86dmrl, announced 17:17Z, states impact 16:52-17:01Z); the native-schedule-rooted recovery collected at 17:05:07, interval covered",
+    "both are recorded and count against the window; whether cron-job.org sent those requests needs its execution history"
+   ]
+  }
+ ]
 }

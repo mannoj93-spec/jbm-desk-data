@@ -160,8 +160,17 @@ runner), steps executed, critical success, persisted, explicit yield: separate f
 creation time or conclusion is not evidence that anything executed (Oct 5 2026: runs created, jobs never assigned a
 runner, cancelled, run conclusion "failure"). Health separates data freshness (newest persisted automated critical
 success) from activity (newest automated record, any result) and reports the 45-minute acceptance target beside the
-stale limit; monitors whose failed run never executed read "could not execute", never "detected a problem". A stale
+stale limit; monitors whose failed run never executed read "could not execute", never "detected a problem". From 2.28 a
+monitor's check STEP is read (`execution.check_outcome`): a problem is detected only when the check step ran, failed and
+the job carries a finding annotation; setup running with the check skipped or never reached is "failed before checking"
+or "check skipped", and an exit-code annotation alone is "check failed" (a crash cannot be excluded). A stale
 health report means no newer report was persisted, not necessarily that the scheduler was silent.
+
+**External-timer arrivals (repo 2.28).** `monitors.external_timer` counts external-titled dispatcher runs per
+:12/:27/:42/:57 opportunity over 24 h (on time within 90 s, delayed within 10 min, else absent), apart from the native
+dispatcher (`monitors["recovery.yml"].native`), execution and persisted success; the dashboard shows it as its own row.
+It is arrival evidence only: whether the timer sent a request needs the provider's execution history. Oct 7 2026: two
+absent arrivals during GitHub incidents (`docs/incidents/2026-10-07-external-timer-gaps.md`).
 
 **Dependency limitation (repo 2.27).** The external timer, the dispatcher, its service watch, the native schedules and
 every job run on GitHub-hosted runners. When GitHub cannot assign runners (incident 3q1yb5m7ltvb, Oct 5 2026 from ~18:55Z),
@@ -186,7 +195,7 @@ GitHub's scheduler. Evidence, ruled-out causes and the revisit condition: `docs/
 run>]`, and each recovery run's title ends "via <origin>" so the Actions run list shows it. A recovery run whose chain a
 person started is human-assisted (never counted as automated); a root that cannot be found is unknown.
 
-**Acceptance (infrastructure, stated before observing; acceptance-3.0.0, repo 2.27).** One window of at least 24 h,
+**Acceptance (infrastructure, stated before observing; acceptance-3.1.0, repo 2.28; 3.0.0 in 2.27).** One window of at least 24 h,
 judged after its evidence cutoff (default window end + 120 min). Fetch and keep the evidence, then replay it offline:
 
     GITHUB_REPOSITORY=mannoj93-spec/jbm-desk-data GH_TOKEN=... python scripts/service_acceptance.py \
@@ -195,12 +204,15 @@ judged after its evidence cutoff (default window end + 120 min). Fetch and keep 
         [--timer-receipts receipts.json] [--now <iso>]
 
 Clocks kept apart: the window; each decision's deadline (range 75 min, PS1 90 min; a decision counts when its deadline
-falls inside the window); the evidence cutoff (repository files are read at the last first-parent commit with committer
-time at or before it, so later fills, confirmations, records, receipts or scores cannot repair the window - committer
-time is not push time); and the evaluation clock (before the cutoff: pending). Targets (unchanged): >= 97% of slot
+falls inside the window); the evidence cutoff (3.1.0: repository files are read at the after-commit of the last push to main at
+or before it, from GitHub's repository activity API, so later fills, confirmations, records, receipts or scores cannot
+repair the window; committer time is never used); durable availability (an output counts only when the push that
+added it reached main in time: a collector record within 15 min of its record time, PS1 rows by their deadlines, a
+range registration before its window start; no complete push history -> insufficient, never pass); and the evaluation clock (before the cutoff: pending). Targets (unchanged): >= 97% of slot
 intervals hold a persisted **critical-success** collector record (`cadence.critical_success`, the one shared
 definition) from a run not started by a person (95 intervals: at most 2 empty); no gap over 45 min (the acceptance
-target - the 90-minute watchdog limit is a different rule); every range decision published eligibly; PS1 validated
+target - the 90-minute watchdog limit is a different rule); every range decision published eligibly (validated through the RC1D contract and
+`range_contract.eligibility`, never a stored `eligible` flag); PS1 validated
 (launch, protocol and lifecycle checked first; expected decisions from the launch and the schedule; only "executed" by
 one verified-chain execution filled before the deadline, a recorded no-rebalance, or not expected under an operator
 pause/termination count; unknown actions, invalid chains, duplicates, late fills, missing or contradictory launch
@@ -210,12 +222,17 @@ output, whatever its title); empty scoring backlog; no person and no unknown lin
 Initiation is resolved from Actions metadata, never from actor identity: workflow_run children through their named
 parent (2.27 titles) or the unique parent able to raise the event; recovery chains through their root and named parent;
 roots outside the window are fetched individually. **Strict unattended certification** counts only verified starts and
-external dispatches matched one-to-one to an independent timer-provider receipt (`--timer-receipts`, bound by hash);
+external dispatches matched one-to-one to an execution in a validated timer-provider export (`--timer-receipts`,
+schema `timer-receipts/1`, bound by hash: provider and job id equal to the pinned `docs/acceptance/timer.json`, target
+this repository's recovery.yml dispatch POST on main with trigger=external, export provenance, unique ids, HTTP 2xx -
+any defect rejects the whole export; the job id is not yet pinned, so no export is accepted until the operator pins it);
 "timer-corroborated" (owner token, on the cadence, no receipt) supports continuity but not certification, so a window
 whose targets pass on corroboration alone is reported `service_verdict: pass`, `verdict: insufficient`. The output binds
 the checker version and code hashes, the evaluated commit, every consulted file's hash and the normalized Actions
 evidence's hash (query bounds, pagination, runs, parents, jobs/steps). Exit codes: 0 pass, 1 fail, 2 invalid, 3 pending,
-4 insufficient. A failed window stays failed; a retry is a new window.
+4 insufficient. A failed window stays failed; a retry is a new window. Results are kept under
+`docs/acceptance/results/<window>/` with their evidence; a corrected checker's re-evaluation is a labelled supplementary
+audit beside the result of record, never a replacement.
 
 **Restoring a failed push (repo 2.26).** A collector run whose push fails uploads `collector-recovery-<run id>` (7-day
 retention). `python scripts/restore_failed_run.py --zip <archive> --sha256 <GitHub digest> --run <id> --artifact <id>`

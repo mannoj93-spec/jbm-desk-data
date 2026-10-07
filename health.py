@@ -21,6 +21,12 @@ another:
               (GitHub API, when a token is given); unknown without one. An old success is never current health. A
               failed monitor run whose check executed detected a problem; one whose job never received a runner or
               ran no step could not execute (2.27, job/step evidence) - it detected nothing.
+  2.28        the monitor's own CHECK step is read (watchdog / range-monitor check step names): passed, found a
+              problem (failed with a finding annotation), check failed (no finding reported), failed before
+              checking, check skipped, no runner, unknown. Setup steps running is not the check running.
+              monitors.external_timer: arrivals of the designated primary trigger per :12/:27/:42/:57 opportunity
+              (on time / delayed / absent) apart from the native dispatcher heartbeat; overall service health stays
+              its own question and may be healthy while external arrivals are missing.
   2.27        source.service separates data freshness (the newest automated CRITICAL SUCCESS) from activity (the
               newest automated run record, any result): a fresh failure stays "failing", fresh activity never makes
               stale data healthy, and the 45-minute restoration acceptance target is reported beside - never merged
@@ -52,7 +58,7 @@ for p in (str(ROOT), str(ROOT / "desk")):
 import cadence                    # noqa: E402
 from watchdog import load_runs    # noqa: E402
 
-VERSION = "health-1.3.0"
+VERSION = "health-1.4.0"
 ACCEPTANCE_GAP_MIN = 45          # restoration acceptance target (scripts/service_acceptance.py) - not the watchdog limit
 UTC = dt.timezone.utc
 LOOKBACK_H = 72                   # decisions and gaps examined (incidents already recorded stay recorded)
@@ -265,7 +271,7 @@ def monitors(now, token=None, repo=None, opener=None):
             continue
         e, last_start = heartbeat(runs, now, MONITORS.get(wf))
         if wf in MONITORS and e.get("last_result") not in (None, "success") and e.get("last_run_id"):
-            e.update(execution(e["last_run_id"], token, repo, opener))
+            e.update(execution(e["last_run_id"], token, repo, opener, wf))
         if last_start and (newest is None or last_start > newest):
             newest = last_start
         out[wf] = e
@@ -277,40 +283,105 @@ def monitors(now, token=None, repo=None, opener=None):
             runs = json.loads(r.read()).get("workflow_runs", [])
         e, _ = heartbeat(runs, now, lim)
         e["events"] = sorted({x.get("event") for x in runs if x.get("event")})
+        native = [x for x in runs if x.get("event") == "schedule"]
+        e["native"], _ = heartbeat(native, now, lim)
         out[wf] = e
     except Exception as exc:                                      # noqa: BLE001 - reported as unknown
         out[wf] = {"state": "unknown", "error": type(exc).__name__}
+    try:
+        ext = _get(f"https://api.github.com/repos/{repo}/actions/workflows/{wf}/runs?per_page=100&event=workflow_dispatch",
+                   token, opener).get("workflow_runs", [])
+        timer = external_timer(ext, now)
+    except Exception as exc:                                      # noqa: BLE001 - reported as unknown
+        timer = {"state": "unknown", "error": type(exc).__name__}
     states = [v.get("state") for k, v in out.items() if k in MONITORS]
-    detected = sorted(k for k, v in out.items() if k in MONITORS and v.get("last_result") == "failure"
-                      and v.get("last_executed") is True)
+    detected = sorted(k for k, v in out.items() if k in MONITORS and v.get("last_check") == "found a problem")
     not_run = sorted(k for k, v in out.items() if k in MONITORS and v.get("last_executed") is False)
     return {"source": "GitHub Actions API, scheduled runs", "workflows": out,
             "newest_scheduled_start_utc": newest and newest.strftime("%Y-%m-%dT%H:%M:%SZ"),
             "state": "stale" if "stale" in states else ("unknown" if "unknown" in states or not states else "fresh"),
             "problems_detected_by": detected, "could_not_execute": not_run,
-            "rule": "state is the heartbeat (last completed run, any result); last_result is how that run ended. A "
-                    "failed run whose check executed detected a problem; one whose job never received a runner or "
-                    "ran no step could not execute (2.27) - neither is silence",
-            "dispatcher_state": (out.get(DISPATCHER[0]) or {}).get("state")}
+            "rule": "state is the heartbeat (last completed run, any result); last_result is how that run ended; "
+                    "last_check is what its check step did (2.28): only a check that ran and reported a finding "
+                    "detected a problem - setup running, a skipped check or no runner detected nothing",
+            "dispatcher_state": (out.get(DISPATCHER[0]) or {}).get("state"),
+            "external_timer": timer}
 
 
-def execution(run_id, token, repo, opener=None):
-    """Job/step evidence for one run (repo 2.27): {last_executed: True/False/None, last_execution: text}."""
+CHECK_STEPS = {"watchdog.yml": "Check for a stale, missing, or failing collector",
+               "range-monitor.yml": "Check the range stream"}
+
+
+def _get(url, token, opener):
+    req = urllib.request.Request(url, headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
+    with opener(req, timeout=20) as r:
+        return json.loads(r.read())
+
+
+def execution(run_id, token, repo, opener=None, wf=None):
+    """What the monitor's CHECK did in one run (repo 2.28; 2.27 counted any executed step, so a run whose setup ran
+    but whose check was skipped read "check executed"): {last_executed, last_execution, last_check}."""
     import execution as X
     opener = opener or urllib.request.urlopen
     try:
-        req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=50",
-                                     headers={"Authorization": f"Bearer {token}", "Accept": "application/vnd.github+json"})
-        with opener(req, timeout=20) as r:
-            jobs = json.loads(r.read()).get("jobs")
+        jobs = _get(f"https://api.github.com/repos/{repo}/actions/runs/{run_id}/jobs?per_page=50", token, opener).get("jobs")
     except Exception as exc:                                      # noqa: BLE001 - reported as unknown
-        return {"last_executed": None, "last_execution": f"unknown (jobs unavailable: {type(exc).__name__})"}
+        return {"last_executed": None, "last_check": "unknown", "last_execution": f"unknown (jobs unavailable: {type(exc).__name__})"}
     if not isinstance(jobs, list):
-        return {"last_executed": None, "last_execution": "unknown (no jobs in the response)"}
-    ran = X.steps_executed(jobs)
-    runner = X.runner_assigned(jobs)
-    return {"last_executed": bool(ran),
-            "last_execution": "check executed" if ran else ("no runner assigned" if runner is False else "no step executed")}
+        return {"last_executed": None, "last_check": "unknown", "last_execution": "unknown (no jobs in the response)"}
+    step = CHECK_STEPS.get(wf)
+    notes = None
+    if step:
+        failed = [j for j in jobs for s in (j.get("steps") or []) if s.get("name") == step and s.get("conclusion") == "failure"]
+        if failed:
+            try:
+                notes = [a.get("message") for a in _get(f"https://api.github.com/repos/{repo}/check-runs/{failed[0]['id']}"
+                                                       f"/annotations", token, opener) if a.get("annotation_level") == "failure"]
+            except Exception:                                     # noqa: BLE001 - finding unknown
+                notes = None
+        outcome, ran = X.check_outcome(jobs, step, notes)
+    else:
+        ran = X.steps_executed(jobs)
+        outcome = "unknown" if ran is None else ("steps executed" if ran else "no step executed")
+    finding = next((n for n in notes or [] if not str(n).startswith(X.EXIT_ONLY)), None)
+    return {"last_executed": ran, "last_check": outcome,
+            "last_execution": outcome + (f": {finding[:160]}" if finding else "")}
+
+
+def external_timer(runs, now, hours=24, tolerance_s=90, delayed_s=600):
+    """Arrivals of the designated primary trigger - external-titled dispatcher runs - against its quarter-hour
+    opportunities (:12/:27/:42/:57) over the last `hours`, apart from the native dispatcher (repo 2.28). An opportunity
+    is on time (created within `tolerance_s`), delayed (within `delayed_s`), or absent. A healthy native dispatcher or
+    healthy service never hides an absent external arrival; this is arrival evidence only - it says nothing about
+    whether the timer sent a request (that needs the provider's history)."""
+    ext = sorted(t for t in (parse(x.get("created_at")) for x in runs
+                             if x.get("event") == "workflow_dispatch" and x.get("display_title") == "Recovery dispatcher (external)")
+                 if t)
+    end = now - dt.timedelta(seconds=delayed_s)
+    t = (end - dt.timedelta(hours=hours)).replace(second=0, microsecond=0)
+    while t.minute not in (12, 27, 42, 57):
+        t += dt.timedelta(minutes=1)
+    on, late, absent, lags = 0, [], [], []
+    while t <= end:
+        hit = [e for e in ext if t <= e < t + dt.timedelta(minutes=15)]
+        lag = (hit[0] - t).total_seconds() if hit else None
+        if lag is None or lag > delayed_s:
+            absent.append(t.strftime("%Y-%m-%dT%H:%M:%SZ"))
+        elif lag > tolerance_s:
+            late.append({"slot": t.strftime("%Y-%m-%dT%H:%M:%SZ"), "lag_s": round(lag)})
+        else:
+            on += 1
+            lags.append(lag)
+        t += dt.timedelta(minutes=15)
+    last = ext[-1] if ext else None
+    age = (now - last).total_seconds() / 60 if last else None
+    n = on + len(late) + len(absent)
+    return {"window_h": hours, "opportunities": n, "on_time": on, "delayed": late, "absent": absent,
+            "on_time_max_lag_s": round(max(lags)) if lags else None,
+            "last_arrival_utc": last and last.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "state": "silent" if age is None or age > 45 else ("gaps" if absent or late else "arriving"),
+            "rule": "external-titled dispatcher runs per :12/:27/:42/:57 opportunity; arrivals only - whether the "
+                    "timer sent each request needs the provider's execution history"}
 
 
 def heartbeat(runs, now, limit_min):
@@ -434,7 +505,12 @@ def markdown(doc):
          + "".join(f"; {k} heartbeat {v.get('state', 'n/a')} (last run {v.get('last_completed_utc')}: {v.get('last_result')}"
                    + (f", {v['last_execution']}" if v.get('last_execution') else "") + f"; last success {v.get('last_success_utc')})"
                    for k, v in mon["workflows"].items() if k in MONITORS)
-         + (f"; newest scheduled start of any workflow {mon.get('newest_scheduled_start_utc')}" if mon.get("newest_scheduled_start_utc") else "") + ".", ""]
+         + (f"; newest scheduled start of any workflow {mon.get('newest_scheduled_start_utc')}" if mon.get("newest_scheduled_start_utc") else "") + ".", "",
+         (lambda t: f"**External timer (primary trigger):** {t.get('state')}; {t.get('on_time')} of {t.get('opportunities')} "
+                    f"opportunities on time in {t.get('window_h')} h, {len(t.get('delayed') or [])} delayed, absent "
+                    + (", ".join(t.get('absent') or []) or "none") + f"; last arrival {t.get('last_arrival_utc')}. Arrivals "
+                    "only: whether each request was sent needs the provider's history." if isinstance(t, dict) and "opportunities" in t
+                    else "**External timer:** unknown.")(mon.get("external_timer") or {}), ""]
     return "\n".join(L)
 
 
