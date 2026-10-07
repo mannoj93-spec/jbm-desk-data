@@ -4,7 +4,7 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-10-07T00:22:22.653Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-07T04:20:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-10-07T01:02:07.058Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-07T04:20:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
@@ -26,8 +26,8 @@ Mean absolute error of the ln-range forecast, B2 against B0 persistence, on scor
 
 | horizon | n | MAE B2 | MAE B0 | reduction | mean d | median d | B2 better/tie/worse | coverage B2 / B0 | mean 10–90 width B2 / B0 (log) | blocks | 95% interval of mean d | overlap |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 4h | 54 | 0.41567 | 0.50997 | 18.5% | -0.09431 | -0.07026 | 35/0/19 | 72% / 76% | 1.2453 / 1.444 | 1 | unavailable: 1 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 4h windows, one per 4H decision; actual registered [start, end) windows: 22 of 54 overlap another, largest disjoint subset 43 |
-| 24h | 49 | 0.2946 | 0.40117 | 26.6% | -0.10658 | -0.11239 | 27/0/22 | 90% / 82% | 1.1139 / 1.3033 | 1 | unavailable: 1 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 24h windows, one per 4H decision; actual registered [start, end) windows: 49 of 49 overlap another, largest disjoint subset 9 |
+| 4h | 55 | 0.41742 | 0.51031 | 18.2% | -0.09289 | -0.06794 | 36/0/19 | 73% / 76% | 1.2453 / 1.444 | 1 | unavailable: 1 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 4h windows, one per 4H decision; actual registered [start, end) windows: 22 of 55 overlap another, largest disjoint subset 44 |
+| 24h | 50 | 0.29468 | 0.397 | 25.8% | -0.10232 | -0.10314 | 27/0/23 | 90% / 82% | 1.1139 / 1.3033 | 1 | unavailable: 1 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 24h windows, one per 4H decision; actual registered [start, end) windows: 50 of 50 overlap another, largest disjoint subset 10 |
 | 72h | 43 | 0.18665 | 0.28119 | 33.6% | -0.09454 | -0.07515 | 36/0/7 | 100% / 98% | 1.0384 / 1.1963 | 1 | unavailable: 1 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10 | 72h windows, one per 4H decision; actual registered [start, end) windows: 43 of 43 overlap another, largest disjoint subset 3 |
 
 ## Scoring pipeline (RC1D)
@@ -36,8 +36,8 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 
 | horizon | waiting maturity | ready | overdue | scoring failed | scored | ineligible |
 |---|---|---|---|---|---|---|
-| 4h | 2 | 0 | 0 | 0 | 54 | 0 |
-| 24h | 7 | 0 | 0 | 0 | 49 | 0 |
+| 4h | 1 | 0 | 0 | 0 | 55 | 0 |
+| 24h | 6 | 0 | 0 | 0 | 50 | 0 |
 | 72h | 13 | 0 | 0 | 0 | 43 | 0 |
 
 ## Recent decisions (history)
@@ -56,9 +56,9 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 | 2026-10-05T12:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-10-05T16:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-10-05T20:00:00Z | missing | no production attempt or run record (run absent, or it failed before persisting) |
-| 2026-10-06T00:00:00Z | registered-pending | eligible; 1/3 scored |
+| 2026-10-06T00:00:00Z | registered-pending | eligible; 2/3 scored |
 | 2026-10-06T04:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-10-06T08:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-10-06T12:00:00Z | registered-pending | eligible; 1/3 scored |
 | 2026-10-06T16:00:00Z | registered-pending | eligible; 1/3 scored |
-| 2026-10-06T20:00:00Z | registered-pending | eligible; 0/3 scored |
+| 2026-10-06T20:00:00Z | registered-pending | eligible; 1/3 scored |
