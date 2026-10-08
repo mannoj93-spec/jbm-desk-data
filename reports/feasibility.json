@@ -1,8 +1,8 @@
 {
  "evidence_class": "not applicable (an operations report: it restates counts and carries no hypothesis evidence)",
- "generated_utc": "2026-10-07T21:02:42Z",
+ "generated_utc": "2026-10-08T00:18:53Z",
  "integrity": "not verified here: inputs are the lab's evidence cards and the stream reports as written",
- "job": "feasibility-1.1.0",
+ "job": "feasibility-1.2.0",
  "lab": [
   {
    "calendar_exposure": {
@@ -145,10 +145,12 @@
    "version": "ev-125c86066f05",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
+    "counts": "have = usable inputs the design's threshold counts; raw_acquired = all records collected (not usable until they qualify); neither is a retained evaluation observation (test_evaluation_phase.retained)",
     "days_to_complete_at_observed_rate": 0.2,
     "have": 1327.0,
     "need": 1344.0,
     "observed_accumulation_per_day": 89.56,
+    "raw_acquired": null,
     "unit": "snapshot transitions for the fixed cohort"
    },
    "zero_interpretation": "warm-up not complete per the lab (1327 snapshot transitions for the fixed cohort; the design needs 1344 (about two weeks at 15-minute cadence)); no retained test observation yet"
@@ -416,11 +418,13 @@
    "version": "ev-1c53cfe81c9f",
    "warmup": {
     "basis": "averaged from the collector start (cadence.json), so an upper bound on the wait if collection began later for this input; warm-up only - it says nothing about event rates after",
-    "days_to_complete_at_observed_rate": -0.4,
-    "have": 1383.0,
+    "counts": "have = usable inputs the design's threshold counts; raw_acquired = all records collected (not usable until they qualify); neither is a retained evaluation observation (test_evaluation_phase.retained)",
+    "days_to_complete_at_observed_rate": 7.4,
+    "have": 895.0,
     "need": 1344.0,
-    "observed_accumulation_per_day": 93.34,
-    "unit": "option records"
+    "observed_accumulation_per_day": 60.4,
+    "raw_acquired": 1383.0,
+    "unit": "option records with a trailing z-score"
    },
    "zero_interpretation": "warm-up not complete per the lab (1383 option records (895 with a trailing z-score); the design needs 1344); no retained test observation yet"
   },
@@ -574,7 +578,7 @@
    "blocks": 1,
    "calendar_exposure": {
     "basis": "calendar days since the stream start (one window per 4H decision)",
-    "days": 11.71,
+    "days": 11.85,
     "from": "2026-09-26T04:00:00Z"
    },
    "checkpoint": {
@@ -586,16 +590,16 @@
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
    "paired_scored": 55,
-   "rate_per_day": 4.7,
+   "rate_per_day": 4.64,
    "time_to_checkpoint": {
-    "central": 77.71324649809763
+    "central": 78.61735583846381
    }
   },
   {
    "blocks": 1,
    "calendar_exposure": {
     "basis": "calendar days since the stream start (one window per 4H decision)",
-    "days": 11.71,
+    "days": 11.85,
     "from": "2026-09-26T04:00:00Z"
    },
    "checkpoint": {
@@ -607,16 +611,16 @@
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
    "paired_scored": 60,
-   "rate_per_day": 5.12,
+   "rate_per_day": 5.06,
    "time_to_checkpoint": {
-    "central": 70.26129135444444
+    "central": 71.07870527861111
    }
   },
   {
    "blocks": 1,
    "calendar_exposure": {
     "basis": "calendar days since the stream start (one window per 4H decision)",
-    "days": 11.71,
+    "days": 11.85,
     "from": "2026-09-26T04:00:00Z"
    },
    "checkpoint": {
@@ -627,10 +631,10 @@
    "kind": "range stream",
    "limiting_factor": "time (accumulation)",
    "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation",
-   "paired_scored": 43,
-   "rate_per_day": 3.67,
+   "paired_scored": 44,
+   "rate_per_day": 3.71,
    "time_to_checkpoint": {
-    "central": 102.66863116521533
+    "central": 101.23330751802189
    }
   },
   {
@@ -667,17 +671,17 @@
    "late": 0,
    "limiting_factor": "time (accumulation)",
    "missing": 0,
-   "paired": 16
+   "paired": 17
   },
   {
    "checkpoint": {},
-   "coverage": 0.7333,
+   "coverage": 0.7419,
    "id": "PS1 paper sizing",
-   "intervals": 21,
+   "intervals": 22,
    "kind": "paper experiment",
    "limiting_factor": "time (accumulation)",
    "outcomes": {
-    "executed": 22,
+    "executed": 23,
     "missed: stale: processed after close + max_delay": 8
    }
   }
