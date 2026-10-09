@@ -1,10 +1,10 @@
 # Operational health
 
-Generated 2026-10-09T12:44:29Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-10-09T12:46:56Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Source:** healthy; last scheduled collector run 2026-10-09T12:21:14Z (23.2 min). Silences over 90 min in the last 72 h: none.
+**Source:** healthy; last scheduled collector run 2026-10-09T12:45:20Z (1.6 min). Silences over 90 min in the last 72 h: none.
 
-**Service continuity:** healthy; last persisted critical success 2026-10-09T12:42:45Z (1.7 min); last automated activity 2026-10-09T12:42:45Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 83, recovery 78; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 20.2 min.
+**Service continuity:** healthy; last persisted critical success 2026-10-09T12:45:20Z (1.6 min); last automated activity 2026-10-09T12:45:20Z (critical success, native-schedule). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 84, recovery 78; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 20.2 min.
 
 **Range decisions:** 10-08T04:00 published; 10-08T08:00 published; 10-08T12:00 published; 10-08T16:00 published; 10-08T20:00 published; 10-09T00:00 published; 10-09T04:00 published; 10-09T08:00 published.
 
