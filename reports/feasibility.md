@@ -1,6 +1,6 @@
 # Research feasibility
 
-Generated 2026-10-09T08:21:24Z by feasibility-1.2.0; source cutoff 2026-10-09T06:58Z. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
+Generated 2026-10-09T08:24:51Z by feasibility-1.2.0; source cutoff 2026-10-09T06:58Z. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
 
 ## Lab designs
 
