@@ -94,7 +94,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-10-10T04:35:00Z",
+ "generated_utc": "2026-10-10T04:44:17Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -102,7 +102,7 @@
   "external_timer": {
    "absent": [],
    "delayed": [],
-   "last_arrival_utc": "2026-10-10T04:27:01Z",
+   "last_arrival_utc": "2026-10-10T04:42:02Z",
    "on_time": 96,
    "on_time_max_lag_s": 2,
    "opportunities": 96,
@@ -117,11 +117,11 @@
   "state": "fresh",
   "workflows": {
    "collect.yml": {
-    "last_completed_utc": "2026-10-10T04:21:52Z",
+    "last_completed_utc": "2026-10-10T04:35:22Z",
     "last_result": "success",
-    "last_run_id": 38023484274,
+    "last_run_id": 38024455393,
     "last_scheduled_start_utc": "2026-10-10T04:32:59Z",
-    "last_success_utc": "2026-10-10T04:16:25Z"
+    "last_success_utc": "2026-10-10T04:32:59Z"
    },
    "dashboard.yml": {
     "last_completed_utc": "2026-10-10T04:25:22Z",
@@ -165,17 +165,17 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_completed_utc": "2026-10-10T04:27:19Z",
+    "last_completed_utc": "2026-10-10T04:43:57Z",
     "last_result": "success",
-    "last_run_id": 38024101989,
-    "last_scheduled_start_utc": "2026-10-10T04:27:01Z",
-    "last_success_utc": "2026-10-10T04:27:01Z",
+    "last_run_id": 38025071517,
+    "last_scheduled_start_utc": "2026-10-10T04:43:44Z",
+    "last_success_utc": "2026-10-10T04:43:44Z",
     "native": {
-     "last_completed_utc": "2026-10-10T04:12:30Z",
+     "last_completed_utc": "2026-10-10T04:43:57Z",
      "last_result": "success",
-     "last_run_id": 38023236458,
-     "last_scheduled_start_utc": "2026-10-10T04:12:15Z",
-     "last_success_utc": "2026-10-10T04:12:15Z",
+     "last_run_id": 38025071517,
+     "last_scheduled_start_utc": "2026-10-10T04:43:44Z",
+     "last_success_utc": "2026-10-10T04:43:44Z",
      "stale_after_min": 45,
      "state": "fresh"
     },
@@ -209,7 +209,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 12.4,
+  "report_age_min": 21.7,
   "report_coverage": 0.8182,
   "report_generated_utc": "2026-10-10T04:22:35.278Z",
   "report_scheduled_decisions": 44,
@@ -219,13 +219,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 1.6,
+  "age_min": 10.9,
   "coverage_24h": {
    "automated_critical_failures": 0,
-   "automated_runs": 168,
+   "automated_runs": 167,
    "expected_slots": 96,
-   "from_ms": 1791520500930,
-   "from_utc": "2026-10-09T04:35:00Z",
+   "from_ms": 1791521057367,
+   "from_utc": "2026-10-09T04:44:17Z",
    "intervals": 95,
    "intervals_with_automated_run": 95,
    "intervals_with_successful_automated_run": 95,
@@ -233,11 +233,11 @@
    "longest_successful_gap_min": 20.2,
    "rule": "activity = any automated stored record (heartbeat); success = critical_success records only",
    "runs_by_source": {
-    "native-schedule": 87,
+    "native-schedule": 86,
     "recovery": 81
    },
-   "to_ms": 1791606900930,
-   "to_utc": "2026-10-10T04:35:00Z"
+   "to_ms": 1791607457367,
+   "to_utc": "2026-10-10T04:44:17Z"
   },
   "gaps": [],
   "last_scheduled_utc": "2026-10-10T04:33:24Z",
@@ -257,10 +257,10 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-10-10T04:33:24Z",
-   "last_automated_utc": "2026-10-10T04:33:24Z",
-   "last_source": "native-schedule",
-   "last_success_utc": "2026-10-10T04:33:24Z",
+   "last_activity_utc": "2026-10-10T04:42:40Z",
+   "last_automated_utc": "2026-10-10T04:42:40Z",
+   "last_source": "recovery",
+   "last_success_utc": "2026-10-10T04:42:40Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
