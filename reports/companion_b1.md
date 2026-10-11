@@ -1,16 +1,16 @@
 # RC1D companion benchmark: B2 vs B1 (HAR/calendar without DVOL)
 
-Generated 2026-10-11T12:20:30.846Z by companion-1.3.0; observation cutoff (latest included outcome-window end) 2026-10-11T08:25:00.000Z; last scored 2026-10-11T08:54:58.979Z. Stream start: 2026-10-01T00:00:00Z. Registered 168, confirmed 168, eligible 168. Lifecycle active. Evidence class: **descriptive**. Integrity: ok (0 recorded failure rows).
+Generated 2026-10-11T13:05:24.277Z by companion-1.3.0; observation cutoff (latest included outcome-window end) 2026-10-11T12:25:00.000Z; last scored 2026-10-11T13:00:13.200Z. Stream start: 2026-10-01T00:00:00Z. Registered 168, confirmed 168, eligible 168. Lifecycle active. Evidence class: **descriptive**. Integrity: ok (0 recorded failure rows).
 
 > Descriptive forecast-accuracy evidence only. It says whether DVOL adds to B1's range forecast; it says nothing about direction, sizing or trading returns. Late or missing companions stay late or missing.
 
 | horizon | RC1D scored | paired | largest disjoint subset | overlapping | missing | late | unscored | excluded (integrity) | B2−B1 mean | median | B2 better/tie/worse | rel. MAE reduction | standardized | 95% (resampling blocks) | B2−B0 mean | B1−B0 mean |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| 4h | 54 | 54 | 43 | 22 | 0 | 0 | 0 | 0 | -0.00526 | 0.00751 | 26/0/28 | 0.0116 | -0.1267 | unavailable (1) | -0.13178 | -0.12652 |
-| 24h | 49 | 49 | 9 | 49 | 0 | 0 | 0 | 0 | -0.0147 | -0.02285 | 26/0/23 | 0.0398 | -0.2548 | unavailable (1) | -0.16329 | -0.14859 |
-| 72h | 37 | 37 | 3 | 37 | 0 | 0 | 0 | 0 | -0.00172 | -0.01045 | 19/0/18 | 0.0105 | -0.0271 | unavailable (0) | -0.11026 | -0.10854 |
+| 4h | 55 | 55 | 44 | 22 | 0 | 0 | 0 | 0 | -0.00534 | 0.00418 | 27/0/28 | 0.0118 | -0.1299 | unavailable (1) | -0.1359 | -0.13057 |
+| 24h | 50 | 50 | 9 | 50 | 0 | 0 | 0 | 0 | -0.01534 | -0.02648 | 27/0/23 | 0.0406 | -0.2679 | unavailable (1) | -0.16993 | -0.15459 |
+| 72h | 38 | 38 | 3 | 38 | 0 | 0 | 0 | 0 | -0.00211 | -0.01365 | 20/0/18 | 0.0132 | -0.0338 | unavailable (0) | -0.11313 | -0.11101 |
 
-Overlap (from actual windows): 4h: 22 of 54 windows overlap another; the largest disjoint subset has 43; 24h: 49 of 49 windows overlap another; the largest disjoint subset has 9; 72h: 37 of 37 windows overlap another; the largest disjoint subset has 3.
+Overlap (from actual windows): 4h: 22 of 55 windows overlap another; the largest disjoint subset has 44; 24h: 50 of 50 windows overlap another; the largest disjoint subset has 9; 72h: 38 of 38 windows overlap another; the largest disjoint subset has 3.
 
 Not registered, by reason: rc1d-unavailable (24)
 
