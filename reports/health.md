@@ -1,14 +1,14 @@
 # Operational health
 
-Generated 2026-10-11T15:59:22Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-10-11T16:02:02Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Source:** healthy; last scheduled collector run 2026-10-11T15:46:01Z (13.3 min). Silences over 90 min in the last 72 h: none.
+**Source:** healthy; last scheduled collector run 2026-10-11T16:00:11Z (1.8 min). Silences over 90 min in the last 72 h: none.
 
-**Service continuity:** healthy; last persisted critical success 2026-10-11T15:57:39Z (1.7 min); last automated activity 2026-10-11T15:57:39Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 91, recovery 84; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 17.8 min.
+**Service continuity:** healthy; last persisted critical success 2026-10-11T16:00:11Z (1.8 min); last automated activity 2026-10-11T16:00:11Z (critical success, native-schedule). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 92, recovery 84; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 17.8 min.
 
 **Range decisions:** 10-10T08:00 published; 10-10T12:00 published; 10-10T16:00 published; 10-10T20:00 published; 10-11T00:00 published; 10-11T04:00 published; 10-11T08:00 published; 10-11T12:00 published.
 
-**PS1 decisions:** 10-10T08:00 executed; 10-10T12:00 executed; 10-10T16:00 executed; 10-10T20:00 executed; 10-11T00:00 executed; 10-11T04:00 executed; 10-11T08:00 executed; 10-11T12:00 executed.
+**PS1 decisions:** 10-10T12:00 executed; 10-10T16:00 executed; 10-10T20:00 executed; 10-11T00:00 executed; 10-11T04:00 executed; 10-11T08:00 executed; 10-11T12:00 executed; 10-11T16:00 pending.
 
 **PS1 report coverage:** 0.8462 as of 2026-10-11T13:05:25.190Z; due since and not covered: none.
 
