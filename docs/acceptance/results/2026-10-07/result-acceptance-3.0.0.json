@@ -1,0 +1,184 @@
+{
+ "chain": {
+  "by_initiation": {
+   "timer-corroborated": 89,
+   "timer-receipt": 89,
+   "verified": 206
+  },
+  "lineage_unknown": [],
+  "not_main_ignored": [],
+  "person_or_unverified_external": [],
+  "runs": 384
+ },
+ "checker": "acceptance-3.0.0",
+ "checks": {
+  "chain_lineage_known": true,
+  "collection_intervals": true,
+  "longest_gap": true,
+  "no_lost_output": true,
+  "no_person_in_chain": true,
+  "ps1_decisions_resolved": true,
+  "ps1_evidence_valid": true,
+  "range_decisions_published": true,
+  "scoring_backlog_empty": true
+ },
+ "clocks": {
+  "deadlines": {
+   "inclusion": "a decision is judged when its deadline falls inside the window",
+   "ps1_execution_min": 90,
+   "range_run_window_min": 75
+  },
+  "evaluated_utc": "2026-10-12T19:04:42Z",
+  "evidence_cutoff_utc": "2026-10-08T02:00:00Z",
+  "window": [
+   "2026-10-07T00:00:00Z",
+   "2026-10-08T00:00:00Z"
+  ]
+ },
+ "code_sha256": {
+  "cadence.py": "b865d2f480da960fd906046bbbf0d9f38386238ab5bd94752b325bc8c6424873",
+  "desk/paper_ps1.py": "2bf59f1f84207a56deff03215d0bd59a89d8afde1c3ff5af740a1bdbe63082b5",
+  "desk/range_monitor.py": "6ed747993ba89f29eb8aa19cf36c9f96d86086ed1784948da6bdb59d6533c0be",
+  "desk/research/ps1/protocol.json": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
+  "desk/stream_util.py": "bd9df9806a2ceb6796aa02597d474a04b1f60b5919216e692e9260a0405ba1a9",
+  "execution.py": "e072fa3b476780dfe7142aaff82e138cf440ffe9076e13538ae7ca1a5c643d41",
+  "health.py": "897567e2ba3e9093a2c21ef6db7f28b4334b33e901a2ac7f6f108d30ecf52026",
+  "provenance.py": "3060f0cefa02aa0c371e2537e0877fb65d62c1168f684d0cf3d9ffd6246eaf80",
+  "recovery.py": "3424b9dd1642daca499ebad5a293fb22e4e8c5e83652a88b0e1a1bcf77c732f3",
+  "scripts/service_acceptance.py": "f3da7d26af916353c11f6197695298e49d937f72a6d71378332be016d3a356bc",
+  "storage.py": "59ebb4684a24fd28841689318fdcbdc1cafe22143979f70a84dc597e6b71c831",
+  "watchdog.py": "e15859f8afdd9c207970f7f3419b971292214e58af3227f1245cb52a0a551571"
+ },
+ "collection": {
+  "allowed_empty": 2,
+  "by_initiation": {
+   "timer-corroborated": 36,
+   "timer-receipt": 35,
+   "verified": 96
+  },
+  "critical_failures": [],
+  "degraded_optional_records": 0,
+  "intervals": 95,
+  "intervals_with_critical_success": 94,
+  "longest_gap_min": 25.7,
+  "records": 167,
+  "records_not_bound_to_their_run": [],
+  "rule": "continuity counts verified, timer-receipt and timer-corroborated starts; strict counts verified and timer-receipt only",
+  "share": 0.9895,
+  "strict": {
+   "intervals_with_critical_success": 90,
+   "longest_gap_min": 26.6,
+   "share": 0.9474
+  }
+ },
+ "decisions": {
+  "ps1": {
+   "2026-10-07T00:00:00Z": "executed",
+   "2026-10-07T04:00:00Z": "executed",
+   "2026-10-07T08:00:00Z": "executed",
+   "2026-10-07T12:00:00Z": "executed",
+   "2026-10-07T16:00:00Z": "executed",
+   "2026-10-07T20:00:00Z": "executed"
+  },
+  "ps1_chain": {
+   "ok": true,
+   "physical_rows": 138,
+   "verified": 23
+  },
+  "ps1_duplicate_executions": {},
+  "ps1_problems": [],
+  "ps1_status": "launched",
+  "range": {
+   "2026-10-07T00:00:00Z": "published",
+   "2026-10-07T04:00:00Z": "published",
+   "2026-10-07T08:00:00Z": "published",
+   "2026-10-07T12:00:00Z": "published",
+   "2026-10-07T16:00:00Z": "published",
+   "2026-10-07T20:00:00Z": "published"
+  },
+  "range_initiation": {
+   "2026-10-07T00:00:00Z": "verified",
+   "2026-10-07T04:00:00Z": "timer-corroborated",
+   "2026-10-07T08:00:00Z": "timer-corroborated",
+   "2026-10-07T12:00:00Z": "timer-receipt",
+   "2026-10-07T16:00:00Z": "timer-corroborated",
+   "2026-10-07T20:00:00Z": "verified"
+  }
+ },
+ "execution": {
+  "by_phase": {
+   "persisted-success": 167,
+   "yielded": 4
+  },
+  "collector_runs": 171,
+  "executed_without_stored_output": [],
+  "never_executed": [],
+  "not_finished_at_evaluation": [],
+  "restored_later_not_counted": [],
+  "rule": "never-started / failed-before-execution = missed execution (no observation existed); executed-no-output = output or persistence failure; a yield needs a valid receipt",
+  "stage_unknown": [],
+  "valid_yield_receipts": 4,
+  "yields_proven_by_job_evidence": 0
+ },
+ "inputs": {
+  "actions": {
+   "complete": true,
+   "extra_runs": 0,
+   "jobs_complete": true,
+   "missing_runs": [],
+   "query": {
+    "branch": null,
+    "created_from": "2026-10-06T18:00:00Z",
+    "created_to": "2026-10-08T03:00:00Z",
+    "per_page": 100
+   },
+   "retrieved_utc": "2026-10-12T19:05:00Z",
+   "runs": 796,
+   "sha256": "b054e6039587c2085e4c104b775b81bd736b085395022bdbf31f889b5c6273ea"
+  },
+  "files_sha256": {
+   "cadence.json": "6f6a7d14c7e942ba308c116394eb68836fb41482dff210f9de553cadbe404d39",
+   "data/restored/receipts.jsonl": "52b1bd0218d18d84f50e87e2b3b88973689ac030e9e06763169da015d9097b42",
+   "data/runs/2026-09.jsonl": "85d691fc8140c3809f7125d7017d8431bc987ac1352d5d9e2db722b180b51133",
+   "data/runs/2026-10.jsonl": "ca67692ab976bf0209641f9796e3a4408b8c5951b5d1a9efc13c41f7d081020c",
+   "desk/deployments.jsonl": "8cdd2ff6281bbe54200765ae5bb5c67ad4872a8bcd89122af754deec26fde698",
+   "desk/release.json": "0e517c07d6b7c3185f2a1181ec960852154397de1d67f56ff6ce8ce07d5b91b4",
+   "desk/research/ps1/protocol.json": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
+   "registry/scores.jsonl": "b1d204fa087042adbf0796b16d076c5f24ef6377fa814b09bb6a48ff8f533046",
+   "reports/range_status.json": "36856298a2443cc1124717a0ae8d5e7da0d6706903f3774289bbb3d5d612e210",
+   "state/forecast_manifest.json": "256de47c3d9acebc0b30119fe78f99a7591937fe2130a8e9a6b49d1d483e5b2c",
+   "state/range_attempts.jsonl": "c33019f302a2007fe77a760fa814a196ce42fb01b402ee3cde4c7b6bcd2218b5",
+   "state/range_publications.jsonl": "375566ab9f3d590dd8bdc1fb25963602338af8d6d7b4153aff59097a3fe0e604",
+   "state/range_runs.jsonl": "90c35af11609dda206e3e6440531a71e7155d3d48c762acf201e46cf0ac36d43",
+   "state/recovery_yields.jsonl": "28da6c9acaa973ac110c5fcdf804c58c9bde3c275bb67d14d8d01d0aa808d733",
+   "streams/ps1/confirmations.jsonl": "68a61c56c1294f1220a47af7a4cf1cf728ca2545902cad207b851233073840e8",
+   "streams/ps1/decisions.jsonl": "a1995dc17b0ec1ea8e394d50c8e940deb453dbee008419681216b6646cbfbeeb",
+   "streams/ps1/execution_states.jsonl": "ce7753fbb832956da51a442d011dede5e77a7bae43ba1d4762ad74408f50d31d",
+   "streams/ps1/executions.jsonl": "28449a1e9420843f67065658ad839328fd7d36822443a581a2b49c91676b1344",
+   "streams/ps1/launch.json": "f767596162cc871ad318f2561faf21e7ba578b89327a1d977a89c747c407a4de",
+   "streams/ps1/lifecycle.jsonl": "471b17e1aeec10e0bf2a18a4256156dc160075fe9f73587e0e117387dc859164",
+   "streams/ps1/quotes.jsonl": "c57259a9aa82e629c5cf629b5cc7620b12a024721b7b302327350515da124efa",
+   "streams/ps1/runs.jsonl": "196a9ed98c7dc2eb8fb1ec383b4e98251f4ca62ab83a0312101d55949b717b5b"
+  },
+  "repository": {
+   "commit": "eace196bb3ad860f854ebe618b07fd2e3e65dbe4",
+   "commit_time": "2026-10-08T01:59:37+00:00",
+   "method": "last first-parent commit with committer time <= cutoff (committer time, not push time)"
+  },
+  "timer_receipts": {
+   "executions": 50,
+   "provider": "cron-job.org",
+   "sha256": "d1f54b155eaa053f256fcf1ac4b27d5fcdefefb89f49e5a81e0ce58611d79466"
+  }
+ },
+ "note": "restored data never counts; a pass says nothing about the original native-schedule root cause; repository availability is committer time at the cutoff, not push time",
+ "reason": "service targets met, but strict unattended certification is not established: 92 critical-chain run(s) are only timer-corroborated (owner credential; no independent provider receipt) - supply --timer-receipts from the timer provider to bind them",
+ "scoring_backlog": {},
+ "service_verdict": "pass",
+ "targets": {
+  "interval_share": 0.97,
+  "longest_gap_min": 45
+ },
+ "unattended_certification": "insufficient evidence",
+ "verdict": "insufficient"
+}

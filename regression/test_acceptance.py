@@ -1,4 +1,5 @@
-"""service_acceptance 3.1 (repo 2.28; FalsePassTests at the end cover the 2.28 review). 3.0 (repo 2.27): Reproduces the independent review's counterexamples against 2.26 - PS1 false passes
+"""service_acceptance 3.2 (repo 2.28.2; ContentCreditingTests at the end: availability credited to content, not to an
+identifier). 3.1 (repo 2.28; FalsePassTests cover the 2.28 review). 3.0 (repo 2.27): Reproduces the independent review's counterexamples against 2.26 - PS1 false passes
 (launch removed, corrupt actions with no executions, fills after the window), timer-corroborated credited as
 unattended, owner-actor workflow_run children unknown, a titled recovery run with no output exempted, verdicts not
 bound to their evidence - and covers valid controls: a complete healthy day built on the REAL PS1 chain of
@@ -889,6 +890,105 @@ class FalsePassTests(Base):
             self.assertEqual(one[k], two[k], k)
         self.assertEqual(one["inputs"]["timer_receipts"], two["inputs"]["timer_receipts"])
         self.assertEqual(one["inputs"]["actions"]["sha256"], two["inputs"]["actions"]["sha256"])
+
+
+# ------------------------------------------------------------------------------------------- 3.2 content crediting
+class ContentCreditingTests(Base):
+    """acceptance-3.2.0. 3.1.0 credited an identifier - a collector (run_id, t), a PS1 execution_id - with the first
+    push of ANY row carrying it, so content that reached main late inherited an earlier row's push time. The two
+    cases carried forward by the crypto-desk 12.4.16 repository handoff, reproduced against 3.1.0 before the fix:
+    (A) a collector row pushed on time as a failure and replaced in place by a success after the allowance;
+    (B) one of an execution's six rows pushed on time and the other five after the allowance."""
+
+    def _push_late_replacement(self, idx, late_at):
+        """History: the World with records idx failing (critical_ok false) is published on time; one later push at
+        late_at replaces exactly those rows in place, same run_id and t, with critical successes."""
+        for i in idx:
+            self.w.records[i]["critical_ok"] = False
+        self.w.flush()
+        self.w.publish()
+        subprocess.run(["git", "checkout", "-q", "HEAD", "--", "."], cwd=self.w.d, check=True)   # the last pushed tree
+        for i in idx:
+            self.w.records[i]["critical_ok"] = True
+        self.w.flush()
+        commit_at(self.w.d, late_at, "late in-place replacement")
+        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.w.d, capture_output=True, text=True).stdout.strip()
+        self.w.pushes.append({"timestamp": iso(late_at), "before": self.w.pushes[-1]["after"], "after": sha,
+                              "ref": "refs/heads/main", "activity_type": "push"})
+
+    def test_case_a_late_in_place_success_is_not_credited_with_the_failure_rows_push(self):
+        late_at = END + dt.timedelta(hours=1)
+        i = 40
+        self._push_late_replacement([i], late_at)
+        r = self.w.records[i]
+        h = A.PushHistory(self.w.d, self.w.pushes)
+        key = h.first_seen("data/runs/2026-10.jsonl", lambda x: (str(x.get("run_id")), x.get("t")))
+        self.assertLess(ms(key[(r["run_id"], r["t"])]), r["t"] + 15 * 60_000)   # the identifier WAS pushed on time
+        doc = self.w.measure()
+        c = doc["collection"]
+        self.assertEqual([x["t"] for x in c["records_not_delivered_in_time"]], [r["t"]])
+        self.assertEqual(c["records_not_delivered_in_time"][0]["first_pushed"], iso(late_at))
+        self.assertEqual(c["intervals_with_critical_success"], 94)
+
+    def test_case_a_four_late_replacements_change_the_verdict(self):
+        self._push_late_replacement([40, 41, 42, 43], END + dt.timedelta(hours=1))
+        doc = self.w.measure()
+        self.assertEqual(len(doc["collection"]["records_not_delivered_in_time"]), 4)
+        self.assertEqual(doc["verdict"], "fail")                       # 3.1.0: "pass" (gap 75 min hidden)
+        self.assertGreater(doc["collection"]["longest_gap_min"], 45)
+
+    def test_case_a_control_identical_content_rewritten_late_keeps_its_first_push(self):
+        # the same rows rewritten with identical content (a no-op file rewrite) change nothing
+        self.w.publish()
+        subprocess.run(["git", "checkout", "-q", "HEAD", "--", "."], cwd=self.w.d, check=True)
+        self.w.flush()
+        commit_at(self.w.d, END + dt.timedelta(hours=1), "no-op rewrite")
+        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.w.d, capture_output=True, text=True).stdout.strip()
+        self.w.pushes.append({"timestamp": iso(END + dt.timedelta(hours=1)), "before": self.w.pushes[-1]["after"],
+                              "after": sha, "ref": "refs/heads/main"})
+        doc = self.w.measure()
+        self.assertEqual(doc["collection"]["records_not_delivered_in_time"], [])
+        self.assertEqual(doc["verdict"], "pass", doc.get("reason"))
+
+    def _execution(self, did="ps1-20261005T0800Z"):
+        rows = [json.loads(l) for l in (self.w.d / "streams/ps1/executions.jsonl").read_text().splitlines() if l.strip()]
+        mine = [r for r in rows if r["decision_id"] == did]
+        self.assertEqual(len(mine), 6)
+        self.assertEqual(len({r["execution_id"] for r in mine}), 1)
+        return mine
+
+    def test_case_b_five_of_six_execution_rows_pushed_late_is_not_executed(self):
+        mine = self._execution()
+        first, rest = mine[0], mine[1:]
+        late_at = dt.datetime(2026, 10, 5, 8, tzinfo=UTC) + dt.timedelta(minutes=90 + 60)   # deadline + 60 min
+        late = lambda rel, r: ms(late_at) if rel == "streams/ps1/executions.jsonl" and r in rest else None
+        self.w.publish(shift=late)
+        h = A.PushHistory(self.w.d, self.w.pushes)
+        avail = h.first_seen("streams/ps1/executions.jsonl", lambda r: r.get("execution_id"))
+        self.assertLess(avail[first["execution_id"]], late_at - dt.timedelta(minutes=30))   # one row was on time
+        doc = self.w.measure()
+        self.assertEqual(doc["decisions"]["ps1"]["2026-10-05T08:00:00Z"], "missed: filled after the deadline or the cutoff")
+        self.assertEqual(doc["verdict"], "fail")
+        self.assertEqual(doc["decisions"]["ps1_chain"]["verified"], 10)     # the chain itself is valid at the cutoff
+
+    def test_case_b_completion_state_pushed_late_is_not_executed(self):
+        # all six rows on time, but the journal row that completes the execution only after the allowance
+        eid = self._execution()[0]["execution_id"]
+        late_at = dt.datetime(2026, 10, 5, 8, tzinfo=UTC) + dt.timedelta(minutes=90 + 60)
+        late = lambda rel, r: ms(late_at) if (rel == "streams/ps1/execution_states.jsonl" and r.get("execution_id") == eid
+                                              and r.get("state") in ("completed", "recovered")) else None
+        self.w.publish(shift=late)
+        doc = self.w.measure()
+        self.assertEqual(doc["decisions"]["ps1"]["2026-10-05T08:00:00Z"], "missed: filled after the deadline or the cutoff")
+
+    def test_case_b_boundary_all_rows_at_the_allowance_count(self):
+        mine = self._execution()
+        at = ms(dt.datetime(2026, 10, 5, 8, tzinfo=UTC) + dt.timedelta(minutes=90 + 15)) - 60_000 + 1   # pushed at +15:00
+        on = lambda rel, r: at if rel == "streams/ps1/executions.jsonl" and r in mine[1:] else None
+        self.w.publish(shift=on)
+        doc = self.w.measure()
+        self.assertEqual(doc["decisions"]["ps1"]["2026-10-05T08:00:00Z"], "executed")
+        self.assertEqual(doc["verdict"], "pass", doc.get("reason"))
 
 
 if __name__ == "__main__":

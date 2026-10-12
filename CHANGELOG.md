@@ -1,3 +1,23 @@
+# Maintenance, revision 2.28.2 (crypto-desk 12.4.16 on the 12.4 release family) — 2026-10-12
+
+**Base.** `main` at `f13b35bc`: 2.28.1 merged on Oct 7 at 22:51Z as `4c6eb529`, followed by the O33 v3 PRs #38 and
+#39, then data. Nothing changes in any research definition, model, contract, `range-job-12.4.0`, the PS1 protocol, the
+collector, recovery, persistence, workflows or any recorded forecast, score or execution. Release identity
+(`desk/release.json`, repo 2.28) is unchanged: no release module changed. The repository items come from the crypto-desk
+12.4.16 handoff.
+
+| Finding (reproduced) | Verified cause | Change | Tests |
+|---|---|---|---|
+| **Acceptance credited an identifier, not its content.** A collector row was pushed on time as a failure and replaced in place by a success after the 15-minute allowance. Separately, one of an execution's six PS1 rows was pushed on time and the other five late. 3.1.0 credited both as on time: the four-row replacement read `pass` with the 75-minute gap hidden, and the five-late-rows execution read `executed`/`pass`. | `PushHistory.first_seen` was keyed on `(run_id, t)` / `execution_id`, so the first push of *any* row carrying the key counted. | acceptance-3.2.0. A row is available from the first push whose diff added its exact content (canonical JSON). An execution is available from the latest such push across its six execution rows and its state-journal rows. A late collector entry names `identifier_first_pushed` when the identifier was on main earlier with other content. | `test_acceptance.ContentCreditingTests` (6): case A with one row and with four rows (verdict `fail`, gap > 45 min), plus a no-op-rewrite control; case B with five of six rows late, with the completion state late, and with all rows at exactly +15:00 (counts). All four defect tests failed on 3.1.0 and pass on 3.2.0. |
+| **Declared windows re-checked** | — | Oct 6: the 3.2.0 audit (same evidence, `6ce0e82a`) is identical to the 3.1.0 audit except the availability label; the result of record stands. Oct 7: no evaluation existed, so this is the first one, 4 d 17 h after its earliest evaluation time. The 3.0.0 result of record, the 3.1.0 audit (amendment) and the 3.2.0 audit all read `insufficient` / service `pass`. The window is not credited as a pass: the receipt export covers 10:12Z-22:27Z only, so 92 critical-chain runs are timer-corroborated. | `docs/acceptance/results/2026-10-0{6,7}/` |
+| **Merge events missing from `desk/deployments.jsonl`** (PRs #26-#28 and #34-#39, including #36, recorded only as "pull request opened") | not appended at merge time | appended retrospectively from the GitHub API (`merged_at`, `merge_commit_sha`, `merged_by`, check runs) and git first-parent, each labelled retrospective. PR #36: merged 2026-10-07T21:19:34Z as `0f6afe3f`. | — |
+| **O34 study not in the repository** | — | `research/o34/`: runner, results, inputs record, v1.1 erratum and classifier, replay, evidence bundle (raw provider files, gzipped rows). `protocol.json` is withheld because its rationale records the operator's own positions and dollar results (public repository); its sha256 is published (`protocol.sha256`). The commit date is not proof of the freeze time. | replay from this layout: 0 differences in both raw and rows modes (6,942 bars) |
+
+Found while evaluating, not changed: `snapshot()` decides push-history availability over every push in the evidence,
+including pushes after the cutoff. If the local clone lacks the newest pushed commits, availability reads
+"unestablished" (insufficient, never pass) until the clone is refreshed. This is fail-safe, and it is documented in the
+Oct 7 README.
+
 # Maintenance, revision 2.28 (crypto-desk 12.4.12 on the 12.4 release family) — 2026-10-07
 
 **Base.** `main` at `d9eb3d16` (2.27 merged Oct 5 21:46Z as `f242b90e`, plus data). No research definition, model,
