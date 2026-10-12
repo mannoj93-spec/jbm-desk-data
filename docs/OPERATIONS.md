@@ -195,7 +195,7 @@ GitHub's scheduler. Evidence, ruled-out causes and the revisit condition: `docs/
 run>]`, and each recovery run's title ends "via <origin>" so the Actions run list shows it. A recovery run whose chain a
 person started is human-assisted (never counted as automated); a root that cannot be found is unknown.
 
-**Acceptance (infrastructure, stated before observing; acceptance-3.1.0, repo 2.28; 3.0.0 in 2.27).** One window of at least 24 h,
+**Acceptance (infrastructure, stated before observing; acceptance-3.2.0, repo 2.28.2; 3.1.0 in 2.28; 3.0.0 in 2.27).** One window of at least 24 h,
 judged after its evidence cutoff (default window end + 120 min). Fetch and keep the evidence, then replay it offline:
 
     GITHUB_REPOSITORY=mannoj93-spec/jbm-desk-data GH_TOKEN=... python scripts/service_acceptance.py \
@@ -207,8 +207,10 @@ Clocks kept apart: the window; each decision's deadline (range 75 min, PS1 90 mi
 falls inside the window); the evidence cutoff (3.1.0: repository files are read at the after-commit of the last push to main at
 or before it, from GitHub's repository activity API, so later fills, confirmations, records, receipts or scores cannot
 repair the window; committer time is never used); durable availability (an output counts only when the push that
-added it reached main in time: a collector record within 15 min of its record time, PS1 rows by their deadlines, a
-range registration before its window start; no complete push history -> insufficient, never pass); and the evaluation clock (before the cutoff: pending). Targets (unchanged): >= 97% of slot
+added its exact content reached main in time: a collector record within 15 min of its record time, PS1 rows by their
+deadlines - an execution only when all six execution rows and its state-journal rows did (3.2.0: a row replaced in
+place, or an identifier completed later, is not credited with an earlier push) - a range registration before its
+window start; no complete push history -> insufficient, never pass); and the evaluation clock (before the cutoff: pending). Targets (unchanged): >= 97% of slot
 intervals hold a persisted **critical-success** collector record (`cadence.critical_success`, the one shared
 definition) from a run not started by a person (95 intervals: at most 2 empty); no gap over 45 min (the acceptance
 target - the 90-minute watchdog limit is a different rule); every range decision published eligibly (validated through the RC1D contract and

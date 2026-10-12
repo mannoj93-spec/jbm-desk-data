@@ -42,3 +42,13 @@ python <repo 2.28>/scripts/service_acceptance.py --from 2026-10-06T00:00:00Z --t
 
 The 3.0.0 result replays with the 2.27 checker and `actions-evidence-3.0.0.json` the same way (committer-time
 snapshot; no push history).
+
+## Supplementary audit with acceptance-3.2.0 (repo 2.28.2, 2026-10-12; not a replacement)
+
+acceptance-3.2.0 credits availability to content rather than to an identifier. A collector row replaced in place, or
+a PS1 execution whose other rows arrived later, no longer inherits an earlier push. On 2026-10-12 at 19:02:27Z it
+replayed this window offline with the same `actions-evidence-3.1.0.json.gz` (sha256 `cd05701f…fb21b84`) and the same
+repository state (`6ce0e82a`, 406 pushes up to the cutoff). Result: `supplementary-acceptance-3.2.0.json`, verdict
+**insufficient**, service_verdict **pass**. Every field is identical to the 3.1.0 audit except the availability label,
+which now reads "content first pushed". 0 records were not delivered in time, and the PS1 and range outcomes are
+unchanged. The original result still stands.

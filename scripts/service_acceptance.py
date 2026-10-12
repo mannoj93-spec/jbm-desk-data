@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
-"""service_acceptance - the 24-hour infrastructure acceptance check for restored unattended operation (repo 2.28).
+"""service_acceptance - the 24-hour infrastructure acceptance check for restored unattended operation (repo 2.28.2).
 
     python scripts/service_acceptance.py --from ISO [--to ISO] [--cutoff ISO] [--now ISO]
            [--actions-evidence FILE | (fetch with GITHUB_TOKEN/GH_TOKEN + GITHUB_REPOSITORY) [--save-evidence FILE]]
            [--timer-receipts FILE] [--commit SHA]
 
-Read-only. An infrastructure check, not a research criterion. acceptance-3.1.0 (repo 2.28) replaces 3.0.0 after an
+Read-only. An infrastructure check, not a research criterion. acceptance-3.2.0 (repo 2.28.2) credits availability to
+content, not to an identifier: 3.1.0 gave a collector (run_id, t) or a PS1 execution_id the first push of ANY row
+carrying it, so a row pushed on time as a failure and replaced in place by a success after the allowance, or one of
+an execution's six rows pushed on time and the other five late, counted as delivered on time (both reproduced:
+regression/test_acceptance.py ContentCreditingTests). A stored row is now available from the first push whose diff
+added that exact content (canonical JSON), and an execution from the latest such push across all its execution rows
+and its state-journal rows. acceptance-3.1.0 (repo 2.28) replaced 3.0.0 after an
 independent review reproduced five false passes in it: a healthy World with no git history passed; records first
 committed an hour after the window passed; a range publication row marked eligible:true with its start/confirmation
 moved after the window passed; receipts from an unrelated job/target produced timer-receipt; and (health) a monitor
@@ -22,7 +28,8 @@ Four clocks are kept apart:
               main within 15 min of its record time; a PS1 execution/no-rebalance/lifecycle row first pushed before
               the decision's deadline + 15 min (execution) or deadline (no-rebalance, pause); a range forecast's
               manifest registration first pushed strictly before its window start. The first push whose diff added
-              the row is its availability. Without a complete push history (pushes_complete) availability is
+              the row's exact content is its availability (3.2.0; an execution needs every one of its execution and
+              state-journal rows). Without a complete push history (pushes_complete) availability is
               "unestablished": the verdict is insufficient, never pass.
   evaluation  --now (default: the clock). Before the cutoff the verdict is pending.
 
@@ -111,7 +118,7 @@ import provenance                 # noqa: E402
 import recovery                   # noqa: E402
 from watchdog import load_runs    # noqa: E402
 
-VERSION = "acceptance-3.1.0"
+VERSION = "acceptance-3.2.0"
 UTC = dt.timezone.utc
 MIN_WINDOW_H = 24
 TARGETS = {"interval_share": 0.97, "longest_gap_min": 45}
@@ -638,6 +645,12 @@ class PushHistory:
         self._seen[(path, key)] = first
         return first
 
+    def first_seen_content(self, path):
+        """{canonical_sha(row): first push time} for the JSON-lines file `path` (3.2.0). Availability belongs to
+        content: a row replaced in place, or an identifier whose other rows arrived later, is available only from
+        the push that added that exact content."""
+        return self.first_seen(path, canonical_sha)
+
     def first_seen_keys(self, path):
         """{top-level key: first push time} for a JSON-object file (the forecast manifest)."""
         if (path, None) in self._seen:
@@ -765,9 +778,17 @@ def ps1_evaluate(base, start, end, cutoff, history=None):
     by_dec = {}
     for r in chain["rows"]:
         by_dec.setdefault(r.get("decision_id"), {}).setdefault(r.get("execution_id"), []).append(r)
-    final_t = {eid: st[-1].get("t_ms") for eid, st in P.exec_states(base).items() if st}
+    states_all = P.exec_states(base)
+    final_t = {eid: st[-1].get("t_ms") for eid, st in states_all.items() if st}
 
-    exec_avail = history.first_seen(f"{P.ROOT}/executions.jsonl", lambda r: r.get("execution_id")) if history.known else None
+    if history.known:                 # 3.2.0: every execution row and journal row by content; the latest first push
+        ex_c, st_c = history.first_seen_content(P.EXECUTIONS), history.first_seen_content(P.EXEC_STATES)
+
+        def exec_avail(eid, rs):
+            ts = [ex_c.get(canonical_sha(r)) for r in rs] + [st_c.get(canonical_sha(r)) for r in states_all.get(eid, [])]
+            return None if not ts or any(t_ is None for t_ in ts) else max(ts)
+    else:
+        exec_avail = None
 
     def available_by(line_match, deadline_dt, path):
         """True / False when push history is available; None (unestablished) otherwise."""
@@ -789,9 +810,10 @@ def ps1_evaluate(base, start, end, cutoff, history=None):
                          if all(isinstance(r.get("fill_time_ms"), int) and r["fill_time_ms"] <= deadline for r in rs)
                          and isinstance(final_t.get(eid), int) and final_t[eid] <= cut}
                 late = set(by_dec.get(did, {})) - set(execs)
-                if exec_avail is not None:                        # first pushed within the delivery allowance
-                    pushed_late = {e for e in execs if not (exec_avail.get(e) and
-                                   exec_avail[e] <= dl_dt + dt.timedelta(minutes=DELIVERY_MIN))}
+                if exec_avail is not None:      # every row's content first pushed within the delivery allowance
+                    avail_e = {e: exec_avail(e, rs) for e, rs in execs.items()}
+                    pushed_late = {e for e in execs if not (avail_e[e] and
+                                   avail_e[e] <= dl_dt + dt.timedelta(minutes=DELIVERY_MIN))}
                     execs = {e: v for e, v in execs.items() if e not in pushed_late}
                     late |= pushed_late
                 d = decs.get(did)
@@ -973,10 +995,15 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None)
     recs = [r for r in all_recs if a <= r["t"] < b and cadence.is_routine(r)]
     buckets = cadence.slot_buckets(cadence.load(base), a, b)
     cont, strict, inits, crit_fail, degraded, unbound, late = [], [], {}, [], 0, [], []
-    first = {}
+    first, ident = {}, {}
     if hist.known:
         for f in sorted((base / "data/runs").glob("*.jsonl")) if (base / "data/runs").exists() else []:
-            first.update(hist.first_seen(f"data/runs/{f.name}", lambda r: (str(r.get("run_id")), r.get("t"))))
+            for k, t_ in hist.first_seen_content(f"data/runs/{f.name}").items():   # 3.2.0: by content
+                if k not in first or t_ < first[k]:
+                    first[k] = t_
+            for k, t_ in hist.first_seen(f"data/runs/{f.name}", lambda r: (str(r.get("run_id")), r.get("t"))).items():
+                if k not in ident or t_ < ident[k]:                      # diagnostic only: when the identifier appeared
+                    ident[k] = t_
     seen = {}
     for r in recs:
         seen[str(r.get("run_id"))] = seen.get(str(r.get("run_id")), 0) + 1
@@ -994,9 +1021,13 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None)
             continue
         degraded += bool(cadence.failure_summary(r)[1])
         if hist.known:                                            # first durable availability (push time)
-            fa = first.get((str(r.get("run_id")), r["t"]))
+            fa = first.get(canonical_sha(r))
             if fa is None or ms(fa) > r["t"] + DELIVERY_MIN * 60_000 or fa > cutoff:
-                late.append({"run_id": r.get("run_id"), "t": r["t"], "first_pushed": iso(fa) if fa else None})
+                entry = {"run_id": r.get("run_id"), "t": r["t"], "first_pushed": iso(fa) if fa else None}
+                fi = ident.get((str(r.get("run_id")), r["t"]))
+                if fi is not None and (fa is None or fi < fa):           # the identifier was on main with other content
+                    entry["identifier_first_pushed"] = iso(fi)
+                late.append(entry)
                 continue
         if label in CONTINUITY:
             cont.append(r["t"])
@@ -1015,7 +1046,7 @@ def _measure(doc, base, sinfo, start, end, now, ev, receipts, cutoff, hist=None)
                          "critical_failures": crit_fail, "degraded_optional_records": degraded,
                          "records_not_bound_to_their_run": unbound,
                          "records_not_delivered_in_time": late,
-                         "availability": ("first pushed within " + str(DELIVERY_MIN) + " min of the record time (push history)")
+                         "availability": ("content first pushed within " + str(DELIVERY_MIN) + " min of the record time (push history)")
                          if hist.known else "unestablished: stored timestamps only (diagnostic, never a certification)",
                          "strict": {"intervals_with_critical_success": s_held, "share": round(s_share, 4),
                                     "longest_gap_min": s_gap},

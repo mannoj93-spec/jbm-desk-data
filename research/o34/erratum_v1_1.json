@@ -1,0 +1,22 @@
+{
+ "id": "O34",
+ "erratum": "v1.1",
+ "package": "12.4.16",
+ "written_utc": "2026-10-12",
+ "supersedes": "the filing branch of run_o34.py v1 only; protocol.json, run_o34.py and results_v1.json are unchanged (sha256 pinned in classify_v1_1.V1)",
+ "defect": "protocol.json declares a nine-variant Holm family ('Holm-adjusted within the nine-variant family on validation') but its filing_status clause omits the Holm gate, and run_o34.py classifies on the unadjusted validation interval. A synthetic case with a positive unadjusted interval and validation Holm p = 0.36 is filed 'exploratory, holdout-consistent' by v1.",
+ "correction": {
+  "family": "the nine (k, H) variants: k in {0.7, 1.0, 1.5} x H in {2, 6, 18} bars",
+  "period": "validation 2024-09-23 to 2025-09-23 for the gate; holdout 2025-09-23 to 2026-09-23 for consistency",
+  "test": "v1's two-sided stationary-bootstrap p-value, Holm-adjusted within the family (stored as p_holm)",
+  "alpha": 0.05,
+  "rule": "pass only if validation Holm p < 0.05 and the validation 95% interval excludes 0; then holdout-consistent only if the holdout 95% interval excludes 0 with the same sign",
+  "code": "studies/o34/classify_v1_1.py (o34-classify-1.1.0); tests test_o34_v1_1.py"
+ },
+ "effect_on_the_actual_result": "none: the primary's validation Holm p is 1.0 and its interval [-2.839, +1.854] bp includes 0; v1 and v1.1 both file 'no demonstrated difference'. The correction changes the rule, not this result.",
+ "path_erratum": "protocol.json's freeze text and queue.md name research/o34/; the files were written there and moved to studies/o34/ before delivery (make_release.check reads a research/ folder in the skill as the repository's artifact set). Content and hashes are unchanged; the frozen text is not edited.",
+ "chronology": "content-hash verification only. The protocol's sha256 was sent to the operator in the thread at about 13:29Z on Oct 12 2026, before the run at 13:30:54Z; the file's local modification time was 13:28:54Z. Neither is independent proof of preregistration chronology (no registry receipt, no public commit); the freeze is a reported freeze, not an independently verified one.",
+ "outcome_definition": "fee-and-tick-adjusted signed log returns in bp (4 bp per side plus one 0.1 tick per side), excluding funding; not account P&L; leverage and liquidation not modelled; different holding times change funding exposure, which is not included.",
+ "interpretation": "No mean difference was demonstrated under this unconditioned-entry design. The observed lower-tail quantile improved, the median worsened, and roughly one-third of trades exited early. Failing to show a difference is not evidence of equivalence; the quantile changes are descriptive (their uncertainty was not estimated).",
+ "replay": "studies/o34/replay_o34.py --raw <dir> | --rows <file>; inputs in the separate O34 evidence bundle; reproduced every field on Oct 12 2026 (Python 3.13.16, NumPy 2.5.3)"
+}
