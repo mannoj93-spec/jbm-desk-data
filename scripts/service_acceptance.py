@@ -1,11 +1,19 @@
 #!/usr/bin/env python3
-"""service_acceptance - the 24-hour infrastructure acceptance check for restored unattended operation (repo 2.28.2).
+"""service_acceptance - the 24-hour infrastructure acceptance check for restored unattended operation (repo 2.28.3).
 
     python scripts/service_acceptance.py --from ISO [--to ISO] [--cutoff ISO] [--now ISO]
            [--actions-evidence FILE | (fetch with GITHUB_TOKEN/GH_TOKEN + GITHUB_REPOSITORY) [--save-evidence FILE]]
            [--timer-receipts FILE] [--commit SHA]
 
-Read-only. An infrastructure check, not a research criterion. acceptance-3.2.0 (repo 2.28.2) credits availability to
+Read-only. An infrastructure check, not a research criterion. acceptance-3.3.0 (repo 2.28.3) extends content crediting
+to range publication: 3.2.0 still credited a forecast's manifest KEY with its first push, so a synthetic history in
+which three keys reached main as empty objects with no frozen files, and their valid entries and frozen bytes only
+after the windows had started, passed with all nine checks true (regression/test_acceptance.py RangeContentTests). A
+forecast now counts only when its exact manifest entry, its frozen bytes (git blob of the bytes validated at the
+cutoff) and its publication confirmation row each first reached main strictly before its window start. Push history
+is now limited to pushes at or before the cutoff and is "known" only when every one of those pushed commits (and
+each push's base, after the first) is present locally; later pushes no longer matter, and a gap in the required
+history is unestablished availability (insufficient), never a pass. acceptance-3.2.0 (repo 2.28.2) credits availability to
 content, not to an identifier: 3.1.0 gave a collector (run_id, t) or a PS1 execution_id the first push of ANY row
 carrying it, so a row pushed on time as a failure and replaced in place by a success after the allowance, or one of
 an execution's six rows pushed on time and the other five late, counted as delivered on time (both reproduced:
@@ -27,9 +35,9 @@ Four clocks are kept apart:
   availability  3.1.0: an output counts only when durably available on time: a collector record first pushed to
               main within 15 min of its record time; a PS1 execution/no-rebalance/lifecycle row first pushed before
               the decision's deadline + 15 min (execution) or deadline (no-rebalance, pause); a range forecast's
-              manifest registration first pushed strictly before its window start. The first push whose diff added
-              the row's exact content is its availability (3.2.0; an execution needs every one of its execution and
-              state-journal rows). Without a complete push history (pushes_complete) availability is
+              exact manifest entry, frozen bytes and confirmation row first pushed strictly before its window start
+              (3.3.0). The first push whose diff added the row's exact content is its availability (3.2.0; an
+              execution needs every one of its execution and state-journal rows). Without a complete push history (pushes_complete) availability is
               "unestablished": the verdict is insufficient, never pass.
   evaluation  --now (default: the clock). Before the cutoff the verdict is pending.
 
@@ -118,7 +126,7 @@ import provenance                 # noqa: E402
 import recovery                   # noqa: E402
 from watchdog import load_runs    # noqa: E402
 
-VERSION = "acceptance-3.2.0"
+VERSION = "acceptance-3.3.0"
 UTC = dt.timezone.utc
 MIN_WINDOW_H = 24
 TARGETS = {"interval_share": 0.97, "longest_gap_min": 45}
@@ -442,7 +450,7 @@ def snapshot(base, cutoff, commit=None, pushes=None):
     if not (base / ".git").exists():
         return base, {"commit": None, "availability": "unestablished",
                       "method": "working tree (not a git checkout): availability at the cutoff is not established"}
-    hist = PushHistory(base, pushes)
+    hist = PushHistory(base, pushes, cutoff)                       # 3.3.0: pushes after the cutoff are irrelevant
     if hist.known and hist.sha_at(cutoff):
         sha, method, avail = hist.sha_at(cutoff), "after-commit of the last push to main at or before the cutoff " \
                                                   "(GitHub activity API push time)", "push history"
@@ -486,8 +494,9 @@ def range_decisions(base, start, end, runs_of=None, history=None):
     RC1D contract, never through an `eligible: true` flag). A decision is published when one production attempt's
     first confirmation row lists the decision's three forecasts and each of them (range_reader._verify: manifest
     entry, frozen bytes and hash, schema, validate_rc1d with this publication) is eligible by
-    range_contract.eligibility - registered and confirmed strictly before its window start - AND its manifest entry
-    was first pushed to main before that start (push history). Without push history the state is
+    range_contract.eligibility - registered and confirmed strictly before its window start - AND (3.3.0) its exact
+    manifest entry, its frozen bytes and its confirmation row each first reached main strictly before that start
+    (push history; 3.2.0 checked only the manifest key's first appearance). Without push history the state is
     "published (availability unestablished)". runs_of (optional dict) receives the publishing attempts' run ids."""
     import range_contract as C
     import range_reader as RR
@@ -503,7 +512,11 @@ def range_decisions(base, start, end, runs_of=None, history=None):
         manifest = json.loads((base / "state/forecast_manifest.json").read_text())
     except (OSError, ValueError):
         manifest = {}
-    first_key = history.first_seen_keys("state/forecast_manifest.json") if history.known else None
+    known = history.known                                    # 3.3.0: content, bytes and confirmation, not the key
+    entries_first = history.first_seen_entries("state/forecast_manifest.json") if known else None
+    keys_first = history.first_seen_keys("state/forecast_manifest.json") if known else None
+    blobs_first = history.first_seen_blobs("registry/frozen") if known else None
+    pubs_first = history.first_seen_content("state/range_publications.jsonl") if known else None
     contract = C.contract_id("RC1D")
     out, d = {}, (start - dt.timedelta(minutes=RANGE_GRACE_MIN)).replace(minute=0, second=0, microsecond=0)
     while d.hour % 4 or d + dt.timedelta(minutes=RANGE_GRACE_MIN) < start:      # deadline inside the window
@@ -536,11 +549,28 @@ def range_decisions(base, start, end, runs_of=None, history=None):
                 if state != "eligible":
                     problems.append(f"{fid}: {state} ({reason})")
                     continue
-                if first_key is None:
+                if not known:
                     unest = True
-                elif not (first_key.get(fid) and C.ms(first_key[fid]) < start_ms):
-                    problems.append(f"{fid}: registration first pushed to main "
-                                    f"{iso(first_key[fid]) if first_key.get(fid) else 'never'}, not before its window start")
+                    continue
+                late = []
+                te = entries_first.get((fid, canonical_sha(entry)))
+                if not (te and C.ms(te) < start_ms):
+                    tk = keys_first.get(fid)
+                    late.append(f"manifest entry first pushed {iso(te) if te else 'never'}"
+                                + (f" (its key {iso(tk)})" if tk and tk != te else ""))
+                fpath = str(entry.get("frozen") or "")
+                try:
+                    fblob = blob_id((base / fpath).read_bytes())
+                except OSError:
+                    fblob = None
+                tf = blobs_first.get((fpath, fblob)) if fblob else None
+                if not (tf and C.ms(tf) < start_ms):
+                    late.append(f"frozen bytes first pushed {iso(tf) if tf else 'never'}")
+                tp = pubs_first.get(canonical_sha(pub))
+                if not (tp and C.ms(tp) < start_ms):
+                    late.append(f"confirmation row first pushed {iso(tp) if tp else 'never'}")
+                if late:
+                    problems.append(f"{fid}: " + "; ".join(late) + ", not before its window start")
             if problems:
                 why = "invalid: " + "; ".join(problems)[:300]
                 continue
@@ -603,13 +633,18 @@ class PushHistory:
     time T is its content at the `after` commit of the last push at or before T; a row's first availability is the
     first push whose diff added it. Committer time is never used. .known is False without push evidence or without the
     pushed commits in the local repository - availability is then unestablished, never assumed."""
-    def __init__(self, base=None, pushes=None):
+    def __init__(self, base=None, pushes=None, cutoff=None):
         self.base = Path(base) if base else None
         ok = [(parse(p.get("timestamp")), p.get("after"), p.get("before")) for p in pushes or []
               if p.get("ref") in (None, "refs/heads/main") and p.get("after")]
-        self.pushes = sorted((t, a, b) for t, a, b in ok if t)
-        self.known = bool(self.base and (self.base / ".git").exists() and self.pushes
-                          and all(git(self.base, "cat-file", "-e", a + "^{commit}") is not None for _, a, _ in self.pushes[-3:]))
+        self.pushes = sorted((t, a, b) for t, a, b in ok if t and (cutoff is None or t <= cutoff))
+        self.missing = None
+        if self.base and (self.base / ".git").exists() and self.pushes:
+            # 3.3.0: the as-of history only, and all of it - every pushed commit and, after the first push, each
+            # push's base (its diff is the row's first appearance). Pushes after the cutoff are not required.
+            need = [a for _, a, _ in self.pushes] + [b for _, _, b in self.pushes[1:] if b]
+            self.missing = sorted(set(need) - present_commits(self.base, need))
+        self.known = bool(self.pushes) and self.missing == []
         self._seen = {}
 
     def sha_at(self, when):
@@ -651,6 +686,45 @@ class PushHistory:
         the push that added that exact content."""
         return self.first_seen(path, canonical_sha)
 
+    def first_seen_entries(self, path):
+        """{(top-level key, canonical_sha(value)): first push time} for a JSON-object file (3.3.0): a key whose value
+        was first a placeholder is available with its final contents only from the push that wrote them."""
+        if (path, "entries") in self._seen:
+            return self._seen[(path, "entries")]
+        first, prev = {}, None
+        for t, after, before in self.pushes:
+            if prev is not None and before and git(self.base, "diff", "--quiet", before, after, "--", path) is not None:
+                continue
+            try:
+                doc = json.loads((git(self.base, "show", f"{after}:{path}") or b"{}").decode() or "{}")
+            except ValueError:
+                doc = {}
+            for k, v in (doc.items() if isinstance(doc, dict) else []):
+                first.setdefault((k, canonical_sha(v)), t)
+            prev = after
+        self._seen[(path, "entries")] = first
+        return first
+
+    def first_seen_blobs(self, tree):
+        """{(path, git blob id): first push time} for every file under `tree` (3.3.0): a file is available with
+        given bytes from the first push whose tree held exactly those bytes at that path."""
+        if (tree, "blobs") in self._seen:
+            return self._seen[(tree, "blobs")]
+        first = {}
+        for i, (t, after, before) in enumerate(self.pushes):
+            if i == 0 or not before:
+                out = (git(self.base, "ls-tree", "-r", "--full-tree", after, "--", tree) or b"").decode()
+                pairs = [(l.split("\t", 1)[1], l.split()[2]) for l in out.splitlines() if "\t" in l]
+            else:
+                out = (git(self.base, "diff", "--raw", "--no-renames", "--no-abbrev", before, after, "--", tree)
+                       or b"").decode()
+                pairs = [(l.split("\t", 1)[1], l.split()[3]) for l in out.splitlines()
+                         if l.startswith(":") and "\t" in l and l.split()[4][0] in "AMT"]
+            for path, blob in pairs:
+                first.setdefault((path, blob), t)
+        self._seen[(tree, "blobs")] = first
+        return first
+
     def first_seen_keys(self, path):
         """{top-level key: first push time} for a JSON-object file (the forecast manifest)."""
         if (path, None) in self._seen:
@@ -668,6 +742,26 @@ class PushHistory:
             prev = after
         self._seen[(path, None)] = first
         return first
+
+
+def present_commits(base, shas):
+    """The subset of `shas` that are commits in the local repository (one git cat-file --batch-check call)."""
+    shas = sorted(set(s for s in shas if s))
+    if not shas:
+        return set()
+    r = subprocess.run(["git", "cat-file", "--batch-check"], cwd=base, input="".join(s + "\n" for s in shas).encode(),
+                       capture_output=True)
+    out = set()
+    for line in r.stdout.decode().splitlines():
+        parts = line.split()
+        if len(parts) >= 2 and parts[1] == "commit":
+            out.add(parts[0])
+    return out
+
+
+def blob_id(data: bytes) -> str:
+    """git's blob id of `data` (sha1 over 'blob <size>\\0' + bytes)."""
+    return hashlib.sha1(b"blob %d\x00" % len(data) + data).hexdigest()
 
 
 def validate_receipts(doc, repo, declared=None):
@@ -933,7 +1027,7 @@ def measure(base, start, end, now, evidence=None, receipts=None, cutoff=None, co
         return doc
     pushes = (evidence or {}).get("pushes")
     snap, sinfo = snapshot(base, cutoff, commit, pushes)
-    hist = PushHistory(base, [p for p in pushes or [] if (parse(p.get("timestamp")) or cutoff) <= cutoff])
+    hist = PushHistory(base, [p for p in pushes or [] if (parse(p.get("timestamp")) or cutoff) <= cutoff], cutoff)
     if sinfo.get("availability") != "push history" or not (evidence or {}).get("pushes_complete"):
         hist = PushHistory()                                      # unestablished: never assumed
     try:

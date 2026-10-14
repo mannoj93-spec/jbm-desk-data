@@ -1,3 +1,22 @@
+# Maintenance, revision 2.28.3 (crypto-desk 12.4.17 on the 12.4 release family) — 2026-10-14
+
+**Base.** `main` at `a32ad3c3` (2.28.2 merged Oct 12 19:37:20Z as `69258f42`, then data only). Collection, recovery,
+persistence, workflows, research definitions, the PS1 protocol and `desk/release.json` (repo 2.28) are unchanged.
+The 3.2.0 collector and PS1 content-crediting fixes are kept unchanged. This revision applies the repository part of
+an independent assessment of 12.4.16 / 2.28.2 (inspected at `028352ad`). The assessment's counterexample is
+synthetic; no production incident is asserted.
+
+| Finding (reproduced) | Verified cause | Change | Tests |
+|---|---|---|---|
+| **Range publication credited a manifest key, not its content.** In `World`, the Oct 4 20:00 decision's three manifest keys were first pushed at 20:48 as `{}` with no frozen files, and their valid entries and frozen bytes only at 22:00, after the windows started at 20:55. 3.2.0 returned range `published`, verdict `pass` and all nine checks true. | `range_decisions` used `first_seen_keys`: the first push of the key, whatever its value then. | acceptance-3.3.0. Each of the decision's forecasts needs its exact manifest entry (`first_seen_entries`, canonical JSON), its frozen bytes (`first_seen_blobs`, the git blob of the bytes validated at the cutoff) and its confirmation row (`first_seen_content`) first pushed strictly before its window start. Production check before the change: 0 of 294 manifest keys ever changed value after first appearance, and the confirmation rows are append-only (98 commits), so content crediting changes no real result. | `test_acceptance.RangeContentTests` (7): placeholder then late repair; a placeholder entry with its frozen bytes on time; late frozen bytes; a wrong frozen path first, corrected later; a confirmation row pushed late with its stored time unchanged; frozen bytes exactly at the start (fails) and one minute earlier (passes); on-time and no-op-rewrite controls. Run against unmodified 3.2.0, every defect test fails and the control passes. Mutation check: disabling each new guard in turn (entry content, frozen bytes, confirmation row, strict boundary, complete history, cutoff-limited history, and the kept 3.2.0 collector crediting) fails its intended test (8 of 8). |
+| **Push history: post-cutoff pushes mattered, a missing earlier push did not** (the first documented in 2.28.2; the second found here) | `snapshot()` built its push history from every push in the evidence and required only the newest three commits locally. A post-cutoff commit absent from the clone made availability unestablished. A pushed commit missing inside the required history went unnoticed, and 3.2.0 returned verdict **pass** (reproduced on 3.2.0 by `AsOfHistoryTests`). | push history is limited to pushes at or before the cutoff, and `known` requires every one of those pushed commits (and each push's base, after the first) to be present (`present_commits`, one `git cat-file --batch-check` call). A gap in that history is unestablished (insufficient), never a pass and never a silent late attribution. | `test_acceptance.AsOfHistoryTests` (2) |
+| **Declared windows re-checked** | — | Oct 6 and Oct 7: the 3.3.0 supplementary audits (same evidence and commits) are identical to 3.2.0 in every field. Results of record untouched; Oct 7 still not credited as a pass (receipts cover 10:12Z-22:27Z only). | `docs/acceptance/results/2026-10-0{6,7}/` |
+| **PR #41 merge not in `desk/deployments.jsonl`** | the merge happened after the PR's own commits | retrospective row from the GitHub API: merged 2026-10-12T19:37:20Z as `69258f42`, by mannoj93-spec, checks green | — |
+
+The `World` fixture gains `publish(manifest_view=..., extra_cuts=...)` so a test can push placeholder or incomplete
+manifest contents; default behaviour is unchanged. Timer receipts: no capture job exists. A window is certified
+only if the operator exports the provider history within about 12 hours (docs/OPERATIONS.md).
+
 # Maintenance, revision 2.28.2 (crypto-desk 12.4.16 on the 12.4 release family) — 2026-10-12
 
 **Base.** `main` at `f13b35bc`: 2.28.1 merged on Oct 7 at 22:51Z as `4c6eb529`, followed by the O33 v3 PRs #38 and
