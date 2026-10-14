@@ -47,7 +47,7 @@ First copy `protocol.json` from the 12.4.16 package into this folder and check i
 run, from the repository root:
 
 ```
-sha256sum -c research/o34/protocol.sha256                      # from inside research/o34/
+(cd research/o34 && sha256sum -c protocol.sha256)              # after placing the private protocol.json there
 PYTHONPATH=desk python3 research/o34/replay_o34.py --raw research/o34/evidence/raw
 gunzip -k research/o34/evidence/rows_v1.json.gz
 PYTHONPATH=desk python3 research/o34/replay_o34.py --rows research/o34/evidence/rows_v1.json

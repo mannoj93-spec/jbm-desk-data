@@ -14,7 +14,7 @@ synthetic; no production incident is asserted.
 | **Collector tests failed when the suite ran longer than 10 minutes** (5 tests in `test_rev22` and `test_rev26` read "deadline reached" in a 12-minute local run) | `collector.DEADLINE` is fixed at import to one run's budget; tests that do not patch it fail once the process outlives it | `setUpModule` in both modules starts a fresh run budget; test expectations unchanged | reproduced with an expired deadline (5 failures before, 0 after) |
 | **PR #41 merge not in `desk/deployments.jsonl`** | the merge happened after the PR's own commits | retrospective row from the GitHub API: merged 2026-10-12T19:37:20Z as `69258f42`, by mannoj93-spec, checks green | — |
 
-The `World` fixture gains `publish(manifest_view=..., extra_cuts=...)` so a test can push placeholder or incomplete
+`research/o34/README.md`: the checksum command now runs from the study folder, `(cd research/o34 && sha256sum -c protocol.sha256)`, after the private protocol is placed there (verified against the package copy). The `World` fixture gains `publish(manifest_view=..., extra_cuts=...)` so a test can push placeholder or incomplete
 manifest contents; default behaviour is unchanged. Timer receipts: no capture job exists. A window is certified
 only if the operator exports the provider history within about 12 hours (docs/OPERATIONS.md).
 
