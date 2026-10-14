@@ -82,3 +82,18 @@ The local clone must contain **every** pushed commit named in the evidence, incl
 does not, availability reads "unestablished" (fail-safe: insufficient, never pass). For 3.0.0, run
 `scripts/service_acceptance.py` from a checkout of `f242b90e` with `--actions-evidence <3.0.0 file>` and
 `--commit f13b35bc`.
+
+## Supplementary audit with acceptance-3.3.0 (repo 2.28.3, 2026-10-14; not a replacement)
+
+On 2026-10-14 at 00:41:37Z, acceptance-3.3.0 replayed this window offline. It used the same push-history evidence
+and receipts, and the same repository state (`eace196b`, 415 pushes). The result, `supplementary-acceptance-3.3.0.json`,
+is **insufficient** with service_verdict **pass**, and every field is identical to the 3.2.0 audit.
+
+Two checks changed in 3.3.0 and did not move the result:
+- Range content crediting: all six decisions remain published, because each forecast's entry, frozen bytes and
+  confirmation row reached main before its window start.
+- As-of history: the replay no longer needs commits pushed after the cutoff to be present locally, so the clone
+  requirement noted above is relaxed.
+
+The window is still **not credited as a pass**. The missing timer receipts are an evidence gap that no code change
+can recreate.

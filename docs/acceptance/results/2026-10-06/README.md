@@ -52,3 +52,15 @@ repository state (`6ce0e82a`, 406 pushes up to the cutoff). Result: `supplementa
 **insufficient**, service_verdict **pass**. Every field is identical to the 3.1.0 audit except the availability label,
 which now reads "content first pushed". 0 records were not delivered in time, and the PS1 and range outcomes are
 unchanged. The original result still stands.
+
+## Supplementary audit with acceptance-3.3.0 (repo 2.28.3, 2026-10-14; not a replacement)
+
+acceptance-3.3.0 extends content crediting to range publication. A forecast now counts only when its exact
+manifest entry, its frozen bytes and its confirmation row each reached main strictly before its window start; 3.2.0
+checked only when the manifest key first appeared. Push history is now limited to pushes at or before the cutoff,
+and every pushed commit in that history must be present.
+
+On 2026-10-14 at 00:41:37Z it replayed this window offline with the same evidence (`actions-evidence-3.1.0.json.gz`)
+and the same repository state (`6ce0e82a`, 406 pushes). The result, `supplementary-acceptance-3.3.0.json`, is
+**insufficient** with service_verdict **pass**. Every field is identical to the 3.2.0 audit, and all six range
+decisions are still published. The original result stands.

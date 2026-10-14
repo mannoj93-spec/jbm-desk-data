@@ -25,6 +25,13 @@ import report
 import storage
 import watchdog
 
+
+def setUpModule():
+    """collector.DEADLINE is fixed when collector is imported (one run's budget). Run as one process the regression
+    suite can outlive it (12+ minutes on a slow machine), and then every collector.get here would read "deadline
+    reached". Each module that exercises collector.get starts from a fresh run budget (repo 2.28.3)."""
+    collector.DEADLINE = time.monotonic() + collector.RUN_BUDGET_S
+
 H = schema.H
 M = schema.MINUTE
 M5 = 5 * M

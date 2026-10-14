@@ -195,7 +195,7 @@ GitHub's scheduler. Evidence, ruled-out causes and the revisit condition: `docs/
 run>]`, and each recovery run's title ends "via <origin>" so the Actions run list shows it. A recovery run whose chain a
 person started is human-assisted (never counted as automated); a root that cannot be found is unknown.
 
-**Acceptance (infrastructure, stated before observing; acceptance-3.2.0, repo 2.28.2; 3.1.0 in 2.28; 3.0.0 in 2.27).** One window of at least 24 h,
+**Acceptance (infrastructure, stated before observing; acceptance-3.3.0, repo 2.28.3; 3.2.0 in 2.28.2; 3.1.0 in 2.28; 3.0.0 in 2.27).** One window of at least 24 h,
 judged after its evidence cutoff (default window end + 120 min). Fetch and keep the evidence, then replay it offline:
 
     GITHUB_REPOSITORY=mannoj93-spec/jbm-desk-data GH_TOKEN=... python scripts/service_acceptance.py \
@@ -209,8 +209,10 @@ or before it, from GitHub's repository activity API, so later fills, confirmatio
 repair the window; committer time is never used); durable availability (an output counts only when the push that
 added its exact content reached main in time: a collector record within 15 min of its record time, PS1 rows by their
 deadlines - an execution only when all six execution rows and its state-journal rows did (3.2.0: a row replaced in
-place, or an identifier completed later, is not credited with an earlier push) - a range registration before its
-window start; no complete push history -> insufficient, never pass); and the evaluation clock (before the cutoff: pending). Targets (unchanged): >= 97% of slot
+place, or an identifier completed later, is not credited with an earlier push) - a range forecast only when its exact
+manifest entry, its frozen bytes and its confirmation row each reached main strictly before its window start (3.3.0);
+only the pushes up to the cutoff are needed, and all of them: a missing pushed commit in that history, or no complete
+push history -> insufficient, never pass); and the evaluation clock (before the cutoff: pending). Targets (unchanged): >= 97% of slot
 intervals hold a persisted **critical-success** collector record (`cadence.critical_success`, the one shared
 definition) from a run not started by a person (95 intervals: at most 2 empty); no gap over 45 min (the acceptance
 target - the 90-minute watchdog limit is a different rule); every range decision published eligibly (validated through the RC1D contract and
@@ -227,7 +229,7 @@ roots outside the window are fetched individually. **Strict unattended certifica
 external dispatches matched one-to-one to an execution in a validated timer-provider export (`--timer-receipts`,
 schema `timer-receipts/1`, bound by hash: provider and job id equal to the pinned `docs/acceptance/timer.json`, target
 this repository's recovery.yml dispatch POST on main with trigger=external, export provenance, unique ids, HTTP 2xx -
-any defect rejects the whole export; job 8579326 pinned Oct 7 2026; the console keeps only ~50 executions (~12.5 h), so an export must be read within about half a day of the window it covers);
+any defect rejects the whole export; job 8579326 pinned Oct 7 2026; the console keeps only ~50 executions (~12.5 h), so an export must be read within about half a day of the window it covers - no capture job exists: the operator exports it, and a window whose export was not taken in time stays uncertified (Oct 7));
 "timer-corroborated" (owner token, on the cadence, no receipt) supports continuity but not certification, so a window
 whose targets pass on corroboration alone is reported `service_verdict: pass`, `verdict: insufficient`. The output binds
 the checker version and code hashes, the evaluated commit, every consulted file's hash and the normalized Actions

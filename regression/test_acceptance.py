@@ -155,10 +155,13 @@ class World:
              "state/recovery_yields.jsonl": lambda r: ms(A.parse(r["checked_utc"])),
              "registry/scores.jsonl": lambda r: ms(A.parse(r["scored"])) if isinstance(r.get("scored"), str) else r.get("scored")}
 
-    def publish(self, delay_s=30, base_at=START - dt.timedelta(hours=8), until=END + dt.timedelta(hours=2), shift=None):
+    def publish(self, delay_s=30, base_at=START - dt.timedelta(hours=8), until=END + dt.timedelta(hours=2), shift=None,
+                manifest_view=None, extra_cuts=()):
         """Rebuild the git history from the current files: one commit (and push record) per minute in which some row
         became available (its event time + delay_s, or shift(rel, row) when given); everything older is in the base
-        commit. Returns the push records."""
+        commit. manifest_view(t_ms, sub) -> (manifest to write, entries whose frozen files exist) lets a test push
+        placeholder or incomplete manifest contents (3.3.0); extra_cuts adds commit times (ms). Returns the push
+        records."""
         shutil.rmtree(self.d / ".git", ignore_errors=True)
         full = {}
         for rel in self.AVAIL:
@@ -180,7 +183,7 @@ class World:
         mtimes = {k: (shift("manifest", e) if shift and shift("manifest", e) is not None else e["registered"] + delay_s * 1000)
                   for k, e in man.items()}
         cut = sorted({(t // 60_000 + 1) * 60_000 for ts in list(times.values()) + [list(mtimes.values())] for t in ts
-                      if t is not None and ms(base_at) < t <= ms(until)})
+                      if t is not None and ms(base_at) < t <= ms(until)} | {c for c in extra_cuts if ms(base_at) < c <= ms(until)})
         pushes, before = [], None
 
         def state_at(t_ms):
@@ -188,10 +191,11 @@ class World:
                 keep = [l for l, a in zip(ls, times[rel]) if a is None or a <= t_ms]
                 (self.d / rel).write_text("".join(l + "\n" for l in keep))
             sub = {k: e for k, e in man.items() if mtimes[k] <= t_ms}
-            (self.d / "state/forecast_manifest.json").write_text(json.dumps(sub, indent=1, sort_keys=True))
+            written, with_frozen = manifest_view(t_ms, sub) if manifest_view else (sub, list(sub.values()))
+            (self.d / "state/forecast_manifest.json").write_text(json.dumps(written, indent=1, sort_keys=True))
             shutil.rmtree(self.d / "registry/frozen", ignore_errors=True)
             (self.d / "registry/frozen").mkdir(parents=True)
-            for e in sub.values():
+            for e in with_frozen:
                 if e["frozen"] in frozen:
                     (self.d / e["frozen"]).write_bytes(frozen[e["frozen"]])
         for t_ms in [ms(base_at)] + cut:
@@ -989,6 +993,144 @@ class ContentCreditingTests(Base):
         doc = self.w.measure()
         self.assertEqual(doc["decisions"]["ps1"]["2026-10-05T08:00:00Z"], "executed")
         self.assertEqual(doc["verdict"], "pass", doc.get("reason"))
+
+
+
+# ------------------------------------------------------------------------------------------- 3.3 range content crediting
+class RangeContentTests(Base):
+    """acceptance-3.3.0. 3.2.0 credited a range forecast's manifest KEY with its first push even when the value then
+    was a placeholder and the frozen bytes were absent: a synthetic counterexample (no production incident is
+    asserted) in which the Oct 4 20:00 decision's three manifest keys reach main at 20:48 as empty objects, with no
+    frozen files, and their valid entries and frozen bytes only after 22:00 (windows start 20:55) passed 3.2.0 with all
+    nine checks true. A forecast now counts only when its exact manifest entry, its frozen bytes and its confirmation
+    row each reached main strictly before its window start."""
+    DEC = "20261004T2000Z"
+    LATE = dt.datetime(2026, 10, 4, 22, 0, tzinfo=UTC)
+
+    def ids(self):
+        return {f"range-rc1d-{h}-{self.DEC}" for h in ("4h", "24h", "72h")}
+
+    START_2000 = dt.datetime(2026, 10, 4, 20, 55, tzinfo=UTC)          # the three windows' registered start
+
+    def view(self, placeholder=None, frozen_late=False, wrong_entry=None, late_at=None, placeholder_frozen=False):
+        late_ms, ids = ms(late_at or self.LATE), self.ids()
+
+        def fn(t_ms, sub):
+            written, frozen = {}, []
+            for k, e in sub.items():
+                if k in ids and t_ms < late_ms:
+                    if placeholder is not None:
+                        written[k] = placeholder
+                        if placeholder_frozen:
+                            frozen.append(e)                  # the frozen bytes themselves are on time
+                        continue
+                    if wrong_entry is not None:
+                        written[k] = wrong_entry(e)
+                        frozen.append(e)
+                        continue
+                    written[k] = e
+                    if not frozen_late:
+                        frozen.append(e)
+                    continue
+                written[k] = e
+                frozen.append(e)
+            return written, frozen
+        return fn
+
+    def measure_with(self, shift=None, **kw):
+        cuts = (ms(self.LATE), ms(self.START_2000), ms(self.START_2000) - 60_000)
+        self.w.publish(manifest_view=self.view(**kw), extra_cuts=cuts, shift=shift)
+        return self.w.measure()
+
+    def test_counterexample_placeholder_manifest_then_late_repair_is_not_published(self):
+        doc = self.measure_with(placeholder={})
+        self.assertNotEqual(doc["decisions"]["range"]["2026-10-04T20:00:00Z"], "published", doc["decisions"]["range"])
+        self.assertIn("not before its window start", doc["decisions"]["range"]["2026-10-04T20:00:00Z"])
+        self.assertEqual(doc["verdict"], "fail")
+        self.assertFalse(doc["checks"]["range_decisions_published"])
+        others = {k: v for k, v in doc["decisions"]["range"].items() if k != "2026-10-04T20:00:00Z"}
+        self.assertEqual(set(others.values()), {"published"})        # the other five decisions are untouched
+
+    def test_placeholder_entry_with_frozen_bytes_on_time_is_not_published(self):
+        doc = self.measure_with(placeholder={}, placeholder_frozen=True)
+        st = doc["decisions"]["range"]["2026-10-04T20:00:00Z"]
+        self.assertTrue(st.startswith("invalid"), st)
+        self.assertIn("manifest entry first pushed 2026-10-04T22:00:00Z (its key 2026-10-04T20:48:00Z)", st)
+        self.assertNotIn("frozen bytes first pushed", st)
+
+    def test_late_frozen_bytes_are_not_published(self):
+        doc = self.measure_with(frozen_late=True)
+        st = doc["decisions"]["range"]["2026-10-04T20:00:00Z"]
+        self.assertTrue(st.startswith("invalid"), st)
+        self.assertIn("frozen bytes first pushed", st)
+
+    def test_entry_with_a_wrong_hash_first_then_corrected_is_not_published(self):
+        bad = lambda e: dict(e, frozen="registry/frozen/" + "0" * 64 + ".json")
+        doc = self.measure_with(wrong_entry=bad)
+        st = doc["decisions"]["range"]["2026-10-04T20:00:00Z"]
+        self.assertTrue(st.startswith("invalid"), st)
+        self.assertIn("manifest entry first pushed", st)
+
+    def test_confirmation_row_pushed_late_is_not_published(self):
+        attempt = "2026-10-04T20:00:00Z#37233095511"
+        late = lambda rel, r: ms(self.LATE) if rel == "state/range_publications.jsonl" and r.get("attempt") == attempt else None
+        doc = self.measure_with(shift=late)                           # stored 'confirmed' time unchanged (20:46:41)
+        st = doc["decisions"]["range"]["2026-10-04T20:00:00Z"]
+        self.assertTrue(st.startswith("invalid"), st)
+        self.assertIn("confirmation row first pushed 2026-10-04T22:00:00Z", st)
+
+    def test_boundary_frozen_bytes_exactly_at_start_fail_one_minute_earlier_pass(self):
+        doc = self.measure_with(frozen_late=True, late_at=self.START_2000)
+        st = doc["decisions"]["range"]["2026-10-04T20:00:00Z"]
+        self.assertIn("frozen bytes first pushed 2026-10-04T20:55:00Z", st)
+        self.tearDown(); self.setUp()
+        doc = self.measure_with(frozen_late=True, late_at=self.START_2000 - dt.timedelta(minutes=1))
+        self.assertEqual(doc["decisions"]["range"]["2026-10-04T20:00:00Z"], "published")
+        self.assertEqual(doc["verdict"], "pass", doc.get("reason"))
+
+    def test_on_time_control_and_no_op_rewrite_stay_published(self):
+        doc = self.measure_with()                                     # view changes nothing
+        self.assertEqual(doc["verdict"], "pass", doc.get("reason"))
+        self.assertEqual(doc["decisions"]["range"]["2026-10-04T20:00:00Z"], "published")
+        # an identical manifest rewritten later (same entries, same bytes) changes nothing
+        self.tearDown(); self.setUp()
+        self.w.publish(extra_cuts=(ms(self.LATE),))
+        subprocess.run(["git", "checkout", "-q", "HEAD", "--", "."], cwd=self.w.d, check=True)
+        man = self.w.d / "state/forecast_manifest.json"
+        man.write_text(json.dumps(json.loads(man.read_text()), indent=2, sort_keys=True))       # reformatted only
+        commit_at(self.w.d, END + dt.timedelta(minutes=30), "manifest reformatted")
+        sha = subprocess.run(["git", "rev-parse", "HEAD"], cwd=self.w.d, capture_output=True, text=True).stdout.strip()
+        self.w.pushes.append({"timestamp": iso(END + dt.timedelta(minutes=30)), "before": self.w.pushes[-1]["after"],
+                              "after": sha, "ref": "refs/heads/main"})
+        doc = self.w.measure()
+        self.assertEqual(doc["decisions"]["range"]["2026-10-04T20:00:00Z"], "published")
+        self.assertEqual(doc["verdict"], "pass", doc.get("reason"))
+
+
+class AsOfHistoryTests(Base):
+    """acceptance-3.3.0: only the push history up to the cutoff is required, and all of it."""
+
+    def test_pushes_after_the_cutoff_missing_locally_do_not_matter(self):
+        self.w.publish()
+        ev = self.w.evidence()
+        ev["pushes"] = ev["pushes"] + [{"timestamp": iso(END + dt.timedelta(hours=5)), "before": ev["pushes"][-1]["after"],
+                                        "after": "f" * 40, "ref": "refs/heads/main"}]           # a commit we do not have
+        doc = self.w.measure(ev=ev)
+        self.assertEqual(doc["inputs"]["availability"]["method"], "GitHub activity API pushes to main")
+        self.assertEqual(doc["verdict"], "pass", doc.get("reason"))
+
+    def test_a_missing_commit_inside_the_required_history_is_insufficient_never_pass(self):
+        self.w.publish()
+        ev = self.w.evidence()
+        k = len(ev["pushes"]) // 2
+        ev["pushes"][k] = dict(ev["pushes"][k], after="e" * 40)          # a pushed commit absent from this clone
+        ev["pushes"][k + 1] = dict(ev["pushes"][k + 1], before="e" * 40)
+        doc = self.w.measure(ev=ev)
+        self.assertEqual(doc["verdict"], "insufficient", doc.get("reason"))
+        self.assertEqual(doc["inputs"]["availability"]["method"], "unestablished")
+        h = A.PushHistory(self.w.d, ev["pushes"], END + dt.timedelta(hours=2))
+        self.assertFalse(h.known)
+        self.assertEqual(h.missing, ["e" * 40])
 
 
 if __name__ == "__main__":
