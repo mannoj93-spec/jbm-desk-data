@@ -1,16 +1,16 @@
 # Operational health
 
-Generated 2026-10-15T16:29:45Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-10-15T16:34:16Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Source:** healthy; last scheduled collector run 2026-10-15T15:53:16Z (36.5 min). Silences over 90 min in the last 72 h: none.
+**Source:** healthy; last scheduled collector run 2026-10-15T16:32:07Z (2.1 min). Silences over 90 min in the last 72 h: none.
 
-**Service continuity:** healthy; last persisted critical success 2026-10-15T16:28:07Z (1.6 min); last automated activity 2026-10-15T16:28:07Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 44, recovery 81; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 20.1 min.
+**Service continuity:** healthy; last persisted critical success 2026-10-15T16:32:07Z (2.1 min); last automated activity 2026-10-15T16:32:07Z (critical success, native-schedule). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 45, recovery 81; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 20.1 min.
 
 **Range decisions:** 10-14T08:00 published; 10-14T12:00 published; 10-14T16:00 published; 10-14T20:00 published; 10-15T00:00 published; 10-15T04:00 published; 10-15T08:00 published; 10-15T12:00 published.
 
 **PS1 decisions:** 10-14T12:00 executed; 10-14T16:00 executed; 10-14T20:00 executed; 10-15T00:00 executed; 10-15T04:00 executed; 10-15T08:00 executed; 10-15T12:00 executed; 10-15T16:00 executed.
 
-**PS1 report coverage:** 0.8961 as of 2026-10-15T16:18:39.955Z; due since and not covered: none.
+**PS1 report coverage:** 0.8961 as of 2026-10-15T16:31:25.159Z; due since and not covered: none.
 
 **Range availability:** status within expiry (expires 2026-10-15T20:25:00Z); 24h valid-current; 4h valid-current; 72h valid-current.
 
