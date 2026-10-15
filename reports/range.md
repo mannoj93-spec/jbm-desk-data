@@ -4,7 +4,7 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-10-15T04:16:41.398Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-15T08:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-10-15T04:26:40.437Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-10-15T08:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
@@ -38,7 +38,7 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 |---|---|---|---|---|---|---|
 | 4h | 2 | 0 | 0 | 0 | 103 | 0 |
 | 24h | 7 | 0 | 0 | 0 | 98 | 0 |
-| 72h | 19 | 0 | 0 | 0 | 86 | 0 |
+| 72h | 18 | 1 | 0 | 0 | 86 | 0 |
 
 ## Recent decisions (history)
 
