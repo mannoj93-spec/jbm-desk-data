@@ -1,115 +1,115 @@
-# JBM desk report — 2026-10-15 19:24Z
-Window 2026-10-08 19:24Z → 2026-10-15 19:24Z. report-2.6.1-2026-09-30.
+# JBM desk report — 2026-10-16 01:18Z
+Window 2026-10-09 01:18Z → 2026-10-16 01:18Z. report-2.6.1-2026-09-30.
 Stored observations are research inputs. Missing observations never count as a failed forecast.
 
-Generated 2026-10-15 19:24Z by report-2.6.1-2026-09-30 (coverage refresh; desk range forecasts are scored hourly (range-score.yml, reports/range.md), research designs run in the 6-hourly lab (reports/research.md), other registered forecasts are scored in the weekly report). Input cutoff: 2026-10-15 18:59Z (latest collector run written, collector-2.8-2026-10-04). Research lab: last run 2026-10-15 19:12Z, lab-2.2-2026-09-24. This file is refreshed every 6 hours by the Research lab workflow; if the generation time is older than that, the refresh has stopped.
+Generated 2026-10-16 01:18Z by report-2.6.1-2026-09-30 (coverage refresh; desk range forecasts are scored hourly (range-score.yml, reports/range.md), research designs run in the 6-hourly lab (reports/research.md), other registered forecasts are scored in the weekly report). Input cutoff: 2026-10-16 00:59Z (latest collector run written, collector-2.8-2026-10-04). Research lab: last run 2026-10-16 01:10Z, lab-2.2-2026-09-24. This file is refreshed every 6 hours by the Research lab workflow; if the generation time is older than that, the refresh has stopped.
 
 | Dataset | Latest observation written | Age |
 |---|---|---:|
-| collector runs | 2026-10-15 18:59Z | 25 min |
-| snapshots | 2026-10-15 18:58Z | 25 min |
-| 1-minute prices (BTC perp) | 2026-10-15 18:59Z | 25 min |
-| Deribit options | 2026-10-15 18:58Z | 25 min |
-| Hyperliquid account sample | 2026-10-15 18:59Z | 25 min |
-| Hyperliquid enrichment | 2026-10-15 18:59Z | 25 min |
-| OKX insurance fund | 2026-10-15 18:59Z | 25 min |
-| OKX liquidation orders | 2026-10-15 18:28Z | 56 min |
-| research lab (lab-2.2-2026-09-24) | 2026-10-15 19:12Z | 12 min |
+| collector runs | 2026-10-16 00:59Z | 19 min |
+| snapshots | 2026-10-16 00:58Z | 20 min |
+| 1-minute prices (BTC perp) | 2026-10-16 00:59Z | 19 min |
+| Deribit options | 2026-10-16 00:58Z | 20 min |
+| Hyperliquid account sample | 2026-10-16 00:59Z | 19 min |
+| Hyperliquid enrichment | 2026-10-16 00:59Z | 19 min |
+| OKX insurance fund | 2026-10-16 00:59Z | 19 min |
+| OKX liquidation orders | 2026-10-16 00:43Z | 35 min |
+| research lab (lab-2.2-2026-09-24) | 2026-10-16 01:10Z | 9 min |
 
 ## 1. Collection health
-1055 routine runs in window, by trigger: schedule 499, workflow_dispatch 556.
+1044 routine runs in window, by trigger: schedule 490, workflow_dispatch 554.
 
 | Cadence period (UTC) | Schedule | Nominal slots | Scheduled starts | Snapshot coverage | Degraded snapshots |
 |---|---|---:|---|---|---:|
-| 2026-10-08 19:24Z → 2026-10-15 19:24Z | `7,22,37,52 * * * *` | 670 | 499 (74%) | 670/671 slot intervals | 14/1055 |
+| 2026-10-09 01:18Z → 2026-10-16 01:18Z | `7,22,37,52 * * * *` | 671 | 490 (73%) | 671/671 slot intervals | 14/1044 |
 Starts are counted, never matched to slots: GitHub starts scheduled runs late by an unrecorded amount and can drop them, so a start time does not identify its slot (edges can shift a count by one). Slots in the last 20 minutes are not yet due. Manual runs never count as scheduled starts; they do count toward snapshot coverage, which measures data held rather than scheduler behaviour.
-Actual interval between scheduled starts under the current 15-minute cadence (min): median 17.3, p90 31.9, max 56.7.
-Actual interval between stored snapshots, all triggers (min): median 9.9, p90 15.3, max 20.5.
+Actual interval between scheduled starts under the current 15-minute cadence (min): median 17.6, p90 32.4, max 56.7.
+Actual interval between stored snapshots, all triggers (min): median 10.0, p90 15.4, max 20.5.
 Runtime per routine run (s): median 105, p90 115, max 237; 0 run(s) reached the network budget.
-Rate-limit incidents: none recorded across 1055 run(s) that record them (2.6+); Hyperliquid accounts retried after a 429: 0.
+Rate-limit incidents: none recorded across 1044 run(s) that record them (2.6+); Hyperliquid accounts retried after a 429: 0.
 
 | Source | OK / observed | Latest status |
 |---|---:|---|
-| backpack | 1055/1055 | ok |
-| binance_BTCUSDC | 1055/1055 | ok |
-| binance_BTCUSDT | 1055/1055 | ok |
-| binance_BTCUSD_PERP | 1055/1055 | ok |
-| binance_coinm_prem | 1055/1055 | ok |
-| binance_usdc_prem | 1055/1055 | ok |
-| binance_usdt_prem | 1055/1055 | ok |
-| bingx | 1055/1055 | ok |
-| bitfinex_margin | 1055/1055 | ok |
-| bitget_USDC | 1055/1055 | ok |
-| bitget_USDT | 1055/1055 | ok |
-| cross_binance_ETHUSDT | 1055/1055 | ok |
-| cross_binance_SOLUSDT | 1055/1055 | ok |
-| cross_hl_ETH | 1054/1055 | ok |
-| cross_hl_SOL | 1054/1055 | ok |
-| depth_binance_usdt | 1055/1055 | ok |
-| depth_okx_usdt_swap | 1055/1055 | ok |
-| deribit | 1052/1055 | ok |
-| dydx | 1055/1055 | ok |
-| gate | 1055/1055 | ok |
-| hl_predicted_fundings | 1054/1055 | ok |
-| htx | 1051/1055 | ok |
-| hyperliquid | 1054/1055 | ok |
-| kraken | 1049/1055 | ok |
-| kucoin | 1055/1055 | ok |
-| okx_BTC-USD-SWAP | 1055/1055 | ok |
-| okx_BTC-USDT-SWAP | 1055/1055 | ok |
-| paradex | 1055/1055 | ok |
-| premium_parts | 1055/1055 | ok |
+| backpack | 1044/1044 | ok |
+| binance_BTCUSDC | 1044/1044 | ok |
+| binance_BTCUSDT | 1044/1044 | ok |
+| binance_BTCUSD_PERP | 1044/1044 | ok |
+| binance_coinm_prem | 1044/1044 | ok |
+| binance_usdc_prem | 1044/1044 | ok |
+| binance_usdt_prem | 1044/1044 | ok |
+| bingx | 1044/1044 | ok |
+| bitfinex_margin | 1044/1044 | ok |
+| bitget_USDC | 1044/1044 | ok |
+| bitget_USDT | 1044/1044 | ok |
+| cross_binance_ETHUSDT | 1044/1044 | ok |
+| cross_binance_SOLUSDT | 1044/1044 | ok |
+| cross_hl_ETH | 1043/1044 | ok |
+| cross_hl_SOL | 1043/1044 | ok |
+| depth_binance_usdt | 1044/1044 | ok |
+| depth_okx_usdt_swap | 1044/1044 | ok |
+| deribit | 1041/1044 | ok |
+| dydx | 1044/1044 | ok |
+| gate | 1044/1044 | ok |
+| hl_predicted_fundings | 1043/1044 | ok |
+| htx | 1040/1044 | ok |
+| hyperliquid | 1043/1044 | ok |
+| kraken | 1038/1044 | ok |
+| kucoin | 1044/1044 | ok |
+| okx_BTC-USD-SWAP | 1044/1044 | ok |
+| okx_BTC-USDT-SWAP | 1044/1044 | ok |
+| paradex | 1044/1044 | ok |
+| premium_parts | 1044/1044 | ok |
 
 ## 2. History held
 Counts are unique timestamps per instrument; gaps are not independent research samples.
 
 | Series / instrument | First | Last | Unique rows | Missing intervals | Duplicate rows |
 |---|---|---|---:|---:|---:|
-| binance_funding_settled / BTCUSDC | 2026-06-25 00:00Z | 2026-10-15 16:00Z | 339 | variable cadence | 0 |
-| binance_funding_settled / BTCUSDT | 2026-06-25 00:00Z | 2026-10-15 16:00Z | 339 | variable cadence | 0 |
-| binance_globalLongShortAccountRatio_1h | 2026-08-22 19:00Z | 2026-10-15 18:00Z | 1296 | 0 | 0 |
-| binance_globalLongShortAccountRatio_5m | 2026-08-22 18:40Z | 2026-10-15 18:50Z | 15555 | 0 | 0 |
-| binance_openInterestHist_1h | 2026-08-22 19:00Z | 2026-10-15 18:00Z | 1294 | 2 | 0 |
-| binance_openInterestHist_5m | 2026-08-22 18:40Z | 2026-10-15 18:50Z | 15539 | 16 | 0 |
-| binance_takerlongshortRatio_1h | 2026-08-22 18:00Z | 2026-10-15 17:00Z | 1296 | 0 | 0 |
-| binance_takerlongshortRatio_5m | 2026-08-22 18:40Z | 2026-10-15 18:50Z | 15555 | 0 | 0 |
-| binance_topLongShortAccountRatio_1h | 2026-08-22 19:00Z | 2026-10-15 18:00Z | 1296 | 0 | 0 |
-| binance_topLongShortAccountRatio_5m | 2026-08-22 18:40Z | 2026-10-15 18:50Z | 15555 | 0 | 0 |
-| binance_topLongShortPositionRatio_1h | 2026-08-22 19:00Z | 2026-10-15 18:00Z | 1296 | 0 | 0 |
-| binance_topLongShortPositionRatio_5m | 2026-08-22 18:45Z | 2026-10-15 18:50Z | 15554 | 0 | 0 |
-| deribit_dvol_1h | 2026-05-25 18:00Z | 2026-10-15 17:00Z | 3432 | 0 | 3 |
-| okx_acct_ratio_1h | 2026-08-23 19:00Z | 2026-10-15 17:00Z | 1271 | 0 | 0 |
-| okx_funding_settled | 2026-06-22 08:00Z | 2026-10-15 16:00Z | 347 | variable cadence | 0 |
-| okx_index_1h | 2026-05-25 19:00Z | 2026-10-15 17:00Z | 3431 | 0 | 0 |
-| okx_mark_1h | 2026-05-25 19:00Z | 2026-10-15 17:00Z | 3431 | 0 | 0 |
+| binance_funding_settled / BTCUSDC | 2026-06-25 00:00Z | 2026-10-16 00:00Z | 340 | variable cadence | 0 |
+| binance_funding_settled / BTCUSDT | 2026-06-25 00:00Z | 2026-10-16 00:00Z | 340 | variable cadence | 0 |
+| binance_globalLongShortAccountRatio_1h | 2026-08-22 19:00Z | 2026-10-16 00:00Z | 1302 | 0 | 0 |
+| binance_globalLongShortAccountRatio_5m | 2026-08-22 18:40Z | 2026-10-16 00:50Z | 15627 | 0 | 0 |
+| binance_openInterestHist_1h | 2026-08-22 19:00Z | 2026-10-16 00:00Z | 1300 | 2 | 0 |
+| binance_openInterestHist_5m | 2026-08-22 18:40Z | 2026-10-16 00:50Z | 15611 | 16 | 0 |
+| binance_takerlongshortRatio_1h | 2026-08-22 18:00Z | 2026-10-15 23:00Z | 1302 | 0 | 0 |
+| binance_takerlongshortRatio_5m | 2026-08-22 18:40Z | 2026-10-16 00:50Z | 15627 | 0 | 0 |
+| binance_topLongShortAccountRatio_1h | 2026-08-22 19:00Z | 2026-10-16 00:00Z | 1302 | 0 | 0 |
+| binance_topLongShortAccountRatio_5m | 2026-08-22 18:40Z | 2026-10-16 00:50Z | 15627 | 0 | 0 |
+| binance_topLongShortPositionRatio_1h | 2026-08-22 19:00Z | 2026-10-16 00:00Z | 1302 | 0 | 0 |
+| binance_topLongShortPositionRatio_5m | 2026-08-22 18:45Z | 2026-10-16 00:50Z | 15626 | 0 | 0 |
+| deribit_dvol_1h | 2026-05-25 18:00Z | 2026-10-15 23:00Z | 3438 | 0 | 3 |
+| okx_acct_ratio_1h | 2026-08-23 19:00Z | 2026-10-15 23:00Z | 1277 | 0 | 0 |
+| okx_funding_settled | 2026-06-22 08:00Z | 2026-10-16 00:00Z | 348 | variable cadence | 0 |
+| okx_index_1h | 2026-05-25 19:00Z | 2026-10-15 23:00Z | 3437 | 0 | 0 |
+| okx_mark_1h | 2026-05-25 19:00Z | 2026-10-15 23:00Z | 3437 | 0 | 0 |
 
 ## 3. Forced-flow retention and revision
-39920 distinct liquidation observations; 27 retained boundary probes.
-- 2026-10-11 00:12Z: 0.99 days, 4 pages (observed source boundary).
+39998 distinct liquidation observations; 28 retained boundary probes.
 - 2026-10-12 00:12Z: 0.94 days, 9 pages (observed source boundary).
 - 2026-10-13 00:00Z: 0.98 days, 23 pages (observed source boundary).
 - 2026-10-14 00:12Z: 0.99 days, 17 pages (observed source boundary).
 - 2026-10-15 00:12Z: 0.99 days, 18 pages (observed source boundary).
-Observed later revision after first live capture: n=24 active hours; mean 7.0%. Requires a covering follow-up at least six hours after close; latest stored totals are not guaranteed final.
+- 2026-10-16 00:12Z: 0.97 days, 36 pages (observed source boundary).
+Observed later revision after first live capture: n=28 active hours; mean 7.3%. Requires a covering follow-up at least six hours after close; latest stored totals are not guaranteed final.
 
 ## 3b. Forward-only books (requirement 50)
 Value starts on the first stored run; no source retains these books.
-- Deribit BTC options, per-strike OI: 1052 stored snapshots in 168 distinct hours from 2026-10-08 19:27Z to 2026-10-15 18:57Z; latest 787 strikes with OI; 0 degraded snapshot(s).
-- Hyperliquid BTC position map: 1055 stored snapshots in 168 distinct hours from 2026-10-08 19:27Z to 2026-10-15 18:57Z; latest 25 BTC positions in top 190; 2 degraded snapshot(s).
+- Deribit BTC options, per-strike OI: 1041 stored snapshots in 168 distinct hours from 2026-10-09 01:19Z to 2026-10-16 00:57Z; latest 788 strikes with OI; 0 degraded snapshot(s).
+- Hyperliquid BTC position map: 1044 stored snapshots in 168 distinct hours from 2026-10-09 01:19Z to 2026-10-16 00:57Z; latest 18 BTC positions in top 190; 2 degraded snapshot(s).
 
 ## 3c. Research datasets (collector 2.7)
 Coverage of stored inputs only. These are samples and summaries, not trading results.
-- binance_klines_1m_BTCUSDT_perp: 10052 bars 2026-10-08 19:25Z → 2026-10-15 18:56Z; 0 missing minutes inside the span.
-- binance_markklines_1m_BTCUSDT_perp: 10052 bars 2026-10-08 19:25Z → 2026-10-15 18:56Z; 0 missing minutes inside the span.
-- binance_klines_1m_BTCUSDT_spot: 10052 bars 2026-10-08 19:25Z → 2026-10-15 18:56Z; 0 missing minutes inside the span.
-- binance_klines_1m_ETHUSDT_perp: 10052 bars 2026-10-08 19:25Z → 2026-10-15 18:56Z; 0 missing minutes inside the span.
-- binance_klines_1m_SOLUSDT_perp: 10052 bars 2026-10-08 19:25Z → 2026-10-15 18:56Z; 0 missing minutes inside the span.
-- Deribit options schema 2: 1052 runs; latest 787 with OI, 149 zero OI, 0 absent, 0 past expiry; panel 12/12 tickers; metadata cached.
+- binance_klines_1m_BTCUSDT_perp: 10058 bars 2026-10-09 01:19Z → 2026-10-16 00:56Z; 0 missing minutes inside the span.
+- binance_markklines_1m_BTCUSDT_perp: 10058 bars 2026-10-09 01:19Z → 2026-10-16 00:56Z; 0 missing minutes inside the span.
+- binance_klines_1m_BTCUSDT_spot: 10058 bars 2026-10-09 01:19Z → 2026-10-16 00:56Z; 0 missing minutes inside the span.
+- binance_klines_1m_ETHUSDT_perp: 10058 bars 2026-10-09 01:19Z → 2026-10-16 00:56Z; 0 missing minutes inside the span.
+- binance_klines_1m_SOLUSDT_perp: 10058 bars 2026-10-09 01:19Z → 2026-10-16 00:56Z; 0 missing minutes inside the span.
+- Deribit options schema 2: 1041 runs; latest 788 with OI, 148 zero OI, 0 absent, 0 past expiry; panel 12/12 tickers; metadata cached.
 - Deribit hourly quote records: 167.
-- Hyperliquid sample v2: 1055 snapshots; account checks by state failed 6, ok_btc 22829, ok_flat 155876, ok_other 21739; fixed cohort F-hl-sample-v2-1790195337162 (100), rotating 90 per run.
-- Hyperliquid enrichment requests: fills ok 288, ledger ok 1343, twap not_attempted 7, twap ok 8912.
-- OKX insurance fund rows: regular_update 1055.
-- Research lab: 28 runs in window; latest 2026-10-15 19:12Z: exploratory 5, under prospective evaluation 3 (statuses per design; see reports/research.md).
+- Hyperliquid sample v2: 1044 snapshots; account checks by state failed 6, ok_btc 22532, ok_flat 154283, ok_other 21539; fixed cohort F-hl-sample-v2-1790195337162 (100), rotating 90 per run.
+- Hyperliquid enrichment requests: fills ok 291, ledger ok 1335, twap not_attempted 7, twap ok 8807.
+- OKX insurance fund rows: regular_update 1044.
+- Research lab: 28 runs in window; latest 2026-10-16 01:10Z: exploratory 5, under prospective evaluation 3 (statuses per design; see reports/research.md).
 
 ## 4. Forecast registry
 Not run in the coverage refresh (scoring writes evidence); see the weekly report reports/2026-10-12.md.
@@ -119,23 +119,23 @@ Not run in the coverage refresh; see the weekly report.
 
 ## 6. Fold candidates
 Human review required before changing the skill package.
-- Review measured liquidation retention: latest probe 0.99 days. This is not a guarantee of future availability.
+- Review measured liquidation retention: latest probe 0.97 days. This is not a guarantee of future availability.
 
 ## 7. Alerts
-- run gap_binance_openInterestHist_5m: 2/1055 routine run(s), 2026-10-15 13:29Z → 2026-10-15 16:57Z; latest: 9 absent intervals in source response; retained rows, review report and retry --backfill; absent from the latest run
-- history binance_openInterestHist_5m: 17/1055 routine run(s), 2026-10-15 13:00Z → 2026-10-15 16:42Z; latest: misaligned history timestamp; absent from the latest run
-- run gap_binance_openInterestHist_1h: 1/1055 routine run(s), 2026-10-15 15:12Z; latest: 2 absent intervals in source response; retained rows, review report and retry --backfill; absent from the latest run
-- history binance_openInterestHist_1h: 6/1055 routine run(s), 2026-10-15 14:12Z → 2026-10-15 14:57Z; latest: history did not advance despite overdue intervals; absent from the latest run
-- snapshot kraken: 6/1055 routine run(s), 2026-10-13 07:00Z → 2026-10-15 07:39Z; latest: RuntimeError: HTTP 503; deadline reached; absent from the latest run
-- snapshot htx: 4/1055 routine run(s), 2026-10-10 00:42Z → 2026-10-15 01:45Z; latest: RuntimeError: TimeoutError: request not complete by the deadline (connect, headers or body); d; absent from the latest run
-- forward book hl_positions: 2/1055 routine run(s), 2026-10-10 08:17Z → 2026-10-14 01:12Z; latest: degraded: 1/190 accounts failed, malformed or not attempted; absent from the latest run
-- history deribit_dvol_1h: 3/1055 routine run(s), 2026-10-13 09:04Z → 2026-10-13 09:23Z; latest: HTTP 503; absent from the latest run
-- snapshot deribit: 3/1055 routine run(s), 2026-10-13 09:04Z → 2026-10-13 09:23Z; latest: RuntimeError: HTTP 503; deadline reached; absent from the latest run
-- forward book deribit_options: 3/1055 routine run(s), 2026-10-13 09:04Z → 2026-10-13 09:23Z; latest: RuntimeError: HTTP 503; absent from the latest run
-- snapshot hyperliquid: 1/1055 routine run(s), 2026-10-10 08:17Z; latest: RuntimeError: HTTP 502; deadline reached; absent from the latest run
-- snapshot cross_hl_ETH: 1/1055 routine run(s), 2026-10-10 08:17Z; latest: RuntimeError: Hyperliquid metaAndAssetCtxs unavailable in this run; absent from the latest run
-- snapshot cross_hl_SOL: 1/1055 routine run(s), 2026-10-10 08:17Z; latest: RuntimeError: Hyperliquid metaAndAssetCtxs unavailable in this run; absent from the latest run
-- snapshot hl_predicted_fundings: 1/1055 routine run(s), 2026-10-10 08:17Z; latest: RuntimeError: HTTP 502; deadline reached; absent from the latest run
+- run gap_binance_openInterestHist_5m: 2/1044 routine run(s), 2026-10-15 13:29Z → 2026-10-15 16:57Z; latest: 9 absent intervals in source response; retained rows, review report and retry --backfill; absent from the latest run
+- history binance_openInterestHist_5m: 17/1044 routine run(s), 2026-10-15 13:00Z → 2026-10-15 16:42Z; latest: misaligned history timestamp; absent from the latest run
+- run gap_binance_openInterestHist_1h: 1/1044 routine run(s), 2026-10-15 15:12Z; latest: 2 absent intervals in source response; retained rows, review report and retry --backfill; absent from the latest run
+- history binance_openInterestHist_1h: 6/1044 routine run(s), 2026-10-15 14:12Z → 2026-10-15 14:57Z; latest: history did not advance despite overdue intervals; absent from the latest run
+- snapshot kraken: 6/1044 routine run(s), 2026-10-13 07:00Z → 2026-10-15 07:39Z; latest: RuntimeError: HTTP 503; deadline reached; absent from the latest run
+- snapshot htx: 4/1044 routine run(s), 2026-10-10 00:42Z → 2026-10-15 01:45Z; latest: RuntimeError: TimeoutError: request not complete by the deadline (connect, headers or body); d; absent from the latest run
+- forward book hl_positions: 2/1044 routine run(s), 2026-10-10 08:17Z → 2026-10-14 01:12Z; latest: degraded: 1/190 accounts failed, malformed or not attempted; absent from the latest run
+- history deribit_dvol_1h: 3/1044 routine run(s), 2026-10-13 09:04Z → 2026-10-13 09:23Z; latest: HTTP 503; absent from the latest run
+- snapshot deribit: 3/1044 routine run(s), 2026-10-13 09:04Z → 2026-10-13 09:23Z; latest: RuntimeError: HTTP 503; deadline reached; absent from the latest run
+- forward book deribit_options: 3/1044 routine run(s), 2026-10-13 09:04Z → 2026-10-13 09:23Z; latest: RuntimeError: HTTP 503; absent from the latest run
+- snapshot hyperliquid: 1/1044 routine run(s), 2026-10-10 08:17Z; latest: RuntimeError: HTTP 502; deadline reached; absent from the latest run
+- snapshot cross_hl_ETH: 1/1044 routine run(s), 2026-10-10 08:17Z; latest: RuntimeError: Hyperliquid metaAndAssetCtxs unavailable in this run; absent from the latest run
+- snapshot cross_hl_SOL: 1/1044 routine run(s), 2026-10-10 08:17Z; latest: RuntimeError: Hyperliquid metaAndAssetCtxs unavailable in this run; absent from the latest run
+- snapshot hl_predicted_fundings: 1/1044 routine run(s), 2026-10-10 08:17Z; latest: RuntimeError: HTTP 502; deadline reached; absent from the latest run
 - binance_openInterestHist_1h: 2 missing intervals; retry backfill while source retention permits.
 - binance_openInterestHist_5m: 16 missing intervals; retry backfill while source retention permits.
 - deribit_dvol_1h: 3 legacy duplicate rows; storage bytes preserved, counts deduplicated.
