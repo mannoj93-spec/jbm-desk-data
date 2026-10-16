@@ -1,10 +1,10 @@
 # Operational health
 
-Generated 2026-10-16T16:14:41Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-10-16T16:19:53Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Source:** healthy; last scheduled collector run 2026-10-16T15:47:27Z (27.2 min). Silences over 90 min in the last 72 h: none.
+**Source:** healthy; last scheduled collector run 2026-10-16T16:18:12Z (1.7 min). Silences over 90 min in the last 72 h: none.
 
-**Service continuity:** healthy; last persisted critical success 2026-10-16T16:12:53Z (1.8 min); last automated activity 2026-10-16T16:12:53Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 45, recovery 84; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 19.9 min.
+**Service continuity:** healthy; last persisted critical success 2026-10-16T16:18:12Z (1.7 min); last automated activity 2026-10-16T16:18:12Z (critical success, native-schedule). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 46, recovery 84; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 19.9 min.
 
 **Range decisions:** 10-15T08:00 published; 10-15T12:00 published; 10-15T16:00 published; 10-15T20:00 published; 10-16T00:00 published; 10-16T04:00 published; 10-16T08:00 published; 10-16T12:00 published.
 
@@ -12,7 +12,7 @@ Generated 2026-10-16T16:14:41Z by health-1.4.0 (runner UTC clock at the check (t
 
 **PS1 report coverage:** 0.9024 as of 2026-10-16T13:28:03.372Z; due since and not covered: none.
 
-**Range availability:** status within expiry (expires 2026-10-16T16:20:00Z); 24h valid-current; 4h valid-current; 72h valid-current.
+**Range availability:** status within expiry (expires 2026-10-16T20:25:00Z); 24h valid-current; 4h valid-current; 72h valid-current.
 
 **Scoring backlog:** none.
 
