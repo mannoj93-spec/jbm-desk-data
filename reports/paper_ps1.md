@@ -1,6 +1,6 @@
 # Paper sizing experiment PS1
 
-Generated 2026-10-17T12:18:05.247Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-10-17T12:18:03.921Z.
+Generated 2026-10-17T12:25:42.300Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-10-17T12:18:03.921Z.
 
 > PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.
 
@@ -10,7 +10,7 @@ Retired before launch, zero observations: `desk/research/ps1/protocol_v2_retired
 
 Ledger rows: 480 physical; 480 verified, 0 quarantined, 0 excluded, 0 in progress.
 
-Launched at decision 2026-10-03T00:00:00Z; 14.51 days; 88 scheduled decisions; coverage 90.9%; execution delay after the 4H close: median 18.6 min, max 51.2 min.
+Launched at decision 2026-10-03T00:00:00Z; 14.52 days; 88 scheduled decisions; coverage 90.9%; execution delay after the 4H close: median 18.6 min, max 51.2 min.
 
 Time accounting: elapsed hours between fills; 8760 h/yr; drift and variance rates per hour (protocol v3); no interpolation; the interval opened by the latest trade is pending. 79 closed intervals over 348.0 h; extended intervals 3.
 
