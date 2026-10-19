@@ -279,9 +279,10 @@ INFRA = {
     "D1-active-twap": ("TWAP programs are read by polling each fixed-cohort account's twapHistory every 15 minutes. "
                        "A program that starts and finishes between polls is first seen finished and excluded, so the "
                        "collection systematically under-observes short programs. Observing starts needs an event stream "
-                       "(Hyperliquid's websocket user events for the cohort accounts). Not commissioned: the recorded "
-                       "universe (2 BTC programs in 272) suggests qualifying BTC programs are rare even when seen, so a "
-                       "stream would not by itself make D1 feasible; decide after the per-reason counts exist."),
+                       "(Hyperliquid's websocket user events for the cohort accounts). Not commissioned. Per-reason counts "
+                       "(research_tools/d1_diagnostics.py, Oct 19 2026): 282 programs, 280 not BTC, the 2 BTC programs first seen "
+                       "already finished, none rejected on notional - universe scarcity dominates, so a stream could at "
+                       "most recover those two against a design that needs 30 (the Oct 8 figure was 2 BTC in 272)."),
     "E1-liquidity-recovery": ("Needs second-scale order-book depth around shocks. The repository's stream/ recorder exists "
                               "but is not deployed (it needs a persistent host, not GitHub Actions); until then E1 cannot "
                               "observe a single event and its zero is 'not observable'. Not commissioned here."),

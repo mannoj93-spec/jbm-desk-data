@@ -1,0 +1,401 @@
+{
+ "schema": "desk-data-catalog/1",
+ "version": "catalog-1.0.0",
+ "as_of_utc": "2026-10-19T18:00:00Z",
+ "note": "One entry per stored dataset or feature family. Clocks: t (event/window), r (request start), observed_at (collector write = first durable availability in this repository), t_ret (per-source retrieval inside a snapshot), t_event (source's own stamp where it gives one). Availability is never the event time (lab/data.py, research_tools/evidence_contract.py). Statements marked 'assumed' are not measured.",
+ "instruments": [
+  {
+   "id": "binance:BTCUSDT-perp",
+   "venue": "Binance USD-M",
+   "kind": "linear perpetual",
+   "contract": "1 BTC per unit, quoted USDT",
+   "funding": "8h settlement at 00/08/16 UTC; premiumIndex.lastFundingRate is the live estimate, fundingRate rows are settled",
+   "dated": "verified 2026-10-18 (package methods §3)",
+   "symbol_changes": "none recorded"
+  },
+  {
+   "id": "binance:BTCUSDT-spot",
+   "venue": "Binance spot",
+   "kind": "spot",
+   "contract": "BTC/USDT",
+   "dated": "2026-09-22"
+  },
+  {
+   "id": "okx:BTC-USDT-SWAP",
+   "venue": "OKX",
+   "kind": "linear perpetual",
+   "contract": "0.01 BTC per contract (ctVal), verified (package methods §0)",
+   "funding": "8h; okx_funding_settled stores the settled 8h-normalized rate",
+   "dated": "2026-10-08"
+  },
+  {
+   "id": "deribit:BTC-PERPETUAL",
+   "venue": "Deribit",
+   "kind": "inverse perpetual",
+   "contract": "USD notional; open interest in USD (convert at mark)",
+   "dated": "2026-10-18"
+  },
+  {
+   "id": "hyperliquid:BTC",
+   "venue": "Hyperliquid",
+   "kind": "linear perpetual",
+   "funding": "hourly; normalize x8 for 8h comparison",
+   "dated": "2026-10-19"
+  }
+ ],
+ "costs": {
+  "o33_v3_cost_bp": 10.0,
+  "fees_note": "Taker fees are account-tier dependent and are not observed by the collector; every simulated cost is an assumption stated by the protocol that uses it (PS1 protocol.json, O33 COST_BP). Funding conventions above.",
+  "dated": "2026-10-19"
+ },
+ "datasets": [
+  {
+   "id": "prices/binance_klines_1m_BTCUSDT_perp",
+   "path": "data/prices/binance_klines_1m_BTCUSDT_perp/*.jsonl",
+   "source": "GET www.binance.com/fapi/v1/klines interval=1m",
+   "instrument": "binance:BTCUSDT-perp",
+   "fields": [
+    "t",
+    "o",
+    "h",
+    "l",
+    "c",
+    "v",
+    "qv",
+    "n",
+    "tbv",
+    "tbqv"
+   ],
+   "units": {
+    "price": "USDT",
+    "v": "BTC",
+    "qv": "USDT",
+    "tbv": "BTC taker-buy base volume"
+   },
+   "cadence": "1-minute bars, written in batches each collector run (~15 min)",
+   "event_semantics": "bar open time t; closes at t + 60 s",
+   "availability": "max(batch observed_at, bar close) (lab/data.Store.bars)",
+   "revision": "a closed bar is not revised by the venue; the first stored copy wins",
+   "missingness": "gaps are measured by report.py section 2; never filled",
+   "retention": "repository Git history (compact JSONL)",
+   "quality": [
+    "finite OHLC",
+    "unique open times",
+    "closed bars only"
+   ],
+   "code_version_field": "code_version / code_commit on each batch",
+   "recoverability": "public history refetchable (lab/data.fetch_history) as a RECONSTRUCTION with assumed availability",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "prices/binance_klines_1m_BTCUSDT_spot",
+   "path": "data/prices/binance_klines_1m_BTCUSDT_spot/*.jsonl",
+   "source": "GET www.binance.com/api/v3/klines interval=1m",
+   "instrument": "binance:BTCUSDT-spot",
+   "fields": [
+    "t",
+    "o",
+    "h",
+    "l",
+    "c",
+    "v",
+    "qv",
+    "n",
+    "tbv",
+    "tbqv"
+   ],
+   "units": {
+    "price": "USDT",
+    "v": "BTC"
+   },
+   "cadence": "1-minute bars per run",
+   "event_semantics": "bar open time t",
+   "availability": "max(batch observed_at, bar close); spot is retrieved after perp in each run (measured by research_tools/funnel.py)",
+   "revision": "none expected",
+   "missingness": "measured",
+   "retention": "Git",
+   "quality": [
+    "finite OHLC"
+   ],
+   "recoverability": "refetchable as reconstruction",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "prices/binance_markklines_1m_BTCUSDT_perp",
+   "path": "data/prices/binance_markklines_1m_BTCUSDT_perp/*.jsonl",
+   "source": "GET www.binance.com/fapi/v1/markPriceKlines 1m",
+   "instrument": "binance:BTCUSDT-perp",
+   "fields": [
+    "t",
+    "o",
+    "h",
+    "l",
+    "c"
+   ],
+   "units": {
+    "price": "USDT mark"
+   },
+   "cadence": "1-minute",
+   "availability": "as above",
+   "raw_bytes_retained": false,
+   "retention": "Git",
+   "recoverability": "refetchable as reconstruction"
+  },
+  {
+   "id": "prices/binance_klines_1m_ETHUSDT_perp",
+   "path": "data/prices/binance_klines_1m_ETHUSDT_perp/*.jsonl",
+   "source": "Binance fapi klines 1m",
+   "instrument": "binance:ETHUSDT-perp",
+   "cadence": "1-minute",
+   "availability": "as above",
+   "retention": "Git",
+   "raw_bytes_retained": false,
+   "units": {
+    "price": "USDT"
+   }
+  },
+  {
+   "id": "prices/binance_klines_1m_SOLUSDT_perp",
+   "path": "data/prices/binance_klines_1m_SOLUSDT_perp/*.jsonl",
+   "source": "Binance fapi klines 1m",
+   "instrument": "binance:SOLUSDT-perp",
+   "cadence": "1-minute",
+   "availability": "as above",
+   "retention": "Git",
+   "raw_bytes_retained": false,
+   "units": {
+    "price": "USDT"
+   }
+  },
+  {
+   "id": "snap",
+   "path": "data/snap/*.jsonl",
+   "source": "collector market snapshot: Binance premiumIndex (USDT, USDC, COIN-M), depth (Binance USD-M, OKX swap; BTC within 25/50/100/200 bp), open interest across ~15 venues (oi_btc per venue, t_ret each), Hyperliquid predicted fundings (Binance, Bybit, Hyperliquid), premium parts (Coinbase BTC-USD, USDT-USD, Binance and OKX spot), Bitfinex margin, ETH/SOL cross-venue",
+   "cadence": "one per collector run (schedule 7,22,37,52 * * * * plus recovery runs)",
+   "event_semantics": "t = run start; each source carries t_ret and, where the venue gives one, t_event",
+   "availability": "observed_at (the snapshot's write); per-source t_ret is retrieval, not availability",
+   "revision": "none (one write per run)",
+   "missingness": "per-source st != ok is recorded with its error; never zero",
+   "units": {
+    "oi_btc": "BTC",
+    "depth": "BTC within the stated bp of mid",
+    "funding": "decimal per interval_h"
+   },
+   "retention": "Git",
+   "quality": [
+    "per-source state",
+    "degraded snapshots counted in report.py"
+   ],
+   "recoverability": "not recoverable: venue snapshot endpoints have no history",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "series/binance_openInterestHist_5m",
+   "path": "data/series/binance_openInterestHist_5m/*.jsonl",
+   "source": "Binance futures/data/openInterestHist period=5m",
+   "units": {
+    "sumOpenInterest": "BTC",
+    "sumOpenInterestValue": "USDT"
+   },
+   "cadence": "5-minute stamps",
+   "event_semantics": "t = period stamp",
+   "availability": "max(observed_at, t + 5 min knowledge lag) (schema.known_time)",
+   "revision": "unknown; first stored copy kept",
+   "retention": "API ~30 days; Git keeps what was collected",
+   "recoverability": "archive data.binance.vision metrics (daily) as reconstruction",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "series/binance_takerlongshortRatio_5m",
+   "path": "data/series/binance_takerlongshortRatio_5m/*.jsonl",
+   "source": "Binance futures/data/takerlongshortRatio 5m",
+   "units": {
+    "buyVol": "BTC",
+    "sellVol": "BTC"
+   },
+   "cadence": "5-minute interval rows",
+   "availability": "max(observed_at, t + interval)",
+   "retention": "API ~30 days",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "series/binance_positioning_ratios",
+   "path": "data/series/binance_{global,top}LongShort*Ratio_{5m,1h}/*.jsonl",
+   "source": "Binance futures/data long/short ratios",
+   "units": {
+    "longAccount": "share (fraction)"
+   },
+   "cadence": "5m and 1h",
+   "availability": "max(observed_at, t + 5 min)",
+   "note": "shares are composition, not contract counts (package R-02)",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "series/binance_funding_settled",
+   "path": "data/series/binance_funding_settled/*.jsonl",
+   "source": "Binance fapi/v1/fundingRate",
+   "units": {
+    "funding_settled_8h": "decimal per 8h"
+   },
+   "cadence": "8h settlements",
+   "availability": "max(observed_at, settlement time)",
+   "revision": "none",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "series/okx_funding_settled",
+   "path": "data/series/okx_funding_settled/*.jsonl",
+   "source": "OKX public/funding-rate-history",
+   "units": {
+    "funding_settled_8h": "decimal per 8h"
+   },
+   "status": "settled",
+   "raw_bytes_retained": false,
+   "availability": "max(observed_at, settlement time)",
+   "cadence": "8h settlements"
+  },
+  {
+   "id": "series/deribit_dvol_1h",
+   "path": "data/series/deribit_dvol_1h/*.jsonl",
+   "source": "Deribit get_volatility_index_data resolution=3600",
+   "units": {
+    "dvol": "annualized implied vol, percent"
+   },
+   "cadence": "1h",
+   "availability": "max(observed_at, t + 1h)",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "options/deribit_btc",
+   "path": "data/options/deribit_btc/*.jsonl",
+   "source": "Deribit book summaries for every listed BTC option",
+   "fields_note": "panel rows: instrument, t, bid/ask, mark_iv, open interest, greeks, underlying",
+   "cadence": "per collector run",
+   "availability": "observed_at",
+   "missingness": "absent/excluded instruments listed per record",
+   "retention": "Git",
+   "raw_bytes_retained": false,
+   "note": "maturity/moneyness definitions for a skew feature are not yet frozen (panel family options_disagreement is gated)"
+  },
+  {
+   "id": "liq/orders",
+   "path": "data/liq/orders/*.jsonl",
+   "source": "OKX public/liquidation-orders BTC-USDT-SWAP, paged each run",
+   "units": {
+    "sz_contracts": "contracts (0.01 BTC)",
+    "bkPx": "USDT bankruptcy price"
+   },
+   "event_semantics": "t = fill time; no order id",
+   "availability": "max(observed_at, t)",
+   "revision": "same-key different-size records exist (645 of 31,507 keys, Oct 14): ambiguous unless one retrieval held both (package M-15)",
+   "retention": "OKX live pager covers ~15 min; Git keeps captures",
+   "recoverability": "not recoverable after the pager's window",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "hl_accounts / hl_enrich / hl_positions",
+   "path": "data/hl_*",
+   "source": "Hyperliquid info API (clearinghouseState) for a fixed and a rotating cohort",
+   "availability": "observed_at",
+   "constraints": "public addresses; cohort selection rules in state/hl_cohort_fixed_v2.json",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "okx_insurance",
+   "path": "data/okx_insurance/*.jsonl",
+   "source": "OKX insurance fund",
+   "availability": "observed_at",
+   "raw_bytes_retained": false
+  },
+  {
+   "id": "runs",
+   "path": "data/runs/*.jsonl",
+   "source": "collector run records (trigger, critical_ok, errors, http, elapsed)",
+   "availability": "observed_at",
+   "use": "operational evidence; not a market input"
+  },
+  {
+   "id": "stream/raw (E1)",
+   "path": "STREAM_DATA_DIR/raw/<venue>/<channel>/<day>/<HH>.jsonl.gz (outside Git)",
+   "source": "stream/service.py WebSocket recorder: Deribit, Bybit, Hyperliquid books, trades, liquidations",
+   "availability": "receive time per message; derived rows usable 5 s after t",
+   "status": "implemented and tested; NOT commissioned (no persistent host authorised)",
+   "raw_bytes_retained": true,
+   "retention": "operator-chosen object store (research_tools/archive_store.py adapter)"
+  }
+ ],
+ "feature_families": [
+  {
+   "id": "flow_liquidity",
+   "module": "research_tools/panel.py",
+   "status": "supported",
+   "inputs": [
+    "prices/binance_klines_1m_BTCUSDT_perp",
+    "snap.depth_binance_usdt"
+   ],
+   "formula": "signed aggressive flow over the last 15 closed minutes, (2*tbv - v) in BTC, divided by Binance USD-M depth within 25 bp (bid+ask, BTC) from the latest snapshot available at the decision",
+   "units": "BTC per BTC of depth",
+   "edge_cases": "depth < 1 BTC or missing: insufficient-depth (no value)"
+  },
+  {
+   "id": "price_response",
+   "module": "research_tools/panel.py",
+   "status": "supported",
+   "inputs": [
+    "prices/binance_klines_1m_BTCUSDT_perp"
+   ],
+   "formula": "15-minute log return (bp) per 100 BTC of signed flow over the same completed window; only when |flow| >= 5 BTC",
+   "units": "bp per 100 BTC",
+   "edge_cases": "|flow| < 5 BTC: flow-below-threshold"
+  },
+  {
+   "id": "funding_dispersion",
+   "module": "research_tools/panel.py",
+   "status": "supported (estimated rates)",
+   "inputs": [
+    "snap.hl_predicted_fundings"
+   ],
+   "formula": "each venue's predicted rate normalized to 8h (rate x 8 / interval_h); dispersion = max - min across Binance, Bybit, Hyperliquid; level = mean",
+   "units": "bp per 8h",
+   "status_note": "predicted (estimated), never settled"
+  },
+  {
+   "id": "positioning_interaction",
+   "module": "research_tools/panel.py",
+   "status": "supported",
+   "inputs": [
+    "series/binance_openInterestHist_5m",
+    "prices/binance_klines_1m_BTCUSDT_perp"
+   ],
+   "formula": "1h OI change (%) from 5-minute OI history available at the decision; 1h log return (bp); their product; OI change per 1h traded volume (BTC/BTC)",
+   "units": "pct, bp, pct*bp, ratio"
+  },
+  {
+   "id": "spot_perp_basis",
+   "module": "research_tools/panel.py",
+   "status": "supported",
+   "inputs": [
+    "snap.premium_parts.binance_spot_btcusdt",
+    "snap.binance_usdt_prem.mark"
+   ],
+   "formula": "(perp mark / spot - 1) in bp at the latest snapshot available",
+   "units": "bp"
+  },
+  {
+   "id": "liquidity_resilience",
+   "module": "research_tools/panel.py",
+   "status": "gated: requires E1 sequence-valid books (uncommissioned)",
+   "inputs": [
+    "stream/raw (E1)"
+   ]
+  },
+  {
+   "id": "options_disagreement",
+   "module": "research_tools/panel.py",
+   "status": "gated: maturity/moneyness/quote-age definitions not frozen",
+   "inputs": [
+    "options/deribit_btc"
+   ]
+  }
+ ]
+}

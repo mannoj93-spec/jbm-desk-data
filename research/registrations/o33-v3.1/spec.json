@@ -1,0 +1,36 @@
+{
+ "schema": "o33-amendment/1",
+ "id": "O33 v3.1",
+ "amends": "O33 v3 (research/registrations/o33-v3/, frozen 2026-10-07T23:07:56Z; spec_sha256 7c884dc65da1ed7da072a0f6709e89ad7c3fdb5bfdcafaaa0c7dc60f50262d56)",
+ "unchanged": "every v3 estimator, constant, cohort rule, cost (10 bp), matched containment baseline, lean-drift computation, paired statistic, weekly resampling and claim threshold; the frozen desk_calls.py and test_desk_calls.py bytes",
+ "changed_population": {
+  "admission_bases": {
+   "quote": "the read quoted its registry id and receipt (the v3 rule)",
+   "order-record": "the read did not quote its receipt, but a delivery record shows delivery at or after the receipt: read.order_record = {source: conversation-record | operator, delivered_utc, available_utc, ref}; the record must have been AVAILABLE (available_utc) by the evaluation's cutoff; a missing available_utc leaves the call order-unverified"
+  },
+  "call_types": {
+   "lean": "unchanged",
+   "containment": "unchanged",
+   "conditional": "registered when stated (id letter K): direction; trigger {1h|4h closes, above|below, level, first and last trigger close}; graded close; invalidation line on 1H closes. Converts at the first trigger close; graded from market data; scored as its own call type, never pooled"
+  },
+  "withdrawal": "a registered withdrawal (id letter W) with its own receipt and read-back, registered after the call and available at the evaluation cutoff; effective only if its receipt precedes the first possible trigger close, or every trigger close up to its receipt is present and none triggered; a trigger close at or before the receipt voids it; missing history leaves the call unavailable",
+  "expiry": "a conditional with no trigger close in its window is recorded expired, never scored",
+  "evidence_availability": "every evidence object (receipt, read-back, withdrawal, order record, market data) must have been available at the evaluation cutoff (inclusive); later evidence supports only a newly dated reassessment"
+ },
+ "outcomes": {
+  "conditional_grade": "invalidation-path plain grade: right if the graded close is beyond the trigger close in the call's direction and no 1H close between them crossed the invalidation line",
+  "unit_d": "terminal-close directional log return minus the registered lean drift - not the P&L of a strategy that exits at invalidation",
+  "signal_benchmark": "the frozen trigger-close signal benchmark is retained with its limitations; an executable benchmark (first eligible tradable quote after observation, processing and durable activation) would be a separately versioned policy - none is registered here"
+ },
+ "baselines": {"containment": "v3 matched_baseline_v3 (primary)", "lean and conditional": "v3 lean drift from the trigger close (primary); no registered standard error"},
+ "deduplication": "the v3 rule (first receipt per instrument, type, horizon and graded close; ties by call id, reported), applied separately within each population",
+ "sensitivity": "populations all-admitted, quote-only and order-record-only, each a complete recomputation of eligibility, de-duplication and scoring (desk_register.score_v31); the conditional funnel (registered, not-admitted, invalid, late, pending, expired, withdrawn, unavailable, scored) is reported beside any conditional score",
+ "evidence_classes": {
+  "original-rule": "admitted on a quoted receipt, as v3 required (a correction under the original rule needs evidence that the quoted receipt really existed)",
+  "retrospective-reassessment": "newly eligible under the order-record rule, registered before the v3.1 effective time",
+  "prospective-v3.1": "registered at or after the v3.1 effective time"
+ },
+ "effective_time": "the first push of this directory to main (merge commit time, GitHub activity API). The 12.4.19 package implemented these rules on Oct 19 2026 without a published, verifiable record; that earlier timing cannot be established, so no call registered before the effective time is prospective v3.1 evidence. Nothing is backdated.",
+ "private_records": "call documents, receipts, reads and order records are private desk records; this public specification identifies the policy by hashes only",
+ "corrections": "the 12.4.19 changelog's claim that a 3-3 split of plain grades showed the amendment could not have been chosen for its effect is withdrawn: equal win/loss counts do not establish outcome independence. The amendment's basis is the operator decision of Oct 19 2026 that the rule applies to every order-unverified call whatever its outcome; its effect is reported by the population sensitivity, not argued."
+}

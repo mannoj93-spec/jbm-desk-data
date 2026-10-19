@@ -1,0 +1,129 @@
+{
+ "a1_optional_spot_7d": {
+  "counts": {
+   "arrived-after-decision": 10075
+  },
+  "rule": "A1 frozen optional-spot rule (flow_absorption.py lines 111-114)",
+  "spot_delay_after_decision_ms": {
+   "max": 2870,
+   "median": 909.0,
+   "min": 720,
+   "n": 10075,
+   "p10": 769.4000000000001,
+   "p90": 1035.0
+  },
+  "version": "funnel-1.0.0",
+  "window": [
+   "2026-10-12T17:45Z",
+   "2026-10-19T17:45Z"
+  ]
+ },
+ "d1": {
+  "cutoff_ms": 1792434761343,
+  "twap_checks": 25577,
+  "variants": {
+   "n1m": {
+    "min_notional_usd": 1000000.0,
+    "programs": 282,
+    "reasons": {
+     "first-seen-not-active": 2,
+     "not-btc": 280
+    },
+    "version": "d1-diagnostics-1.0.0"
+   },
+   "n250k": {
+    "min_notional_usd": 250000.0,
+    "programs": 282,
+    "reasons": {
+     "first-seen-not-active": 2,
+     "not-btc": 280
+    },
+    "version": "d1-diagnostics-1.0.0"
+   }
+  }
+ },
+ "decision_input_age_s_by_offset": {
+  "0": {
+   "max": 900,
+   "median": 180.0,
+   "min": 120,
+   "n": 168,
+   "p10": 180.0,
+   "p90": 300.0
+  },
+  "15": {
+   "max": 1800,
+   "median": 180.0,
+   "min": 120,
+   "n": 168,
+   "p10": 180.0,
+   "p90": 360.0
+  },
+  "30": {
+   "max": 2700,
+   "median": 180.0,
+   "min": 120,
+   "n": 168,
+   "p10": 180.0,
+   "p90": 480.0
+  },
+  "45": {
+   "max": 1320,
+   "median": 180.0,
+   "min": 120,
+   "n": 168,
+   "p10": 180.0,
+   "p90": 300.0
+  }
+ },
+ "evidence_class": "measured on stored collector data; descriptive, not a forecast result",
+ "generated_by": "repo 2.29 build (research_tools/funnel.py, research_tools/panel.py, research_tools/d1_diagnostics.py)",
+ "panel_7d_coverage": {
+  "event_rows": 13,
+  "families": {
+   "flow_liquidity": {
+    "ok": 672
+   },
+   "funding_dispersion": {
+    "ok": 672
+   },
+   "liquidity_resilience": {
+    "gated": 672
+   },
+   "options_disagreement": {
+    "gated": 672
+   },
+   "positioning_interaction": {
+    "ok": 672
+   },
+   "price_response": {
+    "flow-below-threshold": 20,
+    "ok": 652
+   },
+   "spot_perp_basis": {
+    "ok": 672
+   }
+  },
+  "ordinary_rows": 659,
+  "rows": 672,
+  "version": "panel-1.0.0"
+ },
+ "schema": "repo-diagnostics/1",
+ "source_commit": "fce9fa2da0f45c37e76db4d0d64ddf1bcea7e0f7",
+ "spot_after_perp_last_1440_minutes": {
+  "later_share": 1.0,
+  "max": 1513,
+  "median": 909.5,
+  "min": 756,
+  "n": 1440,
+  "only_first": 0,
+  "only_second": 0,
+  "p10": 797.0,
+  "p90": 1079.0,
+  "window": [
+   "2026-10-18T17:45Z",
+   "2026-10-19T17:45Z"
+  ]
+ },
+ "store_cutoff_ms": 1792434761343
+}
