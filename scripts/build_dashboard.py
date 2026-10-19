@@ -15,6 +15,28 @@ ROOT = Path(__file__).resolve().parents[1]
 REPO = 'https://github.com/mannoj93-spec/jbm-desk-data'
 
 
+def write_assets(source, output):
+    """Version the complete module graph so cached files cannot straddle releases."""
+    for name in ['index.html', 'styles.css', 'app.js', 'model.js', 'favicon.svg']:
+        shutil.copyfile(source / name, output / name)
+
+    def versioned(name, content):
+        path = Path(name)
+        filename = f'{path.stem}.{hashlib.sha256(content).hexdigest()[:16]}{path.suffix}'
+        (output / filename).write_bytes(content)
+        return filename
+
+    model = versioned('model.js', (source / 'model.js').read_bytes())
+    app = (source / 'app.js').read_text(encoding='utf-8')
+    app = app.replace("'./model.js'", f"'./{model}'")
+    app_name = versioned('app.js', app.encode('utf-8'))
+    styles = versioned('styles.css', (source / 'styles.css').read_bytes())
+    index = (source / 'index.html').read_text(encoding='utf-8')
+    index = index.replace('href="styles.css"', f'href="{styles}"')
+    index = index.replace('src="app.js"', f'src="{app_name}"')
+    (output / 'index.html').write_text(index, encoding='utf-8')
+
+
 def utc(value):
     if not value:
         return None
@@ -238,8 +260,7 @@ def build(base, output):
                'workflow': {'status': 'unverified', 'url': REPO + '/actions'}, 'sources': sources}
     serialized = json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
     output.mkdir(parents=True, exist_ok=True)
-    for name in ['index.html', 'styles.css', 'app.js', 'model.js', 'favicon.svg']:
-        shutil.copyfile(base / 'dashboard' / name, output / name)
+    write_assets(base / 'dashboard', output)
     (output / '.nojekyll').touch()
     (output / 'data.json').write_text(serialized + '\n')
     print(f'Dashboard built: {output} ({len(serialized):,} bytes of data; {len(sources)} verified source hashes)')
