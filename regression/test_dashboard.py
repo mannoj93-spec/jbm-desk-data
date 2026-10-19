@@ -37,6 +37,17 @@ class DashboardTests(unittest.TestCase):
             # 2.24: the operational health report is carried as written, or null when it does not exist yet
             hp = ROOT / 'reports/health.json'
             self.assertEqual(payload['ops'], json.loads(hp.read_text()) if hp.exists() else None)
+            # Optional release records preserve source states, including service-pass / certification-insufficient.
+            developments = payload['developments']
+            self.assertIn('# ' + developments['release']['title'], (ROOT / 'CHANGELOG.md').read_text())
+            for protocol in developments['protocols']:
+                original = json.loads((ROOT / protocol['source']).read_text())
+                self.assertEqual(protocol['status'], original['status'])
+                self.assertEqual(protocol['effective_utc'], module.utc(original.get('effective_utc')))
+            acceptance = developments['acceptance']
+            original = json.loads((ROOT / acceptance['source']).read_text())
+            self.assertEqual(acceptance['verdict'], original['verdict'])
+            self.assertEqual(acceptance['service_verdict'], original['service_verdict'])
             self.assertNotIn('null', payload['research']['statuses'])
             self.assertLess((Path(tmp) / 'site/data.json').stat().st_size, 1_000_000)
             for rel, digest in payload['sources'].items():
@@ -74,6 +85,88 @@ class DashboardTests(unittest.TestCase):
             module.build(ROOT, ROOT / 'reports')
         with self.assertRaises(ValueError):
             module.build(ROOT, ROOT)
+
+
+class DevelopmentTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.base = Path(self.tmp.name)
+        self.sources = []
+
+    def write(self, path, value):
+        target = self.base / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(value))
+        return target
+
+    def summary(self):
+        return module.developments(self.base, lambda path: self.sources.append(str(path.relative_to(self.base))))
+
+    @staticmethod
+    def acceptance(version, verdict, start='2026-10-07', end='2026-10-08', evaluated='2026-10-12'):
+        return {'checker': f'acceptance-{version}', 'verdict': verdict, 'service_verdict': 'pass',
+                'reason': 'Service targets met; independent timer receipts incomplete.',
+                'clocks': {'window': [start + 'T00:00:00Z', end + 'T00:00:00Z'],
+                           'evaluated_utc': evaluated + 'T12:00:00Z'}}
+
+    def test_missing_optional_records_stay_unknown(self):
+        self.assertEqual(self.summary(), {'release': None, 'catalog': None, 'protocols': [], 'acceptance': None})
+        self.assertEqual(self.sources, [])
+
+    def test_prepared_protocol_and_catalog_keep_their_own_meanings(self):
+        protocol_path = 'research/registrations/dir1-prepared/protocol.json'
+        self.write(protocol_path, {'id': 'DIR1', 'status': 'prepared', 'effective_utc': None})
+        pilot_path = 'stream/pilot_e1.json'
+        self.write(pilot_path, {'id': 'E1-pilot-1', 'status': 'prepared; not commissioned'})
+        catalog_path = 'research_tools/catalog.json'
+        self.write(catalog_path, {'schema': 'desk-data-catalog/1', 'version': 'catalog-1.0.0',
+                                 'as_of_utc': '2026-10-19T18:00:00Z', 'datasets': [{}, {}],
+                                 'feature_families': [{'id': 'flow', 'status': 'supported'},
+                                                      {'id': 'books', 'status': 'gated: uncommissioned'}]})
+        result = self.summary()
+        self.assertEqual([p['status'] for p in result['protocols']], ['prepared', 'prepared; not commissioned'])
+        self.assertTrue(all(p['effective_utc'] is None for p in result['protocols']))
+        self.assertEqual(result['catalog']['dataset_count'], 2)
+        self.assertEqual(result['catalog']['feature_families'][1]['status'], 'gated: uncommissioned')
+        self.assertEqual(set(self.sources), {protocol_path, pilot_path, catalog_path})
+
+    def test_latest_window_preserves_result_of_record_beside_newer_audit(self):
+        self.write('docs/acceptance/results/2026-10-06/result-acceptance-3.0.0.json',
+                   self.acceptance('3.0.0', 'pass', start='2026-10-06', end='2026-10-07'))
+        folder = 'docs/acceptance/results/2026-10-07/'
+        self.write(folder + 'result-acceptance-3.0.0.json', self.acceptance('3.0.0', 'insufficient'))
+        self.write(folder + 'supplementary-acceptance-3.9.0.json', self.acceptance('3.9.0', 'insufficient'))
+        self.write(folder + 'supplementary-acceptance-3.10.0.json',
+                   self.acceptance('3.10.0', 'pass', evaluated='2026-10-14'))
+        result = self.summary()['acceptance']
+        self.assertEqual(result['verdict'], 'insufficient')
+        self.assertEqual(result['service_verdict'], 'pass')
+        self.assertEqual(result['checker'], 'acceptance-3.0.0')
+        self.assertEqual(result['supplementary']['checker'], 'acceptance-3.10.0')
+        self.assertEqual(result['supplementary']['verdict'], 'pass')
+        self.assertEqual(len(self.sources), 4)
+
+    def test_mismatched_audit_window_is_rejected(self):
+        folder = 'docs/acceptance/results/2026-10-07/'
+        self.write(folder + 'result-acceptance-3.0.0.json', self.acceptance('3.0.0', 'insufficient'))
+        self.write(folder + 'supplementary-acceptance-3.3.0.json',
+                   self.acceptance('3.3.0', 'pass', start='2026-10-06'))
+        with self.assertRaisesRegex(ValueError, 'does not match'):
+            self.summary()
+
+    def test_malformed_optional_record_is_not_presented_as_missing(self):
+        self.write('research/registrations/dir1-prepared/protocol.json', {'id': 'DIR1', 'status': None})
+        with self.assertRaisesRegex(ValueError, 'protocol status'):
+            self.summary()
+
+    def test_release_revision_survives_a_presentation_entry(self):
+        (self.base / 'CHANGELOG.md').write_text('# Dashboard refresh — 2026-10-19\n\n'
+                                                '# Revision 2.29 (crypto-desk 12.4.20) — 2026-10-19\n')
+        result = self.summary()['release']
+        self.assertEqual(result['revision'], '2.29')
+        self.assertEqual(result['date'], '2026-10-19')
+        self.assertEqual(self.sources, ['CHANGELOG.md'])
 
 
 if __name__ == '__main__':

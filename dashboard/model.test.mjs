@@ -98,7 +98,7 @@ test('staging keeps the previous snapshot on validation or render failure and co
 });
 
 // ---- repo 2.24 ----
-import { validBar, chartPoints, schemaClass, opsRows } from './model.js';
+import { validBar, chartPoints, marketSummary, schemaClass, opsRows } from './model.js';
 const snap = () => ({schema: 'jbm-dashboard/2', built_utc: '2026-10-03T13:00:00Z', health: {sources: [], datasets: [{name: 'x', observed_utc: null}], alerts: []},
   research: {designs: []}, range: {current: {}, evaluation: {}, generated_utc: '2026-10-03T12:00:00Z', status_expires_utc: '2026-10-03T13:20:00Z'},
   market: {bars: [[0, 1, 2, 0.5, 1.5, 60], [3600000, 1.5, 2, 1, 1.8, 42]], latest: {t: 3600000, close: 1.8}, observed_utc: '2026-10-03T12:59:00+00:00'},
@@ -115,6 +115,73 @@ test('null, truncated and non-finite chart rows are rejected before commit; empt
  assert.deepEqual(chartPoints([], 7), []);
  assert.throws(() => chartPoints([null], 7));
  assert.equal(chartPoints(snap().market.bars, 1).length, 2);
+});
+test('an empty selected market period retains unavailable values', () => {
+ assert.deepEqual(marketSummary([], 1), {high: null, low: null, change: null, count: 0, partial: 0});
+});
+test('market summary follows the chart period and compares selected hourly closes', () => {
+ const hour = 3600000;
+ const bars = [[0, 5, 100, 1, 10, 60], [hour, 15, 25, 12, 20, 60], [25 * hour, 22, 35, 18, 30, 60]];
+ assert.deepEqual(marketSummary(bars, 1), {high: 35, low: 12, change: 0.5, count: 2, partial: 0});
+ assert.deepEqual(marketSummary(bars, 7), {high: 100, low: 1, change: 2, count: 3, partial: 0});
+});
+test('a zero first close has no percentage change', () => {
+ const bars = [[0, 1, 2, 0, 0, 60], [3600000, 1, 3, 1, 2, 60]];
+ assert.deepEqual(marketSummary(bars, 1), {high: 3, low: 0, change: null, count: 2, partial: 0});
+});
+test('market summary counts recorded and partial hours without inventing missing hours', () => {
+ const bars = [[0, 10, 14, 9, 12, 12], [5 * 3600000, 12, 13, 8, 9, 60], [9 * 3600000, 9, 10, 6, 6, 59]];
+ assert.deepEqual(marketSummary(bars, 1), {high: 14, low: 6, change: -0.5, count: 3, partial: 2});
+ assert.throws(() => marketSummary([[0, 10, 14, 9, NaN, 60]], 1), /invalid market bar/);
+});
+const developments = () => ({
+ release: {revision: '2.36', date: '2026-10-19', title: 'Repository revision 2.36', source: 'CHANGELOG.md'},
+ catalog: {version: '2.36', as_of_utc: null, dataset_count: 12,
+   feature_families: [{id: 'flow', status: 'available'}], source: 'research_tools/catalog.json'},
+ protocols: [{id: 'E1', title: 'Streaming pilot', status: 'prepared; not commissioned',
+   effective_utc: null, source: 'stream/pilot_e1.json'}],
+ acceptance: {checker: 'acceptance-1', verdict: 'not accepted', service_verdict: 'fail', reason: 'Recorded gap',
+   window: ['2026-10-17T00:00:00Z', '2026-10-18T00:00:00Z'], evaluated_utc: null,
+   source: 'docs/acceptance/results/result-1.json', supplementary: null},
+});
+test('developments remain optional for legacy snapshots and empty source records remain explicit', () => {
+ assert.deepEqual(validateSnapshot(snap()), []);
+ assert.deepEqual(validateSnapshot({...snap(), developments: {release: null, catalog: null, protocols: [], acceptance: null}}), []);
+ const d = developments();
+ assert.deepEqual(validateSnapshot({...snap(), developments: d}), []);
+ d.acceptance.supplementary = {...d.acceptance, checker: 'audit-1', source: 'docs/acceptance/results/supplementary-1.json'};
+ delete d.acceptance.supplementary.supplementary;
+ assert.deepEqual(validateSnapshot({...snap(), developments: d}), []);
+});
+test('malformed development containers and leaf types are rejected before commit', () => {
+ const changes = [
+  d => null,
+  d => [],
+  d => ({...d, release: []}),
+  d => ({...d, release: {...d.release, revision: 2.36}}),
+  d => ({...d, release: {...d.release, date: 'not a date'}}),
+  d => ({...d, catalog: {...d.catalog, dataset_count: -1}}),
+  d => ({...d, catalog: {...d.catalog, dataset_count: 1.5}}),
+  d => ({...d, catalog: {...d.catalog, feature_families: {}}}),
+  d => ({...d, catalog: {...d.catalog, feature_families: [null]}}),
+  d => ({...d, catalog: {...d.catalog, as_of_utc: 'yesterday'}}),
+  d => ({...d, protocols: {}}),
+  d => ({...d, protocols: [null]}),
+  d => ({...d, protocols: [{...d.protocols[0], status: null}]}),
+  d => ({...d, protocols: [{...d.protocols[0], effective_utc: 'later'}]}),
+  d => ({...d, acceptance: []}),
+  d => ({...d, acceptance: {...d.acceptance, window: {}}}),
+  d => ({...d, acceptance: {...d.acceptance, window: [null, null]}}),
+  d => ({...d, acceptance: {...d.acceptance, window: d.acceptance.window.toReversed()}}),
+  d => ({...d, acceptance: {...d.acceptance, supplementary: []}}),
+  d => ({...d, acceptance: {...d.acceptance, supplementary: {...d.acceptance, window: ['2026-10-16T00:00:00Z', '2026-10-18T00:00:00Z']}}}),
+ ];
+ const previous = snap();
+ for (const change of changes) {
+  const candidate = {...snap(), developments: change(developments())};
+  assert.ok(validateSnapshot(candidate).some(p => p.startsWith('developments')), JSON.stringify(candidate.developments));
+  assert.equal(stage(previous, candidate, () => {}).data, previous);
+ }
 });
 test('timestamps the renderers parse must be parseable or legitimately null', () => {
  const s = snap(); s.range.generated_utc = 'yesterday';

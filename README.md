@@ -6,10 +6,17 @@ and auditable research evidence in one finance-themed workspace.
 [**Open dashboard ↗**](https://mannoj93-spec.github.io/jbm-desk-data/) ·
 [Run locally / deployment setup](dashboard/README.md) · [Research evidence](reports/research.md)
 
-> The dashboard URL becomes available after the dashboard workflow is merged and GitHub Pages
-> is configured to use GitHub Actions. The preview below is a dated snapshot, not live market data.
+The terminal refresh adds a compact market workspace, recorded-period chart statistics, protocol readiness,
+the research data catalog, and separate acceptance/service verdicts. It remains a read-only repository snapshot.
+
+<details>
+<summary>Earlier dashboard preview — October 2, 2026</summary>
 
 ![JBM Research Desk — terminal-inspired dashboard preview, October 2, 2026](docs/dashboard-preview.png)
+
+This image shows the earlier layout and dated observations, not the current interface or live market data.
+
+</details>
 
 [![Collector](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/collect.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/collect.yml)
 [![Research lab](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research.yml)
@@ -31,12 +38,12 @@ review of trading skill files; nothing here trades, holds credentials, or edits 
 
 | Workspace | Purpose |
 |---|---|
-| Overview | Recorded BTC price history, model comparisons, forecast availability, and research watchlist |
+| Overview | Recorded BTC price history, model comparisons, forecast availability, research watchlist, and repository developments |
 | Range forecasts | Full-window range quantiles, expiry, scoring, and descriptive evidence |
-| Research lab | Current evidence cards, integrity, checkpoint progress, and publication status |
+| Research lab | Current evidence cards, integrity, checkpoint progress, protocol readiness, and data catalog |
 | Data health | Source coverage, dataset timestamps, filters, and recorded collection observations |
 | Paper desk | PS1 lifecycle and paired B2/B1 comparisons, clearly labeled as research |
-| Reports & audit | Commit-pinned reports, data snapshot, and exportable source hashes |
+| Reports & audit | Commit-pinned reports, acceptance results and supplementary audits, data snapshot, and exportable source hashes |
 
 ```mermaid
 flowchart LR
