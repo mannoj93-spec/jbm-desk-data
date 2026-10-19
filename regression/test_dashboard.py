@@ -1,6 +1,7 @@
 """The dashboard must not mutate evidence, select retired cards, or fake missing data."""
 import importlib.util
 import json
+import re
 from pathlib import Path
 import tempfile
 import unittest
@@ -12,6 +13,42 @@ spec.loader.exec_module(module)
 
 
 class DashboardTests(unittest.TestCase):
+    def test_asset_urls_change_with_code_and_dependency_but_stay_stable_for_same_bytes(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as tmp:
+            source, output = Path(tmp) / 'source', Path(tmp) / 'site'
+            shutil.copytree(ROOT / 'dashboard', source)
+            output.mkdir()
+
+            def build_assets():
+                module.write_assets(source, output)
+                index = (output / 'index.html').read_text()
+                app = re.search(r'src="(app\.[a-f0-9]+\.js)"', index).group(1)
+                style = re.search(r'href="(styles\.[a-f0-9]+\.css)"', index).group(1)
+                dependency = re.search(r"from './(model\.[a-f0-9]+\.js)'", (output / app).read_text()).group(1)
+                for filename in (app, style, dependency):
+                    self.assertTrue((output / filename).is_file())
+                return app, style, dependency
+
+            first = build_assets()
+            self.assertEqual(first, build_assets())
+            with (source / 'model.js').open('a') as file:
+                file.write('\n// dependency update\n')
+            second = build_assets()
+            self.assertNotEqual(first[0], second[0])
+            self.assertEqual(first[1], second[1])
+            self.assertNotEqual(first[2], second[2])
+            with (source / 'styles.css').open('a') as file:
+                file.write('\n/* style update */\n')
+            third = build_assets()
+            self.assertNotEqual(second[1], third[1])
+            self.assertEqual(second[0], third[0])
+            with (source / 'app.js').open('a') as file:
+                file.write('\n// interface update\n')
+            fourth = build_assets()
+            self.assertNotEqual(third[0], fourth[0])
+            self.assertEqual(third[2], fourth[2])
+
     def test_real_snapshot_preserves_current_evidence_and_forecasts(self):
         import hashlib
         paths = [ROOT / 'reports/range_status.json', ROOT / 'reports/latest.md', ROOT / 'research/evidence/index.json']
