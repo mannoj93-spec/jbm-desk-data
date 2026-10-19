@@ -1,8 +1,9 @@
 # JBM Research Desk
 
-A read-only, terminal-inspired dashboard for the existing research pipeline. Near-black surfaces,
-amber navigation, tabular numbers, and compact panels give the desk a finance-oriented hierarchy.
-The optional light theme and saved page/chart selections stay in the browser.
+A read-only, terminal-inspired dashboard for the existing research pipeline. Black and charcoal surfaces,
+an orange command header, compact numbered panels, and tabular figures give the desk a Bloomberg-inspired
+hierarchy. The optional light theme and saved page/chart selections stay in the browser.
+Use **Alt + 1–6** to switch workspaces when focus is outside an input or dialog.
 
 ## Local preview
 
@@ -22,15 +23,21 @@ with `file://`; use the HTTP preview so browser modules and the snapshot can loa
 - **Overview:** actual recorded BTC prices, descriptive model comparisons, expiring forecast monitor,
   research watchlist, and review items. The chart aggregates stored minute bars into hourly OHLC;
   missing hours are not filled and partial hours remain labeled in the tooltip.
+  The selected period includes its observed close-to-close move, recorded high/low, and counts of
+  recorded/partial hours. These are observations, not a complete or live market return series.
+  Repository developments summarize the latest numbered revision, protocol preparation, and acceptance window.
 - **Range forecasts:** full-window range quantiles and their decision-close USD equivalents. These
   are range magnitudes, not upper/lower price targets or remaining-range estimates.
 - **Research lab:** current-version evidence cards only, search/status filters, checkpoint progress,
   and an accessible detail dialog. Required integrity and publication validity stay distinct.
+  Protocol readiness and the data catalog preserve their recorded states: prepared is not registered,
+  pilot criteria do not commission a recorder, and implemented features do not imply research support.
 - **Data health:** searchable source coverage, sortable availability, report-cutoff statuses, and
   observation ages recomputed on the viewer's clock.
 - **Paper desk:** actual PS1 lifecycle and evidence status, with B2/B1 paired comparisons. No invented
   P&L series or simulated results are created by the dashboard.
-- **Reports & audit:** commit-pinned reports and an exportable SHA-256 source manifest.
+- **Reports & audit:** commit-pinned reports, the acceptance result of record beside its latest
+  supplementary audit, and an exportable SHA-256 source manifest. Service and acceptance verdicts remain separate.
 
 CSV exports follow the active view and filters. Negative numbers and spreadsheet formula prefixes
 are escaped in CSV so source labels cannot execute formulas. No missing numeric value is shown as zero.
@@ -59,6 +66,12 @@ It preserves structured report values, keeps only current research versions from
 and records each source hash plus the checkout commit. The coverage report currently has no JSON twin;
 its named Markdown tables are parsed strictly. A changed or missing table fails the build instead of
 publishing misleading empty values. The dashboard does not change research version hashes.
+
+The optional `developments` summary reads the changelog, research catalog, protocol records, and acceptance
+results from that same checkout and adds their hashes to the manifest. Missing optional sources stay
+unknown or empty; malformed existing records fail the build. Acceptance selects the most recent result-of-record
+window and shows its latest supplementary audit separately. Neither a new audit nor a dashboard rebuild
+replaces the original verdict. Older dashboard snapshots without this summary continue to render.
 
 Forecast availability is checked against the report expiry, each row's valid-until timestamp and
 window end on every clock tick. Unknown clocks/expiry metadata cannot produce a current label.

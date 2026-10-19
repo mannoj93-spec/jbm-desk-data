@@ -126,6 +126,33 @@ export function validateSnapshot(s) {
        'companion.evaluation.horizons/integrity');
   need(obj(s.feasibility), 'feasibility');
   need(obj(s.sources), 'sources');
+  // Older snapshots predate this optional summary. When supplied, validate every container before a renderer
+  // reads its fields; a prepared protocol or supplementary audit must retain its source's recorded status.
+  if (s.developments !== undefined) {
+    const d = s.developments;
+    const text = value => typeof value === 'string' && value.trim().length > 0;
+    const fields = (value, names) => obj(value) && names.every(name => text(value[name]));
+    const window = value => Array.isArray(value) && value.length === 2 && value.every(v => time(v))
+      && Date.parse(value[0]) < Date.parse(value[1]);
+    const acceptance = value => fields(value, ['checker', 'verdict', 'service_verdict', 'reason', 'source'])
+      && window(value.window) && time(value.evaluated_utc, true);
+    need(obj(d), 'developments must be an object');
+    if (obj(d)) {
+      need(d.release === null || (fields(d.release, ['revision', 'title', 'source']) && time(d.release.date)),
+           'developments.release');
+      need(d.catalog === null || (fields(d.catalog, ['version', 'source']) && time(d.catalog.as_of_utc, true)
+        && Number.isInteger(d.catalog.dataset_count) && d.catalog.dataset_count >= 0
+        && Array.isArray(d.catalog.feature_families)
+        && d.catalog.feature_families.every(f => fields(f, ['id', 'status']))), 'developments.catalog');
+      need(Array.isArray(d.protocols)
+        && d.protocols.every(p => fields(p, ['id', 'title', 'status', 'source']) && time(p.effective_utc, true)),
+           'developments.protocols');
+      need(d.acceptance === null || (acceptance(d.acceptance)
+        && (d.acceptance.supplementary === null || (acceptance(d.acceptance.supplementary)
+          && d.acceptance.supplementary.window.every((stamp, i) => Date.parse(stamp) === Date.parse(d.acceptance.window[i]))))),
+           'developments.acceptance');
+    }
+  }
   return problems;
 }
 
@@ -138,6 +165,21 @@ export function chartPoints(bars, days) {
   if (!bars.every(validBar)) throw new Error('invalid market bar');
   const end = bars.at(-1)[0];
   return bars.filter(p => p[0] >= end - days * 86400000);
+}
+
+// Summarize only the recorded hours in the chart's selected period. The change compares hourly closes;
+// missing hours stay missing and incomplete hours are counted explicitly rather than filled in.
+export function marketSummary(bars, days) {
+  const points = chartPoints(bars, days);
+  if (!points.length) return {high: null, low: null, change: null, count: 0, partial: 0};
+  const firstClose = points[0][4];
+  return {
+    high: Math.max(...points.map(p => p[2])),
+    low: Math.min(...points.map(p => p[3])),
+    change: firstClose === 0 ? null : (points.at(-1)[4] - firstClose) / firstClose,
+    count: points.length,
+    partial: points.filter(p => p[5] < 60).length,
+  };
 }
 
 // Operational health rows (reports/health.json), each judged on the viewer's clock. A missing report is unknown.

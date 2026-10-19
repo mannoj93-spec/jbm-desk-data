@@ -1,8 +1,9 @@
-import { numeric, ageLabel, freshness, forecastState, reportExpiry, csv, escapeHTML as esc, CLOCKS, companionClocks, paperClocks, pairedRow, stage, chartPoints, opsRows } from './model.js';
+import { numeric, ageLabel, freshness, forecastState, reportExpiry, csv, escapeHTML as esc, CLOCKS, companionClocks, paperClocks, pairedRow, stage, chartPoints, marketSummary, opsRows } from './model.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => [...document.querySelectorAll(s)];
 const HORIZONS = ['4h', '24h', '72h'];
+const pageCodes = {overview: 'OVRV', forecasts: 'RNG', research: 'LAB', health: 'DATA', paper: 'PAPR', reports: 'AUDIT'};
 const pages = {
   overview: ['Desk overview', 'The market, the models, and the evidence behind them.'],
   forecasts: ['Range forecasts', 'Registered full-window ranges. Every estimate has an expiry.'],
@@ -47,32 +48,60 @@ function overview() {
   const passed = research.filter(d => d.research_integrity?.required && d.research_integrity?.status === 'passed').length;
   const required = research.filter(d => d.research_integrity?.required).length;
   const supported = research.filter(d => d.status === 'supported' && d.publication?.evaluation_valid).length;
-  const stats = `<div class="stats">${metric('Market observation', currentAge(data.market.observed_utc), 'Stored BTC price · not a live feed', 'amber')}${metric('Workflow result', 'Unverified', '<a href="' + data.workflow.url + '" target="_blank" rel="noopener noreferrer">Inspect GitHub Actions ↗</a>')}${metric('Required integrity checks', `${passed}<span class="muted"> / ${required}</span>`, 'Latest research attempt', passed === required ? 'positive' : 'negative')}${metric('Supported designs', `${supported}<span class="muted"> / ${research.length}</span>`, 'Support requires the registered criteria')}</div>`;
-  const market = panel('01', 'BTC / USDT', marketChart(), '<span class="chip">PERPETUAL · STORED DATA</span>', `<span>Binance trade price · hourly OHLC</span><span>Last captured ${currentAge(data.market.observed_utc)}</span>`);
-  const compare = panel('02', 'Model vs. persistence', comparisons(), flag('Descriptive', 'warn'), `<span>MAE of ln range · lower is better</span>${source('reports/range.md')}`);
-  const signals = panel('03', 'Forecast monitor', table(['Window', 'Point range¹', 'Availability'], HORIZONS.map(h => {
+  const stats = `<div class="stats">${metric('Market observation', currentAge(data.market.observed_utc), 'Stored BTC price · not a live feed', 'amber')}${metric('Workflow result', 'Unverified', '<a href="' + data.workflow.url + '" target="_blank" rel="noopener noreferrer">Inspect GitHub Actions ↗</a>')}${metric('Required integrity checks', `${passed}<span class="muted"> / ${required}</span>`, 'Latest research attempt', required ? (passed === required ? 'positive' : 'negative') : '')}${metric('Supported designs', `${supported}<span class="muted"> / ${research.length}</span>`, 'Support requires the registered criteria')}</div>`;
+  const market = panel('01', 'BTC / USDT', marketChart(), '<span class="chip">PERPETUAL · STORED DATA</span>', `<span>¹ First to last recorded close in selection · gaps unfilled</span><span>Last captured ${currentAge(data.market.observed_utc)}</span>`);
+  const compare = panel('04', 'Model vs. persistence', comparisons(), flag('Descriptive', 'warn'), `<span>MAE of ln range · lower is better</span>${source('reports/range.md')}`);
+  const signals = panel('02', 'Forecast monitor', table(['Window', 'Point range¹', 'Availability'], HORIZONS.map(h => {
     const row = data.range.current[h];
     return `<tr><td class="mono">${h.toUpperCase()}</td><td class="numeric">${format(row?.points_at_decision_close?.point, 1)}</td><td data-forecast="${h}">${flag(forecastState(row, data.range), tone(forecastState(row, data.range)))}</td></tr>`;
-  })), `<a href="#forecasts" class="mini-text amber">OPEN →</a>`, '<span>¹ USD-equivalent range at decision close; not a target.</span>');
-  const lab = panel('04', 'Research watchlist', researchTable(research.slice(0, 5), true), `<a href="#research" class="mini-text amber">ALL ${research.length} DESIGNS →</a>`, `<span>Oldest evidence cutoff ${esc(stamp(data.research.oldest_cutoff_utc))}</span>${reportTime(data.research.oldest_cutoff_utc, CLOCKS.research_observation_hours)}`);
+  })) + `<div class="forecast-note"><strong>REGISTERED RANGES</strong><br>Full-window estimates, frozen before the window opens. Availability is checked against your clock.</div>`, `<a href="#forecasts" class="mini-text amber">OPEN →</a>`, '<span>¹ USD-equivalent range at decision close; not a target.</span>');
+  const lab = panel('03', 'Research watchlist', researchTable(research.slice(0, 5), true), `<a href="#research" class="mini-text amber">ALL ${research.length} DESIGNS →</a>`, `<span>Oldest evidence cutoff ${esc(stamp(data.research.oldest_cutoff_utc))}</span>${reportTime(data.research.oldest_cutoff_utc, CLOCKS.research_observation_hours)}`);
   const review = panel('05', 'Desk review', alertsHTML(), `<a href="#health" class="mini-text amber">DETAILS →</a>`);
   exported = [['Signal', 'Value', 'As of'], ['Market observation', data.market.observed_utc, data.market.observed_utc], ['Required integrity passed', passed, data.research.oldest_cutoff_utc], ['Supported designs', supported, data.research.oldest_cutoff_utc], ['Workflow', 'unverified', 'Not queried']];
-  return stats + `<div class="workspace-grid"><div class="stack" style="grid-template-columns:1fr">${market}${lab}</div><div class="stack">${compare}${signals}${review}</div></div>`;
+  return stats + `<div class="overview-primary">${market}<div class="stack" style="grid-template-columns:1fr">${signals}${review}</div></div><div class="overview-secondary section-gap">${lab}${compare}</div>${developmentsBrief()}`;
+}
+
+function developmentsBrief() {
+  const d = data.developments;
+  if (!d) return '';
+  const prepared = d.protocols.filter(p => /^prepared\b/i.test(p.status)).length;
+  const a = d.acceptance;
+  const body = `<div class="brief-grid"><div class="brief-item"><span class="eyebrow">REPOSITORY UPDATE</span><h3>${d.release ? `Revision ${esc(d.release.revision)}` : 'Revision not reported'}</h3><p class="definition">${d.release ? esc(d.release.title) : 'No release summary is available in this snapshot.'}</p>${d.release ? `<span class="brief-link">${source(d.release.source, 'READ CHANGELOG ↗')}</span>` : ''}</div><div class="brief-item"><span class="eyebrow">RESEARCH PIPELINE</span><h3>${prepared} prepared / ${d.protocols.length} protocols</h3><p class="definition">Preparation does not establish registration, commissioning, or research support.</p><p class="mini-text section-gap">${esc(d.protocols.map(p => p.id).join(' · ') || 'No protocol records available.')}</p><a href="#research" class="brief-link">INSPECT READINESS →</a></div><div class="brief-item"><span class="eyebrow">LATEST ACCEPTANCE WINDOW</span><h3>${a ? esc(a.window[0].slice(0, 10)) + ' / UTC' : 'No result of record'}</h3>${a ? `${flag(a.verdict, tone(a.verdict))}<p class="definition section-gap">Service: ${esc(a.service_verdict)} · ${esc(a.checker)}<br>Service and acceptance are separate verdicts.</p><span class="brief-link">${source(a.source, 'OPEN RESULT OF RECORD ↗')}</span>` : '<p class="definition">An absent acceptance result remains unknown.</p>'}</div></div>`;
+  return `<div class="section-gap">${panel('06', 'Repository developments', body, flag('Commit-pinned'), '<span>Recorded source states · a repository update does not activate a research protocol.</span>')}</div>`;
+}
+function researchReadiness() {
+  const d = data.developments;
+  if (!d) return '';
+  const protocols = table(['Protocol / question', 'Recorded state', 'Effective UTC', 'Source'], d.protocols.map(p => `<tr><td><span class="mono">${esc(p.id)}</span><span class="sub">${esc(p.title)}</span></td><td class="protocol-state">${esc(p.status)}</td><td class="mono">${p.effective_utc ? esc(stamp(p.effective_utc)) : 'Not recorded'}</td><td>${source(p.source, 'PROTOCOL ↗')}</td></tr>`));
+  const catalog = d.catalog ? `<div class="panel-body"><p class="definition"><strong class="amber">${format(d.catalog.dataset_count)} cataloged datasets</strong> · ${esc(d.catalog.version)} · recorded as of ${esc(stamp(d.catalog.as_of_utc))}</p><p class="definition">These states describe feature implementation and data access. They do not describe evidence maturity.</p></div>${table(['Feature family', 'Implementation state'], d.catalog.feature_families.map(f => `<tr><td class="mono">${esc(f.id)}</td><td>${esc(f.status)}</td></tr>`))}` : '<div class="empty">No research catalog in this snapshot.</div>';
+  return `<div class="section-gap">${panel('03', 'Protocol readiness', protocols, flag('Recorded states'), '<span>Prepared ≠ registered · pilot criteria ≠ commissioned recorder · no effective date is inferred.</span>')}</div><div class="section-gap">${panel('04', 'Research data catalog', catalog, '', d.catalog ? source(d.catalog.source, 'OPEN CATALOG ↗') : '')}</div>`;
+}
+function acceptanceDetail() {
+  const a = data.developments?.acceptance;
+  if (!a) return '';
+  const records = [['Result of record', a], ...(a.supplementary ? [['Supplementary audit', a.supplementary]] : [])];
+  return `<div class="section-gap">${panel('A1', 'Acceptance audit', `<div class="panel-body"><p class="definition">Window ${esc(stamp(a.window[0]))} → ${esc(stamp(a.window[1]))}. A supplementary audit does not replace the result of record.</p></div>${table(['Record', 'Checker', 'Acceptance', 'Service', 'Source'], records.map(([label, r]) => `<tr><td>${label}</td><td class="mono">${esc(r.checker)}</td><td>${flag(r.verdict, tone(r.verdict))}</td><td>${esc(r.service_verdict)}</td><td>${source(r.source, 'RESULT ↗')}</td></tr>`))}<details><summary>Assessment and evaluation clocks</summary>${records.map(([label, r]) => `<p><strong>${label}</strong> · evaluated ${esc(stamp(r.evaluated_utc))}<br>${esc(r.reason)}</p>`).join('')}</details>`, flag('Historical window'))}</div>`;
 }
 
 function marketChart() {
   const latest = data.market.latest;
   if (!latest || !data.market.bars.length) return '<div class="empty">No stored market prices available.</div>';
-  return `<div class="quote-row"><div><div class="quote-label">LAST STORED PRICE / USD</div><div class="quote">${format(latest.close, 2)}</div><div class="quote-sub">${esc(stamp(latest.t))}</div></div><div class="segmented" aria-label="Price history period">${['1D', '3D', '7D'].map(v => `<button data-period="${v}" aria-pressed="${period === v}">${v}</button>`).join('')}</div></div><div id="market-chart" class="chart"><svg role="img" aria-label="Recorded BTCUSDT hourly closing prices in USD over the selected period"></svg><div class="chart-tooltip" hidden></div></div><div class="panel-body" style="padding-top:0"><span class="mini-text">Recorded hourly closes · partial hours retained · gaps left open</span></div>`;
+  return `<div class="quote-row"><div><div class="quote-label">LAST STORED PRICE / USD</div><div class="quote">${format(latest.close, 2)}<span class="quote-unit">USD</span></div><div class="quote-sub">${esc(stamp(latest.t))}</div></div><div class="segmented" aria-label="Price history period">${['1D', '3D', '7D'].map(v => `<button data-period="${v}" aria-pressed="${period === v}">${v}</button>`).join('')}</div></div><div id="market-chart" class="chart"><svg role="img" aria-label="Recorded BTCUSDT hourly closing prices in USD over the selected period"></svg><div class="chart-tooltip" hidden></div></div><div id="chart-summary" class="chart-summary">${chartSummaryHTML()}</div>`;
+}
+function chartSummaryHTML() {
+  const s = marketSummary(data.market.bars, parseInt(period, 10));
+  const change = numeric(s.change) ? `${s.change > 0 ? '+' : ''}${percent(s.change, 2)}` : '—';
+  return `<div><span>${period} OBSERVED MOVE¹</span><strong class="${s.change > 0 ? 'positive' : s.change < 0 ? 'negative' : ''}">${change}</strong></div><div><span>RECORDED HIGH</span><strong>${format(s.high, 2)}</strong></div><div><span>RECORDED LOW</span><strong>${format(s.low, 2)}</strong></div><div><span>HOURS / PARTIAL</span><strong>${format(s.count)} / ${format(s.partial)}</strong></div>`;
 }
 function drawMarket() {
   const box = $('#market-chart');
   if (!box) return;
   const svg = box.querySelector('svg'), tooltip = box.querySelector('.chart-tooltip');
+  if ($('#chart-summary')) $('#chart-summary').innerHTML = chartSummaryHTML();
   const days = parseInt(period, 10);
   const points = chartPoints(data.market.bars, days);
   if (!points.length) return;
-  const width = Math.max(240, box.clientWidth - 20), height = window.innerWidth < 521 ? 230 : window.innerWidth >= 1600 ? 290 : 250;
+  const width = Math.max(240, box.clientWidth - 20), height = Math.max(window.innerWidth < 521 ? 230 : window.innerWidth >= 1600 ? 290 : 250, box.clientHeight || 0);
   const left = 12, right = 63, top = 28, bottom = 35;
   const min = Math.min(...points.map(p => p[4])), max = Math.max(...points.map(p => p[4]));
   const pad = Math.max((max - min) * .18, max * .0005), lo = min - pad, hi = max + pad;
@@ -83,7 +112,7 @@ function drawMarket() {
   const grid = ticks.map(v => `<line class="grid" x1="${left}" x2="${width - right}" y1="${y(v)}" y2="${y(v)}"/><text x="${width - right + 9}" y="${y(v) + 4}">${format(v)}</text>`).join('');
   const xTicks = [0, .5, 1].map(f => {
     const t = first + f * (last - first), d = new Date(t);
-    return `<text x="${x(t)}" y="${height - 10}" text-anchor="${f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}">${days === 1 ? d.toISOString().slice(11, 16) : d.toISOString().slice(5, 10)} UTC</text>`;
+    return `<line class="grid vertical-grid" x1="${x(t)}" x2="${x(t)}" y1="${top}" y2="${height - bottom}"/><text x="${x(t)}" y="${height - 10}" text-anchor="${f === 0 ? 'start' : f === 1 ? 'end' : 'middle'}">${days === 1 ? d.toISOString().slice(11, 16) : d.toISOString().slice(5, 10)} UTC</text>`;
   }).join('');
   const segments = [];
   for (const p of points) {
@@ -95,7 +124,7 @@ function drawMarket() {
     return `<path class="area" d="${line} L${x(segment.at(-1)[0])},${height - bottom} L${x(segment[0][0])},${height - bottom}Z"/><path class="price-line" d="${line}"/>`;
   }).join('');
   svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-  svg.innerHTML = `<title>BTCUSDT hourly closing price, ${days} day view</title><desc>Stored prices in USD. UTC timestamps. Missing hours are not interpolated.</desc>${grid}${xTicks}<text x="${width - right + 9}" y="14">USD</text>${paths}<circle class="point" cx="${x(last)}" cy="${y(points.at(-1)[4])}" r="3"/><line id="hover-guide" class="chart-guide" x1="0" x2="0" y1="${top}" y2="${height - bottom}" visibility="hidden"/>`;
+  svg.innerHTML = `<title>BTCUSDT hourly closing price, ${days} day view</title><desc>Stored prices in USD. UTC timestamps. Missing hours are not interpolated.</desc>${grid}${xTicks}<text x="${width - right + 9}" y="14">USD</text>${paths}<line class="last-line" x1="${left}" x2="${width - right}" y1="${y(points.at(-1)[4])}" y2="${y(points.at(-1)[4])}"/><circle class="point" cx="${x(last)}" cy="${y(points.at(-1)[4])}" r="3"/><line id="hover-guide" class="chart-guide" x1="0" x2="0" y1="${top}" y2="${height - bottom}" visibility="hidden"/>`;
   const hide = () => { tooltip.hidden = true; box.querySelector('#hover-guide')?.setAttribute('visibility', 'hidden'); };
   svg.onpointermove = e => {
     const rect = svg.getBoundingClientRect(), px = (e.clientX - rect.left) * width / rect.width;
@@ -167,7 +196,7 @@ function research() {
   const visible = all.filter(d => (filter === 'all' || d.status === filter) && `${d.design} ${d.module} ${d.condition}`.toLowerCase().includes(query.toLowerCase()));
   const statuses = [...new Set(all.map(d => d.status))];
   exported = [['Design', 'Version', 'Status', 'Integrity', 'Publication valid', 'Retained', 'Checkpoint requirement', 'Card generated UTC', 'Observation cutoff UTC'], ...visible.map(d => [d.design, d.evaluation_version, d.status, d.research_integrity?.status, d.publication?.evaluation_valid, d.checkpoints?.pending?.retained, d.checkpoints?.pending?.need, d.generated_at, d.cutoff_utc])];
-  return `<div class="toolbar"><div class="filter-group"><label class="filter-label" for="research-search">FIND</label><input class="input" id="research-search" placeholder="Search designs or questions…" value="${esc(query)}"><label class="filter-label" for="research-filter">STATUS</label><select class="select" id="research-filter"><option value="all">All evidence states</option>${statuses.map(s => `<option value="${esc(s)}" ${filter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></div><span class="mini-text">${visible.length} / ${all.length} designs</span></div>${panel('01', 'Evidence register', researchTable(visible), reportTime(data.research.oldest_cutoff_utc, CLOCKS.research_observation_hours), `<span>Observation cutoff ${esc(stamp(data.research.oldest_cutoff_utc))} · index updated ${esc(stamp(data.research.index_updated_utc))}</span>${source('reports/research.md')}`)}<div class="notice section-gap">Checkpoint progress counts retained test observations. Meeting a count alone does not establish support: dependence blocks and the pre-registered decision rules also apply. Open any design to inspect its question and publication status.</div>${panel('02', 'What the signals mean', '<div class="panel-body"><div class="detail-grid" style="margin-top:0"><div><h3>Integrity</h3><p class="definition">Whether required inputs validated for this attempt. “Not required” is an explicit result for bar-based designs.</p></div><div><h3>Evidence maturity</h3><p class="definition">The research engine’s status, preserved as reported. A workflow pass, fresh data, or a small sample does not imply support.</p></div></div></div>')}`;
+  return `<div class="toolbar"><div class="filter-group"><label class="filter-label" for="research-search">FIND</label><input class="input" id="research-search" placeholder="Search designs or questions…" value="${esc(query)}"><label class="filter-label" for="research-filter">STATUS</label><select class="select" id="research-filter"><option value="all">All evidence states</option>${statuses.map(s => `<option value="${esc(s)}" ${filter === s ? 'selected' : ''}>${esc(s)}</option>`).join('')}</select></div><span class="mini-text">${visible.length} / ${all.length} designs</span></div>${panel('01', 'Evidence register', researchTable(visible), reportTime(data.research.oldest_cutoff_utc, CLOCKS.research_observation_hours), `<span>Observation cutoff ${esc(stamp(data.research.oldest_cutoff_utc))} · index updated ${esc(stamp(data.research.index_updated_utc))}</span>${source('reports/research.md')}`)}<div class="notice section-gap">Checkpoint progress counts retained test observations. Meeting a count alone does not establish support: dependence blocks and the pre-registered decision rules also apply. Open any design to inspect its question and publication status.</div>${panel('02', 'What the signals mean', '<div class="panel-body"><div class="detail-grid" style="margin-top:0"><div><h3>Integrity</h3><p class="definition">Whether required inputs validated for this attempt. “Not required” is an explicit result for bar-based designs.</p></div><div><h3>Evidence maturity</h3><p class="definition">The research engine’s status, preserved as reported. A workflow pass, fresh data, or a small sample does not imply support.</p></div></div></div>')}${researchReadiness()}`;
 }
 function openDesign(id) {
   const d = data.research.designs.find(row => row.design === id);
@@ -221,8 +250,12 @@ function reports() {
     ['OPERATIONS', 'Operations guide', 'Collection, deployment, scoring, and operating procedures.', 'docs/OPERATIONS.md'],
     ['VALIDATION', 'Validation record', 'How the research system was tested and deployed.', 'VALIDATION.md'],
   ];
+  if (data.developments) reports.push(
+    ['RESEARCH TOOLS', 'Research interface', 'Shared evidence contract, research queries, and prepared experiment tools.', 'docs/RESEARCH_INTERFACE.md'],
+    ['RELEASE NOTES', 'Repository changes', 'Recent revisions, causes, implementation changes, and validation records.', 'CHANGELOG.md']
+  );
   exported = [['Source file', 'SHA-256', 'Snapshot commit'], ...Object.entries(data.sources).map(([path, hash]) => [path, hash, data.commit])];
-  return `<div class="notice">Every report link is pinned to the dashboard’s source commit. Data generation times may differ by pipeline; a new dashboard build does not make old research fresh.</div><div class="report-grid">${reports.map(([category, title, description, path]) => `<a class="report-card" href="${esc(sourceURL(path))}" target="_blank" rel="noopener noreferrer"><span class="eyebrow">${category}</span><h3>${title}</h3><p>${description}</p><span class="report-link">OPEN SOURCE REPORT ↗</span></a>`).join('')}</div><div class="section-gap">${panel('10', 'Snapshot provenance', `<div class="panel-body"><dl class="detail-grid" style="margin-top:0"><div class="detail-item"><dt>SOURCE COMMIT</dt><dd>${esc(data.commit)}</dd></div><div class="detail-item"><dt>DASHBOARD BUILT</dt><dd>${esc(stamp(data.built_utc))}</dd></div><div class="detail-item"><dt>SOURCE FILE HASHES</dt><dd>${Object.keys(data.sources).length} SHA-256 records · export above</dd></div><div class="detail-item"><dt>DATA FORMAT</dt><dd>${esc(data.schema)} · <a href="data.json" download>Download snapshot JSON ↓</a></dd></div></dl></div>`)}</div>`;
+  return `<div class="notice">Every report link is pinned to the dashboard’s source commit. Data generation times may differ by pipeline; a new dashboard build does not make old research fresh.</div><div class="report-grid">${reports.map(([category, title, description, path]) => `<a class="report-card" href="${esc(sourceURL(path))}" target="_blank" rel="noopener noreferrer"><span class="eyebrow">${category}</span><h3>${title}</h3><p>${description}</p><span class="report-link">OPEN SOURCE REPORT ↗</span></a>`).join('')}</div>${acceptanceDetail()}<div class="section-gap">${panel('A2', 'Snapshot provenance', `<div class="panel-body"><dl class="detail-grid" style="margin-top:0"><div class="detail-item"><dt>SOURCE COMMIT</dt><dd>${esc(data.commit)}</dd></div><div class="detail-item"><dt>DASHBOARD BUILT</dt><dd>${esc(stamp(data.built_utc))}</dd></div><div class="detail-item"><dt>SOURCE FILE HASHES</dt><dd>${Object.keys(data.sources).length} SHA-256 records · export above</dd></div><div class="detail-item"><dt>DATA FORMAT</dt><dd>${esc(data.schema)} · <a href="data.json" download>Download snapshot JSON ↓</a></dd></div></dl></div>`)}</div>`;
 }
 
 const renderers = { overview, forecasts, research, health, paper, reports };
@@ -230,6 +263,8 @@ function render() {
   if (!data) return;
   chartObserver?.disconnect();
   $('#page-title').textContent = pages[page][0];
+  $('#page-code').textContent = pageCodes[page];
+  document.title = `JBM | ${pages[page][0]}`;
   $('#page-description').textContent = pages[page][1];
   $$('[data-page]').forEach(a => { if (a.dataset.page === page) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
   $('#view').innerHTML = renderers[page]();
@@ -266,6 +301,12 @@ function route() {
   query = ''; filter = 'all'; save('page', page);render();
 }
 window.addEventListener('hashchange', route);
+window.addEventListener('keydown', event => {
+  if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey || event.repeat
+      || event.target?.closest?.('input, select, textarea, [contenteditable="true"]') || $('#detail').open) return;
+  const number = /^Digit[1-6]$/.test(event.code) ? Number(event.code.slice(-1)) : 0;
+  if (number) { event.preventDefault(); location.hash = Object.keys(pages)[number - 1]; }
+});
 $('#export').addEventListener('click', () => {
   if (page === 'forecasts') forecasts(); // Revalidate availability at export time.
   const blob = new Blob(['\uFEFF' + csv(exported)], {type: 'text/csv;charset=utf-8'});

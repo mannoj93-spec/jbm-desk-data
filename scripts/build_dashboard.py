@@ -104,6 +104,84 @@ def price_history(base, record_source):
             'note': 'Hourly OHLC aggregated from stored one-minute bars. Partial hours are retained; gaps are not filled.'}
 
 
+def developments(base, record_source):
+    """Summarize optional repository records without promoting preparation into live evidence."""
+    def read(path):
+        record_source(path)
+        value = json.loads(path.read_text())
+        if not isinstance(value, dict):
+            raise ValueError(f'Invalid development record: {path.relative_to(base)}')
+        return value
+
+    def text(value, field, path):
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f'Invalid {field}: {path.relative_to(base)}')
+        return value
+
+    result = {'release': None, 'catalog': None, 'protocols': [], 'acceptance': None}
+    changelog = base / 'CHANGELOG.md'
+    if changelog.exists():
+        record_source(changelog)
+        # Presentation-only entries may precede the latest numbered repository revision.
+        match = re.search(r'^# (.*?\brevision\s+([\d.]+).*?(\d{4}-\d\d-\d\d).*)$',
+                          changelog.read_text(), re.M | re.I)
+        if match:
+            result['release'] = {'revision': match[2], 'date': match[3], 'title': match[1],
+                                 'source': 'CHANGELOG.md'}
+
+    catalog_path = base / 'research_tools/catalog.json'
+    if catalog_path.exists():
+        catalog = read(catalog_path)
+        if catalog.get('schema') != 'desk-data-catalog/1' or not isinstance(catalog.get('datasets'), list) or not isinstance(catalog.get('feature_families'), list):
+            raise ValueError('Invalid research catalog schema')
+        families = []
+        for family in catalog['feature_families']:
+            if not isinstance(family, dict):
+                raise ValueError('Invalid research catalog feature family')
+            families.append({key: text(family.get(key), key, catalog_path) for key in ('id', 'status')})
+        result['catalog'] = {'version': text(catalog.get('version'), 'version', catalog_path),
+                             'as_of_utc': utc(catalog.get('as_of_utc')), 'dataset_count': len(catalog['datasets']),
+                             'feature_families': families, 'source': str(catalog_path.relative_to(base))}
+
+    titles = {'DIR1': 'Directional forecasts', 'A2-synchronized-flow': 'Synchronized flow',
+              'PS1-T1': 'Turnover control', 'E1-pilot-1': 'Streaming pilot'}
+    paths = sorted((base / 'research/registrations').glob('*/protocol.json'))
+    pilot = base / 'stream/pilot_e1.json'
+    if pilot.exists():
+        paths.append(pilot)
+    for path in paths:
+        protocol = read(path)
+        identifier = text(protocol.get('id'), 'protocol id', path)
+        result['protocols'].append({'id': identifier, 'title': titles.get(identifier, identifier),
+                                    'status': text(protocol.get('status'), 'protocol status', path),
+                                    'effective_utc': utc(protocol.get('effective_utc')),
+                                    'source': str(path.relative_to(base))})
+
+    def acceptance(path):
+        record = read(path)
+        clocks = record.get('clocks')
+        if not isinstance(clocks, dict) or not isinstance(clocks.get('window'), list) or len(clocks['window']) != 2:
+            raise ValueError(f'Invalid acceptance clocks: {path.relative_to(base)}')
+        window = [utc(value) for value in clocks['window']]
+        if not all(window) or window[0] >= window[1]:
+            raise ValueError(f'Invalid acceptance window: {path.relative_to(base)}')
+        return {**{key: text(record.get(key), key, path)
+                   for key in ('checker', 'verdict', 'service_verdict', 'reason')},
+                'window': window, 'evaluated_utc': utc(clocks.get('evaluated_utc')),
+                'source': str(path.relative_to(base))}
+
+    # Result-of-record files remain authoritative; a supplementary audit never replaces one.
+    records = [(path, acceptance(path)) for path in sorted((base / 'docs/acceptance/results').glob('*/result-*.json'))]
+    if records:
+        path, latest = max(records, key=lambda item: (item[1]['window'][1], item[1]['window'][0]))
+        audits = [acceptance(p) for p in sorted(path.parent.glob('supplementary-*.json'))]
+        if any(audit['window'] != latest['window'] for audit in audits):
+            raise ValueError('Supplementary acceptance audit does not match the result window')
+        latest['supplementary'] = max(audits, key=lambda audit: audit['evaluated_utc'] or '') if audits else None
+        result['acceptance'] = latest
+    return result
+
+
 def build(base, output):
     base, output = Path(base).resolve(), Path(output).resolve()
     # Output may never overwrite any source or evidence directory.
@@ -156,6 +234,7 @@ def build(base, output):
                'companion': read('reports/companion_b1.json'), 'paper': read('reports/paper_ps1.json'),
                'feasibility': read('reports/feasibility.json'), 'market': price_history(base, record),
                'ops': read('reports/health.json') if (base / 'reports/health.json').exists() else None,
+               'developments': developments(base, record),
                'workflow': {'status': 'unverified', 'url': REPO + '/actions'}, 'sources': sources}
     serialized = json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(',', ':'))
     output.mkdir(parents=True, exist_ok=True)
