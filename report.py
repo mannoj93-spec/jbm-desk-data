@@ -14,7 +14,7 @@ from scoring import score_registry
 from research import run_tests
 import cadence
 
-REPORT_VERSION = "report-2.6.1-2026-09-30"
+REPORT_VERSION = "report-2.6.2-2026-10-19"
 
 
 def iso(ms):
@@ -64,10 +64,14 @@ def _minutes(values):
     return "n/a" if mid is None else f"median {mid:.1f}, p90 {p90:.1f}, max {max(values):.1f}"
 
 
-def collection_health(runs_all, runs, snaps, periods, since, now):
+def collection_health(runs_all, runs, snaps, periods, since, now, input_cutoff=None):
     """Section 1. Scheduled execution (starts the scheduler made, counted against the nominal
     slots of the cadence in force) and snapshot coverage (market snapshots actually stored per
-    slot interval, whatever started them) are reported separately; see cadence.py."""
+    slot interval, whatever started them) are reported separately; see cadence.py.
+    Repo 2.29: input_cutoff is the latest observation the report's inputs hold. A slot interval ending after it was
+    beyond the assessed evidence when the report was generated: it is 'not yet assessed', counted and shown, never a
+    gap (the Oct 19 13:22-13:37Z interval was reported uncovered while the 13:27Z snapshot existed but
+    was not yet in the report's inputs). Wall-clock lag (report clock minus input cutoff) is a separate line."""
     lines, alerts = [], []
     stale_min = cadence.stale_minutes()
     grace = 20 * 60_000     # a slot this recent may simply not have started yet
@@ -95,7 +99,10 @@ def collection_health(runs_all, runs, snaps, periods, since, now):
                 started = f"{len(scheduled)}{share}"
                 if legacy:
                     started += f"; plus {len(legacy)} pre-2.6 runs with no trigger recorded"
-            buckets = [(a, b) for a, b in cadence.slot_buckets(periods, lo, hi) if b <= now]
+            buckets_all = [(a, b) for a, b in cadence.slot_buckets(periods, lo, hi) if b <= now]
+            assess_to = now if input_cutoff is None else min(now, input_cutoff)
+            buckets = [(a, b) for a, b in buckets_all if b <= assess_to]
+            not_yet = len(buckets_all) - len(buckets)
             stamps = [r["t"] for r in snaps if lo <= r["t"] < hi]
             j, hit = 0, 0
             for a, b in buckets:
@@ -105,11 +112,17 @@ def collection_health(runs_all, runs, snaps, periods, since, now):
             span_snaps = [r for r in snaps if lo <= r["t"] < hi]
             degraded = sum(1 for r in span_snaps if any(v.get("st") != "ok" for v in (r.get("oi") or {}).values()))
             coverage = f"{hit}/{len(buckets)} slot intervals" if buckets else "no complete interval"
+            if not_yet:
+                coverage += f"; {not_yet} not yet assessed (after the input cutoff)"
             lines.append(f"| {iso(lo)} → {iso(hi)} | `{cron}` | {len(due)} | {started} | {coverage} | {degraded}/{len(span_snaps)} |")
         lines.append("Starts are counted, never matched to slots: GitHub starts scheduled runs late by an unrecorded "
                      "amount and can drop them, so a start time does not identify its slot (edges can shift a count by one). "
                      f"Slots in the last {grace // 60_000} minutes are not yet due. Manual runs never count as scheduled starts; "
                      "they do count toward snapshot coverage, which measures data held rather than scheduler behaviour.")
+    if input_cutoff is not None:
+        lines.append(f"Input cutoff {iso(input_cutoff)}; report clock {iso(now)}: wall-clock lag "
+                     f"{(now - input_cutoff) / 60_000:.0f} min. Lag is not a collection gap; intervals after the cutoff "
+                     "are not yet assessed (refresh the inputs to assess them).")
     sched = [r for r in runs if cadence.schedule_evidence(r)]
     current = cadence.interval_minutes(periods, now) if periods else None
     gaps = [(b["t"] - a["t"]) / 60_000 for a, b in zip(sched, sched[1:])
@@ -298,7 +311,9 @@ def build(base, now, days=7, coverage_only=False):
     except (ValueError, KeyError, TypeError) as exc:
         alerts.append(f"cadence.json unreadable ({exc}); scheduled execution not assessed.")
         periods = []
-    health_lines, health_alerts = collection_health(runs_all, runs, snaps, periods, since, now)
+    held = [r["t"] for r in runs_all if r["t"] <= now] + [r["t"] for r in snaps]
+    input_cutoff = max(held) if held else None
+    health_lines, health_alerts = collection_health(runs_all, runs, snaps, periods, since, now, input_cutoff)
     lines.extend(health_lines)
     alerts.extend(health_alerts)
     sources, current = {}, set()

@@ -1,0 +1,18 @@
+{
+ "schema": "lab-design-successor/1",
+ "id": "A2-synchronized-flow",
+ "status": "prepared",
+ "effective_utc": null,
+ "successor_of": "A1-flow-absorption (frozen; its thresholds, cohort, clocks and replay are unchanged; no later spot observation is admitted into an A1 decision)",
+ "why": "research_tools/funnel.py, Oct 19 2026: in 1,440 paired minutes spot was available after perp every time (median 909.5 ms, range 756-1,513 ms); over 7 days A1's optional spot flow was ineligible at all 10,075 decision minutes ('arrived after decision'), because the collector retrieves spot after perp and A1's decision clock is the perp inputs' availability",
+ "decision_clock": "t_decision = max(perp window availability, spot window availability) if spot arrives within join_timeout_ms of the perp window; otherwise perp availability + join_timeout_ms, with spot recorded as 'timeout' (never filled)",
+ "join_window": "the same 5 closed minutes on both venues (open-time aligned)",
+ "join_timeout_ms": 5000,
+ "max_input_age_ms": 3600000,
+ "allowed_sources": ["binance_klines_1m_BTCUSDT_perp (o,h,l,c,v,tbv)", "binance_klines_1m_BTCUSDT_spot (v,tbv)", "snap depth_binance_usdt"],
+ "missing_data": "spot timeout or missing: the decision proceeds as a perp-only decision in a separately labelled group; it is never pooled with synchronized decisions",
+ "forecast_deadline": "t_decision + 60 s ASSUMED processing (as lab/asof.py); live delivery evidence is a separate object",
+ "comparison": "usable information gained (share of decisions with synchronized spot; difference in the flow-direction outcome between synchronized and perp-only decisions) against the delay paid (distribution of t_decision - perp availability)",
+ "registration_rule": "frozen before any confirmation outcome; evaluated under the lab's checkpoint, multiplicity and block rules as a new family member (variant count carried)",
+ "collection_note": "parallelizing collection may shrink the delay; actual arrival times are kept either way"
+}

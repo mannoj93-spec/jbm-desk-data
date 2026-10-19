@@ -1,3 +1,26 @@
+# Revision 2.29 (crypto-desk 12.4.20 on the 12.4 release family) — 2026-10-19
+
+**Base.** `main` at `fce9fa2d` (Oct 19 17:47:53Z). Between the Oct 18 and Oct 19 review pins and this base, only data,
+state, streams and reports changed; no Python or workflow file. Repository gates at the base all passed locally
+(fixtures, regression suite, O21 verify, checksums, release identity, desk tests). **Unchanged:** the collector,
+recovery, persistence, workflows, every research design and evaluation version, and the lab's code identity (`lab.common.code_hash`, which evidence
+cards record): the new modules live in `research_tools/`, outside `lab/`, as `desk/test_streams.py` requires; they read
+the lab through `lab.data` and `lab.asof` without changing it. `lab/modules/twap.py` is deliberately untouched, PS1 v3, the range
+stream, the six shared modules and `desk/release.json`.
+
+| Item | Evidence / cause | Change | Tests |
+|---|---|---|---|
+| Report tail counted intervals beyond its inputs as uncovered (670/671, the 13:22-13:37Z interval) | coverage buckets ran to the report clock, not the input cutoff | `report.collection_health(..., input_cutoff)`: intervals after the cutoff are "not yet assessed"; wall-clock lag is its own line (report-2.6.2) | `test_rev229.ReportTailTests` |
+| PR #42 merge missing from `desk/deployments.jsonl` | the record stopped at PR opening | appended from the GitHub API (merged 2026-10-14T01:47:09Z, `7f97b6af`, checks green); merge is not commissioning | — |
+| Shared evidence contract | helpers reimplemented weaker rules (skill findings A-K) | `research_tools/evidence_contract.py` = skill `desk_evidence.py`, pinned both sides | `ContractParityTests` |
+| O33 v3.1 | the 12.4.19 amendment had no verifiable public record | `research/registrations/o33-v3.1/` spec, enforcement copies, manifest; effective at its first push to `main`; the "3-3 split" argument withdrawn | `scripts/o33_v31_manifest.py check` |
+| Catalog, funnel, panel, research API, ledger, directional stream, calibration, turnover, archive, D1, E1 pilot | brief sections 8-16 | see `docs/RESEARCH_INTERFACE.md` | `test_rev229` (31 tests) |
+| Stale D1 prose ("2 BTC programs in 272") | Oct 8 figure | `feasibility.py` cites the measured per-reason counts (282 programs, 280 not BTC, 2 BTC first seen finished) | — |
+
+Measured at this base (`research/diagnostics/2026-10-19-repo-2.29.json`): spot later than perp in 1,440 of 1,440
+paired minutes (median 909.5 ms, 756-1,513 ms); A1's optional spot ineligible at all 10,075 decision minutes in 7
+days; decision-time input age median 180 s.
+
 # Maintenance, revision 2.28.3 (crypto-desk 12.4.17 on the 12.4 release family) — 2026-10-14
 
 **Base.** `main` at `a32ad3c3` (2.28.2 merged Oct 12 19:37:20Z as `69258f42`, then data only). Collection, recovery,

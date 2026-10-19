@@ -1,0 +1,18 @@
+{
+ "schema": "ps-successor/1",
+ "id": "PS1-T1",
+ "status": "prepared",
+ "effective_utc": null,
+ "effective_rule": "registered only by a merge to main of this file with status 'registered' and a launch decision written by the job; PS1 v3 continues unchanged and is not a control that this successor may modify",
+ "question": "Does a no-trade band on the sizing weight reduce B2's turnover cost enough that B2 sizing beats VOL sizing in after-cost risk-adjusted return under STRESSED costs?",
+ "motivation": "discovery data, not evidence: PS1 v3 through 2026-10-19T16:22Z (92 closed intervals, 400 h, 2 complete blocks) - ordinary net B2 -0.93%, VOL -1.50%, FIXED -1.07%; stressed B2 -1.56%, VOL -1.55%, FIXED -1.10%; B2 ordinary costs 808.40 vs VOL 66.21 (12.2x), annualized turnover 156.4 vs 13.3",
+ "candidates": {"bands_abs_weight": [0.0, 0.05, 0.10], "rebalance_every_decisions": [1, 2], "arms": ["B2", "VOL"]},
+ "primary": "Sharpe(B2, band 0.05, every 1) - Sharpe(VOL, band 0.05, every 1), duration-weighted annualized log-return Sharpe, STRESSED costs (ps1-costs-1 stressed: 10 bp fee + 10 bp slippage + full spread)",
+ "secondary": "every other candidate pair, reported with the family count (11 secondary comparisons) and never promoted on its own",
+ "conventions": "identical to PS1 v3: decisions, quote eligibility, fill model, missing-data joint rule, time accounting, capital and marking (desk/research/ps1/protocol.json sha256 d0e8c837...); the band is applied to each arm's PS1 target weight by lab/turnover.apply_band",
+ "baselines": ["band 0.0 (PS1's every-decision rebalance)", "FIXED"],
+ "uncertainty": "moving-block bootstrap as PS1 (blocks of 42 intervals, 5,000 resamples, seed 20261019); no interval below 10 complete blocks",
+ "checkpoints": {"C1": "180 days after launch and >= 10 blocks: descriptive", "C2": "365 days and >= 20 blocks: status vocabulary of PS1"},
+ "claims_boundary": "sizing and turnover on one synthetic spot policy; no direction, no live fills, no capacity",
+ "module": "research_tools/turnover.py turnover-1.0.0"
+}
