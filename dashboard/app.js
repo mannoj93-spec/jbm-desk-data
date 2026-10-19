@@ -101,7 +101,7 @@ function drawMarket() {
   const days = parseInt(period, 10);
   const points = chartPoints(data.market.bars, days);
   if (!points.length) return;
-  const width = Math.max(240, box.clientWidth - 20), height = window.innerWidth < 521 ? 230 : window.innerWidth >= 1600 ? 290 : 250;
+  const width = Math.max(240, box.clientWidth - 20), height = Math.max(window.innerWidth < 521 ? 230 : window.innerWidth >= 1600 ? 290 : 250, box.clientHeight || 0);
   const left = 12, right = 63, top = 28, bottom = 35;
   const min = Math.min(...points.map(p => p[4])), max = Math.max(...points.map(p => p[4]));
   const pad = Math.max((max - min) * .18, max * .0005), lo = min - pad, hi = max + pad;

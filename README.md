@@ -9,6 +9,10 @@ and auditable research evidence in one finance-themed workspace.
 The terminal refresh adds a compact market workspace, recorded-period chart statistics, protocol readiness,
 the research data catalog, and separate acceptance/service verdicts. It remains a read-only repository snapshot.
 
+![JBM Research Desk — refreshed terminal, October 19, 2026](docs/dashboard-preview-2026-10-19.jpg)
+
+Preview captured October 19, 2026. Values are dated observations, not live prices.
+
 <details>
 <summary>Earlier dashboard preview — October 2, 2026</summary>
 
