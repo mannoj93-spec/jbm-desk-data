@@ -42,6 +42,8 @@ derived/triggers/<day>.jsonl                         trigger and control log
 captures/<day>/<capture_id>.jsonl.gz                 rolling buffer: 5 min before + 15 min after
                                                      each trigger and each hourly control
 manifest/<day>.jsonl                                 uploaded partitions: key, bytes, sha256
+derived/clock/<day>.jsonl                            clock-offset samples (stream-1.1): Deribit public/get_time
+                                                     against the round-trip midpoint, every clock_every_s (60 s)
 heartbeat.json, state.json                           liveness and upload/restart state
 ```
 

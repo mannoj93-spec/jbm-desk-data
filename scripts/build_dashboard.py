@@ -28,7 +28,13 @@ def write_assets(source, output):
 
     model = versioned('model.js', (source / 'model.js').read_bytes())
     app = (source / 'app.js').read_text(encoding='utf-8')
+    if "'./model.js'" not in app:
+        raise ValueError("app.js no longer imports './model.js': update write_assets before publishing")
     app = app.replace("'./model.js'", f"'./{model}'")
+    # repo 2.30: every relative module the app imports must have been rewritten to a content-hashed name
+    stray = sorted(set(re.findall(r"from\s+['\"](\./[^'\"]+)['\"]", app)) - {f'./{model}'})
+    if stray:
+        raise ValueError(f'unversioned module reference(s) in app.js: {stray}')
     app_name = versioned('app.js', app.encode('utf-8'))
     styles = versioned('styles.css', (source / 'styles.css').read_bytes())
     index = (source / 'index.html').read_text(encoding='utf-8')
@@ -140,7 +146,7 @@ def developments(base, record_source):
             raise ValueError(f'Invalid {field}: {path.relative_to(base)}')
         return value
 
-    result = {'release': None, 'catalog': None, 'protocols': [], 'acceptance': None}
+    result = {'release': None, 'catalog': None, 'protocols': [], 'acceptance': None, 'readiness': []}
     changelog = base / 'CHANGELOG.md'
     if changelog.exists():
         record_source(changelog)
@@ -191,6 +197,31 @@ def developments(base, record_source):
                    for key in ('checker', 'verdict', 'service_verdict', 'reason')},
                 'window': window, 'evaluated_utc': utc(clocks.get('evaluated_utc')),
                 'source': str(path.relative_to(base))}
+
+    # Component readiness (repo 2.30): recorded states with their evidence, displayed as recorded; a state is never
+    # inferred here, and the record's own clock (as_of_utc) is shown apart from the build time.
+    states = ('implemented', 'tested', 'pushed', 'merged', 'installed', 'deployed', 'observed', 'registered',
+              'prepared', 'blocked', 'pending')
+    for path in sorted((base / 'research/readiness').glob('*.json')):
+        rec = read(path)
+        if rec.get('schema') != 'component-readiness/1' or not isinstance(rec.get('states'), dict) \
+                or not isinstance(rec.get('code'), dict) or not isinstance(rec.get('blockers'), list):
+            raise ValueError(f'Invalid readiness record: {path.relative_to(base)}')
+        st = {}
+        for name, value in rec['states'].items():
+            if name not in states or not isinstance(value, dict) or not isinstance(value.get('value'), bool) \
+                    or not isinstance(value.get('evidence'), list):
+                raise ValueError(f'Invalid readiness state {name!r}: {path.relative_to(base)}')
+            if value['value'] and not value['evidence']:
+                raise ValueError(f'Readiness state {name!r} without evidence: {path.relative_to(base)}')
+            st[name] = {'value': value['value'], 'evidence': [text(e.get('ref'), 'evidence ref', path)
+                                                               for e in value['evidence']]}
+        result['readiness'].append({'id': text(rec.get('id'), 'id', path), 'title': text(rec.get('title'), 'title', path),
+                                    'version': text(rec['code'].get('version'), 'version', path),
+                                    'code_path': text(rec['code'].get('path'), 'code path', path),
+                                    'as_of_utc': utc(rec.get('as_of_utc')), 'states': st,
+                                    'blockers': [text(x, 'blocker', path) for x in rec['blockers']],
+                                    'source': str(path.relative_to(base))})
 
     # Result-of-record files remain authoritative; a supplementary audit never replaces one.
     records = [(path, acceptance(path)) for path in sorted((base / 'docs/acceptance/results').glob('*/result-*.json'))]

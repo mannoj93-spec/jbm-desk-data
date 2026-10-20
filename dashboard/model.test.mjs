@@ -183,6 +183,28 @@ test('malformed development containers and leaf types are rejected before commit
   assert.equal(stage(previous, candidate, () => {}).data, previous);
  }
 });
+test('readiness records are optional, keep their recorded states, and refuse inferred or unevidenced states (repo 2.30)', () => {
+ const rec = () => ({id: 'dir1', title: 'DIR1 guarded runner', version: 'dir1-runner-1.0.0', code_path: 'research_tools/dir1_runner.py',
+   as_of_utc: '2026-10-20T01:30:00Z', source: 'research/readiness/dir1.json', blockers: ['frontier arm uncommissioned'],
+   states: {implemented: {value: true, evidence: ['at or before abc']}, tested: {value: true, evidence: ['regression/test_rev230.py']},
+            merged: {value: false, evidence: []}, deployed: {value: false, evidence: []}}});
+ const d = developments();
+ assert.deepEqual(validateSnapshot({...snap(), developments: d}), []);                       // legacy: no readiness key
+ assert.deepEqual(validateSnapshot({...snap(), developments: {...d, readiness: []}}), []);
+ assert.deepEqual(validateSnapshot({...snap(), developments: {...d, readiness: [rec()]}}), []);
+ const bad = [
+  r => ({...r, states: {...r.states, live: {value: true, evidence: ['x']}}}),                // not in the vocabulary
+  r => ({...r, states: {...r.states, deployed: {value: true, evidence: []}}}),               // a state without evidence
+  r => ({...r, states: {...r.states, merged: {value: 'no', evidence: []}}}),
+  r => ({...r, blockers: 'none'}),
+  r => ({...r, as_of_utc: 'tonight'}),
+  r => ({...r, version: ''}),
+ ];
+ for (const change of bad) {
+  const candidate = {...snap(), developments: {...d, readiness: [change(rec())]}};
+  assert.ok(validateSnapshot(candidate).some(p => p === 'developments.readiness'), JSON.stringify(change(rec())));
+ }
+});
 test('timestamps the renderers parse must be parseable or legitimately null', () => {
  const s = snap(); s.range.generated_utc = 'yesterday';
  assert.ok(validateSnapshot(s).some(p => p.includes('timestamps')));

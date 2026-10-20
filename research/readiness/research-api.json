@@ -1,0 +1,46 @@
+{
+ "as_of_utc": "2026-10-20T04:44:39Z",
+ "blockers": [],
+ "code": {
+  "path": "research_tools/research_api.py",
+  "sha256": "900a942b9c48aa9950866d16732cbd716a88c37ccdf723a9e00246fa6fff5a35",
+  "version": "research-api-1.1.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "research-api",
+ "schema": "component-readiness/1",
+ "states": {
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before a6f3df538780"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::F3ResearchAPITests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Research interface (F3, 16)"
+}

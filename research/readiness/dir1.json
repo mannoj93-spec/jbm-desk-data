@@ -1,0 +1,70 @@
+{
+ "as_of_utc": "2026-10-20T04:44:39Z",
+ "blockers": [
+  "frontier arm uncommissioned (no model account, identity or transport)",
+  "statistical artifact not trained/frozen; no publication workflow; 4-hour horizon awaits measured latency"
+ ],
+ "code": {
+  "path": "research_tools/dir1_runner.py",
+  "sha256": "3820a68551edf27b3da3be4d1bccb53d31dfd0bcc7d56f5c85a13ada0ba6109e",
+  "version": "dir1-runner-1.0.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "dir1",
+ "schema": "component-readiness/1",
+ "states": {
+  "deployed": {
+   "evidence": [],
+   "value": false
+  },
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before a6f3df538780"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "prepared": {
+   "evidence": [
+    {
+     "kind": "file",
+     "ref": "research/registrations/dir1-prepared/protocol.json"
+    }
+   ],
+   "value": true
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "registered": {
+   "evidence": [],
+   "value": false
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::F4RunnerTests"
+    },
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::F5ComparisonTests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "DIR1 guarded runner (F4, F5, 15)"
+}

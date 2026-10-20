@@ -1,0 +1,61 @@
+{
+ "as_of_utc": "2026-10-20T04:44:39Z",
+ "blockers": [
+  "effective at the first push of the directory to main (effective.json after the merge)"
+ ],
+ "code": {
+  "path": "research/registrations/o33-v3.1-correction-1/enforcement/desk_register.py",
+  "sha256": "6e72a4c7bfddba165e3da7c2b5669c3ebc997a0da95c63c8196a934cdf4a8d67",
+  "version": "register-2.4.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "o33-correction-1",
+ "schema": "component-readiness/1",
+ "states": {
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before a6f3df538780"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "prepared": {
+   "evidence": [
+    {
+     "kind": "file",
+     "ref": "research/registrations/o33-v3.1-correction-1/spec.json"
+    }
+   ],
+   "value": true
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "registered": {
+   "evidence": [],
+   "value": false
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::F8O33Tests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "O33 v3.1 correction 1 (F8)"
+}

@@ -1,0 +1,52 @@
+{
+ "as_of_utc": "2026-10-20T04:44:39Z",
+ "blockers": [
+  "no host runs the service as a separate OS user; in CI and single-user checkouts the boundary is a convention"
+ ],
+ "code": {
+  "path": "research_tools/evaluator_service.py",
+  "sha256": "21baa9e9cda086aa75a952cf6cf5227f65eb211df24d8045d0c1fd5e42d4b092",
+  "version": "evaluator-service-1.0.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "evaluator-service",
+ "schema": "component-readiness/1",
+ "states": {
+  "deployed": {
+   "evidence": [],
+   "value": false
+  },
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before a6f3df538780"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::F6LedgerTests (OS-user case runs only as root)"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Evaluator boundary (F6)"
+}

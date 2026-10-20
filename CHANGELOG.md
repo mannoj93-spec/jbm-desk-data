@@ -1,3 +1,42 @@
+# Revision 2.30 (crypto-desk 12.4.21 on the 12.4 release family) — 2026-10-20
+
+**Base.** Brief pin `fec357f4` (Oct 19 23:44:51Z); branch base `main` at `b3b86e95` (Oct 19 23:59:05Z; only data,
+state, streams and reports changed after the pin). **Unchanged:** the collector, PS1 v3, every frozen study and
+evaluation version, the lab's code identity (`desk/test_streams.py` guard), the PR #45 dashboard design and the PR #46
+hashed-asset build, `desk/release.json` (repo 2.28 identity of the shared modules), the O33 v3 and v3.1 frozen bytes.
+Every defect below was reproduced on the base before it was changed (synthetic counterexamples unless stated).
+
+| Item | Reproduced failure / cause | Change | Tests |
+|---|---|---|---|
+| 20A persistence | run 39333253907: `git pull --rebase` hung in fetch-pack at its 60 s cap, `rebase --abort` then failed with no rebase in progress, the push was lost (observed) | `scripts/commit_push.sh`: bounded, retried fetch; local rebase aborted only when in progress; failures classified; an uncertain push confirmed by reading the remote back; never force | `test_rev230_persistence` (13, real script, fake remote) |
+| 20B recovery | artifact 12225253430 (sha256 `0a9d6fc2…`, expires Oct 26 22:16:16Z) | reconciled against `main`: 8 rows restorable, 21 metadata-only superseded, 399 frozen identical; data-only PR #47 (not merged) | release check on the PR head |
+| F2 panel | all features `ok` with 00:07 snapshots and an 01:55 OI stamp | panel-1.1.0: per-source age, availability and alignment policy hashed into each panel; per-feature states; freeze/compare | `F2PanelFreshnessTests` (6) |
+| F3 research API | a transform was ignored; a registered candidate could be mutated after registration | research-api-1.1.0: strict specs, transform applied, transactional registration with immutable objects, code identity, anchored prospective status, fixed checkpoints | `F3ResearchAPITests` (10) |
+| F4 DIR1 runner | grading accepted unadmitted forecasts; `AttributeError` on a missing arm; NaN accepted | directional-1.1.0, dir1-runner-1.0.0 (durable chained log, child-process deadlines, verified publication); DIR1 protocol revision 2, prepared | `F4RunnerTests` (9) |
+| F5 comparisons | frontier minus baseline (+0.11) reported as the primary | registered pairs only; statistical minus baseline is primary (-0.09 on the review fixture); pair-specific intersections | `F5ComparisonTests` (3) |
+| F6 ledger and boundary | ledger truncation undetected; register written before its log event | search-ledger-1.1.0 (anchor, object store, lock, torn-line repair); evaluator-service-1.0.0 (separate process; OS-user case run as root) | `F6LedgerTests` (5) |
+| F7 E1 acceptance | a pilot "passed" on a claimed shock count without coverage | pilot-acceptance-1.1.0 fails closed on window coverage, verified replay, clock samples (recorder stream-1.1) and computed shocks; E1 stays uncommissioned | `F7PilotAcceptanceTests` (6) |
+| F8 O33 | a quoted pre-amendment conditional was classed original-rule | `o33-v3.1/effective.json` from first-main evidence (PR #44 merge `1864d3d9`, 2026-10-19T19:51:07Z); correction 1 prepared (classes by call type, rule and epoch; enforcement register-2.4.0) | `F8O33Tests` (2); `scripts/o33_v31_manifest.py check` |
+| F9 archive | a whitespace-corrupted object replayed as valid | archive-store-1.1.0: verify on put, read-back, verified restore, integrity before replay, chained manifest; `S3Backend.get` | `F9ArchiveTests` (6) |
+| 13 calibration | no declared criteria before a run | criteria committed first (`b3c7e68`); `calibration_harness.py`; dir1-primary-v1 seed 33 passed them (any-look FPR 0.0775 [0.055, 0.108]; power 0.84 at -0.01 Brier); one simulated world | attempts recorded in `research/calibration/` |
+| 14 families | — | options-skew-0.1.0 (7-day 25-delta RR from stored captures; 78.6% of hourly captures computable Oct 13-19); replenishment-0.1.0 contract (needs the E1 recorder) | `Section14Tests` (3) |
+| 15 successors | A2 and PS1-T1 were prose; stale `lab/*` paths | a2-sync-0.1.0, ps1-t1-runner-1.0.0 (reproduces PS1 exactly with PS1's own `rebalance()`); protocols revision 2, prepared; PS1-T1's primary band awaits an operator decision | `Section15Tests` (2) |
+| 16 discovery | — | exposure labels, configuration and attempt counting across sessions and models (research API and search ledger) | in F3/F6 |
+| 17, 20C readiness | states were asserted in prose | `scripts/readiness.py` (component-readiness/1; a test establishes only `tested`; stale code identity fails); `docs/READINESS.md`; the dashboard shows the records as recorded | `test_dashboard` (15 Python), `dashboard/model.test.mjs` (26) |
+
+**Caught by an existing guard.** The first push placed the clock sample in `stream.service.Recorder`. The
+E1-liquidity-recovery evaluation version hashes that class (`lab/versioning.py` DATA_DEPENDENCIES), so its version
+moved (`ev-6f279983100b` -> `ev-8ac04d500791`) and `desk/test_streams.py` (test_lab_evaluation_versions_unchanged,
+which runs only on Python 3.12, the production AST) failed in CI on PR #48. The sample is now the module-level
+`record_clock`; `Recorder` is AST-identical to the base and the guard passes under 3.12.
+
+**Observed at this revision** (read, not caused by it): report-2.6.2 is live — `reports/latest.md` generated
+2026-10-20 01:31Z by `report-2.6.2-2026-10-19` (commit `03d8e22`). Merges of PRs #44-#46 recorded in
+`desk/deployments.jsonl` from the GitHub API.
+
+**States.** Implemented and tested on this branch; not merged; nothing deployed or registered; DIR1, A2, PS1-T1 and
+O33 v3.1 correction 1 prepared; E1 and the evaluator service not commissioned; archive capture not wired in.
+
 # Revision 2.29 (crypto-desk 12.4.20 on the 12.4 release family) — 2026-10-19
 
 **Base.** `main` at `fce9fa2d` (Oct 19 17:47:53Z). Between the Oct 18 and Oct 19 review pins and this base, only data,

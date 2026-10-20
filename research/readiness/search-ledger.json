@@ -1,0 +1,46 @@
+{
+ "as_of_utc": "2026-10-20T04:44:39Z",
+ "blockers": [],
+ "code": {
+  "path": "research_tools/search_ledger.py",
+  "sha256": "2009f65887ed264107d1bea6fef4574d2be0f323324879cdba3fbe405d4da4f8",
+  "version": "search-ledger-1.1.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "search-ledger",
+ "schema": "component-readiness/1",
+ "states": {
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before a6f3df538780"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::F6LedgerTests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Search ledger (F6)"
+}

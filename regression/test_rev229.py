@@ -281,11 +281,13 @@ class ResearchAPITests(unittest.TestCase):
         cand = self.r.register("X1", SPEC, "req-reg")
         self.assertEqual(self.r.results("X1", cand["candidate_sha256"], "req-view0"), [])     # nothing released yet
         self.clock.t = T0 + 70 * H
-        rec = self.e.evaluate("X1", cand["candidate_sha256"], "req-ev1")
-        self.assertTrue(rec["result"]["scored"] >= 20 and rec["released"])
+        ev = self.e.evaluate("X1", cand["candidate_sha256"], "req-ev1")
+        rec = ev["released"][0]                                   # research-api-1.1.0: one record per checkpoint
+        self.assertTrue(rec["result"]["scored"] == 20 and rec["released"] and rec["checkpoint_n"] == 20)
         self.assertEqual(rec["confirmation_window"][0], cand["confirmation_starts_utc"])
         got = self.r.results("X1", cand["candidate_sha256"], "req-view1")
-        self.assertEqual(len(got), 1)
+        self.assertEqual([g["checkpoint_n"] for g in got], [r["checkpoint_n"] for r in ev["released"]])
+        self.assertTrue(all(g["result"]["scored"] == g["checkpoint_n"] for g in got))   # never 46 under 40
         self.assertEqual(verify_results(self.tmp.name, "X1"), [])
         self.assertEqual(Ledger(Path(self.tmp.name) / "ledger.jsonl").verify(), [])
 
@@ -404,8 +406,9 @@ class DirectionalTests(unittest.TestCase):
     def test_no_quote_before_the_decision_could_exist(self):
         bars = fixture_bars()
         d = T0 + 4 * H
-        pub = {"published_utc": E.iso(E.epoch_ms(d + 7 * MIN + 5000))}
-        g = DIR.grade(PROTO, d, 0.7, pub, bars)
+        # directional-1.1.0: grade() takes an admission from admit() and an explicit evaluation cutoff
+        pub = {"class": "on-time", "published_utc": E.iso(E.epoch_ms(d + 7 * MIN + 5000)), "fixture": True}
+        g = DIR.grade(PROTO, d, 0.7, pub, bars, evaluation_cutoff_ms=T0 + 12 * H)
         self.assertEqual(g["entry_utc"], E.iso(E.epoch_ms(d + 9 * MIN)))           # publication + 60 s, next minute
         self.assertGreater(E.instant(g["entry_utc"]), E.instant(pub["published_utc"]))
         self.assertIn("not execution", g["evidence_class"])
@@ -414,7 +417,10 @@ class DirectionalTests(unittest.TestCase):
         """FIXTURE: every record produced here is an offline replay, not a live run."""
         bars = fixture_bars(14)
         log = DIR.OpportunityLog()
-        stat = DIR.statistical_arm({"features": ["ret_1h_bp"], "coef": [0.002], "intercept": 0.0})
+        art = {"schema": "directional-statistical/1", "features": ["ret_1h_bp"], "coef": [0.002], "intercept": 0.0,
+               "train_cutoff_utc": E.iso(E.epoch_ms(T0))}
+        art["sha256"] = E.content_sha256(art)
+        stat = DIR.statistical_arm(art)                                   # 1.1.0 validates the artifact
         arms = {"baseline": DIR.baseline_arm(PROTO), "statistical": stat,
                 "frontier": DIR.frontier_arm_stub([{"p_up": 0.52}] * 3 + ["bad", "bad"] + [{"p_up": 0.6}] * 10)}
         graded = {a: {} for a in arms}
@@ -439,7 +445,9 @@ class DirectionalTests(unittest.TestCase):
                       "content_sha256": E.content_sha256(content)}
                 st, _ = DIR.publication_status(PROTO, d, content, ev)
                 log.add(oid, arm, st, E.epoch_ms(d + 90_000))
-                g = DIR.grade(PROTO, d, r["p_up"], ev, bars)
+                adm = {"class": "on-time" if st == "published" else "late", "published_utc": ev["published_utc"],
+                       "fixture": True}
+                g = DIR.grade(PROTO, d, r["p_up"], adm, bars, evaluation_cutoff_ms=T0 + 14 * H)
                 log.add(oid, arm, "graded" if g["state"] == "graded" else "ungradable", E.epoch_ms(d + 5 * H))
                 graded[arm][d] = g
         DIR.reconcile(PROTO, log, T0 + 2 * H, T0 + 8 * H, E.epoch_ms(T0 + 9 * H))
@@ -546,11 +554,15 @@ class PilotAcceptanceTests(unittest.TestCase):
                     with gzip.open(p, "wt") as f:
                         for s in range(0, 86400, 1):
                             f.write(json.dumps({"t": d0 + s * 1000 + 3, "book_age_ms": 5000 if stale else 300}) + "\n")
-            r = pilot_acceptance.evaluate(root, crit, eligible_shocks=25)
-            self.assertEqual(r["verdict"], "fail")                     # the service 'ran', but the books were stale
+            # pilot-acceptance-1.1.0 needs the declared window and verifies raw objects (none exist in this fixture)
+            r = pilot_acceptance.evaluate(root, crit, "2026-10-12T00:00:00Z", "2026-10-15T00:00:00Z", eligible_shocks=25)
+            self.assertEqual(r["verdict"], "fail")                     # the service 'ran', but nothing verifies
             self.assertTrue(any("bybit" in x for x in r["findings"]))
-            r2 = pilot_acceptance.evaluate(root, dict(crit, scope={"venues_instruments": [["deribit", "BTC-PERPETUAL"]]}), 0)
-            self.assertEqual(r2["verdict"], "inconclusive")           # zero eligible shocks is never a pass
+            self.assertEqual(r["claimed_shocks_ignored"], 25)
+            r2 = pilot_acceptance.evaluate(root, dict(crit, scope={"venues_instruments": [["deribit", "BTC-PERPETUAL"]]}),
+                                           "2026-10-12T00:00:00Z", "2026-10-15T00:00:00Z")
+            self.assertNotEqual(r2["verdict"], "pass")                # zero eligible shocks is never a pass
+            self.assertEqual(pilot_acceptance.evaluate(root, crit)["verdict"], "invalid")   # no window, no verdict
 
 
 if __name__ == "__main__":

@@ -1,0 +1,48 @@
+{
+ "as_of_utc": "2026-10-20T04:44:39Z",
+ "blockers": [
+  "needs sequence-valid books from the uncommissioned E1 recorder"
+ ],
+ "code": {
+  "path": "research_tools/replenishment.py",
+  "sha256": "8e43e05c1be1a6b45dc9b0896ade6b4ae06823a19501b87173e8f089d8c5e9db",
+  "version": "replenishment-0.1.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "replenishment",
+ "schema": "component-readiness/1",
+ "states": {
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before a6f3df538780"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::Section14Tests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Replenishment contract (14)"
+}

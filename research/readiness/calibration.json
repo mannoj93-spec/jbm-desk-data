@@ -1,0 +1,48 @@
+{
+ "as_of_utc": "2026-10-20T04:44:39Z",
+ "blockers": [
+  "one simulated world; a pass is necessary, not sufficient, for promotion"
+ ],
+ "code": {
+  "path": "research_tools/calibration_harness.py",
+  "sha256": "01b4116f05b407a905d71337df70abb4d46907fb7068e7da02672a36b4cde75a",
+  "version": "calibration-harness-1.0.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "calibration",
+ "schema": "component-readiness/1",
+ "states": {
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before a6f3df538780"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "research/calibration/dir1-primary-v1/attempts.jsonl (seed 33, pass)"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "DIR1 evaluator calibration (13)"
+}

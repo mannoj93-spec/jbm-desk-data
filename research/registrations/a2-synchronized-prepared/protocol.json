@@ -9,10 +9,27 @@
  "join_window": "the same 5 closed minutes on both venues (open-time aligned)",
  "join_timeout_ms": 5000,
  "max_input_age_ms": 3600000,
- "allowed_sources": ["binance_klines_1m_BTCUSDT_perp (o,h,l,c,v,tbv)", "binance_klines_1m_BTCUSDT_spot (v,tbv)", "snap depth_binance_usdt"],
+ "allowed_sources": [
+  "binance_klines_1m_BTCUSDT_perp (o,h,l,c,v,tbv)",
+  "binance_klines_1m_BTCUSDT_spot (v,tbv)",
+  "snap depth_binance_usdt"
+ ],
  "missing_data": "spot timeout or missing: the decision proceeds as a perp-only decision in a separately labelled group; it is never pooled with synchronized decisions",
  "forecast_deadline": "t_decision + 60 s ASSUMED processing (as lab/asof.py); live delivery evidence is a separate object",
  "comparison": "usable information gained (share of decisions with synchronized spot; difference in the flow-direction outcome between synchronized and perp-only decisions) against the delay paid (distribution of t_decision - perp availability)",
  "registration_rule": "frozen before any confirmation outcome; evaluated under the lab's checkpoint, multiplicity and block rules as a new family member (variant count carried)",
- "collection_note": "parallelizing collection may shrink the delay; actual arrival times are kept either way"
+ "collection_note": "parallelizing collection may shrink the delay; actual arrival times are kept either way",
+ "revision": 2,
+ "revision_note": "Oct 19 2026 (repo 2.30, still PREPARED): executable join/timeout, signal, outcome, matched control and comparison in research_tools/a2_sync.py a2-sync-0.1.0 (defaults below); A1 unchanged. Revision 1 is in git history.",
+ "signal": "combined taker imbalance sum(2 tbv - v) / volume over the window (perp + spot when synchronized, perp only in the timeout group); |imbalance| >= 0.15 gives direction sign(imbalance), else no signal",
+ "outcome": "sign of the 15-minute forward log return from the open of the first perp bar at or after t_decision + 60 s (processing ASSUMED, labelled so)",
+ "matched_control": "the perp-only signal for the same window at the perp availability time (A1's clock), on the same synchronized windows",
+ "module": "research_tools/a2_sync.py a2-sync-0.1.0",
+ "defaults": {
+  "window_min": 5,
+  "join_timeout_ms": 5000,
+  "signal_threshold": 0.15,
+  "horizon_min": 15,
+  "processing_assumed_ms": 60000
+ }
 }

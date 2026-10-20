@@ -3,12 +3,56 @@
  "id": "E1-pilot-1",
  "status": "prepared: acceptance criteria declared before any pilot run; not commissioned (no persistent host authorised - operator decision, Oct 2026)",
  "declared_utc": "2026-10-19T19:00:00Z",
- "scope": {"venues_instruments": [["deribit", "BTC-PERPETUAL"], ["bybit", "BTCUSDT"]], "excluded": "Hyperliquid books (pushes every ~5 s; not second-scale)"},
+ "scope": {
+  "venues_instruments": [
+   [
+    "deribit",
+    "BTC-PERPETUAL"
+   ],
+   [
+    "bybit",
+    "BTCUSDT"
+   ]
+  ],
+  "excluded": "Hyperliquid books (pushes every ~5 s; not second-scale)"
+ },
  "duration_days": 14,
  "evidence_target": "at least 20 eligible shock windows (E1 design trigger) with complete 30-minute history and recovery windows, OR the 14 days, whichever first; zero eligible shocks = inconclusive, never pass",
- "resources": {"vcpu": 1, "ram_gb": 1, "raw_bytes_per_day_max": 2147483648, "object_store": "S3-compatible bucket named in stream/config (operator-provided credentials)"},
- "completeness": {"eligible_second_share_min": 0.95, "max_book_age_ms": 2000, "sequence_gaps_per_day_max": 24, "restart_gaps_per_day_max": 2, "clock_offset_ms_max": 250},
- "stop_conditions": ["raw bytes per day above the budget for 2 consecutive days", "eligible-second share below 0.80 for any 24 h", "upload verification failures on 3 consecutive partitions", "operator stop"],
+ "resources": {
+  "vcpu": 1,
+  "ram_gb": 1,
+  "raw_bytes_per_day_max": 2147483648,
+  "object_store": "S3-compatible bucket named in stream/config (operator-provided credentials)"
+ },
+ "completeness": {
+  "eligible_second_share_min": 0.95,
+  "max_book_age_ms": 2000,
+  "sequence_gaps_per_day_max": 24,
+  "restart_gaps_per_day_max": 2,
+  "clock_offset_ms_max": 250
+ },
+ "stop_conditions": [
+  "raw bytes per day above the budget for 2 consecutive days",
+  "eligible-second share below 0.80 for any 24 h",
+  "upload verification failures on 3 consecutive partitions",
+  "operator stop"
+ ],
  "replay": "every closed partition uploaded, size-verified and listed in manifest/ with sha256; stream/pilot_acceptance.py re-reads and re-hashes them",
- "verdict_rules": {"pass": "all completeness rules met on every scoped book over the window AND evidence target reached", "fail": "any completeness rule missed on a full day, or a stop condition", "inconclusive": "rules met but fewer eligible shocks than the target"}
+ "verdict_rules": {
+  "pass": "all completeness rules met on every scoped book over the window AND evidence target reached",
+  "fail": "any completeness rule missed on a full day, or a stop condition",
+  "inconclusive": "rules met but fewer eligible shocks than the target"
+ },
+ "structured": {
+  "note": "machine-readable forms of the declared rules above (added repo 2.30; the declared values are unchanged)",
+  "evidence_target_shocks": 20,
+  "shock_window_min": 30,
+  "stop_share_floor": 0.8,
+  "window": "start_utc/end_utc declared when the pilot is commissioned; none yet (not commissioned)",
+  "clock_evidence": "derived/clock samples (recorder stream-1.1, Deribit public/get_time) at least hourly",
+  "evaluator": "stream/pilot_acceptance.py pilot-acceptance-1.1.0"
+ },
+ "evidence_target_shocks": 20,
+ "shock_window_min": 30,
+ "stop_share_floor": 0.8
 }

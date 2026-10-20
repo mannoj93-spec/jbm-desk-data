@@ -69,7 +69,7 @@ stalled venue costs only its own books (2.6.1).
 The limit covers each whole request: DNS lookup, connection, headers and body. A request still
 unfinished at the deadline is abandoned and counted as failed, never accepted late; unreached
 work is recorded as such. The collection step is limited to 11 minutes, persistence (commit and
-push, with rebase retries) to 100 seconds by `scripts/commit_push.sh`, and the job to 14 minutes,
+push) to 100 seconds by `scripts/commit_push.sh`, and the job to 14 minutes,
 inside the 15-minute slot. Time spent waiting for `repo-write` does not count against the job
 limit. Backfill keeps a separate 30-minute budget in a 45-minute job. An abandoned request may
 keep its background thread until its socket times out or the process exits; its result is
@@ -237,6 +237,17 @@ evidence's hash (query bounds, pagination, runs, parents, jobs/steps). Exit code
 4 insufficient. A failed window stays failed; a retry is a new window. Results are kept under
 `docs/acceptance/results/<window>/` with their evidence; a corrected checker's re-evaluation is a labelled supplementary
 audit beside the result of record, never a replacement.
+
+**Persistence stages (repo 2.30).** `scripts/commit_push.sh` separates three stages and logs each with its class,
+ending with `persistence: CONFIRMED ...` or `persistence: NOT CONFIRMED class=... stage=...`: a bounded **fetch** of the
+branch (45 s per attempt, `PERSIST_FETCH_CAP_S`), retried on timeouts, disconnects, resets and DNS failures within the
+budget and stopped at once on authentication, permission, missing-repository or host-key failures; a local **rebase**
+onto the fetched tip, aborted only when a rebase is actually in progress (a content conflict stops with the data kept
+locally); and the **push** (60 s, `PERSIST_PUSH_CAP_S`), where a rejection because main moved leads back to fetch +
+rebase, an authentication or ruleset refusal stops, and a transport failure leaves the outcome uncertain - the remote is
+read back and the push counts only if its tip is HEAD or descends from it. The writer guard re-checks every outgoing
+commit before each push; nothing is ever force-pushed. Run 39333253907 (Oct 19, 22:15Z) failed because 2.29's
+`git pull --rebase` hung to its cap and the job exited with budget left; its retained rows are restored late by PR #47.
 
 **Restoring a failed push (repo 2.26).** A collector run whose push fails uploads `collector-recovery-<run id>` (7-day
 retention). `python scripts/restore_failed_run.py --zip <archive> --sha256 <GitHub digest> --run <id> --artifact <id>`

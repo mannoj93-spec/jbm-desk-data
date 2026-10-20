@@ -1,0 +1,61 @@
+{
+ "as_of_utc": "2026-10-20T04:44:39Z",
+ "blockers": [
+  "E1 recorder uncommissioned: standing no-host decision"
+ ],
+ "code": {
+  "path": "stream/pilot_acceptance.py",
+  "sha256": "d60bc99ad9fa54ca537b95a5bfe1327956051e9dbaee65bf6688e092e683e4a5",
+  "version": "pilot-acceptance-1.1.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "pilot-acceptance",
+ "schema": "component-readiness/1",
+ "states": {
+  "deployed": {
+   "evidence": [],
+   "value": false
+  },
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before a6f3df538780"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "prepared": {
+   "evidence": [
+    {
+     "kind": "file",
+     "ref": "stream/pilot_e1.json"
+    }
+   ],
+   "value": true
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::F7PilotAcceptanceTests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "E1 pilot acceptance (F7)"
+}

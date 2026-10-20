@@ -36,7 +36,7 @@ from stream.books import BybitBook, DeribitBook, HyperliquidBook
 from stream.storage import LocalStore, backend_from_config, hour_key
 from stream.wsclient import WebSocket, WSClosed
 
-VERSION = "stream-1.0-2026-09-23"
+VERSION = "stream-1.1-2026-10-19"   # 1.1: Deribit public/get_time clock-offset samples (derived/clock)
 
 
 def now_ms():
@@ -112,6 +112,19 @@ class Recorder:
         return top
 
 
+def record_clock(rec, venue, t_send, t_recv, server_ms):
+    """A clock-offset sample (stream-1.1): server time against the midpoint of a request's round trip. The pilot
+    acceptance needs at least one per hour within clock_offset_ms_max. Kept outside Recorder on purpose: the
+    E1-liquidity-recovery evaluation version hashes Recorder (lab/versioning DATA_DEPENDENCIES), and adding clock
+    samples must not change that version."""
+    day, _ = hour_key(t_recv)
+    with rec.lock:
+        rec.store.append(f"derived/clock/{day}.jsonl", {"venue": venue, "t": t_recv, "t_send": t_send,
+                                                       "server_ms": server_ms, "rtt_ms": t_recv - t_send,
+                                                       "offset_ms": server_ms - (t_send + t_recv) / 2,
+                                                       "version": VERSION})
+
+
 class Connection(threading.Thread):
     """One venue connection with reconnect/backoff, heartbeats and resubscription on gaps."""
     PING_S = {"hyperliquid": 50, "bybit": 20, "deribit": None}
@@ -167,7 +180,11 @@ class Connection(threading.Thread):
         js = json.loads(text)
         channel = "other"
         if self.venue == "deribit":
-            if js.get("method") == "heartbeat" and (js.get("params") or {}).get("type") == "test_request":
+            if js.get("id") == 7 and isinstance(js.get("result"), int) and getattr(self, "clock_sent", None):
+                record_clock(self.rec, self.venue, self.clock_sent, t, js["result"])
+                self.clock_sent = None
+                channel = "clock"
+            elif js.get("method") == "heartbeat" and (js.get("params") or {}).get("type") == "test_request":
                 self.ws.send_text(json.dumps({"jsonrpc": "2.0", "id": 9, "method": "public/test", "params": {}}))
                 channel = "heartbeat"
             elif js.get("method") == "subscription":
@@ -250,6 +267,11 @@ class Connection(threading.Thread):
                 while not self.stop_evt.is_set():
                     msg = self.ws.recv(1.0)
                     t = now_ms()
+                    if self.venue == "deribit" and time.monotonic() - getattr(self, "last_clock", 0) >= \
+                            self.vcfg.get("clock_every_s", 60):
+                        self.clock_sent = now_ms()
+                        self.ws.send_text(json.dumps({"jsonrpc": "2.0", "id": 7, "method": "public/get_time", "params": {}}))
+                        self.last_clock = time.monotonic()
                     ping = self.PING_S.get(self.venue)
                     if ping and time.monotonic() - last_ping >= ping:
                         self.ws.send_text(json.dumps({"method": "ping"} if self.venue == "hyperliquid" else {"op": "ping"}))
