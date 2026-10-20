@@ -1038,3 +1038,51 @@ class F9ArchiveTests(unittest.TestCase):
         with self.assertRaises(AS.BudgetExceeded):
             a.put(RAW + b" ", META)
         self.assertEqual(AS.ArchiveStore.retention_candidates(a.manifest.lines(), 1, "2026-10-20T00:00:00Z"), [])
+
+
+# ------------------------------------------------------------------------------------------ F8 O33 classes
+class F8O33Tests(unittest.TestCase):
+    def test_effective_record_and_correction_manifest(self):
+        import subprocess
+        r = subprocess.run([sys.executable, str(ROOT / "scripts/o33_v31_manifest.py"), "check"], capture_output=True,
+                           text=True)
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        eff = json.loads((ROOT / "research/registrations/o33-v3.1/effective.json").read_text())
+        self.assertEqual(eff["effective_utc"], "2026-10-19T19:51:07Z")
+        self.assertEqual(eff["evidence"]["merge_commit"], "1864d3d94406b9b989cd198234da67393cab0aaf")
+        man = json.loads((ROOT / "research/registrations/o33-v3.1/manifest.json").read_text())
+        self.assertEqual(man["wrapper_version"], "register-2.3.0")             # the v3.1 record is not rewritten
+        self.assertNotIn("effective.json", man["files_sha256"])
+
+    def test_corrected_classifier_by_call_type_rule_and_epoch(self):
+        """register-2.3.0 classed a pre-amendment conditional with a quoted receipt as original-rule."""
+        import importlib
+        regs = ROOT / "research/registrations"
+        paths = [str(regs / "o33-v3.1-correction-1/enforcement"), str(regs / "o33-v3/enforcement"), str(regs / "o33-v3")]
+        saved = {k: sys.modules.pop(k) for k in ("desk_register", "desk_calls", "desk_calls_freeze", "desk_evidence")
+                 if k in sys.modules}
+        sys.path[:0] = paths
+        try:
+            R = importlib.import_module("desk_register")
+            self.assertEqual(R.VERSION, "register-2.4.0")
+
+            def res(ct, basis, receipt):
+                return {"unit": {"call_type": ct, "admission_basis": basis, "receipt_utc": receipt}}
+            eff = "2026-10-19T19:51:07Z"
+            self.assertEqual(R.evidence_class_2_3_0(res("conditional", "quote", "2026-10-19T12:00:00Z"), eff),
+                             "original-rule")                                  # the reviewed defect, as recorded
+            cases = {("conditional", "quote", "2026-10-19T12:00:00Z"): "retrospective-reassessment (conditional rule)",
+                     ("containment", "quote", "2026-10-19T12:00:00Z"): "original-rule",
+                     ("lean", "order-record", "2026-10-19T12:00:00Z"): "retrospective-reassessment (order-record rule)",
+                     ("conditional", "quote", "2026-10-19T19:51:07Z"): "prospective-v3.1",
+                     ("lean", "quote", "2026-10-07T23:07:56Z"): "pre-v3 (not evidence)",
+                     ("lean", None, "2026-10-19T12:00:00Z"): "unclassified"}
+            for (ct, b, r), want in cases.items():
+                self.assertEqual(R.evidence_class(res(ct, b, r), eff), want, (ct, b, r))
+            self.assertEqual(R.evidence_class(res("conditional", "quote", "2026-10-20T00:00:00Z"), None),
+                             "retrospective-reassessment (conditional rule)")  # no verified time: never prospective
+        finally:
+            for k in ("desk_register", "desk_calls", "desk_calls_freeze", "desk_evidence"):
+                sys.modules.pop(k, None)
+            sys.modules.update(saved)
+            del sys.path[:len(paths)]

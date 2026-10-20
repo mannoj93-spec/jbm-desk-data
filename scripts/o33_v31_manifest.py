@@ -24,9 +24,44 @@ def body():
             "wrapper_version": "register-2.3.0", "contract_version": "evidence-1.0.0"}
 
 
+C = ROOT / "research/registrations/o33-v3.1-correction-1"
+C_FILES = ["spec.json", "README.md", "enforcement/desk_register.py", "enforcement/desk_evidence.py"]
+
+
+def correction_body():
+    """Repo 2.30: O33 v3.1 correction 1 (evidence classes); it pins its own files and the v3.1 files it leaves frozen."""
+    return {"schema": "o33-correction-manifest/1", "id": "O33 v3.1 correction 1",
+            "status": "prepared (effective at first push to main)",
+            "files_sha256": {f: hashlib.sha256((C / f).read_bytes()).hexdigest() for f in C_FILES},
+            "depends_on_frozen_sha256": {f"../o33-v3.1/{f}": sha(f) for f in FILES},
+            "evidence_contract_parity": "enforcement/desk_evidence.py == research_tools/evidence_contract.py",
+            "wrapper_version": "register-2.4.0", "contract_version": "evidence-1.0.0"}
+
+
+def effective_check():
+    """../o33-v3.1/effective.json: the recorded first-main evidence is self-consistent (the API read is in the file)."""
+    p = D / "effective.json"
+    if not p.exists():
+        return ["o33-v3.1/effective.json missing (PR #44 merged 2026-10-19T19:51:07Z)"]
+    e = json.loads(p.read_text())
+    a = e["evidence"]["activity"]
+    probs = []
+    if e["effective_utc"] != a["timestamp"] or a["after"] != e["evidence"]["merge_commit"]:
+        probs.append("effective.json: effective time or merge commit inconsistent with its activity record")
+    return probs
+
+
 def check():
     m = json.loads((D / "manifest.json").read_text())
     probs = [f"{k}: drift" for k, v in body().items() if m.get(k) != v]
+    if (C / "manifest.json").exists():
+        cm = json.loads((C / "manifest.json").read_text())
+        probs += [f"correction-1 {k}: drift" for k, v in correction_body().items() if cm.get(k) != v]
+        if (C / "enforcement/desk_evidence.py").read_bytes() != (ROOT / "research_tools/evidence_contract.py").read_bytes():
+            probs.append("correction-1 evidence contract copy differs")
+    else:
+        probs.append("o33-v3.1-correction-1/manifest.json missing")
+    probs += effective_check()
     if (D / "enforcement/desk_evidence.py").read_bytes() != (ROOT / "research_tools/evidence_contract.py").read_bytes():
         probs.append("evidence contract copies differ")
     reg = json.loads((D / "../o33-v3/registration.json").read_text())
@@ -38,6 +73,7 @@ def check():
 if __name__ == "__main__":
     if sys.argv[1:] == ["write"]:
         (D / "manifest.json").write_text(json.dumps(body(), indent=1, sort_keys=True) + "\n")
+        (C / "manifest.json").write_text(json.dumps(correction_body(), indent=1, sort_keys=True) + "\n")
         print("written")
     else:
         p = check()

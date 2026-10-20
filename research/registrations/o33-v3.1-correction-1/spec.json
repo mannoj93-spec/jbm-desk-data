@@ -1,0 +1,18 @@
+{
+ "classes": {
+  "original-rule": "lean or containment call, admitted on its quoted receipt, receipt after the v3 freeze (2026-10-07T23:07:56Z) and before the v3.1 effective time",
+  "pre-v3 (not evidence)": "receipt not after the v3 freeze",
+  "prospective-v3.1": "receipt at or after the verified v3.1 effective time (2026-10-19T19:51:07Z, ../o33-v3.1/effective.json)",
+  "retrospective-reassessment (conditional rule)": "conditional call with receipt before the v3.1 effective time, whatever its admission basis",
+  "retrospective-reassessment (order-record rule)": "lean or containment call admitted only through an order record, receipt before the v3.1 effective time",
+  "unclassified": "no call type, receipt time or admission basis"
+ },
+ "corrects": "O33 v3.1 evidence_classes (spec.json) as implemented by register-2.3.0 evidence_class()",
+ "defect": "register-2.3.0 classified by admission basis and receipt time only, so a conditional registered before the v3.1 effective time with a quoted receipt was classed original-rule, although O33 v3 defined only lean and containment calls (o33-v3/desk_calls.py call_id raises for any other type)",
+ "effective_time": "the first push of this directory to main (GitHub activity API), recorded in effective.json after the merge; until then results label the corrected classes 'prepared'",
+ "id": "O33 v3.1 correction 1",
+ "implementation": "enforcement/desk_register.py register-2.4.0 evidence_class(); evidence_class_2_3_0() keeps the recorded classification for display",
+ "reporting": "score_v31 reports corrected classes, classes by call type and the classes as recorded under register-2.3.0; historical recalculations name this correction and remain reassessments",
+ "schema": "o33-correction/1",
+ "unchanged": "every v3 and v3.1 estimator, admission rule, withdrawal rule, de-duplication, population definition and claim threshold; the frozen ../o33-v3.1/ and ../o33-v3/ bytes"
+}
