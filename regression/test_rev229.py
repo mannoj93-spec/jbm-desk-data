@@ -281,11 +281,13 @@ class ResearchAPITests(unittest.TestCase):
         cand = self.r.register("X1", SPEC, "req-reg")
         self.assertEqual(self.r.results("X1", cand["candidate_sha256"], "req-view0"), [])     # nothing released yet
         self.clock.t = T0 + 70 * H
-        rec = self.e.evaluate("X1", cand["candidate_sha256"], "req-ev1")
-        self.assertTrue(rec["result"]["scored"] >= 20 and rec["released"])
+        ev = self.e.evaluate("X1", cand["candidate_sha256"], "req-ev1")
+        rec = ev["released"][0]                                   # research-api-1.1.0: one record per checkpoint
+        self.assertTrue(rec["result"]["scored"] == 20 and rec["released"] and rec["checkpoint_n"] == 20)
         self.assertEqual(rec["confirmation_window"][0], cand["confirmation_starts_utc"])
         got = self.r.results("X1", cand["candidate_sha256"], "req-view1")
-        self.assertEqual(len(got), 1)
+        self.assertEqual([g["checkpoint_n"] for g in got], [r["checkpoint_n"] for r in ev["released"]])
+        self.assertTrue(all(g["result"]["scored"] == g["checkpoint_n"] for g in got))   # never 46 under 40
         self.assertEqual(verify_results(self.tmp.name, "X1"), [])
         self.assertEqual(Ledger(Path(self.tmp.name) / "ledger.jsonl").verify(), [])
 
