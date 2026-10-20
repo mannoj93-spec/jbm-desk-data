@@ -554,11 +554,15 @@ class PilotAcceptanceTests(unittest.TestCase):
                     with gzip.open(p, "wt") as f:
                         for s in range(0, 86400, 1):
                             f.write(json.dumps({"t": d0 + s * 1000 + 3, "book_age_ms": 5000 if stale else 300}) + "\n")
-            r = pilot_acceptance.evaluate(root, crit, eligible_shocks=25)
-            self.assertEqual(r["verdict"], "fail")                     # the service 'ran', but the books were stale
+            # pilot-acceptance-1.1.0 needs the declared window and verifies raw objects (none exist in this fixture)
+            r = pilot_acceptance.evaluate(root, crit, "2026-10-12T00:00:00Z", "2026-10-15T00:00:00Z", eligible_shocks=25)
+            self.assertEqual(r["verdict"], "fail")                     # the service 'ran', but nothing verifies
             self.assertTrue(any("bybit" in x for x in r["findings"]))
-            r2 = pilot_acceptance.evaluate(root, dict(crit, scope={"venues_instruments": [["deribit", "BTC-PERPETUAL"]]}), 0)
-            self.assertEqual(r2["verdict"], "inconclusive")           # zero eligible shocks is never a pass
+            self.assertEqual(r["claimed_shocks_ignored"], 25)
+            r2 = pilot_acceptance.evaluate(root, dict(crit, scope={"venues_instruments": [["deribit", "BTC-PERPETUAL"]]}),
+                                           "2026-10-12T00:00:00Z", "2026-10-15T00:00:00Z")
+            self.assertNotEqual(r2["verdict"], "pass")                # zero eligible shocks is never a pass
+            self.assertEqual(pilot_acceptance.evaluate(root, crit)["verdict"], "invalid")   # no window, no verdict
 
 
 if __name__ == "__main__":

@@ -758,3 +758,173 @@ class F5ComparisonTests(unittest.TestCase):
         g2 = DIR.grade(PROTO, d, 0.8, adm, bars, T0 + 14 * H, funding=fund, inference_usd=0.01)
         self.assertEqual(g2["funding_bp"], 1.0)                                    # a long pays a positive rate
         self.assertEqual(g2["inference_usd"], 0.01)
+
+
+# ------------------------------------------------------------------------------------------ F7 E1 acceptance
+import gzip  # noqa: E402
+import hashlib  # noqa: E402
+from stream import pilot_acceptance as PA  # noqa: E402
+
+CRIT = json.loads((ROOT / "stream/pilot_e1.json").read_text())
+TCRIT = dict(CRIT, duration_days=1, evidence_target_shocks=2, shock_window_min=10)
+S0 = T0 + 24 * H                                                           # pilot start: Oct 13 00:00
+
+
+def _gz(rows):
+    return gzip.compress(("\n".join(json.dumps(r, separators=(",", ":")) for r in rows) + "\n").encode(), 6, mtime=0)
+
+
+def make_pilot(root, hours=3, shocks=(70, 140), faults=()):
+    """A complete recorder directory for both scoped books over `hours` from S0 (plus one warm-up hour): raw book
+    messages (a snapshot, then one delta per second), the 1-second samples the recorder would derive, clock samples
+    every 10 minutes, mid-move triggers at the given minutes with captures, and a manifest of every partition."""
+    root = Path(root)
+    manifest = []
+
+    def put(key, data):
+        p = root / key
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_bytes(data)
+        manifest.append({"key": key, "bytes": len(data), "sha256": hashlib.sha256(data).hexdigest(),
+                         "uploaded_at": S0 + hours * H})
+    for venue, inst in CRIT["scope"]["venues_instruments"]:
+        ch = PA.BOOK_CHANNELS[venue].format(inst=inst)
+        book = PA._new_book(venue, inst)
+        cid = 0
+        for h in range(-1, hours):
+            hs = S0 + h * H
+            day, hh = PA._day_hour(hs)
+            raw, der = [], []
+            for s in range(3600):
+                t = hs + s * 1000
+                k = (h + 1) * 3600 + s
+                px = 80000.0 + (k % 7) * 0.5 + (40.0 if any(abs(k - (m + 60) * 60) < 2 for m in shocks) else 0.0)
+                cid += 1
+                if venue == "deribit":
+                    data = {"instrument_name": inst if "wrong-id" not in faults else "ETH-PERPETUAL", "timestamp": t,
+                            "change_id": cid, "bids": [["new", px - 0.5, 10.0]], "asks": [["new", px + 0.5, 10.0]]}
+                    data["type" if cid == 1 else "prev_change_id"] = "snapshot" if cid == 1 else cid - 1
+                    if cid > 1:
+                        data["bids"] = [["delete", p_, 0] for p_ in list(book.bids)] + data["bids"]
+                        data["asks"] = [["delete", p_, 0] for p_ in list(book.asks)] + data["asks"]
+                    msg = {"jsonrpc": "2.0", "method": "subscription", "params": {"channel": ch, "data": data}}
+                    book.apply(data)
+                else:
+                    data = {"s": inst, "u": cid, "b": [[str(px - 0.5), "10"]] + [[str(p_), "0"] for p_ in book.bids],
+                            "a": [[str(px + 0.5), "10"]] + [[str(p_), "0"] for p_ in book.asks]}
+                    msg = {"topic": ch, "type": "snapshot" if cid == 1 else "delta", "ts": t, "data": data}
+                    book.apply(msg)
+                raw.append({"r": t + 1, "m": json.dumps(msg)})
+                top = book.top()
+                mid = top[2] + (25.0 if "fabricated" in faults and venue == "bybit" and h == 1 else 0.0)
+                der.append({"t": t + 5, "bid": top[0], "ask": top[1], "mid": mid, "book_ts": t,
+                            "book_age_ms": 5 if not ("stale-bybit" in faults and venue == "bybit") else 5000})
+            skip_raw = ("missing-raw" in faults and venue == "deribit" and h == 1)
+            if "missing-day" in faults and h in (0, 1, 2) and venue == "deribit":
+                continue
+            rk = f"raw/{venue}/{ch}/{day}/{hh}.jsonl.gz"
+            put(rk, _gz(raw))
+            if skip_raw:
+                (root / rk).unlink()
+            if "corrupt-raw" in faults and venue == "deribit" and h == 1:
+                (root / rk).write_bytes(_gz(raw[:-1]))
+            put(f"derived/book1s/{venue}/{inst}/{day}/{hh}.jsonl.gz", _gz(der))
+    for m in range(0, hours * 60, 10):
+        t = S0 + m * 60_000
+        day = PA._day_hour(t)[0]
+        p = root / "derived/clock" / f"{day}.jsonl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        off = 400.0 if ("clock" in faults and m >= 60) else 4.0
+        with open(p, "a") as f:
+            f.write(json.dumps({"venue": "deribit", "t": t, "offset_ms": off, "rtt_ms": 20}) + "\n")
+    for i, m in enumerate(shocks):
+        t = S0 + m * 60_000
+        day = PA._day_hour(t)[0]
+        cap = f"{day}-trigger-{t}"
+        with open(root / "derived/triggers" / f"{day}.jsonl" if (root / "derived/triggers").exists()
+                  else (root / "derived/triggers").mkdir(parents=True) or root / "derived/triggers" / f"{day}.jsonl", "a") as f:
+            f.write(json.dumps({"capture_id": cap, "kind": "trigger", "t": t,
+                                "detail": {"key": "deribit:BTC-PERPETUAL"}}) + "\n")
+        put(f"captures/{day}/{cap}.jsonl.gz", _gz([{"r": t, "m": "{}"}]))
+    (root / "manifest").mkdir(exist_ok=True)
+    (root / "manifest" / "2026-10-13.jsonl").write_text("".join(json.dumps(m) + "\n" for m in manifest))
+    return root
+
+
+class F7PilotAcceptanceTests(unittest.TestCase):
+    def ev(self, faults=(), hours=3, **kw):
+        with tempfile.TemporaryDirectory() as tmp:
+            make_pilot(tmp, hours=hours, faults=faults, **kw)
+            return PA.evaluate(tmp, TCRIT, PA._iso(S0), PA._iso(S0 + hours * H), eligible_shocks=25)
+
+    def test_complete_valid_control_passes_with_the_early_stop(self):
+        r = self.ev()
+        self.assertEqual(r["verdict"], "pass", r["findings"] + r["unverifiable"])
+        self.assertEqual(r["shocks"]["eligible"], 2)
+        self.assertEqual(r["stopped_early_utc"], PA._iso(S0 + 150 * 60_000))     # target reached: registered stop
+        self.assertEqual(r["claimed_shocks_ignored"], 25)
+
+    def test_reviewed_false_pass_cannot_pass(self):
+        """1.0.0 passed partial days, a missing day, a missing raw object and a claimed 25 shocks."""
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for day in ("2026-10-12", "2026-10-14", "2026-10-15"):              # no 2026-10-13
+                for venue, inst in CRIT["scope"]["venues_instruments"]:
+                    p = root / "derived/book1s" / venue / inst / day / "00.jsonl.gz"
+                    p.parent.mkdir(parents=True, exist_ok=True)
+                    d0 = PA._ms(day + "T00:00:00Z")
+                    n = 86400 if day == "2026-10-14" else 3600
+                    p.write_bytes(_gz([{"t": d0 + s * 1000 + 3, "book_age_ms": 300} for s in range(n)]))
+            (root / "manifest").mkdir()
+            (root / "manifest/2026-10-14.jsonl").write_text(json.dumps({"key": "raw/deribit/x/2026-10-14/00.jsonl.gz",
+                                                                       "bytes": 10, "sha256": "0" * 64}) + "\n")
+            r = PA.evaluate(root, CRIT, "2026-10-12T00:00:00Z", "2026-10-16T00:00:00Z", eligible_shocks=25)
+            self.assertEqual(r["verdict"], "fail")
+            self.assertTrue(any("2026-10-13" in f for f in r["findings"]))
+            self.assertEqual(r["shocks"]["eligible"], 0)
+            self.assertEqual(r["partitions_verified"], 0)
+
+    def test_each_defect_prevents_a_pass(self):
+        for fault, needle in (("missing-raw", "missing"), ("corrupt-raw", "wrong-"), ("fabricated", "not reproducible"),
+                              ("wrong-id", "another instrument"), ("clock", "clock offset"),
+                              ("stale-bybit", "bybit/BTCUSDT")):
+            r = self.ev(faults=(fault,))
+            self.assertNotEqual(r["verdict"], "pass", fault)
+            text = " ".join(r["findings"] + r["unverifiable"])
+            self.assertIn(needle, text, fault)
+
+    def test_missing_middle_hours_and_missing_recovery_history(self):
+        r = self.ev(faults=("missing-day",), hours=4)
+        self.assertEqual(r["verdict"], "fail")
+        self.assertTrue(r["stop_conditions"])                                   # consecutive unverifiable partitions
+        r2 = self.ev(shocks=(70, 175))                                          # the second shock's recovery is cut off
+        self.assertEqual(r2["shocks"]["eligible"], 1)
+        self.assertEqual(r2["verdict"], "inconclusive")
+
+    def test_restore_through_the_backend_when_the_local_cache_is_gone(self):
+        with tempfile.TemporaryDirectory() as tmp, tempfile.TemporaryDirectory() as remote:
+            root = make_pilot(tmp)
+            for p in list(root.rglob("raw/**/*.gz")):
+                dest = Path(remote) / p.relative_to(root)
+                dest.parent.mkdir(parents=True, exist_ok=True)
+                dest.write_bytes(p.read_bytes())
+                p.unlink()                                                      # local raw cache cleared
+
+            class Backend:
+                def get(self, key):
+                    return (Path(remote) / key).read_bytes()
+            r = PA.evaluate(root, TCRIT, PA._iso(S0), PA._iso(S0 + 3 * H), backend=Backend())
+            self.assertEqual(r["verdict"], "pass", r["unverifiable"][:3])
+            self.assertEqual(PA.evaluate(root, TCRIT, PA._iso(S0), PA._iso(S0 + 3 * H))["verdict"], "fail")
+
+    def test_recorder_writes_clock_samples(self):
+        from stream import service as SV
+        from stream.storage import LocalStore
+        with tempfile.TemporaryDirectory() as tmp:
+            rec = SV.Recorder({}, LocalStore(tmp))
+            c = SV.Connection("deribit", {"url": "wss://x", "channels": []}, rec, None)
+            c.clock_sent = S0
+            c.handle(json.dumps({"jsonrpc": "2.0", "id": 7, "result": S0 + 30}), S0 + 40)
+            rec.store.flush()
+            rows = rec.store.read(f"derived/clock/{PA._day_hour(S0)[0]}.jsonl")
+            self.assertEqual((rows[0]["offset_ms"], rows[0]["rtt_ms"]), (10.0, 40))
