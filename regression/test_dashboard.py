@@ -2,6 +2,7 @@
 import importlib.util
 import json
 import re
+import shutil
 from pathlib import Path
 import tempfile
 import unittest
@@ -117,6 +118,15 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(result['bars'], [[0, 10, 16, 8, 15, 2], [7200000, 20, 22, 18, 21, 1]])
         self.assertEqual(result['latest']['close'], 21)
 
+    def test_unrewritten_module_reference_is_refused(self):
+        with tempfile.TemporaryDirectory() as src_dir, tempfile.TemporaryDirectory() as out:
+            src = Path(src_dir)
+            for name in ['index.html', 'styles.css', 'app.js', 'model.js', 'favicon.svg']:
+                shutil.copyfile(ROOT / 'dashboard' / name, src / name)
+            (src / 'app.js').write_text((src / 'app.js').read_text() + "\nimport { x } from './extra.js';\n")
+            with self.assertRaisesRegex(ValueError, 'unversioned module'):
+                module.write_assets(src, Path(out))
+
     def test_refuses_to_overwrite_evidence(self):
         with self.assertRaises(ValueError):
             module.build(ROOT, ROOT / 'reports')
@@ -148,8 +158,40 @@ class DevelopmentTests(unittest.TestCase):
                            'evaluated_utc': evaluated + 'T12:00:00Z'}}
 
     def test_missing_optional_records_stay_unknown(self):
-        self.assertEqual(self.summary(), {'release': None, 'catalog': None, 'protocols': [], 'acceptance': None})
+        self.assertEqual(self.summary(), {'release': None, 'catalog': None, 'protocols': [], 'acceptance': None,
+                                          'readiness': []})                # repo 2.30: readiness records, none here
         self.assertEqual(self.sources, [])
+
+    def test_readiness_records_are_shown_as_recorded_and_unevidenced_states_refused(self):
+        rec = {'schema': 'component-readiness/1', 'id': 'dir1', 'title': 'DIR1 runner', 'as_of_utc': '2026-10-20T01:30:00Z',
+               'code': {'path': 'research_tools/dir1_runner.py', 'version': 'dir1-runner-1.0.0', 'sha256': '0' * 64},
+               'states': {'tested': {'value': True, 'evidence': [{'kind': 'test', 'ref': 'regression/test_rev230.py'}]},
+                          'deployed': {'value': False, 'evidence': []}}, 'blockers': ['frontier uncommissioned']}
+        path = self.write('research/readiness/dir1.json', rec)
+        r = self.summary()['readiness'][0]
+        self.assertEqual((r['states']['tested']['value'], r['states']['deployed']['value']), (True, False))
+        self.assertEqual(r['as_of_utc'], '2026-10-20T01:30:00Z')
+        self.assertIn('research/readiness/dir1.json', self.sources)
+        for bad in ({**rec, 'states': {'deployed': {'value': True, 'evidence': []}}},
+                    {**rec, 'states': {'live': {'value': True, 'evidence': [{'ref': 'x'}]}}},
+                    {**rec, 'schema': 'other'}):
+            path.write_text(json.dumps(bad))
+            with self.assertRaises(ValueError):
+                self.summary()
+
+    def test_readiness_checker_rejects_a_test_as_deployment_evidence(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('readiness', ROOT / 'scripts/readiness.py')
+        rd = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rd)
+        good = rd.record('dir1')
+        self.assertEqual(rd.problems(good), [])
+        bad = json.loads(json.dumps(good))
+        bad['states']['deployed'] = {'value': True, 'evidence': [{'kind': 'test', 'ref': 'unit test'}]}
+        self.assertTrue(any('cannot establish deployed' in p for p in rd.problems(bad)))
+        stale = json.loads(json.dumps(good))
+        stale['code']['sha256'] = '0' * 64
+        self.assertTrue(any('stale' in p for p in rd.problems(stale)))
 
     def test_prepared_protocol_and_catalog_keep_their_own_meanings(self):
         protocol_path = 'research/registrations/dir1-prepared/protocol.json'

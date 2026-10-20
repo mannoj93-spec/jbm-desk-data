@@ -1,0 +1,46 @@
+{
+ "as_of_utc": "2026-10-20T04:21:07Z",
+ "blockers": [],
+ "code": {
+  "path": "research_tools/panel.py",
+  "sha256": "719612e41e8d44161db0b3e2eb6e07908f389da004bbc41257603b80dc07ef69",
+  "version": "panel-1.1.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "panel",
+ "schema": "component-readiness/1",
+ "states": {
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before 41fc979236ff"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::F2PanelFreshnessTests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Continuous feature panel (F2)"
+}

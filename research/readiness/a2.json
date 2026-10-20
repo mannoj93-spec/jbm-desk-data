@@ -1,0 +1,61 @@
+{
+ "as_of_utc": "2026-10-20T04:21:07Z",
+ "blockers": [
+  "no registration decision"
+ ],
+ "code": {
+  "path": "research_tools/a2_sync.py",
+  "sha256": "b4496cc7b9cf7511e2b11fa65fb5c41834a73947b3d3cdcab67c544526262afd",
+  "version": "a2-sync-0.1.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "a2",
+ "schema": "component-readiness/1",
+ "states": {
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before 41fc979236ff"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "prepared": {
+   "evidence": [
+    {
+     "kind": "file",
+     "ref": "research/registrations/a2-synchronized-prepared/protocol.json"
+    }
+   ],
+   "value": true
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "registered": {
+   "evidence": [],
+   "value": false
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::Section15Tests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "A2 synchronized flow (15)"
+}

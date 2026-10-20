@@ -147,6 +147,15 @@ export function validateSnapshot(s) {
       need(Array.isArray(d.protocols)
         && d.protocols.every(p => fields(p, ['id', 'title', 'status', 'source']) && time(p.effective_utc, true)),
            'developments.protocols');
+      // repo 2.30: component readiness records, optional (older snapshots predate them). A true state must carry
+      // evidence; only the recorded vocabulary is accepted, so a renderer never shows an inferred state.
+      const STATES = ['implemented', 'tested', 'pushed', 'merged', 'installed', 'deployed', 'observed', 'registered',
+        'prepared', 'blocked', 'pending'];
+      need(d.readiness === undefined || (Array.isArray(d.readiness) && d.readiness.every(r =>
+        fields(r, ['id', 'title', 'version', 'code_path', 'source']) && time(r.as_of_utc, true) && obj(r.states)
+        && Object.entries(r.states).every(([k, v]) => STATES.includes(k) && obj(v) && typeof v.value === 'boolean'
+          && Array.isArray(v.evidence) && v.evidence.every(text) && (!v.value || v.evidence.length > 0))
+        && Array.isArray(r.blockers) && r.blockers.every(text))), 'developments.readiness');
       need(d.acceptance === null || (acceptance(d.acceptance)
         && (d.acceptance.supplementary === null || (acceptance(d.acceptance.supplementary)
           && d.acceptance.supplementary.window.every((stamp, i) => Date.parse(stamp) === Date.parse(d.acceptance.window[i]))))),

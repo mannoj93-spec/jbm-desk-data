@@ -1,0 +1,52 @@
+{
+ "as_of_utc": "2026-10-20T04:21:07Z",
+ "blockers": [
+  "filters not registered; panel keeps options_disagreement gated"
+ ],
+ "code": {
+  "path": "research_tools/options_skew.py",
+  "sha256": "740759111e0c33916b10a556d8653c03352b261c0ab94557bf02b3ca1224228d",
+  "version": "options-skew-0.1.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "options-skew",
+ "schema": "component-readiness/1",
+ "states": {
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before 41fc979236ff"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "registered": {
+   "evidence": [],
+   "value": false
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::Section14Tests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Options skew feasibility (14)"
+}

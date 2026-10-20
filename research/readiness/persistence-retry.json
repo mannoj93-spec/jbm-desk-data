@@ -1,0 +1,56 @@
+{
+ "as_of_utc": "2026-10-20T04:21:07Z",
+ "blockers": [
+  "merge, then observe a collector run whose push meets a moved main (live persistence after the fix)"
+ ],
+ "code": {
+  "path": "scripts/commit_push.sh",
+  "sha256": "887ac9de77ef099b1c71328661db798f760be22490f2b6d18628b2df0fc16441",
+  "version": "repo 2.30"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "persistence-retry",
+ "schema": "component-readiness/1",
+ "states": {
+  "deployed": {
+   "evidence": [],
+   "value": false
+  },
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before 41fc979236ff"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "observed": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230_persistence.py"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Collector persistence retry (20A)"
+}

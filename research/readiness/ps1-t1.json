@@ -1,0 +1,70 @@
+{
+ "as_of_utc": "2026-10-20T04:21:07Z",
+ "blockers": [
+  "operator decision on the primary band: band 0.05 is PS1 v3's own configuration"
+ ],
+ "code": {
+  "path": "research_tools/ps1_t1_runner.py",
+  "sha256": "2a2341bce32ba9c25d79241221edee237fbde6d81e4bedabcb0334c8a7821f34",
+  "version": "ps1-t1-runner-1.0.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "ps1-t1",
+ "schema": "component-readiness/1",
+ "states": {
+  "blocked": {
+   "evidence": [
+    {
+     "kind": "decision",
+     "ref": "primary band (design_issue)"
+    }
+   ],
+   "value": true
+  },
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before 41fc979236ff"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "prepared": {
+   "evidence": [
+    {
+     "kind": "file",
+     "ref": "research/registrations/ps1-t1-prepared/protocol.json"
+    }
+   ],
+   "value": true
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "registered": {
+   "evidence": [],
+   "value": false
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::Section15Tests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "PS1-T1 turnover control (15)"
+}

@@ -1,0 +1,39 @@
+{
+ "as_of_utc": "2026-10-20T04:21:07Z",
+ "blockers": [
+  "operator review and merge of PR #47 (artifact expires 2026-10-26T22:16:16Z; the PR holds the rows)"
+ ],
+ "code": {
+  "path": "scripts/restore_failed_run.py",
+  "sha256": "edc6c5fdfa1826e87dec9e86b0c1a03c3d7b4eed9798b024a226b53f4eee8568",
+  "version": "restore-1.0.0 (recovery branch recovery-39333253907)"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "recovery-39333253907",
+ "schema": "component-readiness/1",
+ "states": {
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before 41fc979236ff"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "pull-request",
+     "ref": "#47"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Failed-run recovery (20B)"
+}

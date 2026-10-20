@@ -1,0 +1,52 @@
+{
+ "as_of_utc": "2026-10-20T04:21:07Z",
+ "blockers": [
+  "not wired into the collector; needs a storage budget and an operator-provided bucket"
+ ],
+ "code": {
+  "path": "research_tools/archive_store.py",
+  "sha256": "cf1d0238afc213b1e91eef2cb2e14292c5ac1dd4a04e6f4f0f35105987c0bbaa",
+  "version": "archive-store-1.1.0"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "archive-store",
+ "schema": "component-readiness/1",
+ "states": {
+  "deployed": {
+   "evidence": [],
+   "value": false
+  },
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before 41fc979236ff"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [],
+   "value": false
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "branch",
+     "ref": "repo-2.30-integration-hardening"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_rev230.py::F9ArchiveTests"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Raw archive (F9)"
+}
