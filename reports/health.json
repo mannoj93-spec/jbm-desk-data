@@ -1,6 +1,6 @@
 {
  "availability": {
-  "generated_utc": "2026-10-20T12:18:32.150Z",
+  "generated_utc": "2026-10-20T12:32:26.962Z",
   "horizons": {
    "24h": {
     "recorded_state": "valid-current",
@@ -156,7 +156,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-10-20T12:29:47Z",
+ "generated_utc": "2026-10-20T12:44:47Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -164,7 +164,7 @@
   "external_timer": {
    "absent": [],
    "delayed": [],
-   "last_arrival_utc": "2026-10-20T12:27:02Z",
+   "last_arrival_utc": "2026-10-20T12:42:02Z",
    "on_time": 96,
    "on_time_max_lag_s": 4,
    "opportunities": 96,
@@ -216,22 +216,22 @@
     "last_success_utc": "2026-10-20T12:08:57Z"
    },
    "range.yml": {
-    "last_completed_utc": "2026-10-20T08:31:52Z",
+    "last_completed_utc": "2026-10-20T12:32:32Z",
     "last_result": "success",
-    "last_run_id": 39393586645,
+    "last_run_id": 39422663500,
     "last_scheduled_start_utc": "2026-10-20T12:29:35Z",
-    "last_success_utc": "2026-10-20T08:27:56Z"
+    "last_success_utc": "2026-10-20T12:29:35Z"
    },
    "recovery.yml": {
     "events": [
      "schedule",
      "workflow_dispatch"
     ],
-    "last_completed_utc": "2026-10-20T12:27:22Z",
+    "last_completed_utc": "2026-10-20T12:42:20Z",
     "last_result": "success",
-    "last_run_id": 39422336111,
-    "last_scheduled_start_utc": "2026-10-20T12:27:02Z",
-    "last_success_utc": "2026-10-20T12:27:02Z",
+    "last_run_id": 39424300992,
+    "last_scheduled_start_utc": "2026-10-20T12:42:02Z",
+    "last_success_utc": "2026-10-20T12:42:02Z",
     "native": {
      "last_completed_utc": "2026-10-20T11:57:35Z",
      "last_result": "success",
@@ -239,7 +239,7 @@
      "last_scheduled_start_utc": "2026-10-20T11:57:19Z",
      "last_success_utc": "2026-10-20T11:57:19Z",
      "stale_after_min": 45,
-     "state": "fresh"
+     "state": "stale"
     },
     "stale_after_min": 45,
     "state": "fresh"
@@ -271,9 +271,9 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 9.4,
+  "report_age_min": 11.1,
   "report_coverage": 0.9245,
-  "report_generated_utc": "2026-10-20T12:20:21.769Z",
+  "report_generated_utc": "2026-10-20T12:33:41.694Z",
   "report_scheduled_decisions": 106,
   "rule": "the report's coverage is as of its generation; decisions due after it are listed here with their recorded state, never folded into its percentage"
  },
@@ -281,13 +281,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 42.2,
+  "age_min": 57.2,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 125,
    "expected_slots": 96,
-   "from_ms": 1792412987517,
-   "from_utc": "2026-10-19T12:29:47Z",
+   "from_ms": 1792413887342,
+   "from_utc": "2026-10-19T12:44:47Z",
    "intervals": 95,
    "intervals_with_automated_run": 93,
    "intervals_with_successful_automated_run": 93,
@@ -298,8 +298,8 @@
     "native-schedule": 43,
     "recovery": 82
    },
-   "to_ms": 1792499387517,
-   "to_utc": "2026-10-20T12:29:47Z"
+   "to_ms": 1792500287342,
+   "to_utc": "2026-10-20T12:44:47Z"
   },
   "gaps": [],
   "last_scheduled_utc": "2026-10-20T11:47:32Z",
@@ -319,10 +319,10 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-10-20T12:27:58Z",
-   "last_automated_utc": "2026-10-20T12:27:58Z",
+   "last_activity_utc": "2026-10-20T12:42:57Z",
+   "last_automated_utc": "2026-10-20T12:42:57Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-10-20T12:27:58Z",
+   "last_success_utc": "2026-10-20T12:42:57Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
