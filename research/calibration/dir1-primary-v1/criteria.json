@@ -1,0 +1,25 @@
+{
+ "declared_before_any_run": true,
+ "declared_utc": "2026-10-20T01:09:42Z",
+ "evaluator": "dir1-primary-v1",
+ "evaluator_sha256": "c82ff659fe5803364b0aef6020c5fe4d2f88b5fe1097c1d74c3c86e57082db33",
+ "harness": "calibration-harness-1.0.0",
+ "max_any_look_fpr": 0.1,
+ "max_fpr_upper95": 0.13,
+ "max_sensitivity_fpr": 0.13,
+ "min_power": 0.5,
+ "min_tail_draws": 10,
+ "power_delta": -0.01,
+ "rule": "a failing evaluator is not promotable; revise it as a new evaluator id with new criteria declared before its run, and keep this attempt history",
+ "scenario": "null-dependent (calibration_harness.SCENARIOS): regimes, persistent volatility, common jumps, clustered per-arm and joint outages, overlapping 4h targets, AR(0.9) forecasts",
+ "schema": "calibration-criteria/1",
+ "seed": 33,
+ "sensitivity_blocks_h": [
+  8,
+  24
+ ],
+ "sims": {
+  "alternatives": 200,
+  "null": 400
+ }
+}

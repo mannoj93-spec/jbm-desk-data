@@ -1,4 +1,11 @@
-"""Calibration diagnostics for new evaluation versions (calibration-1.0.0, repo 2.29; brief section 15).
+"""Calibration diagnostics for new evaluation versions (calibration-1.1.0, repo 2.30; 1.0.0 was repo 2.29).
+
+1.1.0: one tail-draw policy. resolution() calls fewer than 10 expected draws per tail 'coarse', but
+block_bootstrap_ci() accepted an interval with a single expected draw (default min_tail_draws=1). Both now use
+MIN_TAIL_DRAWS = 10; a caller can still ask for less explicitly, and the result records the policy it used. The
+bootstrap draws whole blocks with random.choices over precomputed block sums (same method, faster; the random stream
+differs from 1.0.0, which no registered result used). The calibration of the proposed DIR1 evaluator itself is
+research_tools/calibration_harness.py.
 
 The frozen lab evaluation (lab/experiments.py) uses B = 2,000 bootstrap resamples and alpha = 0.10 / (variants x 4
 looks). At 23 variants the adjusted two-sided tail holds 2000 x 0.10 / 92 / 2 ~ 1.09 expected resampled draws; at
@@ -23,7 +30,8 @@ beside every result.
 import math
 import random
 
-VERSION = "calibration-1.0.0"
+VERSION = "calibration-1.1.0"
+MIN_TAIL_DRAWS = 10
 
 
 def resolution(B, alpha, variants, looks=4, two_sided=True):
@@ -47,7 +55,7 @@ def _pct(xs, q):
     return xs[lo] + (xs[hi] - xs[lo]) * (k - lo)
 
 
-def block_bootstrap_ci(xs, blocks, alpha, B=2000, seed=1, min_blocks=20, min_tail_draws=1):
+def block_bootstrap_ci(xs, blocks, alpha, B=2000, seed=1, min_blocks=20, min_tail_draws=MIN_TAIL_DRAWS):
     """Percentile interval of the mean, resampling whole blocks. blocks: a block id per observation."""
     groups = {}
     for x, b in zip(xs, blocks):
@@ -57,18 +65,18 @@ def block_bootstrap_ci(xs, blocks, alpha, B=2000, seed=1, min_blocks=20, min_tai
         return {"state": "insufficient-blocks", "blocks": len(keys), "min_blocks": min_blocks, "n": len(xs)}
     res = resolution(B, alpha, 1, 1)
     if res["expected_tail_draws"] < min_tail_draws:
-        return {"state": "insufficient-resolution", "resolution": res, "blocks": len(keys), "n": len(xs)}
+        return {"state": "insufficient-resolution", "resolution": res, "blocks": len(keys), "n": len(xs),
+                "min_tail_draws": min_tail_draws}
     rnd = random.Random(seed)
+    sums = [sum(groups[k]) for k in keys]
+    cnts = [len(groups[k]) for k in keys]
+    idx = range(len(keys))
     means = []
     for _ in range(B):
-        tot, n = 0.0, 0
-        for _ in keys:
-            g = groups[keys[rnd.randrange(len(keys))]]
-            tot += sum(g)
-            n += len(g)
-        means.append(tot / n)
+        pick = rnd.choices(idx, k=len(keys))
+        means.append(sum(map(sums.__getitem__, pick)) / sum(map(cnts.__getitem__, pick)))
     return {"state": "ok", "mean": sum(xs) / len(xs), "lo": _pct(means, alpha / 2), "hi": _pct(means, 1 - alpha / 2),
-            "blocks": len(keys), "n": len(xs), "resolution": res}
+            "blocks": len(keys), "n": len(xs), "resolution": res, "min_tail_draws": min_tail_draws}
 
 
 def null_false_positive(signal, outcome, blocks, test, looks, sims=200, seed=7):
