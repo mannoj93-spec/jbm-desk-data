@@ -1,7 +1,7 @@
 {
- "as_of_utc": "2026-10-20T04:44:39Z",
+ "as_of_utc": "2026-10-20T12:26:30Z",
  "blockers": [
-  "merge, then observe a collector run whose push meets a moved main (live persistence after the fix)"
+  "observe a collector run on the 2.30 script whose push meets a moved main (the 12:11Z Oct 20 run that failed ran the old script from 7bde6a89)"
  ],
  "code": {
   "path": "scripts/commit_push.sh",
@@ -20,14 +20,19 @@
    "evidence": [
     {
      "kind": "commit",
-     "ref": "at or before a6f3df538780"
+     "ref": "at or before 0abdbd11c265"
     }
    ],
    "value": true
   },
   "merged": {
-   "evidence": [],
-   "value": false
+   "evidence": [
+    {
+     "kind": "merge-commit",
+     "ref": "d26ab329 PR #48 merged 2026-10-20T12:14:00Z"
+    }
+   ],
+   "value": true
   },
   "observed": {
    "evidence": [],

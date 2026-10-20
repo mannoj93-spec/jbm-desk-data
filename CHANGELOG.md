@@ -1,3 +1,17 @@
+# Revision 2.30.1 (records only) — 2026-10-20
+
+**Base.** `main` at `0abdbd11` (after PR #47 merged 12:13:44Z as `ad3f3d81` and PR #48 merged 12:14:00Z as
+`d26ab329`; then data only). No code under `lab/`, `stream/`, `research_tools/` or the collector changes.
+
+| Item | Evidence | Change | Tests |
+|---|---|---|---|
+| O33 v3.1 correction 1 effective | activity pr_merge `ad3f3d81`->`d26ab329` at 2026-10-20T12:14:00Z; `spec.json` absent at `ad3f3d81`, present at `d26ab329` | `research/registrations/o33-v3.1-correction-1/effective.json`; `scripts/o33_v31_manifest.py` checks both effective records (correction 1's now required); the pinned manifests are unchanged | `test_rev2301` (2) |
+| Merges and a persistence failure | GitHub API pulls/47, pulls/48, check runs on `d26ab329` (tests, release, build, dashboard deploy success); job 118619765484 log | `desk/deployments.jsonl`: both merges; run 39420444969's persistence failure (it ran the pre-2.30 script from `7bde6a89`; artifact 12263109593, expires 2026-10-27T12:15:43Z, not yet reconciled) | release check |
+| Readiness | the merges and correction 1's first-main record | `scripts/readiness.py`: merged with merge-commit evidence; correction 1 registered; the persistence blocker restated; records regenerated | `readiness.py check` |
+
+**Not established.** The 2.30 `commit_push.sh` repair is merged, not yet observed: no collector run on it has met a
+moved main.
+
 # Revision 2.30 (crypto-desk 12.4.21 on the 12.4 release family) — 2026-10-20
 
 **Base.** Brief pin `fec357f4` (Oct 19 23:44:51Z); branch base `main` at `b3b86e95` (Oct 19 23:59:05Z; only data,

@@ -27,7 +27,7 @@ candidates under the existing evidence rules. Component states with their eviden
 | Raw retention + replay | `research_tools/archive_store.py` (archive-store-1.1.0) | implemented, tested; **not wired into the collector** |
 | D1 rejection funnel | `research_tools/d1_diagnostics.py` | implemented |
 | E1 pilot acceptance | `stream/pilot_e1.json`, `stream/pilot_acceptance.py` (pilot-acceptance-1.1.0) | criteria declared; **pilot not run (no host)** |
-| O33 v3.1 | `research/registrations/o33-v3.1/` (effective 2026-10-19T19:51:07Z, `effective.json`) and `o33-v3.1-correction-1/` | v3.1 effective; correction 1 **prepared** |
+| O33 v3.1 | `research/registrations/o33-v3.1/` (effective 2026-10-19T19:51:07Z, `effective.json`) and `o33-v3.1-correction-1/` | v3.1 effective; correction 1 effective 2026-10-20T12:14:00Z (PR #48 merge, its `effective.json`) |
 
 ## Research interface
 
@@ -101,11 +101,13 @@ for all arms, utility and net paper value on each arm's latency-aware entry (a b
 (missing: net unavailable), inference USD beside them. `directional.compare_arms(graded, protocol, schedule)` computes the
 registered pairs (primary: statistical minus baseline) on pair-specific intersections with the schedule as denominator.
 
-## Deployment handoffs (each is a separate operator action; none is done by this branch)
+## Deployment handoffs (each is a separate operator action; states as of repo 2.30.1)
 
-1. **Merge repo 2.30.** Then record O33 v3.1 correction 1's effective time in its `effective.json` from the GitHub
-   activity API, and observe a collector run whose push meets a moved main (the 20A repair live).
-2. **PR #47** (recovery of run 39333253907) is data-only; merge it or leave it, at the operator's discretion.
+1. **Repo 2.30 merged** (PR #48, 2026-10-20T12:14:00Z) and correction 1's effective time recorded (repo 2.30.1).
+   Still open: observe a collector run on the 2.30 `commit_push.sh` whose push meets a moved main. The 12:11Z Oct 20
+   run failed with the old signature because it had checked out the pre-merge code; its artifact (12263109593)
+   expires 2026-10-27T12:15:43Z and has not been reconciled.
+2. **PR #47** merged 2026-10-20T12:13:44Z (rows restored late under `data/restored/`).
 3. **DIR1**: train and freeze the statistical artifact before `effective_utc`, add a publishing workflow, register by
    merge; the frontier arm needs an account, a pinned model identity and a transport (`CommandAdapter` or
    `HTTPJSONAdapter`).
