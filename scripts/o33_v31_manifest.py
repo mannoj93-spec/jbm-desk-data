@@ -38,16 +38,27 @@ def correction_body():
             "wrapper_version": "register-2.4.0", "contract_version": "evidence-1.0.0"}
 
 
-def effective_check():
-    """../o33-v3.1/effective.json: the recorded first-main evidence is self-consistent (the API read is in the file)."""
-    p = D / "effective.json"
-    if not p.exists():
-        return ["o33-v3.1/effective.json missing (PR #44 merged 2026-10-19T19:51:07Z)"]
+def _effective_problems(p, label):
     e = json.loads(p.read_text())
     a = e["evidence"]["activity"]
-    probs = []
     if e["effective_utc"] != a["timestamp"] or a["after"] != e["evidence"]["merge_commit"]:
-        probs.append("effective.json: effective time or merge commit inconsistent with its activity record")
+        return [f"{label}/effective.json: effective time or merge commit inconsistent with its activity record"]
+    return []
+
+
+def effective_check():
+    """Each effective.json (v3.1 and, from repo 2.30.1, correction 1) is self-consistent: the API read is in the file.
+    v3.1's is required (PR #44 merged 2026-10-19T19:51:07Z); correction 1's is required once it exists on main
+    (PR #48 merged 2026-10-20T12:14:00Z), so a deleted record is reported."""
+    probs = []
+    if not (D / "effective.json").exists():
+        probs.append("o33-v3.1/effective.json missing (PR #44 merged 2026-10-19T19:51:07Z)")
+    else:
+        probs += _effective_problems(D / "effective.json", "o33-v3.1")
+    if not (C / "effective.json").exists():
+        probs.append("o33-v3.1-correction-1/effective.json missing (PR #48 merged 2026-10-20T12:14:00Z)")
+    else:
+        probs += _effective_problems(C / "effective.json", "o33-v3.1-correction-1")
     return probs
 
 

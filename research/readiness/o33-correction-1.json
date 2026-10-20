@@ -1,8 +1,6 @@
 {
- "as_of_utc": "2026-10-20T04:44:39Z",
- "blockers": [
-  "effective at the first push of the directory to main (effective.json after the merge)"
- ],
+ "as_of_utc": "2026-10-20T12:26:30Z",
+ "blockers": [],
  "code": {
   "path": "research/registrations/o33-v3.1-correction-1/enforcement/desk_register.py",
   "sha256": "6e72a4c7bfddba165e3da7c2b5669c3ebc997a0da95c63c8196a934cdf4a8d67",
@@ -16,20 +14,16 @@
    "evidence": [
     {
      "kind": "commit",
-     "ref": "at or before a6f3df538780"
+     "ref": "at or before 0abdbd11c265"
     }
    ],
    "value": true
   },
   "merged": {
-   "evidence": [],
-   "value": false
-  },
-  "prepared": {
    "evidence": [
     {
-     "kind": "file",
-     "ref": "research/registrations/o33-v3.1-correction-1/spec.json"
+     "kind": "merge-commit",
+     "ref": "d26ab329 PR #48 merged 2026-10-20T12:14:00Z"
     }
    ],
    "value": true
@@ -44,8 +38,13 @@
    "value": true
   },
   "registered": {
-   "evidence": [],
-   "value": false
+   "evidence": [
+    {
+     "kind": "first-main",
+     "ref": "d26ab329 pr_merge 2026-10-20T12:14:00Z (effective.json)"
+    }
+   ],
+   "value": true
   },
   "tested": {
    "evidence": [
