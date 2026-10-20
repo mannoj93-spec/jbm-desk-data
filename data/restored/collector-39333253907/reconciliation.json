@@ -1,0 +1,36 @@
+{
+ "artifact_bytes": 95731044,
+ "artifact_created": "2026-10-19T22:16:24Z",
+ "artifact_expires": "2026-10-26T22:16:16Z",
+ "artifact_id": "12225253430",
+ "artifact_sha256": "0a9d6fc253411da96f54b9842e27cf2d77d3facf891f36ac5088495ae7b477d4",
+ "compared_with_main": "b708041b0c088bbc46f547b8fc85be48ddcbccf3",
+ "data_rows": {
+  "restored": 8,
+  "restored_paths": "data/restored/collector-39333253907/<original path>, byte-identical; live files untouched",
+  "superseded": 21,
+  "superseded_differences": "observation metadata only (code_commit, r/first_seen, observed_at); for the five 1m price batches the archive's 11 bars are a subset of main's 26 with identical values - no value conflict"
+ },
+ "downloaded_sha256_matches_recorded_digest": true,
+ "failure": "push rejected (main advanced) at 22:15:15Z; git pull --rebase killed at its 60 s cap 22:16:15Z (fetch-pack unexpected disconnect); rebase --abort failed (no rebase in progress); exit 1 with ~38 s budget unused (repaired in repo 2.30 scripts/commit_push.sh)",
+ "prepared_by": "repo 2.30 recovery branch (pull request, not merged)",
+ "registry_frozen": {
+  "differing": 0,
+  "identical_on_main": 399,
+  "in_archive": 399,
+  "missing_on_main": 0
+ },
+ "run_head_sha": "4486713be6ab174ae918734bff3e6fba8713302b",
+ "run_id": "39333253907",
+ "schema": "collector-recovery-reconciliation/1",
+ "state_append_logs": {
+  "incidents.jsonl": "0 archive lines absent from main",
+  "range_attempts.jsonl": "0",
+  "range_publications.jsonl": "0",
+  "range_runs.jsonl": "0",
+  "range_scoring.jsonl": "0",
+  "recovery_yields.jsonl": "0"
+ },
+ "state_snapshots": "not restored (working state superseded by later runs; never copied over current state)",
+ "timeliness": "restored after the fact: not available on time; does not satisfy or repair any on-time obligation, cadence, forecast, score, paper execution or lab input; the run stays a persistence failure"
+}
