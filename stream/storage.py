@@ -147,6 +147,11 @@ class S3Backend:
         with self._request("HEAD", key) as resp:
             return int(resp.headers.get("Content-Length", -1))
 
+    def get(self, key):
+        """The stored bytes (restore path for research_tools/archive_store and stream/pilot_acceptance)."""
+        with self._request("GET", key) as resp:
+            return resp.read()
+
 
 def backend_from_config(cfg):
     s3 = (cfg.get("storage") or {}).get("s3")

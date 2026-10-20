@@ -928,3 +928,113 @@ class F7PilotAcceptanceTests(unittest.TestCase):
             rec.store.flush()
             rows = rec.store.read(f"derived/clock/{PA._day_hour(S0)[0]}.jsonl")
             self.assertEqual((rows[0]["offset_ms"], rows[0]["rtt_ms"]), (10.0, 40))
+
+
+# ------------------------------------------------------------------------------------------ F9 archive
+from research_tools import archive_store as AS  # noqa: E402
+
+RAW = json.dumps([[T0, "1", "2", "0.5", "1.5", "3", T0 + 59999, "4.5", 7, "1", "1.5", "0"]]).encode()
+META = {"source": "binance", "url_or_channel": "fapi/v1/klines", "retrieved_utc": "2026-10-12T00:01:00Z",
+        "event_utc": "2026-10-12T00:00:00Z", "parser": "parse_binance_klines", "parser_version": "1",
+        "provenance": "original"}
+
+
+class MockBackend:
+    """A realistic in-memory object store with injectable faults. A mock is never a live archive."""
+    def __init__(self, fault=None):
+        self.objects, self.fault = {}, fault
+
+    def put(self, key, data):
+        if self.fault == "interrupt":
+            self.objects[key] = data[: len(data) // 2]
+            raise ConnectionResetError("upload interrupted")
+        self.objects[key] = data
+
+    def get(self, key):
+        d = self.objects.get(key)
+        if d is not None and self.fault == "wrong-size":
+            return d[:-1]
+        if d is not None and self.fault == "wrong-hash":
+            return d[:5] + (b"X" if d[5:6] != b"X" else b"Y") + d[6:]
+        return d
+
+
+class F9ArchiveTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.clock = FixedClock(T0 + 2 * MIN)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def store(self, backend=None, **kw):
+        return AS.ArchiveStore(self.tmp.name, backend=backend, clock=self.clock, **kw)
+
+    def test_raw_corruption_fails_even_when_the_parse_is_unchanged(self):
+        """1.0.0: a whitespace change made verify() fail but replay() return ok."""
+        a = self.store()
+        line = a.put(RAW, META, AS.parse_binance_klines(RAW), parser=AS.parse_binance_klines)
+        self.assertEqual(a.replay(line, AS.parse_binance_klines)["state"], "ok")
+        p = Path(self.tmp.name) / line["key"]
+        spaced = RAW.replace(b",", b", ")
+        self.assertEqual(AS.parse_binance_klines(spaced), AS.parse_binance_klines(RAW))   # same rows
+        p.write_bytes(spaced)
+        self.assertEqual(a.replay(line, AS.parse_binance_klines)["state"], "integrity-failed")
+        self.assertTrue(a.verify([line]))
+
+    def test_repeated_put_verifies_the_existing_object(self):
+        a = self.store()
+        line = a.put(RAW, META)
+        (Path(self.tmp.name) / line["key"]).write_bytes(b"not the bytes")
+        line2 = a.put(RAW, META)
+        self.assertEqual(line2["durability"]["local"]["state"], "written")
+        self.assertEqual(a.verify([line2]), [])
+        self.assertTrue(list((Path(self.tmp.name) / "quarantine").iterdir()))
+        self.assertEqual(a.accounting(a.manifest.lines())["repeated_observations"], 1)
+        self.assertEqual(a.accounting(a.manifest.lines())["unique_bytes"], len(RAW))
+
+    def test_clock_separation_and_backend_durability(self):
+        b = MockBackend()
+        a = self.store(backend=b, backend_name="mock-s3")
+        line = a.put(RAW, META, AS.parse_binance_klines(RAW))
+        self.assertEqual((line["state"], line["durable_scope"]), ("durable", "backend"))
+        self.assertEqual(line["first_durable_utc"], E.iso(self.clock()))
+        self.assertNotEqual(line["first_durable_utc"], line["retrieved_utc"])
+        self.assertNotEqual(line["retrieved_utc"], line["event_utc"])
+        rec = a.put(RAW, dict(META, provenance="reconstructed"))
+        self.assertEqual(rec["historical_availability"], "unknown (reconstructed)")
+        self.assertEqual(a.manifest.verify(), [])
+
+    def test_restore_from_the_backend_after_the_local_cache_is_cleared(self):
+        b = MockBackend()
+        a = self.store(backend=b)
+        line = a.put(RAW, META, AS.parse_binance_klines(RAW), parser=AS.parse_binance_klines)
+        import shutil
+        shutil.rmtree(Path(self.tmp.name) / "objects")
+        r = a.replay(line, AS.parse_binance_klines)
+        self.assertEqual(r["state"], "ok")
+        self.assertEqual(r["rows"], AS.parse_binance_klines(RAW))
+        self.assertTrue((Path(self.tmp.name) / line["key"]).exists())            # restored and re-verified
+
+    def test_interrupted_upload_wrong_size_wrong_hash_and_missing(self):
+        for fault in ("interrupt", "wrong-size", "wrong-hash"):
+            with tempfile.TemporaryDirectory() as tmp:
+                a = AS.ArchiveStore(tmp, backend=MockBackend(fault), clock=self.clock)
+                line = a.put(RAW, META, AS.parse_binance_klines(RAW))
+                self.assertEqual(line["state"], "local-only", fault)
+                self.assertEqual(line["durable_scope"], "local", fault)
+                self.assertIn("error", line["durability"]["backend"], fault)
+                (Path(tmp) / line["key"]).unlink()
+                self.assertIn(a.replay(line, AS.parse_binance_klines)["state"], ("unavailable",), fault)
+
+    def test_parser_identity_budget_and_retention(self):
+        a = self.store(budget=AS.Budget(max_bytes_per_day=len(RAW) + 10))
+        line = a.put(RAW, META, AS.parse_binance_klines(RAW), parser=AS.parse_binance_klines)
+
+        def parse_binance_klines(raw):                                        # same name, different code
+            return []
+        self.assertEqual(a.replay(line, parse_binance_klines)["state"], "parser-mismatch")
+        a.put(RAW, META)                                                     # a repeat stores nothing new
+        with self.assertRaises(AS.BudgetExceeded):
+            a.put(RAW + b" ", META)
+        self.assertEqual(AS.ArchiveStore.retention_candidates(a.manifest.lines(), 1, "2026-10-20T00:00:00Z"), [])
