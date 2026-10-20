@@ -75,16 +75,6 @@ class Recorder:
                     del self.captures[cid]
             self.counters[f"msgs:{venue}"] += 1
 
-    def clock(self, venue, t_send, t_recv, server_ms):
-        """A clock-offset sample (stream-1.1): server time against the midpoint of a request's round trip. The pilot
-        acceptance needs at least one per hour within clock_offset_ms_max."""
-        day, _ = hour_key(t_recv)
-        with self.lock:
-            self.store.append(f"derived/clock/{day}.jsonl", {"venue": venue, "t": t_recv, "t_send": t_send,
-                                                            "server_ms": server_ms, "rtt_ms": t_recv - t_send,
-                                                            "offset_ms": server_ms - (t_send + t_recv) / 2,
-                                                            "version": VERSION})
-
     def gap(self, venue, start, end, reason, instrument=None):
         day, _ = hour_key(end or start or now_ms())
         with self.lock:
@@ -120,6 +110,19 @@ class Recorder:
                                "book_ts": book.last_ts,
                                "book_age_ms": (t - book.last_ts) if book.last_ts is not None else None})
         return top
+
+
+def record_clock(rec, venue, t_send, t_recv, server_ms):
+    """A clock-offset sample (stream-1.1): server time against the midpoint of a request's round trip. The pilot
+    acceptance needs at least one per hour within clock_offset_ms_max. Kept outside Recorder on purpose: the
+    E1-liquidity-recovery evaluation version hashes Recorder (lab/versioning DATA_DEPENDENCIES), and adding clock
+    samples must not change that version."""
+    day, _ = hour_key(t_recv)
+    with rec.lock:
+        rec.store.append(f"derived/clock/{day}.jsonl", {"venue": venue, "t": t_recv, "t_send": t_send,
+                                                       "server_ms": server_ms, "rtt_ms": t_recv - t_send,
+                                                       "offset_ms": server_ms - (t_send + t_recv) / 2,
+                                                       "version": VERSION})
 
 
 class Connection(threading.Thread):
@@ -178,7 +181,7 @@ class Connection(threading.Thread):
         channel = "other"
         if self.venue == "deribit":
             if js.get("id") == 7 and isinstance(js.get("result"), int) and getattr(self, "clock_sent", None):
-                self.rec.clock(self.venue, self.clock_sent, t, js["result"])
+                record_clock(self.rec, self.venue, self.clock_sent, t, js["result"])
                 self.clock_sent = None
                 channel = "clock"
             elif js.get("method") == "heartbeat" and (js.get("params") or {}).get("type") == "test_request":

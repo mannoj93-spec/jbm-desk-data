@@ -24,6 +24,12 @@ Every defect below was reproduced on the base before it was changed (synthetic c
 | 16 discovery | — | exposure labels, configuration and attempt counting across sessions and models (research API and search ledger) | in F3/F6 |
 | 17, 20C readiness | states were asserted in prose | `scripts/readiness.py` (component-readiness/1; a test establishes only `tested`; stale code identity fails); `docs/READINESS.md`; the dashboard shows the records as recorded | `test_dashboard` (15 Python), `dashboard/model.test.mjs` (26) |
 
+**Caught by an existing guard.** The first push placed the clock sample in `stream.service.Recorder`. The
+E1-liquidity-recovery evaluation version hashes that class (`lab/versioning.py` DATA_DEPENDENCIES), so its version
+moved (`ev-6f279983100b` -> `ev-8ac04d500791`) and `desk/test_streams.py` (test_lab_evaluation_versions_unchanged,
+which runs only on Python 3.12, the production AST) failed in CI on PR #48. The sample is now the module-level
+`record_clock`; `Recorder` is AST-identical to the base and the guard passes under 3.12.
+
 **Observed at this revision** (read, not caused by it): report-2.6.2 is live — `reports/latest.md` generated
 2026-10-20 01:31Z by `report-2.6.2-2026-10-19` (commit `03d8e22`). Merges of PRs #44-#46 recorded in
 `desk/deployments.jsonl` from the GitHub API.
