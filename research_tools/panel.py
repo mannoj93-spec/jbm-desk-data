@@ -87,8 +87,10 @@ EVENT_BP = 50.0
 FAMILIES = {"flow_liquidity": "1.0.0", "price_response": "1.0.0", "funding_dispersion": "1.0.0",
             "positioning_interaction": "1.0.0", "spot_perp_basis": "1.0.0",
             "liquidity_resilience": "gated", "options_disagreement": "gated"}
-GATED = {"liquidity_resilience": "gated: requires E1 sequence-valid order books (stream recorder not commissioned)",
-         "options_disagreement": "gated: maturity, moneyness, quote-age and liquidity filters not frozen"}
+GATED = {"liquidity_resilience": "gated: requires E1 sequence-valid order books (stream recorder not commissioned); "
+                                 "feature contract prepared in research_tools/replenishment.py",
+         "options_disagreement": "gated: skew filters prepared in research_tools/options_skew.py (feasibility measured), "
+                                 "not registered"}
 
 
 class _Avail:

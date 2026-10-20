@@ -6,13 +6,48 @@
  "effective_rule": "registered only by a merge to main of this file with status 'registered' and a launch decision written by the job; PS1 v3 continues unchanged and is not a control that this successor may modify",
  "question": "Does a no-trade band on the sizing weight reduce B2's turnover cost enough that B2 sizing beats VOL sizing in after-cost risk-adjusted return under STRESSED costs?",
  "motivation": "discovery data, not evidence: PS1 v3 through 2026-10-19T16:22Z (92 closed intervals, 400 h, 2 complete blocks) - ordinary net B2 -0.93%, VOL -1.50%, FIXED -1.07%; stressed B2 -1.56%, VOL -1.55%, FIXED -1.10%; B2 ordinary costs 808.40 vs VOL 66.21 (12.2x), annualized turnover 156.4 vs 13.3",
- "candidates": {"bands_abs_weight": [0.0, 0.05, 0.10], "rebalance_every_decisions": [1, 2], "arms": ["B2", "VOL"]},
+ "candidates": {
+  "bands_abs_weight": [
+   0.0,
+   0.05,
+   0.1
+  ],
+  "rebalance_every_decisions": [
+   1,
+   2
+  ],
+  "arms": [
+   "B2",
+   "VOL"
+  ]
+ },
  "primary": "Sharpe(B2, band 0.05, every 1) - Sharpe(VOL, band 0.05, every 1), duration-weighted annualized log-return Sharpe, STRESSED costs (ps1-costs-1 stressed: 10 bp fee + 10 bp slippage + full spread)",
  "secondary": "every other candidate pair, reported with the family count (11 secondary comparisons) and never promoted on its own",
- "conventions": "identical to PS1 v3: decisions, quote eligibility, fill model, missing-data joint rule, time accounting, capital and marking (desk/research/ps1/protocol.json sha256 d0e8c837...); the band is applied to each arm's PS1 target weight by lab/turnover.apply_band",
- "baselines": ["band 0.0 (PS1's every-decision rebalance)", "FIXED"],
+ "conventions": "identical to PS1 v3 by construction: the runner calls desk/paper_ps1.py rebalance(), sharpe_dw() and its verified ledger; decisions, captured-book fills, missing-data joint rule (only executions PS1 counted, all arms together), time accounting between fill times, capital and marking unchanged",
+ "baselines": [
+  "band 0.05, every 1 (PS1 v3's own configuration)",
+  "FIXED"
+ ],
  "uncertainty": "moving-block bootstrap as PS1 (blocks of 42 intervals, 5,000 resamples, seed 20261019); no interval below 10 complete blocks",
- "checkpoints": {"C1": "180 days after launch and >= 10 blocks: descriptive", "C2": "365 days and >= 20 blocks: status vocabulary of PS1"},
+ "checkpoints": {
+  "C1": "180 days after launch and >= 10 blocks: descriptive",
+  "C2": "365 days and >= 20 blocks: status vocabulary of PS1"
+ },
  "claims_boundary": "sizing and turnover on one synthetic spot policy; no direction, no live fills, no capacity",
- "module": "research_tools/turnover.py turnover-1.0.0"
+ "module": "research_tools/ps1_t1_runner.py ps1-t1-runner-1.0.0 (research_tools/turnover.py turnover-1.0.0 is superseded for this purpose)",
+ "revision": 2,
+ "revision_note": "Oct 19 2026 (repo 2.30, still PREPARED): (1) PS1 v3's own rebalance band is 0.05 (desk/research/ps1/protocol.json policy.rebalance_band), not 0.0 - revision 1 called band 0.0 'PS1's every-decision rebalance'; band 0.0 is a tighter control than PS1, band 0.05 IS PS1. (2) The executable runner is research_tools/ps1_t1_runner.py, which replays PS1's verified ledger with PS1's own rebalance() and accounting and refuses to report unless band 0.05 / every 1 reproduces PS1's recorded rows exactly (verified: 94 executions, 0 mismatches, Oct 19 2026); turnover-1.0.0's target-weight arithmetic does not preserve PS1's conventions and is not the successor's method. (3) Full identities replace abbreviated hashes. Revision 1 is in git history.",
+ "design_issue": "the primary pair (band 0.05, every 1) is PS1 v3's own configuration, so as written the successor's primary comparison adds no new arm and repeats PS1's stressed-cost comparison; an operator decision on the primary band (declared before registration) is required. The discovery replay below was viewed by the implementer: a band chosen after it is a post-hoc choice and must be disclosed as such.",
+ "exposure": {
+  "t_utc": "2026-10-20T01:12Z (approximate, within two minutes)",
+  "by": "repo 2.30 implementation session (Claude)",
+  "what": "ps1_t1_runner.run_family over PS1's ledger (94 executions through 2026-10-19T20:00Z, stressed costs): every candidate configuration's Sharpe and the 12 B2-VOL / B2-FIXED differences were displayed",
+  "class": "discovery (pre-registration) data, viewed; counts as search for the PS1-T1 family"
+ },
+ "identities": {
+  "ps1_protocol_sha256": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
+  "paper_ps1_sha256": "2bf59f1f84207a56deff03215d0bd59a89d8afde1c3ff5af740a1bdbe63082b5",
+  "runner": "research_tools/ps1_t1_runner.py ps1-t1-runner-1.0.0 (its sha256 is recorded in each run's identities)"
+ },
+ "family_count": 12
 }

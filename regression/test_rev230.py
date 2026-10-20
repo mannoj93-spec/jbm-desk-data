@@ -1086,3 +1086,128 @@ class F8O33Tests(unittest.TestCase):
                 sys.modules.pop(k, None)
             sys.modules.update(saved)
             del sys.path[:len(paths)]
+
+
+# --------------------------------------------------------------------------- section 14 continuous families
+from research_tools import options_skew as OS  # noqa: E402
+from research_tools import replenishment as RP  # noqa: E402
+
+
+def option_capture(now_ms, skew_put=0.06, base_iv=0.5, oi=50.0, spread=0.05, codes=("16OCT26", "23OCT26")):
+    """A capture in deribit_option_quotes/1 format whose quotes are Black-76 prices from a known smile:
+    iv(K) = base - skew_put * (log-moneyness slope) so 25-delta puts carry more IV than 25-delta calls."""
+    F = 80000.0
+    rows = []
+    for code in codes:
+        T = (OS.expiry_ms(code) - now_ms) / (365.25 * 86_400_000)
+        for K in range(60000, 100001, 1000):
+            for call in (True, False):
+                k = math.log(K / F)
+                iv = base_iv - skew_put * k / 0.1
+                px = OS.black76(F, K, T, iv, call) / F
+                rows.append([f"BTC-{code}-{K}-{'C' if call else 'P'}", oi, round(iv * 100, 4),
+                             px * (1 - spread / 2), px * (1 + spread / 2), px, 1.0, 1.0, px, 5])
+    return {"schema": "deribit_option_quotes/1", "observed_at": now_ms, "t_event_min": now_ms - 3000,
+            "fields": ["instrument", "open_interest_btc", "mark_iv", "bid_price_btc", "ask_price_btc",
+                       "mark_price_btc", "volume_24h_rolling_btc", "volume_24h_rolling_usd", "last_price_btc",
+                       "source_ts_offset_ms"],
+            "rows": rows, "underlying_v2": {c: [f"BTC-{c}", F, 0.0] for c in codes}}
+
+
+class Section14Tests(unittest.TestCase):
+    NOW = int(dt.datetime(2026, 10, 12, 12, 0, tzinfo=dt.timezone.utc).timestamp() * 1000)
+
+    def test_rr25_recovers_the_known_put_skew_and_its_change(self):
+        st, v = OS.rr25_7d(option_capture(self.NOW))
+        self.assertEqual(st, "ok")
+        self.assertLess(v, 0)                                            # puts over calls
+        st0, v0 = OS.rr25_7d(option_capture(self.NOW, skew_put=0.0))
+        self.assertAlmostEqual(v0, 0.0, delta=0.6)                       # flat smile: about zero (strike grid)
+        ch = OS.skew_changes([option_capture(self.NOW), option_capture(self.NOW + H, skew_put=0.08)])
+        self.assertEqual(ch[0][1], "ok")
+        self.assertLess(ch[0][2], 0)
+
+    def test_filters_explain_every_unavailable_value(self):
+        self.assertEqual(OS.rr25_7d(option_capture(self.NOW, oi=1.0))[0].count("low-oi"), 2)
+        self.assertIn("wide", OS.rr25_7d(option_capture(self.NOW, spread=0.6))[0])
+        self.assertEqual(OS.rr25_7d(option_capture(self.NOW, codes=("16OCT26",)))[0], "no-bracketing-expiry")
+        stale = option_capture(self.NOW)
+        stale["t_event_min"] = self.NOW - 60_000
+        self.assertIn("stale", OS.rr25_7d(stale)[0])
+        self.assertEqual(OS.skew_changes([option_capture(self.NOW), option_capture(self.NOW + 3 * H)])[0][1][:8], "unpaired")
+
+    def _book(self, tmp, depth, gap=None, every=1):
+        day = "2026-10-12"
+        p = Path(tmp) / "derived/book1s/bybit/BTCUSDT" / day / "12.jsonl.gz"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        rows = [{"t": (self.NOW // 1000 + s) * 1000 + 4, "mid": 80000.0, "bid_depth_10bp": depth(s),
+                 "ask_depth_10bp": 50.0, "book_age_ms": 100} for s in range(0, 3600, every)]
+        p.write_bytes(_gz(rows))
+        if gap:
+            g = Path(tmp) / "derived/gaps" / f"{day}.jsonl"
+            g.parent.mkdir(parents=True, exist_ok=True)
+            g.write_text(json.dumps({"venue": "bybit", "instrument": "BTCUSDT", "start": self.NOW + gap[0] * 1000,
+                                     "end": self.NOW + gap[1] * 1000, "reason": "sequence gap"}) + "\n")
+        return RP.read(tmp, "bybit", "BTCUSDT", day)
+
+    def test_replenishment_measures_recovery_and_refuses_bad_sources(self):
+        def depth(s):
+            if 600 <= s < 610:
+                return 10.0                                              # depleted to 20% of 50
+            if 610 <= s < 640:
+                return 10.0 + (s - 610) * 1.5                            # refills to 55 by s = 640
+            return 50.0
+        t_ev = self.NOW // 1000 + 598
+        with tempfile.TemporaryDirectory() as tmp:
+            st, rec = RP.recovery(self._book(tmp, depth), t_ev, "bid")
+            self.assertEqual(st, "ok")
+            self.assertEqual(rec["recovery_s"], 34)        # trough first reached at s=600; 10 + 1.5 x 24 >= 45 at s=634
+            self.assertEqual(rec["contract_sha256"], RP.contract_sha256())
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(RP.recovery(self._book(tmp, depth, gap=(620, 625)), t_ev, "bid")[0], "gap-in-window")
+        with tempfile.TemporaryDirectory() as tmp:
+            src = self._book(tmp, depth, every=720)                       # snapshot-style sampling (every 12 min)
+            self.assertEqual(src["state"], "source-not-sequence-valid")
+        self.assertEqual(RP.read("/nonexistent", "bybit", "BTCUSDT", "2026-10-12", sequence_checked=False)["state"],
+                         "source-not-sequence-valid")
+
+
+# ------------------------------------------------------------------------------ section 15 executable successors
+from research_tools import a2_sync, ps1_t1_runner  # noqa: E402
+
+
+class Section15Tests(unittest.TestCase):
+    def test_a2_join_uses_actual_arrival_clocks(self):
+        for lag, want in ((900, "synchronized"), (7000, "timeout")):
+            with tempfile.TemporaryDirectory() as tmp:
+                st = Store(R229.write_base(tmp, minutes=120, spot_lag_ms=lag), cutoff=T0 + 4 * H)
+                perp, spot = st.bars("binance_klines_1m_BTCUSDT_perp"), st.bars("binance_klines_1m_BTCUSDT_spot")
+                ds = a2_sync.join(perp, spot, T0, T0 + 100 * MIN)
+                self.assertTrue(all(d["group"] == want for d in ds), (lag, {d["group"] for d in ds}))
+                d = ds[0]
+                if want == "synchronized":
+                    self.assertEqual(d["t_decision"], d["spot_avail"])
+                    self.assertEqual(d["delay_ms"], 900)
+                else:
+                    self.assertEqual(d["delay_ms"], 5000)                 # perp availability + the timeout
+                r = a2_sync.evaluate(ds, perp)
+                self.assertIn("assumed", r["note"])
+        with tempfile.TemporaryDirectory() as tmp:
+            st = Store(R229.write_base(tmp, minutes=120, drop_spot={T0 + 30 * MIN}), cutoff=T0 + 4 * H)
+            ds = a2_sync.join(st.bars("binance_klines_1m_BTCUSDT_perp"), st.bars("binance_klines_1m_BTCUSDT_spot"),
+                              T0, T0 + 100 * MIN)
+            self.assertEqual(sum(d["group"] == "spot-missing" for d in ds), 1)
+
+    def test_ps1_t1_replay_reproduces_ps1_and_carries_the_family_count(self):
+        if not (ROOT / "streams/ps1/executions.jsonl").exists():
+            self.skipTest("no PS1 ledger in this checkout")
+        chk = ps1_t1_runner.reproduces_ps1(ROOT)
+        self.assertTrue(chk["ok"], chk["mismatches"][:3])
+        self.assertEqual(chk["ps1_band"], 0.05)
+        b0 = ps1_t1_runner.replay(ROOT, 0.0, 1, "B2", "stressed")
+        b5 = ps1_t1_runner.replay(ROOT, 0.05, 1, "B2", "stressed")
+        self.assertGreater(b0["turnover_annualized"], b5["turnover_annualized"])  # band 0.0 is tighter than PS1
+        proto = json.loads((ROOT / "research/registrations/ps1-t1-prepared/protocol.json").read_text())
+        self.assertEqual(len(proto["identities"]["ps1_protocol_sha256"]), 64)
+        self.assertEqual(proto["family_count"], 12)
+        self.assertIn("design_issue", proto)

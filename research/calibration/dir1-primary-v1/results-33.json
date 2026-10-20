@@ -1,0 +1,121 @@
+{
+ "evaluator": {
+  "B": 2000,
+  "alpha": 0.1,
+  "blocks_h": 4,
+  "comparisons": 1,
+  "decision": "promote when the adjusted two-sided interval's upper end is below 0 at any look",
+  "id": "dir1-primary-v1",
+  "interval": "percentile block bootstrap (calibration.block_bootstrap_ci)",
+  "looks": [
+   500,
+   1000,
+   2000
+  ],
+  "metric": "paired Brier difference, statistical - baseline",
+  "min_blocks": 20,
+  "min_tail_draws": 10,
+  "pairing": "pair-specific intersection of on-time graded forecasts",
+  "source": "research/registrations/dir1-prepared/protocol.json revision 2 (prepared)"
+ },
+ "evaluator_sha256": "c82ff659fe5803364b0aef6020c5fe4d2f88b5fe1097c1d74c3c86e57082db33",
+ "evidence_units_per_schedule": {
+  "blocks_at_final_look": 405,
+  "distinct_4h_windows": 500,
+  "note": "rows are not independent; blocks are a dependence device, not a count of independent market events",
+  "pairs_at_final_look": 1500,
+  "rows": 2000
+ },
+ "null": {
+  "24": {
+   "any_look_fpr": 0.0575,
+   "by_look": [
+    0.0225,
+    0.03,
+    0.025
+   ],
+   "wilson95": [
+    0.0386,
+    0.0848
+   ]
+  },
+  "4": {
+   "any_look_fpr": 0.0775,
+   "by_look": [
+    0.0325,
+    0.0375,
+    0.0325
+   ],
+   "wilson95": [
+    0.0551,
+    0.1079
+   ]
+  },
+  "8": {
+   "any_look_fpr": 0.0575,
+   "by_look": [
+    0.0225,
+    0.0275,
+    0.025
+   ],
+   "wilson95": [
+    0.0386,
+    0.0848
+   ]
+  },
+  "sims": 400
+ },
+ "power": {
+  "-0.005": {
+   "first_look_counts": {
+    "1000": 28,
+    "2000": 34,
+    "500": 25,
+    "None": 113
+   },
+   "power_any_look": 0.435,
+   "realized_mean_diff": -0.00465,
+   "sims": 200,
+   "wilson95": [
+    0.3682,
+    0.5043
+   ]
+  },
+  "-0.01": {
+   "first_look_counts": {
+    "1000": 55,
+    "2000": 45,
+    "500": 68,
+    "None": 32
+   },
+   "power_any_look": 0.84,
+   "realized_mean_diff": -0.00966,
+   "sims": 200,
+   "wilson95": [
+    0.7829,
+    0.8843
+   ]
+  }
+ },
+ "resolution": {
+  "B": 2000,
+  "adjusted_alpha": 0.03333333333333333,
+  "expected_tail_draws": 33.3333,
+  "tail_probability": 0.016666666666666666,
+  "verdict": "ok"
+ },
+ "scenario": {
+  "jump_rate": 0.01,
+  "jump_size": 0.03,
+  "outage_start": 0.01,
+  "outage_stay": 0.9,
+  "phi": 0.9,
+  "regime_switch": 0.01,
+  "skill": 0.0,
+  "spread": 0.06,
+  "vol_high": 0.012,
+  "vol_low": 0.004
+ },
+ "seed": 33,
+ "version": "calibration-harness-1.0.0"
+}
