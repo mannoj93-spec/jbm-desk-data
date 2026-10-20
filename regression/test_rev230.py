@@ -493,3 +493,268 @@ def _appender(lp, w):
     L = Ledger(lp)
     for k in range(15):
         L.append("X", {"kind": "system", "id": f"w{w}"}, "note", {"k": k}, f"w{w}-{k}", "2026-10-12T00:00:00Z")
+
+
+# ------------------------------------------------------------------------------------------ F4 DIR1 runner
+from research_tools import directional as DIR  # noqa: E402
+from research_tools import dir1_runner as RUN  # noqa: E402
+
+PROTO = json.loads((ROOT / "research/registrations/dir1-prepared/protocol.json").read_text())
+
+
+def fx_row(t, age_s=300, **feat):
+    f = {"ret_1h_bp": 12.0, "flow_per_depth": 0.02, "d_oi_1h_pct": 0.1}
+    f.update(feat)
+    src = {s: {"age_s": age_s, "state": "ok"} for s in ("perp_window", "depth", "oi", "basis", "funding_estimate")}
+    return {"t": t, "features": {k: v for k, v in f.items() if v is not None},
+            "fstate": {k: ("ok" if v is not None else "source-missing") for k, v in f.items()},
+            "inputs": {"sources": src}}
+
+
+class FixedClock:
+    def __init__(self, t):
+        self.t = t
+
+    def __call__(self):
+        return E.epoch_ms(int(self.t))
+
+
+def stat_art():
+    a = {"schema": "directional-statistical/1", "features": ["ret_1h_bp"], "coef": [0.002], "intercept": 0.0,
+         "train_cutoff_utc": E.iso(E.epoch_ms(T0))}
+    a["sha256"] = E.content_sha256(a)
+    return a
+
+
+class F4RunnerTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.d = T0 + 4 * H
+        self.clock = FixedClock(self.d + 30_000)
+        self.rows = {self.d: fx_row(self.d), self.d + H: fx_row(self.d + H)}
+        self.bars = R229.fixture_bars(14)
+        self.proto = dict(PROTO, inference=dict(PROTO["inference"], timeout_s=1.0))
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def runner(self, adapters=None, main=None, rows=None, instrument=None, mode="fixture", proto=None):
+        main = main or RUN.FixtureMain(self.clock, delay_ms=60_000)
+        ps = RUN.FixturePanelSource(rows if rows is not None else self.rows,
+                                    instrument or PROTO["instrument"]["target"])
+        ad = adapters if adapters is not None else {
+            "baseline": RUN.CallableAdapter("baseline", DIR.baseline_arm(PROTO)),
+            "statistical": RUN.CallableAdapter("statistical", DIR.statistical_arm(stat_art()))}
+        return RUN.DIR1Runner(proto or self.proto, self.tmp.name, mode, ad, main, main, ps, self.clock)
+
+    def test_reviewed_grade_defects_are_refused(self):
+        """1.0.0: grade() returned 'graded' with no publication evidence, a wrong hash and p_up 2.0."""
+        g = DIR.grade(PROTO, self.d, 2.0, None, self.bars, evaluation_cutoff_ms=T0 + 14 * H)
+        self.assertEqual(g["state"], "refused")
+        self.assertEqual(DIR.grade(PROTO, self.d, 0.6, None, self.bars, T0 + 14 * H)["state"], "refused")
+        self.assertEqual(DIR.grade(PROTO, self.d, 0.6, {"class": "failed"}, self.bars, T0 + 14 * H)["state"], "refused")
+        self.assertEqual(DIR.grade(PROTO, self.d, 0.6, {"class": "on-time", "published_utc": E.iso(E.epoch_ms(self.d))},
+                                   self.bars)["state"], "refused")                    # no evaluation cutoff
+        main = RUN.FixtureMain(self.clock)
+        content = {"opportunity": "x", "p_up": 0.6}
+        ev = main.publish(content)
+        self.assertEqual(DIR.admit(PROTO, self.d, dict(content, p_up=0.7), ev, main)["class"], "failed")  # wrong hash
+        self.assertEqual(DIR.admit(PROTO, self.d, content, {"kind": "git-commit", "ref": "nope"}, main)["class"], "failed")
+
+    def test_malformed_outputs_never_raise_and_are_recorded(self):
+        for raw in ("true", "42", "[1]", True, 42, [0.5], {"p_up": True}, {"p_up": 2.0}, {"p_up": float("nan")}, b"\xff"):
+            p, why = DIR.parse_forecast(raw)
+            self.assertIsNone(p, raw)
+            self.assertTrue(why)
+        r = DIR.infer(lambda f, k: ({"p_up": float("nan")}, 0.0), {}, PROTO, R229.Tick(T0))
+        self.assertEqual(r["outcome"], "error")
+        self.assertIn("NaN", r["attempts"][0]["raw_text"])
+
+    def test_operational_entry_point_accounts_for_every_opportunity(self):
+        rows = dict(self.rows)
+        rows[self.d + 2 * H] = fx_row(self.d + 2 * H, flow_per_depth=None)          # missing input
+        rows[self.d + 3 * H] = fx_row(self.d + 3 * H, age_s=1200)                   # stale input
+        run = self.runner(rows=rows)
+        for k in range(5):                                                         # k = 4: no row at all
+            self.clock.t = self.d + k * H + 30_000
+            run.run(self.d + k * H)
+        self.clock.t = self.d + 5 * H + 30_000
+        acct = run.reconcile(self.d, self.d + 6 * H, self.clock())                  # the 6th not run yet: expected
+        self.assertEqual(acct["baseline"].get("expected"), 1)
+        self.clock.t = self.d + 5 * H + 700_000
+        acct = run.reconcile(self.d, self.d + 6 * H, self.clock())                  # past its deadline: missed
+        for arm in ("baseline", "statistical", "frontier"):
+            self.assertEqual(sum(acct[arm].values()), 6)
+        self.assertEqual(acct["frontier"], {"inputs-unavailable": 5, "missed": 1})  # uncommissioned, still counted
+        self.assertEqual(acct["baseline"].get("inputs-unavailable"), 3)
+        out = run.grade_matured(self.bars, evaluation_cutoff_ms=self.d + 4 * H)     # outcomes not yet available
+        self.assertEqual(out["graded"], 0)
+        out = run.grade_matured(self.bars, evaluation_cutoff_ms=T0 + 14 * H)
+        self.assertEqual(out["graded"], 4)                                         # 2 decisions x 2 arms
+        self.assertEqual(run.results.verify(), [])
+        g = run.results.records()[0]
+        self.assertIn("price proxy", g["grade"]["price_basis"])
+        self.assertTrue(g["fixture"])
+        self.assertIsNone(g["grade"]["net_bp"] if g["grade"]["action"] else None)  # no funding supplied: not zero
+        reasons = [e["data"].get("reasons") for e in run.log.events if e["state"] == "inputs-unavailable"
+                   and e["arm"] == "baseline"]
+        self.assertTrue(any("flow_per_depth" in " ".join(r or []) for r in reasons))
+        self.assertTrue(any("1200 s old" in " ".join(r or []) for r in reasons))
+
+    def test_wrong_instrument_and_unregistered_protocol_are_refused(self):
+        run = self.runner(instrument="Binance spot BTCUSDT")
+        run.run(self.d)
+        self.assertEqual(run.log.state(DIR.opp_id(PROTO, self.d, "baseline")), "inputs-unavailable")
+        with self.assertRaisesRegex(RUN.Refused, "fixture"):
+            self.runner(mode="operational")
+        ok = RUN.GitHubMainVerifier("o/r", gh=lambda a: {})
+        op = RUN.DIR1Runner(self.proto, self.tmp.name + "/op", "operational",
+                            {"baseline": RUN.CallableAdapter("baseline", DIR.baseline_arm(PROTO))}, ok, ok,
+                            RUN.FixturePanelSource(self.rows), self.clock)
+        with self.assertRaisesRegex(RUN.Refused, "prepared"):
+            op.run(self.d)
+
+    def test_publication_late_tampered_and_failed(self):
+        late = self.runner(main=RUN.FixtureMain(self.clock, delay_ms=700_000))
+        late.run(self.d)
+        self.assertEqual(late.log.state(DIR.opp_id(PROTO, self.d, "baseline")), "publish-late")
+        late.grade_matured(self.bars, T0 + 14 * H)
+        self.assertEqual(late.results.records()[0]["grade"]["admission"], "late")
+        for main in (RUN.FixtureMain(self.clock, tamper=True), RUN.FixtureMain(self.clock, fail=True)):
+            with tempfile.TemporaryDirectory() as tmp:
+                r = RUN.DIR1Runner(self.proto, tmp, "fixture",
+                                   {"baseline": RUN.CallableAdapter("baseline", DIR.baseline_arm(PROTO))}, main, main,
+                                   RUN.FixturePanelSource(self.rows), self.clock)
+                r.run(self.d)
+                self.assertEqual(r.log.state(DIR.opp_id(PROTO, self.d, "baseline")), "publish-failed")
+                self.assertEqual(r.grade_matured(self.bars, T0 + 14 * H)["graded"], 0)
+
+    def test_hung_model_call_is_cancelled_at_the_deadline(self):
+        import time as _t
+        fx = RUN.FixtureAdapter("frontier", [("sleep", 30), ("sleep", 30)])
+        run = self.runner(adapters={"frontier": fx})
+        t0 = _t.monotonic()
+        run.run(self.d)
+        took = _t.monotonic() - t0
+        self.assertLess(took, 8)                                                   # 2 attempts x 1 s, not 60 s
+        oid = DIR.opp_id(PROTO, self.d, "frontier")
+        self.assertEqual(run.log.state(oid), "timeout")
+        ev = run.log.history(oid)[-1]["data"]
+        atts = run.objects.get(ev["attempts_object"])
+        self.assertEqual([a["parse"][:7] for a in atts], ["timeout", "timeout"])
+        self.assertTrue(all(a["cost_usd"] is None and "cancelled" in a["cost_state"] for a in atts))
+        self.assertIsNone(ev["cost_usd"])                                           # unknown, not zero
+
+    def test_first_valid_parse_with_malformed_outputs_through_the_runner(self):
+        fx = RUN.FixtureAdapter("frontier", ["true", {"p_up": 0.61}, {"p_up": 0.9}])
+        run = self.runner(adapters={"frontier": fx})
+        run.run(self.d)
+        oid = DIR.opp_id(PROTO, self.d, "frontier")
+        fc = next(e for e in run.log.history(oid) if e["state"] == "forecast")["data"]
+        self.assertEqual((fc["selected_attempt"], fc["p_up"], fc["n_attempts"]), (1, 0.61, 2))
+        atts = run.objects.get(fc["attempts_object"])
+        self.assertEqual(run.objects.get(atts[0]["raw_object"])["raw_text"], "true")
+
+    def test_restart_and_duplicate_invocation(self):
+        run = self.runner()
+        run.run(self.d)
+        n = len(run.log.events)
+        run.run(self.d)                                                            # duplicate invocation
+        self.assertEqual(len(run.log.events), n)
+        again = self.runner()                                                      # a fresh process: reload
+        self.assertEqual(len(again.log.events), n)
+        oid = DIR.opp_id(PROTO, self.d + H, "baseline")
+        again.log.add(oid, "baseline", "expected", E.epoch_ms(self.d + H), {"decision_t_utc": E.iso(E.epoch_ms(self.d + H)),
+                                                                             "fixture": True})
+        pk = again.objects.put({"features": {"ret_1h_bp": 4.0}})
+        again.log.add(oid, "baseline", "inputs-ready", self.clock(), {"packet_object": pk, "fixture": True})
+        again.log.add(oid, "baseline", "inference-started", self.clock(), {"packet_object": pk})   # then a crash
+        self.clock.t = self.d + H + 30_000
+        third = self.runner()
+        third.run(self.d + H)
+        h = third.log.history(oid)
+        fc = next(e for e in h if e["state"] == "forecast")["data"]
+        atts = third.objects.get(fc["attempts_object"])
+        self.assertEqual(atts[0]["attempt"], "interrupted")
+        self.assertEqual(len(atts), 2)                                              # max_attempts 2 kept
+        with open(third.log.path, "ab") as f:
+            f.write(b'{"opportunity": "torn')
+        fourth = self.runner()
+        self.assertTrue(fourth.log.recovered)
+        p = third.log.path
+        lines = p.read_text().splitlines()
+        p.write_text("\n".join(lines[:2] + lines[3:]) + "\n")
+        with self.assertRaises(RUN.LogCorrupt):
+            self.runner()
+
+    def test_github_main_verifier_uses_server_records_not_commit_dates(self):
+        import base64 as b64
+        content = {"opportunity": "o", "p_up": 0.6}
+        sha = "a" * 40
+        calls = []
+
+        def gh(args):
+            calls.append(args[0])
+            a = args[0]
+            if "/contents/" in a:
+                return {"content": b64.b64encode(json.dumps(content).encode()).decode()}
+            if "/compare/" in a:
+                base, head = a.split("/compare/")[1].split("...")
+                return {"status": "identical" if base == head or head in ("main", "c" * 40) else "behind"}
+            if "/activity" in a:
+                return [{"id": 1, "after": "b" * 40, "timestamp": "2026-10-12T04:00:30Z"},
+                        {"id": 2, "after": "c" * 40, "timestamp": "2026-10-12T04:02:10Z"}]
+            raise AssertionError(a)
+        v = RUN.GitHubMainVerifier("o/r", gh=gh)
+        ok, first, why, rc = v.verify({"kind": "git-commit", "ref": sha, "path": "streams/dir1/o.json",
+                                       "published_utc": "2026-10-12T03:00:00Z"}, content)
+        self.assertTrue(ok, why)
+        self.assertEqual(first, "2026-10-12T04:02:10Z")                            # the push that contained it
+        self.assertFalse(v.verify({"kind": "git-commit", "ref": sha, "path": "x"}, dict(content, p_up=0.7))[0])
+
+
+# ------------------------------------------------------------------------------------------ F5 comparisons
+class F5ComparisonTests(unittest.TestCase):
+    def g(self, b, adm="on-time"):
+        return {"state": "graded", "brier": b, "admission": adm, "action": 1, "utility_bp": 1.0, "net_bp": 0.5}
+
+    def test_registered_primary_is_statistical_minus_baseline(self):
+        graded = {"baseline": {1: self.g(0.25)}, "statistical": {1: self.g(0.16)}, "frontier": {1: self.g(0.36)}}
+        c = DIR.compare_arms(graded, PROTO, schedule=[1])
+        self.assertEqual(c["comparisons"]["primary"]["difference"], "statistical - baseline")
+        self.assertAlmostEqual(c["comparisons"]["primary"]["mean_difference"], -0.09, places=9)
+        rev = dict(reversed(list(graded.items())))
+        self.assertEqual(DIR.compare_arms(rev, PROTO, [1])["comparisons"]["primary"], c["comparisons"]["primary"])
+        self.assertIsNone(DIR.compare_arms(graded)["comparisons"])                 # no protocol: nothing invented
+
+    def test_pair_specific_intersections_and_schedule_denominators(self):
+        sched = [1, 2, 3, 4]
+        graded = {"baseline": {1: self.g(0.25), 2: self.g(0.20), 3: self.g(0.30)},
+                  "statistical": {1: self.g(0.16), 2: self.g(0.18), 3: self.g(0.10, adm="late")},
+                  "frontier": {1: {"state": "timeout"}, 2: {"state": "error"}},
+                  "challenger": {1: {"state": "error"}}}                            # a failed extra arm
+        c = DIR.compare_arms(graded, PROTO, schedule=sched)
+        pc = c["comparisons"]["primary"]
+        self.assertEqual(pc["n_pair"], 2)                                          # the frontier failures erase nothing
+        self.assertAlmostEqual(pc["mean_difference"], ((0.16 - 0.25) + (0.18 - 0.20)) / 2, places=9)
+        self.assertEqual(pc["scheduled"], 4)
+        self.assertEqual(pc["not_valid"], {"statistical": 2, "baseline": 1})       # late 3 and absent 4; absent 4
+        self.assertEqual(c["opportunities"], 4)                                    # opportunity 4: every arm missing
+        self.assertEqual(c["arms"]["baseline"]["states"]["missing"], 1)
+        self.assertEqual(c["arms"]["statistical"]["graded_late"], 1)
+        self.assertEqual(c["paired_intersection"], 0)
+
+    def test_numeric_abstention_is_scored_for_quality_and_trades_nothing(self):
+        bars = R229.fixture_bars(14)
+        d = T0 + 4 * H
+        adm = {"class": "on-time", "published_utc": E.iso(E.epoch_ms(d + 90_000))}
+        g = DIR.grade(PROTO, d, 0.5, adm, bars, evaluation_cutoff_ms=T0 + 14 * H)
+        self.assertEqual((g["state"], g["action"], g["net_bp"]), ("graded", 0, 0.0))
+        self.assertIsNotNone(g["brier"])
+        late = DIR.grade(PROTO, d, 0.5, dict(adm, published_utc=E.iso(E.epoch_ms(d + 20 * MIN))), bars, T0 + 14 * H)
+        self.assertEqual(late["target_bp"], g["target_bp"])                       # the common target does not move
+        self.assertNotEqual(late["entry_utc"], g["entry_utc"])                    # execution stays latency-aware
+        fund = [{"t": T0 + 8 * H, "rate": 1e-4}]
+        g2 = DIR.grade(PROTO, d, 0.8, adm, bars, T0 + 14 * H, funding=fund, inference_usd=0.01)
+        self.assertEqual(g2["funding_bp"], 1.0)                                    # a long pays a positive rate
+        self.assertEqual(g2["inference_usd"], 0.01)

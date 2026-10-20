@@ -5,19 +5,123 @@
  "effective_utc": null,
  "effective_evidence": null,
  "effective_rule": "registered only when this file is merged to main with status 'registered', effective_utc set to the merge time and effective_evidence naming the merge commit; opportunities before that are not prospective evidence; nothing is backfilled as live",
- "instrument": {"target": "Binance USD-M BTCUSDT perpetual", "universe": "BTC only; no point-in-time universe expansion without a new registration"},
- "schedule": {"every_min": 60, "offset_min": 0, "basis": "measured Oct 12-19 2026 (research_tools/panel.py at cutoff fce9fa2): perp input age at the decision clock median 180 s, p90 300 s at :00 (300-480 s at other offsets), max 900 s"},
- "inputs": {"allowed": "research_tools/panel.py panel-1.0.0 features available at the decision time (flow_liquidity, price_response, funding_dispersion, positioning_interaction, spot_perp_basis)", "required": ["ret_1h_bp", "flow_per_depth", "d_oi_1h_pct"], "max_input_age_s": 900, "missing": "a required feature missing or older than max_input_age_s: inputs-unavailable, recorded, never filled"},
+ "instrument": {
+  "target": "Binance USD-M BTCUSDT perpetual",
+  "universe": "BTC only; no point-in-time universe expansion without a new registration"
+ },
+ "schedule": {
+  "every_min": 60,
+  "offset_min": 0,
+  "basis": "measured Oct 12-19 2026 (research_tools/panel.py (panel-1.0.0) at cutoff fce9fa2): perp input age at the decision clock median 180 s, p90 300 s at :00 (300-480 s at other offsets), max 900 s"
+ },
+ "inputs": {
+  "allowed": "research_tools/panel.py panel-1.1.0 features with fstate 'ok' at the decision time (flow_liquidity, price_response, funding_dispersion, positioning_interaction, spot_perp_basis); each feature's age is its sources' age (dir1_runner.FEATURE_SOURCES)",
+  "required": [
+   "ret_1h_bp",
+   "flow_per_depth",
+   "d_oi_1h_pct"
+  ],
+  "max_input_age_s": 900,
+  "missing": "a required feature not eligible (panel.eligible) or older than max_input_age_s: inputs-unavailable, recorded with reasons, never filled"
+ },
  "horizon_min": 240,
  "horizon_basis": "4h = about 48x the p90 input age; a tens-of-minutes horizon would sit within a few multiples of the measured lag",
- "forecast": {"representation": "p_up: probability that the 240-minute forward log return from the first eligible quote is positive", "domain": [0, 1]},
- "conversion": {"long_above": 0.55, "short_below": 0.45, "abstain": "otherwise", "sizing": "fixed unit; sizing is not tested here"},
- "publication": {"deadline_s": 600, "durable": "a git commit on main of the forecast record whose content sha256 equals the forecast's, or a registry write with receipt and read-back; the durable copy's own time is the publication time", "late": "published after the deadline: recorded as publish-late and graded as its own class, never as on-time"},
- "execution": {"price_source": "Binance USD-M BTCUSDT 1m bars (collector)", "entry": "open of the first 1m bar starting at or after max(decision, publication) + delay_s", "delay_s": 60, "exit": "close of the bar ending entry + 240 min", "unavailable": "no eligible bar within 2 h: ungradable"},
- "costs": {"fee_bp_per_side": 5.0, "spread_slippage_bp_per_side": 2.0, "funding": "settled Binance funding over the holding window, signed by side", "inference": "every attempt's cost recorded in USD and reported beside net value", "basis": "assumptions stated here; taker tier not observed"},
- "inference": {"max_attempts": 2, "timeout_s": 120, "selection": "first-valid-parse", "parse": "strict JSON {p_up}; no repair", "model_pinning": "a pinned model version where the provider offers one; an alias is recorded as an alias and every observed version string is kept"},
- "arms": ["baseline", "statistical", "frontier"],
- "arm_definitions": {"baseline": "lab/directional.baseline_arm (trailing-hour momentum, clipped)", "statistical": "lab/directional.fit_logistic on panel features, training cutoff before effective_utc, artifact hash frozen at registration", "frontier": "a model call on the same permitted inputs through a pinned interface; NOT commissioned (no model account or host is configured in this repository)", "text-event": "gated: no point-in-time text/event capture exists"},
- "evaluation": {"primary": "paired difference in mean Brier score, statistical minus baseline, on the full opportunity denominator (missing forecasts counted per arm; the intersection reported beside it)", "secondary": ["directional utility (bp, before costs)", "net execution value (bp, after costs)", "frontier arms when commissioned, as challengers"], "dependence": "overlapping 4h horizons on hourly decisions: 4-hour blocks; lab/calibration.block_bootstrap_ci with >= 20 blocks", "checkpoints_opportunities": [500, 1000, 2000], "multiplicity": "alpha 0.10 / (arms compared x looks)", "promotion": "a challenger replaces nothing until it beats the incumbent at a checkpoint on the paired comparison; it inherits no evidence", "retirement": "adjusted interval wholly unfavourable at a checkpoint, or operator stop"},
- "monitoring": {"operational_pause": "inputs-unavailable or missed share > 20% over 24 h pauses the stream (an operational state, not a performance change)", "updates": "a new model, prompt, tool policy or retrained artifact is a challenger arm with its own clock"}
+ "forecast": {
+  "representation": "p_up: probability that the 240-minute forward log return from the first eligible quote is positive",
+  "domain": [
+   0,
+   1
+  ],
+  "target": "common to every arm: 240-minute log return from the open of the first 1m bar at or after decision + publication.deadline_s + execution.delay_s (no arm can know it at publication); Brier is scored on its sign"
+ },
+ "conversion": {
+  "long_above": 0.55,
+  "short_below": 0.45,
+  "abstain": "otherwise",
+  "sizing": "fixed unit; sizing is not tested here"
+ },
+ "publication": {
+  "deadline_s": 600,
+  "durable": "a git commit on main of the forecast record whose content sha256 equals the forecast's, or a registry write with receipt and read-back; the durable copy's own time is the publication time",
+  "late": "published after the deadline: recorded as publish-late and graded as its own class, never as on-time",
+  "verification": "research_tools/dir1_runner.GitHubMainVerifier (first push to main containing the commit, from GitHub's activity records, with the file's exact bytes) or RegistryReceiptVerifier; a caller or Git author timestamp is never the publication time"
+ },
+ "execution": {
+  "price_source": "Binance USD-M BTCUSDT 1m bars (collector)",
+  "entry": "latency-aware, per arm: open of the first 1m bar starting at or after max(decision, the arm's verified publication) + delay_s",
+  "delay_s": 60,
+  "exit": "close of the bar ending entry + 240 min",
+  "unavailable": "no eligible bar within 2 h: ungradable",
+  "price_basis": "bar-based paper price proxy (1m bar open/close); not an observed executable quote"
+ },
+ "costs": {
+  "fee_bp_per_side": 5.0,
+  "spread_slippage_bp_per_side": 2.0,
+  "funding": "settled Binance funding at every 8-hourly settlement in (entry, exit], signed by side (a long pays a positive rate); any settlement missing: net value unavailable for that opportunity, never zero",
+  "inference": "every attempt's cost in USD recorded (unknown when a call is cancelled) and reported beside trading economics, not netted against them; no capital convention converts it",
+  "basis": "assumptions stated here; taker tier not observed"
+ },
+ "inference": {
+  "max_attempts": 2,
+  "timeout_s": 120,
+  "selection": "first-valid-parse",
+  "parse": "strict JSON {p_up}; no repair",
+  "model_pinning": "a pinned model version where the provider offers one; an alias is recorded as an alias and every observed version string is kept"
+ },
+ "arms": [
+  "baseline",
+  "statistical",
+  "frontier"
+ ],
+ "arm_definitions": {
+  "baseline": "research_tools/directional.baseline_arm (trailing-hour momentum, clipped)",
+  "statistical": "research_tools/directional.fit_logistic on panel features, training cutoff before effective_utc, artifact validated (research_api.validate_statistical_artifact) and its hash frozen at registration",
+  "frontier": "a model call on the same permitted inputs through dir1_runner.CommandAdapter or HTTPJSONAdapter with a pinned identity; NOT commissioned (no model account, identity or transport is configured in this repository)",
+  "text-event": "gated: no point-in-time text/event capture exists"
+ },
+ "evaluation": {
+  "primary": "paired difference in mean Brier score, statistical minus baseline (comparisons.primary), on the pair-specific intersection with the full scheduled denominator beside it",
+  "secondary": [
+   "directional utility (bp, before costs)",
+   "net execution value (bp, after costs)",
+   "frontier arms when commissioned, as challengers"
+  ],
+  "dependence": "overlapping 4h horizons on hourly decisions: 4-hour blocks with research_tools/calibration.block_bootstrap_ci (>= 20 blocks), calibrated by research_tools/calibration_harness.py before any promotion",
+  "checkpoints_opportunities": [
+   500,
+   1000,
+   2000
+  ],
+  "multiplicity": "alpha 0.10 / (arms compared x looks)",
+  "promotion": "a challenger replaces nothing until it beats the incumbent at a checkpoint on the paired comparison; it inherits no evidence",
+  "retirement": "adjusted interval wholly unfavourable at a checkpoint, or operator stop",
+  "comparisons": {
+   "primary": {
+    "metric": "brier",
+    "a": "statistical",
+    "b": "baseline"
+   },
+   "secondary": [
+    {
+     "metric": "utility_bp",
+     "a": "statistical",
+     "b": "baseline"
+    },
+    {
+     "metric": "net_bp",
+     "a": "statistical",
+     "b": "baseline"
+    }
+   ],
+   "challengers": "frontier arms, when commissioned, are compared to the incumbent as separately registered secondary pairs; adding one never changes the primary pair"
+  },
+  "missing_policy": "pair-specific intersection of on-time graded forecasts for each registered pair; full scheduled denominators, per-arm missing/late/failed/abstaining/ungradable counts and the joint coverage are reported beside every difference; no numeric score is invented for a missing forecast; a numeric forecast inside the abstention band is scored for probability quality and trades nothing",
+  "late": "publish-late forecasts are graded as their own class and excluded from the on-time comparisons"
+ },
+ "monitoring": {
+  "operational_pause": "inputs-unavailable or missed share > 20% over 24 h pauses the stream (an operational state, not a performance change)",
+  "updates": "a new model, prompt, tool policy or retrained artifact is a challenger arm with its own clock"
+ },
+ "revision": 2,
+ "revision_note": "Oct 19 2026 (repo 2.30, still PREPARED, never registered): structured registered comparisons (F5: statistical minus baseline is the primary pair; arm order cannot change it); a common forecast target for every arm; settled-funding and missing-funding rule; bar-based price proxy label; inference cost reported separately; panel-1.1.0 inputs with per-source age; operational path research_tools/dir1_runner.py; stale lab/* references replaced by research_tools/*. Revision 1 is in git history."
 }

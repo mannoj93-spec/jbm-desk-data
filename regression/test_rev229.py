@@ -406,8 +406,9 @@ class DirectionalTests(unittest.TestCase):
     def test_no_quote_before_the_decision_could_exist(self):
         bars = fixture_bars()
         d = T0 + 4 * H
-        pub = {"published_utc": E.iso(E.epoch_ms(d + 7 * MIN + 5000))}
-        g = DIR.grade(PROTO, d, 0.7, pub, bars)
+        # directional-1.1.0: grade() takes an admission from admit() and an explicit evaluation cutoff
+        pub = {"class": "on-time", "published_utc": E.iso(E.epoch_ms(d + 7 * MIN + 5000)), "fixture": True}
+        g = DIR.grade(PROTO, d, 0.7, pub, bars, evaluation_cutoff_ms=T0 + 12 * H)
         self.assertEqual(g["entry_utc"], E.iso(E.epoch_ms(d + 9 * MIN)))           # publication + 60 s, next minute
         self.assertGreater(E.instant(g["entry_utc"]), E.instant(pub["published_utc"]))
         self.assertIn("not execution", g["evidence_class"])
@@ -416,7 +417,10 @@ class DirectionalTests(unittest.TestCase):
         """FIXTURE: every record produced here is an offline replay, not a live run."""
         bars = fixture_bars(14)
         log = DIR.OpportunityLog()
-        stat = DIR.statistical_arm({"features": ["ret_1h_bp"], "coef": [0.002], "intercept": 0.0})
+        art = {"schema": "directional-statistical/1", "features": ["ret_1h_bp"], "coef": [0.002], "intercept": 0.0,
+               "train_cutoff_utc": E.iso(E.epoch_ms(T0))}
+        art["sha256"] = E.content_sha256(art)
+        stat = DIR.statistical_arm(art)                                   # 1.1.0 validates the artifact
         arms = {"baseline": DIR.baseline_arm(PROTO), "statistical": stat,
                 "frontier": DIR.frontier_arm_stub([{"p_up": 0.52}] * 3 + ["bad", "bad"] + [{"p_up": 0.6}] * 10)}
         graded = {a: {} for a in arms}
@@ -441,7 +445,9 @@ class DirectionalTests(unittest.TestCase):
                       "content_sha256": E.content_sha256(content)}
                 st, _ = DIR.publication_status(PROTO, d, content, ev)
                 log.add(oid, arm, st, E.epoch_ms(d + 90_000))
-                g = DIR.grade(PROTO, d, r["p_up"], ev, bars)
+                adm = {"class": "on-time" if st == "published" else "late", "published_utc": ev["published_utc"],
+                       "fixture": True}
+                g = DIR.grade(PROTO, d, r["p_up"], adm, bars, evaluation_cutoff_ms=T0 + 14 * H)
                 log.add(oid, arm, "graded" if g["state"] == "graded" else "ungradable", E.epoch_ms(d + 5 * H))
                 graded[arm][d] = g
         DIR.reconcile(PROTO, log, T0 + 2 * H, T0 + 8 * H, E.epoch_ms(T0 + 9 * H))
