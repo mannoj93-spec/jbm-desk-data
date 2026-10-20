@@ -1,7 +1,7 @@
 {
  "schema": "desk-data-catalog/1",
- "version": "catalog-1.0.0",
- "as_of_utc": "2026-10-19T18:00:00Z",
+ "version": "catalog-1.1.0",
+ "as_of_utc": "2026-10-20T04:30:00Z",
  "note": "One entry per stored dataset or feature family. Clocks: t (event/window), r (request start), observed_at (collector write = first durable availability in this repository), t_ret (per-source retrieval inside a snapshot), t_event (source's own stamp where it gives one). Availability is never the event time (lab/data.py, research_tools/evidence_contract.py). Statements marked 'assumed' are not measured.",
  "instruments": [
   {
@@ -10,7 +10,7 @@
    "kind": "linear perpetual",
    "contract": "1 BTC per unit, quoted USDT",
    "funding": "8h settlement at 00/08/16 UTC; premiumIndex.lastFundingRate is the live estimate, fundingRate rows are settled",
-   "dated": "verified 2026-10-18 (package methods §3)",
+   "dated": "verified 2026-10-18 (package methods \u00a73)",
    "symbol_changes": "none recorded"
   },
   {
@@ -24,7 +24,7 @@
    "id": "okx:BTC-USDT-SWAP",
    "venue": "OKX",
    "kind": "linear perpetual",
-   "contract": "0.01 BTC per contract (ctVal), verified (package methods §0)",
+   "contract": "0.01 BTC per contract (ctVal), verified (package methods \u00a70)",
    "funding": "8h; okx_funding_settled stores the settled 8h-normalized rate",
    "dated": "2026-10-08"
   },
@@ -328,7 +328,7 @@
   {
    "id": "flow_liquidity",
    "module": "research_tools/panel.py",
-   "status": "supported",
+   "status": "supported (panel-1.1.0: per-source age and alignment)",
    "inputs": [
     "prices/binance_klines_1m_BTCUSDT_perp",
     "snap.depth_binance_usdt"
@@ -340,7 +340,7 @@
   {
    "id": "price_response",
    "module": "research_tools/panel.py",
-   "status": "supported",
+   "status": "supported (panel-1.1.0: per-source age and alignment)",
    "inputs": [
     "prices/binance_klines_1m_BTCUSDT_perp"
    ],
@@ -351,7 +351,7 @@
   {
    "id": "funding_dispersion",
    "module": "research_tools/panel.py",
-   "status": "supported (estimated rates)",
+   "status": "supported (estimated rates) (panel-1.1.0: per-source age and alignment)",
    "inputs": [
     "snap.hl_predicted_fundings"
    ],
@@ -362,7 +362,7 @@
   {
    "id": "positioning_interaction",
    "module": "research_tools/panel.py",
-   "status": "supported",
+   "status": "supported (panel-1.1.0: per-source age and alignment)",
    "inputs": [
     "series/binance_openInterestHist_5m",
     "prices/binance_klines_1m_BTCUSDT_perp"
@@ -373,7 +373,7 @@
   {
    "id": "spot_perp_basis",
    "module": "research_tools/panel.py",
-   "status": "supported",
+   "status": "supported (panel-1.1.0: per-source age and alignment)",
    "inputs": [
     "snap.premium_parts.binance_spot_btcusdt",
     "snap.binance_usdt_prem.mark"
@@ -384,7 +384,7 @@
   {
    "id": "liquidity_resilience",
    "module": "research_tools/panel.py",
-   "status": "gated: requires E1 sequence-valid books (uncommissioned)",
+   "status": "gated: requires E1 sequence-valid books (uncommissioned); contract prepared (research_tools/replenishment.py replenishment-0.1.0)",
    "inputs": [
     "stream/raw (E1)"
    ]
@@ -392,7 +392,7 @@
   {
    "id": "options_disagreement",
    "module": "research_tools/panel.py",
-   "status": "gated: maturity/moneyness/quote-age definitions not frozen",
+   "status": "gated: skew filters prepared and feasibility measured (research_tools/options_skew.py options-skew-0.1.0); not registered",
    "inputs": [
     "options/deribit_btc"
    ]
