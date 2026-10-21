@@ -160,7 +160,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-10-21T04:44:47Z",
+ "generated_utc": "2026-10-21T04:49:29Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -176,7 +176,7 @@
    "state": "arriving",
    "window_h": 24
   },
-  "newest_scheduled_start_utc": "2026-10-21T04:42:57Z",
+  "newest_scheduled_start_utc": "2026-10-21T04:47:00Z",
   "problems_detected_by": [],
   "rule": "state is the heartbeat (last completed run, any result); last_result is how that run ended; last_check is what its check step did (2.28): only a check that ran and reported a finding detected a problem - setup running, a skipped check or no runner detected nothing",
   "source": "GitHub Actions API, scheduled runs",
@@ -186,7 +186,7 @@
     "last_completed_utc": "2026-10-21T04:20:51Z",
     "last_result": "success",
     "last_run_id": 39543141992,
-    "last_scheduled_start_utc": "2026-10-21T04:16:35Z",
+    "last_scheduled_start_utc": "2026-10-21T04:47:00Z",
     "last_success_utc": "2026-10-21T04:16:35Z"
    },
    "dashboard.yml": {
@@ -275,7 +275,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 11.1,
+  "report_age_min": 15.8,
   "report_coverage": 0.9273,
   "report_generated_utc": "2026-10-21T04:33:41.229Z",
   "report_scheduled_decisions": 110,
@@ -285,13 +285,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 26.0,
+  "age_min": 1.8,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 130,
    "expected_slots": 96,
-   "from_ms": 1792471487328,
-   "from_utc": "2026-10-20T04:44:47Z",
+   "from_ms": 1792471769845,
+   "from_utc": "2026-10-20T04:49:29Z",
    "intervals": 95,
    "intervals_with_automated_run": 94,
    "intervals_with_successful_automated_run": 94,
@@ -302,11 +302,11 @@
     "native-schedule": 44,
     "recovery": 86
    },
-   "to_ms": 1792557887328,
-   "to_utc": "2026-10-21T04:44:47Z"
+   "to_ms": 1792558169845,
+   "to_utc": "2026-10-21T04:49:29Z"
   },
   "gaps": [],
-  "last_scheduled_utc": "2026-10-21T04:18:47Z",
+  "last_scheduled_utc": "2026-10-21T04:47:41Z",
   "manual_runs_since": 0,
   "rule": "scheduled runs only (manual, local and recovery runs do not close a scheduled gap)",
   "service": {
@@ -323,10 +323,10 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-10-21T04:42:57Z",
-   "last_automated_utc": "2026-10-21T04:42:57Z",
-   "last_source": "recovery",
-   "last_success_utc": "2026-10-21T04:42:57Z",
+   "last_activity_utc": "2026-10-21T04:47:41Z",
+   "last_automated_utc": "2026-10-21T04:47:41Z",
+   "last_source": "native-schedule",
+   "last_success_utc": "2026-10-21T04:47:41Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
