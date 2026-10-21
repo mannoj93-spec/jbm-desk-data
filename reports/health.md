@@ -1,10 +1,10 @@
 # Operational health
 
-Generated 2026-10-21T23:44:35Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-10-21T23:57:46Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Source:** healthy; last scheduled collector run 2026-10-21T23:24:25Z (20.2 min). Silences over 90 min in the last 72 h: none.
+**Source:** healthy; last scheduled collector run 2026-10-21T23:55:55Z (1.8 min). Silences over 90 min in the last 72 h: none.
 
-**Service continuity:** healthy; last persisted critical success 2026-10-21T23:42:59Z (1.6 min); last automated activity 2026-10-21T23:42:59Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 44, recovery 84; 94 of 95 slot intervals hold an automated critical success (94 hold any automated activity); longest gap between successes 23.2 min.
+**Service continuity:** healthy; last persisted critical success 2026-10-21T23:55:55Z (1.8 min); last automated activity 2026-10-21T23:55:55Z (critical success, native-schedule). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 44, recovery 84; 94 of 95 slot intervals hold an automated critical success (94 hold any automated activity); longest gap between successes 23.2 min.
 
 **Range decisions:** 10-20T16:00 published; 10-20T20:00 published; 10-21T00:00 published; 10-21T04:00 published; 10-21T08:00 published; 10-21T12:00 published; 10-21T16:00 published; 10-21T20:00 published.
 
@@ -16,6 +16,6 @@ Generated 2026-10-21T23:44:35Z by health-1.4.0 (runner UTC clock at the check (t
 
 **Scoring backlog:** none.
 
-**Monitors:** fresh (GitHub Actions API, scheduled runs); watchdog.yml heartbeat fresh (last run 2026-10-21T23:42:55Z: success; last success 2026-10-21T23:42:44Z); range-monitor.yml heartbeat fresh (last run 2026-10-21T22:13:57Z: success; last success 2026-10-21T22:13:49Z); newest scheduled start of any workflow 2026-10-21T23:42:44Z.
+**Monitors:** fresh (GitHub Actions API, scheduled runs); watchdog.yml heartbeat fresh (last run 2026-10-21T23:42:55Z: success; last success 2026-10-21T23:42:44Z); range-monitor.yml heartbeat fresh (last run 2026-10-21T22:13:57Z: success; last success 2026-10-21T22:13:49Z); newest scheduled start of any workflow 2026-10-21T23:55:12Z.
 
-**External timer (primary trigger):** gaps; 94 of 96 opportunities on time in 24 h, 0 delayed, absent 2026-10-21T10:27:00Z, 2026-10-21T10:42:00Z; last arrival 2026-10-21T23:42:02Z. Arrivals only: whether each request was sent needs the provider's history.
+**External timer (primary trigger):** gaps; 94 of 96 opportunities on time in 24 h, 0 delayed, absent 2026-10-21T10:27:00Z, 2026-10-21T10:42:00Z; last arrival 2026-10-21T23:57:01Z. Arrivals only: whether each request was sent needs the provider's history.
