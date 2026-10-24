@@ -22,9 +22,11 @@ Usage:
 """
 import json
 import os
+import re
 from pathlib import Path
 import socket
 import sys
+import time
 
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
@@ -34,8 +36,10 @@ from research_tools import evidence_contract as E  # noqa: E402
 from research_tools import research_api as RA  # noqa: E402
 from research_tools.search_ledger import FileAnchor  # noqa: E402
 
-VERSION = "evaluator-service-1.0.0"
+VERSION = "evaluator-service-1.0.1"
 OPS = ("evaluate", "released", "anchor", "ping")
+MAX_REQUEST_BYTES = 65536
+REQUEST_TIMEOUT_S = 5.0
 
 
 class Service:
@@ -47,9 +51,20 @@ class Service:
         self.clock = clock
 
     def handle(self, req):
-        op = (req or {}).get("op")
+        if not isinstance(req, dict):
+            return {"error": "request must be a JSON object"}
+        op = req.get("op")
         if op not in OPS:
-            return {"error": f"unknown op {op!r}"}
+            return {"error": "unknown operation"}
+        if op in ("evaluate", "released"):
+            exp, candidate = req.get("experiment"), req.get("candidate_sha256")
+            if not isinstance(exp, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", exp):
+                return {"error": "invalid experiment identifier"}
+            if not isinstance(candidate, str) or not re.fullmatch(r"[0-9a-f]{64}", candidate):
+                return {"error": "invalid candidate SHA-256"}
+        if op == "evaluate" and (not isinstance(req.get("request_id"), str)
+                                 or not 1 <= len(req["request_id"]) <= 256):
+            return {"error": "invalid request identifier"}
         try:
             if op == "ping":
                 return {"version": VERSION}
@@ -66,7 +81,8 @@ class Service:
             return {"refused": str(exc)}
 
 
-def serve(service, sock_path, mode=0o700, max_requests=None):
+def serve(service, sock_path, mode=0o700, max_requests=None,
+          request_timeout=REQUEST_TIMEOUT_S, max_request_bytes=MAX_REQUEST_BYTES):
     """Answer one JSON request per connection until max_requests (None: forever)."""
     service.private.mkdir(parents=True, exist_ok=True)
     os.chmod(service.private, mode)
@@ -81,18 +97,32 @@ def serve(service, sock_path, mode=0o700, max_requests=None):
         while max_requests is None or n < max_requests:
             conn, _ = srv.accept()
             with conn:
-                buf = b""
-                while not buf.endswith(b"\n"):
-                    chunk = conn.recv(65536)
-                    if not chunk:
-                        break
-                    buf += chunk
                 try:
-                    req = json.loads(buf.decode() or "{}")
+                    deadline, buf = time.monotonic() + request_timeout, b""
+                    while not buf.endswith(b"\n"):
+                        remaining = deadline - time.monotonic()
+                        if remaining <= 0:
+                            raise TimeoutError("request timed out")
+                        conn.settimeout(remaining)
+                        chunk = conn.recv(min(4096, max_request_bytes + 1 - len(buf)))
+                        if not chunk:
+                            raise ValueError("incomplete request")
+                        buf += chunk
+                        if len(buf) > max_request_bytes:
+                            raise ValueError("request too large")
+                    req = E.loads_strict(buf.decode())
                     resp = service.handle(req)
-                except ValueError as exc:
-                    resp = {"error": f"bad request: {exc}"}
-                conn.sendall((json.dumps(resp, default=str) + "\n").encode())
+                except (ValueError, OSError):
+                    resp = {"error": "invalid, oversized, or timed-out request"}
+                except Exception as exc:
+                    # Isolate one bad connection; never expose private data in exception text.
+                    print(f"evaluator request failed: {type(exc).__name__}", file=sys.stderr)
+                    resp = {"error": "internal evaluator error"}
+                try:
+                    conn.settimeout(request_timeout)
+                    conn.sendall((json.dumps(resp, default=str) + "\n").encode())
+                except OSError:
+                    pass                                # client disconnected; keep serving
             n += 1
     finally:
         srv.close()

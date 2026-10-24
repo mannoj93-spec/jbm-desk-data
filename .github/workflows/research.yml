@@ -21,7 +21,7 @@ jobs:
     # coverage refresh of reports/latest.md; the persist job merges them into a fresh checkout
     # (scripts/merge_research.py) so nothing newer is overwritten.
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 50
     outputs:
       lab: ${{ steps.lab.outcome }}
     defaults:
@@ -38,7 +38,9 @@ jobs:
         id: lab
         continue-on-error: true
         env:
-          LAB_BUDGET: '1200'
+          # Headroom for the account attribution scan and daily reconstruction;
+          # leave ten minutes for a final design, report and artifact publication.
+          LAB_BUDGET: '2400'
           LAB_CACHE: ${{ runner.temp }}/lab-cache
           DAYS_INPUT: ${{ github.event.inputs.reconstruct_days }}
         run: |

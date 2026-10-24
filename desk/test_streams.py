@@ -427,23 +427,22 @@ class TestIdentityPreserved(unittest.TestCase):
         self.assertEqual(C.contract_id("RC1D"), "RC1D/contract-12.0.0/175a4dd4c6c0")
         self.assertEqual(C.contract_id("RC1"), "RC1/contract-12.0.0/e8f291740f27")
         self.assertTrue(J.spec_ok())
-        self.assertEqual(J.JOB_VERSION, "range-job-12.4.0")
+        self.assertEqual(J.JOB_VERSION, "range-job-12.4.1")
         self.assertEqual(C.SELECTED, {"4h": "B2", "24h": "B2", "72h": "B2"})
 
     def test_lab_code_identity_unchanged(self):
-        """The new code lives outside lab/, so the lab's code hash and every design's evaluation version stay."""
+        """Pin source identity to the reviewed fixture, independent of a live attempt's status."""
         from lab import common
-        idx = json.loads((BASE / "research/evidence/index.json").read_text())["designs"]
-        cards = [json.loads((BASE / f"research/evidence/v2/{d}@{i['current']}.json").read_text()) for d, i in idx.items()]
-        self.assertTrue(all(c["dependencies"]["code_sha256"] == common.code_hash() for c in cards))
+        expected = json.loads((BASE / "regression/fixtures/lab_identity.json").read_text())
+        self.assertEqual(common.code_hash(), expected["code_sha256"])
 
     @unittest.skipUnless(sys.version_info[:2] == (3, 12), "evaluation versions hash the Python 3.12 AST (production)")
     def test_lab_evaluation_versions_unchanged(self):
         from lab import experiments as E
-        idx = json.loads((BASE / "research/evidence/index.json").read_text())["designs"]
+        expected = json.loads((BASE / "regression/fixtures/lab_identity.json").read_text())["evaluation_versions"]
         for p in E.design_files(str(BASE)):
             d = E.attach_version(str(BASE), E.load_design(p))
-            self.assertEqual(d["_version"], idx[d["id"]]["current"], d["id"])
+            self.assertEqual(d["_version"], expected[d["id"]], d["id"])
 
     def test_new_streams_write_nowhere_the_existing_streams_read(self):
         for mod in (CJ, P):
