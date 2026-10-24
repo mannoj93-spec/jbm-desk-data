@@ -1,0 +1,50 @@
+{
+  "version": "market-studies-1",
+  "scope": "BTC research only; simulated execution, no orders",
+  "approval": "Merge of the implementing PR approves these frozen rules. Registration requires observation on origin/main; the first opportunity is the next UTC hour. No historical launch.",
+  "prior_exposure": "PS1 history, range coverage and candidate wider-band replays were inspected before design. All prior data is discovery/training only, never confirmatory evidence for these studies.",
+  "turnover": {
+    "step_hours": 4, "deadline_minutes": 90,
+    "arms": {"B2_05": ["B2", 0.05], "B2_10": ["B2", 0.10], "VOL_05": ["VOL", 0.05], "VOL_10": ["VOL", 0.10]},
+    "sizing_and_costs": "Use frozen PS1 calibration, unlevered spot sizing, ordinary/stressed costs and captured-book fill arithmetic; independent starting cash 100000 per arm/scenario.",
+    "primary": "duration-weighted stressed-cost log-return Sharpe(B2_10) minus Sharpe(B2_05)",
+    "secondary": "ordinary-cost contrast; B2_10 minus VOL_10; return, drawdown, risk, exposure, turnover and costs",
+    "missing": "All arms hold together; skipped slots extend the next closed interval. Last interval stays open. No synthetic exit. Quotes requested strictly after decision confirmation.",
+    "checkpoints_days": [180, 365], "bootstrap_block_intervals": 42, "minimum_blocks": 10,
+    "review": "Descriptive only before 365 days and 20 blocks. Support requires stressed primary 90% block interval above zero, >=80% scheduled coverage, both B2 volatilities 10%-20%, and B2_10 drawdown no more than 2 percentage points worse. No automated promotion."
+  },
+  "range": {
+    "horizon_hours": 24, "step_hours": 4, "training_days": 30, "minimum_training": 40,
+    "update": "Once per UTC day using only verified, eligible 24h RC1D scores whose horizon and scored time precede midnight. Retain exact training IDs/hashes and residuals.",
+    "calibration": "Add empirical 0.10 quantile of (realized-q10) to q10 and empirical 0.90 quantile of (realized-q90) to q90. Order against unchanged q50; clamp lower to zero. Empirical quantile uses linear interpolation at (n-1)*p. Point forecast unchanged.",
+    "primary": "paired mean 80% interval score(calibrated)-score(B2); width+10*lower miss+10*upper miss in ln(H/L) units, lower is better",
+    "secondary": "coverage and interval width; 4h/72h not tested in this version",
+    "publication": "Both forecasts must be confirmed before the same original RC1D window starts. Warmup/missing/late slots remain in the denominator.",
+    "bootstrap_block_observations": 42, "minimum_blocks": 10, "review_days": 180
+  },
+  "state": {
+    "step_hours": 1, "entry_delay_minutes": 30, "deadline_minutes": 25, "horizon_hours": 4,
+    "training_days": 30, "minimum_training": 200,
+    "baseline": ["ret_15m_bp", "rv_1h_bp"],
+    "flow": ["flow_per_depth"], "positioning": ["d_oi_1h_pct", "oi_x_ret"], "funding": ["funding_dispersion_bp_8h"],
+    "fit": "Daily logistic regression, standardize and clip to +/-5 training SD, 200 full-batch gradient steps, learning rate 0.1, L2 penalty 0.1 excluding intercept. Same jointly eligible training and evaluation rows for all models; no tuning.",
+    "primary": "Brier(full)-Brier(price/vol baseline) on hourly 4h direction outcomes",
+    "secondary": "baseline+flow, baseline+flow+positioning; event/ordinary strata. Ties count as non-up. Complete 240-minute outcome path required.",
+    "training": "Historical as-of panel permitted for training only, marked discovery. Outcomes must have matured and arrived before midnight; training ends at cutoff-4h30m. Models and member hashes retained before predictions.",
+    "bootstrap_block_observations": 168, "minimum_blocks": 10, "review_days": 180
+  },
+  "paired": {
+    "step_minutes": 15, "window_minutes": 5, "join_timeout_ms": 5000, "max_capture_delay_minutes": 25,
+    "entry_delay_minutes": 5, "horizons_minutes": [60, 15], "imbalance_threshold": 0.15,
+    "arms": ["perp_original_clock", "perp_synchronized_clock", "combined_synchronized_clock"],
+    "clock": "Concurrent requests for the same five closed 1m bars ending at the scheduled slot. Original entry is ceil(perp receipt +5m) to next minute; synchronized entry ceil(max receipts +5m). All arms must be published before the earliest entry. Minute-price proxies cannot resolve subminute latency; report equal-entry share.",
+    "signal": "(2*taker_buy_volume-volume)/volume, threshold +/-0.15. Combined uses summed spot/perp volume and signed flow. Missing/invalid source or >5s receipt gap: joint abstention with separate timeout state.",
+    "primary": "60m Brier(combined)-Brier(perp) at synchronized clock; probabilities 0.75 up, 0.25 down, 0.5 abstention. No trade-return claim.",
+    "secondary": "15m paired Brier and original-vs-synchronized-clock contrast; conditional hit rates accompanied by all-slot coverage",
+    "bootstrap_block_observations": 672, "minimum_blocks": 10, "review_days": 180
+  },
+  "options": {"mode": "usability pilot, not predictive", "filters": "Unchanged research_tools.options_skew.FILTERS; record each leg's age, relative spread, OI, delta distance, available size, rejection reasons and per-expiry usable pair; 7d/30d measures and 50-70m changes only with valid bracketing expiries."},
+  "liquidations": {"mode": "revision diagnostic, never replace first-seen predictors", "vintage_hours": [0, 1, 6, 18], "capture_grace_minutes": 30, "max_pages": 5, "signal_contract_threshold": 1000, "signal": "sign(long liquidation contracts-short liquidation contracts), eligible only if complete source pagination and total >=1000 contracts; compare flips, size and eligibility across vintages", "coverage": "OKX public BTC-USDT-SWAP filled liquidations only; not market-wide or guaranteed all venue events. Missing/truncated requests are unknown, never zero."},
+  "stress": {"mode": "availability/variation pilot only; no predictive test", "step_minutes": 30, "sources": ["https://www.binance.com/fapi/v1/symbolAdlRisk?symbol=BTCUSDT", "https://www.binance.com/fapi/v1/insuranceBalance?symbol=BTCUSDT"], "meaning": "Symbol-level low/medium/high ADL risk updated every 30m, not ADL events; insurance may be a shared-symbol pool. Preserve raw responses, source and receipt clocks."},
+  "inference": "Fixed primary per study. Moving-block paired bootstrap, 2000 draws, seed 20261024; no intervals below the minimum blocks, no optional stopping or automated supported status. Retain every scheduled opportunity, missing, abstained, late and pending. No inference for pilots."
+}

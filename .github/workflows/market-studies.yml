@@ -1,0 +1,84 @@
+name: Market studies
+on:
+  workflow_run:
+    workflows: ["Collector", "Range forecasts"]
+    types: [completed]
+    branches: [main]
+  schedule:
+    - cron: '12,27,42,57 * * * *'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  studies:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    concurrency:
+      group: repo-write
+      queue: max
+      cancel-in-progress: false
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}
+      DESK_META_TOKEN: ${{ github.token }}
+      PERSIST_BUDGET_S: '90'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Verify the study runtime
+        run: python -m unittest regression.test_market_studies -v
+      - name: Prepare immutable opportunities and training artifacts
+        id: prepare
+        run: python -m research_tools.market_studies prepare
+      - name: Publish before observing outcomes or capturing execution quotes
+        id: publish
+        env:
+          DESK_WRITER: market-studies
+          COMMIT_MESSAGE: Register market study opportunities
+        run: bash scripts/commit_push.sh streams/market-studies
+      - name: Confirm exact records and implementation on main
+        id: confirm
+        run: python -m research_tools.market_studies confirm
+      - name: Execute independent paper sizing accounts
+        id: execute
+        continue-on-error: true
+        run: python -m research_tools.market_studies execute
+      - name: Collect capability and revision pilots
+        id: collect
+        continue-on-error: true
+        run: python -m research_tools.market_studies collect
+      - name: Score matured paired outcomes
+        id: score
+        continue-on-error: true
+        run: python -m research_tools.market_studies score
+      - name: Publish the research report
+        id: report
+        continue-on-error: true
+        run: python -m research_tools.market_studies report
+      - name: Persist records including failures
+        id: persist
+        if: always()
+        env:
+          DESK_WRITER: market-studies
+          COMMIT_MESSAGE: Market study evidence and coverage
+        run: bash scripts/commit_push.sh streams/market-studies reports/market_studies.json reports/market_studies.md
+      - name: Require every stage
+        if: always()
+        env:
+          PREPARE: ${{ steps.prepare.outcome }}
+          PUBLISH: ${{ steps.publish.outcome }}
+          CONFIRM: ${{ steps.confirm.outcome }}
+          EXECUTE: ${{ steps.execute.outcome }}
+          COLLECT: ${{ steps.collect.outcome }}
+          SCORE: ${{ steps.score.outcome }}
+          REPORT: ${{ steps.report.outcome }}
+          PERSIST: ${{ steps.persist.outcome }}
+        run: |
+          for result in "$PREPARE" "$PUBLISH" "$CONFIRM" "$EXECUTE" "$COLLECT" "$SCORE" "$REPORT" "$PERSIST"; do
+            test "$result" = success || exit 1
+          done
