@@ -70,6 +70,7 @@ flowchart LR
 | How is the desk's range model doing? | [reports/range.md](reports/range.md) - current availability, scoring pipeline, paired B2 vs persistence evidence (descriptive) and recent decisions ([status JSON](reports/range_status.json), [desk/](desk/README.md)) |
 | Does DVOL add to the range forecast? | [reports/companion_b1.md](reports/companion_b1.md) - B2 vs B1 (no DVOL) beside B2 vs B0, same windows (descriptive) |
 | Do the range forecasts improve a sizing decision? | [reports/paper_ps1.md](reports/paper_ps1.md) - paper sizing experiment PS1: simulated fills, sizing only, never an entry signal ([protocol](desk/research/ps1/protocol.json)) |
+| What new market studies are running? | [Market studies guide](docs/MARKET_STUDIES.md) — turnover bands, range calibration, hourly state and paired spot/perpetual experiments; options, liquidation-revision and exchange-stress pilots. Reports appear after first deployment. |
 | Can each research question accumulate evidence? | [reports/feasibility.md](reports/feasibility.md) - coverage, events, warm-up, limiting factor, cautious time-to-checkpoint |
 | How was this version tested and deployed? | [VALIDATION.md](VALIDATION.md) |
 | What changed, release by release | [CHANGELOG.md](CHANGELOG.md) |
