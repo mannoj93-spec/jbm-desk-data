@@ -207,10 +207,44 @@ def write(base, now):
     for k, s in out['studies'].items():
         n = s['results']['executed'] if k == 'turnover' else s['scored']
         lines.append(f'| {k} | {s["status"]} | {s["scheduled"]} | {s["on_time_published"]} | {n} |')
-    lines += ['', 'The JSON report contains paired primary results, exposure/risk/costs, all missing states, and pilot coverage.',
-              'Options, liquidation revisions and ADL/insurance are capability diagnostics, not predictive evidence.',
+    def number(value, percent=False):
+        return '—' if value is None else (f'{100*value:.2f}%' if percent else f'{value:.6g}')
+    lines += ['', '## Primary comparisons', '',
+              'Turnover: higher is better. Range and probability scores: lower is better. A dash means unavailable, not zero.', '',
+              '| Study | Paired difference | 90% block interval | First verified launch |',
+              '|---|---:|---|---|']
+    for kind, study in out['studies'].items():
+        result = study['results']
+        value = result.get('primary_stressed_sharpe_difference') if kind == 'turnover' else result.get('mean_difference')
+        ci = result.get('primary_ci90') if kind == 'turnover' else result.get('ci90')
+        interval = '— (insufficient blocks)' if ci is None else f'{number(ci[0])} to {number(ci[1])}'
+        launched = U.iso_ms(study['launch_ms']) if study['launch_ms'] is not None else 'not launched'
+        lines.append(f'| {kind} | {number(value)} | {interval} | {launched} |')
+    lines += ['', '## Turnover accounts', '',
+              'Returns, costs and turnover below cover closed intervals. Each latest trade opens a still-pending interval.', '',
+              '| Scenario / arm | Net return | Annualized risk | Exposure | Drawdown | Annual turnover | Costs (USDT) |',
+              '|---|---:|---:|---:|---:|---:|---:|']
+    for key, a in out['studies']['turnover']['results']['arms'].items():
+        lines.append(f'| {key} | {number(a["net_return_closed"], True)} | {number(a["annualized_vol"], True)} | '
+                     f'{number(a["exposure"], True)} | {number(a["max_drawdown"], True)} | '
+                     f'{number(a["turnover_annualized"])} | {number(a["cost_closed_usdt"])} |')
+    lines += ['', '## Range calibration', '', '| Arm | 80% interval coverage | Mean interval width (ln H/L) |', '|---|---:|---:|']
+    for key, a in out['studies']['range'].get('calibration', {}).items():
+        lines.append(f'| {key} | {number(a["coverage"], True)} | {number(a["width"])} |')
+    pilot = out['pilots']
+    options, stress, liq = pilot['options'], pilot['stress'], pilot['liquidations']
+    comparable = [x for x in liq['revisions'] if x['comparable']]
+    lines += ['', '## Data usability pilots', '',
+              f'- Options: {options["captures"]} captures; usable 7d RR25 in {options["rr25_7d_states"].get("ok", 0)}, '
+              f'usable 30d RR25 in {options["rr25_30d_states"].get("ok", 0)}; {len(options["changes"])} valid hourly changes.',
+              f'- Liquidations: {len(comparable)} comparable first/later vintage pairs; '
+              f'{sum(x["signal_flip"] for x in comparable)} direction changes. Capture states: `{json.dumps(liq["states"], sort_keys=True)}`.',
+              f'- Exchange stress: {stress["records"]}/{stress["opportunities"]} scheduled records. '
+              f'Capture states: `{json.dumps(stress["states"], sort_keys=True)}`. Ratings: `{json.dumps(stress["ratings"], sort_keys=True)}`.',
+              '', 'These pilots measure availability and revisions; they are not predictive evidence. Unknown source coverage is never zero activity.',
+              '', 'The JSON companion retains all exclusions, model comparisons, clock comparisons, insurance variation and per-expiry detail.',
               'A registration is not a launch. Launch dates require verified on-time forecasts or a verified paper execution.',
-              'No study is promoted automatically. See docs/MARKET_STUDIES.md for frozen rules and checkpoints.', '']
+              'No study is promoted automatically. See [the frozen rules and checkpoints](../docs/MARKET_STUDIES.md).', '']
     atomic(Path(base) / 'reports/market_studies.json', json.dumps(out, indent=2, allow_nan=False).encode() + b'\n')
     atomic(Path(base) / 'reports/market_studies.md', '\n'.join(lines).encode())
     return out
