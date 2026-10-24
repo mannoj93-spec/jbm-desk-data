@@ -84,6 +84,14 @@ def insurance_ranges(stress):
 def pilot_summary(base, first, now):
     stress = [r['data'] for r in Journal(base, 'stress').rows]
     liq = [r['data'] for r in Journal(base, 'liquidations').rows]
+    for capture in liq:
+        if capture.get('capture_file'):
+            raw = gzip.decompress((Path(base) / capture['capture_file']).read_bytes())
+            if hashlib.sha256(raw).hexdigest() != capture['capture_sha']:
+                raise ValueError('Liquidation capture artifact changed')
+            original = json.loads(raw)
+            if any(original.get(k) != v for k, v in capture.items() if k not in ('capture_file', 'capture_sha', 'page_count', 'order_count')):
+                raise ValueError('Liquidation summary differs from retained capture')
     options = [r['data'] for r in Journal(base, 'options').rows]
     for q in options:
         raw = gzip.decompress((Path(base) / q['legs_file']).read_bytes())

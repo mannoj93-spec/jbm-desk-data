@@ -239,7 +239,7 @@ class MarketTests(unittest.TestCase):
             d={'ts':str(self.slot-n[0]*K.MIN),'sz':'1','bkPx':'100','posSide':'long','side':'sell'}
             return self.response({'code':'0','data':[{'details':[d]}]})
         r=C.liquidation_capture(self.slot,18,get)
-        self.assertEqual(n[0],5);self.assertIsNone(r['total_contracts']);self.assertEqual(r['reason'],'page-cap')
+        self.assertEqual(n[0],20);self.assertIsNone(r['total_contracts']);self.assertEqual(r['reason'],'page-cap')
 
     def test_stress_unknown_rating_and_staleness_not_zeros(self):
         def get(url):

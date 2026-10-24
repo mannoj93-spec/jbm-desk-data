@@ -4,6 +4,8 @@ import hashlib
 import gzip
 import json
 import math
+import time
+from pathlib import Path
 from desk import stream_util as U
 from research_tools import options_skew as O
 from .core import DAY, HOUR, MIN, STREAM, Journal, atomic, protocol, slots
@@ -118,7 +120,11 @@ def liquidation_capture(end, vintage, get=fetch):
            '&instId=BTC-USDT-SWAP&state=filled&limit=100')
     pages, orders, after, covered = [], {}, end, False
     reason = 'page-cap'
+    deadline = time.monotonic() + protocol()['liquidations']['max_capture_seconds']
     for _ in range(protocol()['liquidations']['max_pages']):
+        if time.monotonic() + 12 > deadline:
+            reason = 'time-budget'
+            break
         raw = get(url + f'&after={after}')
         pages.append(raw)
         try:
@@ -158,7 +164,7 @@ def liquidation_capture(end, vintage, get=fetch):
             'total_contracts': total if covered else None, 'signed_contracts': long - short if covered else None,
             'eligible': covered and total >= protocol()['liquidations']['signal_contract_threshold'],
             'signal': (int(long > short) - int(long < short)) if covered else None,
-            'received_ms': pages[-1]['received_ms']}
+            'received_ms': pages[-1]['received_ms'] if pages else U.clock_ms()}
 
 
 def rr25(cap, days):
@@ -248,6 +254,15 @@ def pilots(base, first, now, get=fetch):
                 capture['lag_ms'] = capture['received_ms'] - due
                 if not 0 <= capture['lag_ms'] < 30 * MIN:
                     capture.update(state='late-capture', eligible=False)
+            if capture.get('pages'):
+                raw = U.canonical(capture)
+                digest = hashlib.sha256(raw).hexdigest()
+                path = STREAM / 'liquidation_captures' / f'{digest}.json.gz'
+                atomic(Path(base) / path, gzip.compress(raw, mtime=0))
+                compact = {k: val for k, val in capture.items() if k not in ('pages', 'orders')}
+                compact.update(capture_file=str(path), capture_sha=digest,
+                               page_count=len(capture['pages']), order_count=len(capture['orders']))
+                capture = compact
             liq.add(key, capture)
     options = Journal(base, 'options')
     from lab.data import Store
@@ -259,7 +274,6 @@ def pilots(base, first, now, get=fetch):
             quality = options_quality(cap)
             legs = quality.pop('legs')
             from collections import Counter
-            from pathlib import Path
             quality['leg_count'] = len(legs)
             quality['rejections'] = dict(Counter(reason for leg in legs for reason in leg['reasons']))
             raw = U.canonical(legs)

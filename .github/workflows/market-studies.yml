@@ -20,8 +20,6 @@ jobs:
       cancel-in-progress: false
     env:
       PYTHONDONTWRITEBYTECODE: '1'
-      DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}
-      DESK_META_TOKEN: ${{ github.token }}
       PERSIST_BUDGET_S: '90'
     steps:
       - uses: actions/checkout@v5
@@ -39,6 +37,8 @@ jobs:
         id: publish
         env:
           DESK_WRITER: market-studies
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}
+          DESK_META_TOKEN: ${{ github.token }}
           COMMIT_MESSAGE: Register market study opportunities
         run: bash scripts/commit_push.sh streams/market-studies
       - name: Confirm exact records and implementation on main
@@ -65,6 +65,8 @@ jobs:
         if: always()
         env:
           DESK_WRITER: market-studies
+          DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}
+          DESK_META_TOKEN: ${{ github.token }}
           COMMIT_MESSAGE: Market study evidence and coverage
         run: bash scripts/commit_push.sh streams/market-studies reports/market_studies.json reports/market_studies.md
       - name: Require every stage
