@@ -325,6 +325,30 @@ class TestAdmissibility(Base):
 
 
 class TestReplay(Base):
+    def test_rebuilt_roundoff_is_allowed_but_changed_events_and_windows_are_not(self):
+        from unittest.mock import patch
+        self.fit()
+        _, ids = self.run_forecast()
+        original = J.build
+
+        def rebuild(*args, **kwargs):
+            bundle, sha, docs = original(*args, **kwargs)
+            bundle["features"]["4h"]["b0"] = math.nextafter(bundle["features"]["4h"]["b0"], 0)
+            return bundle, J._sha(bundle), docs
+
+        with patch.object(J, "build", side_effect=rebuild):
+            got = J.replay(ids[0], base=self.tmp)
+        self.assertEqual(got["_replay"]["comparison"], "float features within 1e-12")
+        self.assertEqual(got["input_bundle"], got["_replay"]["bundle"])
+        for field in ("events", "horizon_utc", "start_utc"):
+            def changed(*args, **kwargs):
+                bundle, sha, docs = rebuild(*args, **kwargs)
+                for doc in docs:
+                    doc[field] = [] if field == "events" else "2026-09-27T00:00Z"
+                return bundle, sha, docs
+            with patch.object(J, "build", side_effect=changed), self.assertRaisesRegex(ValueError, "registered events"):
+                J.replay(ids[0], base=self.tmp)
+
     def test_replay_reproduces_and_detects_tampering(self):
         base = DESK.parent
         self.fit()

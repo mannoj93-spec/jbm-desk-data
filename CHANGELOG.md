@@ -1,3 +1,27 @@
+# Revision 2.30.2 — 2026-10-23 reliability follow-up
+
+Base: `3343e1239931b1e82eb30a02f046d515c4d82b1e` (October 23 ET). The eight lab evaluation versions,
+PS1 protocol, model specification, frozen registrations and live data are unchanged.
+
+- A skipped/error lab attempt now renders as evaluation unavailable in feasibility, with no invented zero counts
+  or ETA. Source-identity preflight tests use a reviewed fixture instead of mutable production evidence cards.
+- Account attribution runs last; the lab budget grows from 20 to 40 minutes within a 50-minute compute job.
+  Budget skips return nonzero after preserving completed outputs. This is scheduling mitigation, not a detector
+  optimization: changing the account detector would start a new evaluation version.
+- The research API resolves experiment settings from the verified hypothesis object and refuses an edited copy,
+  including checkpoint, label-watermark and discovery-cutoff edits. The evaluator validates requests and bounds
+  request bytes and receive time; one malformed, stalled or failed client cannot terminate the service loop.
+- RC1D replay still verifies exact stored bytes and requires exact forecast events/windows. Recomputed float
+  features alone permit relative/absolute roundoff of 1e-12; the replay result reports when it used that tolerance.
+  The range job is 12.4.1; its updated hash is in the release manifest. Model/contract identities are unchanged.
+- The existing required `release` check now depends on the complete regression workflow. Failed/cancelled tests
+  produce a failing release context rather than allowing checksums alone to pass.
+- Reconciled collector artifacts 12263109593 and 12513437522 against their GitHub SHA-256 digests. Preserved 8 and 7
+  absent observations respectively, with receipts, under `data/restored/`. Superseded rows were left alone.
+  Restored observations remain unavailable to live forecasts/research and do not repair historical coverage.
+
+Validation and operational limits: `docs/incidents/2026-10-23-research-reliability.md`.
+
 # Revision 2.30.1 (records only) — 2026-10-20
 
 **Base.** `main` at `0abdbd11` (after PR #47 merged 12:13:44Z as `ad3f3d81` and PR #48 merged 12:14:00Z as

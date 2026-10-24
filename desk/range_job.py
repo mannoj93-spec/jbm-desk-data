@@ -44,7 +44,7 @@ import range_model as R         # noqa: E402
 import range_contract as C      # noqa: E402
 import retained as K             # noqa: E402
 
-JOB_VERSION = "range-job-12.4.0"
+JOB_VERSION = "range-job-12.4.1"
 
 
 def release_package(desk=None) -> str | None:
@@ -566,6 +566,35 @@ def confirm(base=BASE, clock=None, remote=None, run=None):
 # --------------------------------------------------------------------------------------------
 # Replay (offline)
 # --------------------------------------------------------------------------------------------
+def replay_bundle_matches(retained, rebuilt):
+    """Exact inputs/metadata; only recomputed float features allow 1e-12 roundoff.
+
+    Stored bytes still have to match their content hash. This tolerance cannot admit
+    a changed bar, clock, feature name/type, event or forecast window.
+    """
+    if _sha({k: v for k, v in retained.items() if k != "features"}) != \
+            _sha({k: v for k, v in rebuilt.items() if k != "features"}):
+        return False
+    a, b = retained.get("features"), rebuilt.get("features")
+    if not isinstance(a, dict) or not isinstance(b, dict) or a.keys() != b.keys():
+        return False
+    for horizon, fields in a.items():
+        other = b[horizon]
+        if not isinstance(fields, dict) or not isinstance(other, dict) or fields.keys() != other.keys():
+            return False
+        for key, value in fields.items():
+            got = other[key]
+            if type(value) is not type(got):
+                return False
+            if isinstance(value, float):
+                if not (math.isfinite(value) and math.isfinite(got)
+                        and math.isclose(value, got, rel_tol=1e-12, abs_tol=1e-12)):
+                    return False
+            elif value != got:
+                return False
+    return True
+
+
 def replay(fid, base=BASE):
     """Rebuild a registered RC1D forecast offline from its retained bundle, the fit and the calendar version it
     names (each resolved by content hash: current file, retained copy, or Git history), and compare the result
@@ -600,14 +629,17 @@ def replay(fid, base=BASE):
         tmp.write(cal_raw); tmp.flush()
         C.validate_fit(fit_doc, m0, Path(tmp.name), FROZEN_SPEC)
     bars = [dict(b) for b in bundle["bars"]]
-    _, sha2, docs = build(bars, bundle["dvol"], fit_doc, bundle["fit"]["sha256"], R._t(bundle["prepared_utc"]),
+    rebuilt, sha2, docs = build(bars, bundle["dvol"], fit_doc, bundle["fit"]["sha256"], R._t(bundle["prepared_utc"]),
                           bundle["sources"], cal=calendar(cal_raw))
-    if sha2 != bsha:
+    if sha2 != bsha and not replay_bundle_matches(bundle, rebuilt):
         raise ValueError("rebuilt bundle differs from the retained bundle")
     mine = next(d for d in docs if d["id"] == fid)
-    if mine["events"] != frozen["events"] or mine["start_utc"] != frozen["start_utc"]:
+    if (mine["events"] != frozen["events"] or mine["start_utc"] != frozen["start_utc"]
+            or mine["horizon_utc"] != frozen["horizon_utc"]):
         raise ValueError("replay does not reproduce the registered events")
-    return dict(mine, _replay={"calendar": cal_where, "bundle": bsha})
+    return dict(mine, input_bundle=bsha, snapshot_hash=bsha,
+                _replay={"calendar": cal_where, "bundle": bsha, "rebuilt_bundle": sha2,
+                         "comparison": "exact" if sha2 == bsha else "float features within 1e-12"})
 
 
 # --------------------------------------------------------------------------------------------

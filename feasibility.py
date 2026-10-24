@@ -28,7 +28,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "feasibility-1.2.0"
+VERSION = "feasibility-1.2.1"
 BASE = Path(__file__).resolve().parent
 UTC = dt.timezone.utc
 MIN_EVENTS_FOR_ETA = 5
@@ -124,14 +124,29 @@ def lab_designs(base, now) -> list:
     out = []
     for design, info in sorted(idx.items()):
         card = _read(base / f"research/evidence/v2/{design}@{info.get('current')}.json")
-        if not card:
+        if not isinstance(card, dict) or not card:
             out.append({"id": design, "kind": "lab", "limiting": "missing data", "note": "current evidence card unreadable"})
+            continue
+        # An error/budget card describes an attempt, not an evaluated sample. In particular,
+        # last_valid_result belongs to an earlier cutoff and must not supply today's counts.
+        attempt = card.get("attempt") or {}
+        try:
+            reg, cut = _t(card.get("registered_at")), _t(attempt.get("cutoff"))
+        except (ValueError, AttributeError, TypeError):
+            reg, cut = None, None
+        if (card.get("status") in ("not run", "error") or attempt.get("evaluation_valid") is False
+                or not reg or not cut or card.get("primary_horizon_min") is None):
+            out.append({"id": design, "kind": "lab", "version": card.get("evaluation_version"),
+                        "status": card.get("status", "unavailable"), "limiting": "evaluation unavailable",
+                        "limiting_factor": "evaluation unavailable", "data_state": "unavailable",
+                        "note": card.get("status_reason") or "; ".join(attempt.get("reasons") or [])
+                                or "current attempt has no valid evaluation metadata",
+                        "attempt_cutoff": attempt.get("cutoff"), "time_to_checkpoint": None})
             continue
         prim = str(card["primary_horizon_min"])
         p = (card.get("passes") or {}).get("prospective") or {}
         test = ((((p.get("phases") or {}).get("evaluation") or {}).get(prim) or {}).get("counts") or {}).get("test") or {}
         ref = ((((p.get("phases") or {}).get("evaluation") or {}).get(prim) or {}).get("counts") or {}).get("reference") or {}
-        reg, cut = _t(card["registered_at"]), _t(card["attempt"]["cutoff"])
         eligible_days = max(0.0, (cut - reg).total_seconds() / 86400)
         cc = ((card.get("comparison_coverage") or {}).get("by_horizon") or {}).get(prim, {}).get("evaluation") or {}
         hours = (cut - reg).total_seconds() / 3600
@@ -329,7 +344,7 @@ def markdown(doc) -> str:
          "|---|---|---|---|---|---|---|---|---|"]
     for r in doc["lab"]:
         if "calendar_exposure" not in r:
-            L.append(f"| {r['id']} | — | — | — | — | — | — | {r['limiting']} | — |")
+            L.append(f"| {r['id']} | {r.get('status', 'unavailable')} | — | — | — | — | — | {r['limiting']} | — |")
             continue
         od = r["observable_exposure"]["days"]
         ck = r["checkpoint"]
@@ -340,6 +355,7 @@ def markdown(doc) -> str:
           "shown for reference only and never divide a count.", ""]
     for r in doc["lab"]:
         if "calendar_exposure" not in r:
+            L += [f"### {r['id']}", "", r.get("note", "Current evaluation unavailable"), ""]
             continue
         L += [f"### {r['id']} ({r['version']})", "",
               f"- Data: {r['data_state']}" + (f" — {'; '.join(r['data_reasons'])}" if r['data_reasons'] else ""),

@@ -57,7 +57,7 @@ if str(ROOT) not in sys.path:
 from research_tools import evidence_contract as E  # noqa: E402
 from research_tools.search_ledger import Ledger, LedgerCorrupt, ObjectStore  # noqa: E402
 
-VERSION = "research-api-1.1.0"
+VERSION = "research-api-1.1.1"
 ROLES = ("researcher", "evaluator")
 MODES = ("research-assistant", "live-forecaster")
 RULE_TYPES = ("linear-score",)
@@ -200,10 +200,28 @@ class ResearchAPI:
             raise Refused(f"{role} operation called by the {self.role} role")
 
     def _exp(self, exp_id):
+        # The shared JSON is a convenience copy. The verified hypothesis object is
+        # the frozen definition, including the disclosure policy and discovery cutoff.
+        probs = self.ledger.verify()
+        if probs:
+            raise Refused("ledger does not verify: " + "; ".join(probs[:2]))
+        events = [e for e in self.ledger.entries()
+                  if e["action"] == "hypothesis" and e["experiment"] == exp_id]
+        if len(events) != 1 or "experiment" not in events[0].get("objects", {}):
+            raise Refused(f"no unique registered definition for experiment {exp_id}")
+        try:
+            frozen = self.objects.get(events[0]["objects"]["experiment"])
+        except LedgerCorrupt as exc:
+            raise Refused(f"experiment definition unavailable: {exc}") from exc
         p = self.root / "experiments" / f"{exp_id}.json"
-        if not p.exists():
-            raise Refused(f"no experiment {exp_id}")
-        return E.loads_strict(p.read_text())
+        if p.exists():
+            try:
+                disk = E.loads_strict(p.read_text())
+            except ValueError as exc:
+                raise Refused("experiment file is not valid JSON") from exc
+            if E.content_sha256(disk) != E.content_sha256(frozen):
+                raise Refused("experiment file differs from its frozen hypothesis; open a new experiment for a change")
+        return frozen
 
     def _log(self, exp, action, details, request_id, parent=None, objects=None):
         return self.ledger.append(exp, self.actor, action, details, request_id, self.clock(), parent, objects)
@@ -244,8 +262,9 @@ class ResearchAPI:
                "disclosure": disclosure, "api_version": VERSION}
         if E.instant(discovery_cutoff) > E.instant(self.clock()):
             raise Refused("discovery cutoff in the future")
-        if p.exists():
-            old = E.loads_strict(p.read_text())
+        if p.exists() or any(e["action"] == "hypothesis" and e["experiment"] == exp_id
+                             for e in self.ledger.entries()):
+            old = self._exp(exp_id)
             if {k: old[k] for k in ("family", "mode", "discovery_cutoff_utc", "disclosure")} != \
                     {k: rec[k] for k in ("family", "mode", "discovery_cutoff_utc", "disclosure")}:
                 raise Refused(f"experiment {exp_id} exists with another definition; open a new experiment id")

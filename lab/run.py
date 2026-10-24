@@ -163,6 +163,9 @@ def main(argv=None):
     designs = [experiments.attach_version(a.base, experiments.load_design(p)) for p in experiments.design_files(a.base)]
     if a.designs:
         designs = [d for d in designs if d["id"] in a.designs.split(",")]
+    # Account attribution is the slowest design. Run it last so a long scan cannot
+    # starve independent designs. This changes scheduling only, not evaluation identity.
+    designs.sort(key=lambda d: d["module"] == "account_behavior")
     registrations = experiments.register(a.base, designs, now, write=write)
     run_state = read_json(Path(a.base) / RUN_STATE, {})
     commit = git_commit(a.base)
@@ -258,7 +261,7 @@ def main(argv=None):
     if failed:
         print(f"RESEARCH INTEGRITY FAILURE: {', '.join(failed)} - evaluation blocked, nothing published as "
               "current evidence for it (see reports/research.md)", file=sys.stderr)
-    return 1 if failed or any(r["status"] == "error" for r in results) else 0
+    return 1 if failed or any(r["status"] in ("error", "not run") for r in results) else 0
 
 
 if __name__ == "__main__":
