@@ -1,143 +1,259 @@
 # JBM Research Desk
 
-**A research terminal for digital assets.** Recorded market data, registered range forecasts,
-and auditable research evidence in one finance-themed workspace.
+**A research terminal for digital assets.** Public market history, registered forecasts,
+paper experiments, and auditable evidence in one repository.
 
 [**Open dashboard ↗**](https://mannoj93-spec.github.io/jbm-desk-data/) ·
-[Run locally / deployment setup](dashboard/README.md) · [Research evidence](reports/research.md)
+[Operational health](reports/health.md) · [Research evidence](reports/research.md) ·
+[Market studies](reports/market_studies.md) · [Local preview](dashboard/README.md#local-preview)
 
-The terminal refresh adds a compact market workspace, recorded-period chart statistics, protocol readiness,
-the research data catalog, and separate acceptance/service verdicts. It remains a read-only repository snapshot.
+The desk records what was available, freezes decisions before their evaluation windows, and
+scores outcomes under declared rules. It collects market data and simulates paper decisions;
+it does not place trades or edit trading skill files. Public market collection needs no
+exchange trading credentials. Automated publication uses scoped GitHub credentials; see
+[operations](docs/OPERATIONS.md).
 
-![JBM Research Desk — refreshed terminal, October 19, 2026](docs/dashboard-preview-2026-10-19.jpg)
+> **Workflow success, fresh data, valid evidence, and research support are different things.**
+> Read the relevant report's timestamps, exclusions, and maturity rules before interpreting a
+> result. A green badge or a favourable chart does not establish a trading edge.
 
-Preview captured October 19, 2026. Values are dated observations, not live prices.
+[![Release check](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/release-check.yml/badge.svg?branch=main)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/release-check.yml)
+[![Collector](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/collect.yml/badge.svg?branch=main)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/collect.yml)
+[![Research lab](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research.yml/badge.svg?branch=main)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research.yml)
+[![Market studies](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/market-studies.yml/badge.svg?branch=main)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/market-studies.yml)
 
-<details>
-<summary>Earlier dashboard preview — October 2, 2026</summary>
+[All workflow runs](https://github.com/mannoj93-spec/jbm-desk-data/actions) include range publication,
+scoring, monitors, recovery, research streams, and dashboard deployment.
 
-![JBM Research Desk — terminal-inspired dashboard preview, October 2, 2026](docs/dashboard-preview.png)
-
-This image shows the earlier layout and dated observations, not the current interface or live market data.
-
-</details>
-
-[![Collector](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/collect.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/collect.yml)
-[![Research lab](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research.yml)
-[![Regression and numerical fixtures](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/fixtures.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/fixtures.yml)
-[![Collector watchdog](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/watchdog.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/watchdog.yml)
-[![Range forecasts](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range.yml)
-[![Range scoring](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-score.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-score.yml)
-[![Range monitor](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-monitor.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/range-monitor.yml)
-[![Research streams](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research-streams.yml/badge.svg)](https://github.com/mannoj93-spec/jbm-desk-data/actions/workflows/research-streams.yml)
-
-This repository preserves public crypto-market history, freezes forecasts before they start, and
-tests pre-registered research questions against that history. Its reports are evidence for human
-review of trading skill files; nothing here trades, holds credentials, or edits a skill.
-
-> **A green badge means a workflow ran and its checks passed. It is not evidence of a trading
-> edge.** Whether any research design is supported is stated only in the generated research report.
-
-## The desk at a glance
-
-| Workspace | Purpose |
-|---|---|
-| Overview | Recorded BTC price history, model comparisons, forecast availability, research watchlist, and repository developments |
-| Range forecasts | Full-window range quantiles, expiry, scoring, and descriptive evidence |
-| Research lab | Current evidence cards, integrity, checkpoint progress, protocol readiness, and data catalog |
-| Data health | Source coverage, dataset timestamps, filters, and recorded collection observations |
-| Paper desk | PS1 lifecycle and paired B2/B1 comparisons, clearly labeled as research |
-| Reports & audit | Commit-pinned reports, acceptance results and supplementary audits, data snapshot, and exportable source hashes |
-
-```mermaid
-flowchart LR
-    A[Public market sources] --> B[Python collectors]
-    B --> C[Recorded history]
-    C --> D[Registered forecasts & research]
-    D --> E[Reports & evidence cards]
-    E --> F[Read-only dashboard snapshot]
-    F --> G[JBM Research Desk]
-```
+**On this page:** [Start here](#start-here) · [Research programs](#research-programs) ·
+[Reading the evidence](#reading-the-evidence) · [How it works](#how-it-works) ·
+[Dashboard](#dashboard) · [Quick start](#quick-start) · [Repository map](#repository-map) ·
+[Maintaining this guide](#maintaining-this-guide)
 
 ## Start here
 
-| I want to see | Open |
+| I want to know | Open |
 |---|---|
-| Is collection running and fresh? | [reports/latest.md](reports/latest.md) - coverage, data age, cadence |
-| What did the research find? | [reports/research.md](reports/research.md) - every design, its status, integrity and evidence |
-| Is any skill change proposed? | [reports/skill_proposals.md](reports/skill_proposals.md) - proposals, or why there are none |
-| Weekly forecast scores (issue-intake streams) | [reports/](reports/) - dated weekly reports; desk range forecasts are scored hourly (next row) |
-| How is the desk's range model doing? | [reports/range.md](reports/range.md) - current availability, scoring pipeline, paired B2 vs persistence evidence (descriptive) and recent decisions ([status JSON](reports/range_status.json), [desk/](desk/README.md)) |
-| Does DVOL add to the range forecast? | [reports/companion_b1.md](reports/companion_b1.md) - B2 vs B1 (no DVOL) beside B2 vs B0, same windows (descriptive) |
-| Do the range forecasts improve a sizing decision? | [reports/paper_ps1.md](reports/paper_ps1.md) - paper sizing experiment PS1: simulated fills, sizing only, never an entry signal ([protocol](desk/research/ps1/protocol.json)) |
-| What new market studies are running? | [Market studies guide](docs/MARKET_STUDIES.md) — turnover bands, range calibration, hourly state and paired spot/perpetual experiments; options, liquidation-revision and exchange-stress pilots. Reports appear after first deployment. |
-| Can each research question accumulate evidence? | [reports/feasibility.md](reports/feasibility.md) - coverage, events, warm-up, limiting factor, cautious time-to-checkpoint |
-| How was this version tested and deployed? | [VALIDATION.md](VALIDATION.md) |
-| What changed, release by release | [CHANGELOG.md](CHANGELOG.md) |
-| How to run and operate it | [Quick start](#quick-start) and [docs/OPERATIONS.md](docs/OPERATIONS.md) |
+| Is the collection service working? | [Operational health](reports/health.md) / [JSON](reports/health.json): native scheduling, recovery, service continuity, range/PS1 decisions, and scoring backlog |
+| What data is present and how fresh is it? | [Coverage report](reports/latest.md): observation ages, stored history, source failures, and gaps |
+| What has the research lab found? | [Research evidence](reports/research.md): per-design status, integrity, and checkpoints; [skill proposals](reports/skill_proposals.md) for proposed changes or why none are warranted |
+| How are the range forecasts doing? | [Range report](reports/range.md) / [status JSON](reports/range_status.json); [model reference](desk/README.md) |
+| Does options volatility add information? | [B1 companion report](reports/companion_b1.md): B2 versus B1 without DVOL, alongside the persistence comparison |
+| Do range forecasts improve position sizing? | [PS1 report](reports/paper_ps1.md) and [protocol](desk/research/ps1/protocol.json): simulated sizing decisions and costs |
+| How are the new experiments and pilots progressing? | [Market studies report](reports/market_studies.md) / [detailed JSON](reports/market_studies.json); [study guide](docs/MARKET_STUDIES.md) |
+| Can the original research streams accumulate enough evidence? | [Feasibility report](reports/feasibility.md): coverage, warmup, limiting factors, and cautious checkpoint estimates; new studies have their own coverage report above |
+| Where are issue-submitted forecast scores? | [Dated weekly reports](reports/); these are separate from the desk's hourly range scoring |
+| What was tested, changed, or accepted? | [Validation record](VALIDATION.md), [changelog](CHANGELOG.md), and [acceptance evidence](docs/acceptance/) |
+| How do I run, deploy, or investigate it? | [Quick start](#quick-start), [dashboard setup](dashboard/README.md), and [operations reference](docs/OPERATIONS.md) |
 
-## Four separate signals
+Counts, launch dates, ages, and current verdicts belong in generated reports, not this README.
+Reports can have different cutoffs: check both generation time and the last included observation.
 
-| Signal | Where | What it does **not** mean |
+## Research programs
+
+The original programs and the newer market studies keep separate records and evaluation clocks.
+Adding a study does not restart PS1, RC1D, or the lab's historical evidence.
+
+### Established programs
+
+| Program | Question and evidence |
+|---|---|
+| Research lab | Pre-registered designs replay inputs as they were available, preserve decisions and checkpoints, and publish [evidence cards and reports](reports/research.md). Semantic changes start a new evaluation version. |
+| RC1D range forecasts | Forecast full-window range magnitudes over 4h, 24h, and 72h against a persistence baseline. Quantiles are not directional price targets. See the [range model](desk/README.md). |
+| B1 companion | Compare the same windows with and without DVOL (Deribit options-implied volatility). See the [stream specification](docs/RESEARCH_STREAMS.md). |
+| PS1 paper sizing | Test sizing decisions with captured quotes, simulated fills, and explicit costs. It is a sizing experiment, not an entry signal. See the [PS1 protocol](desk/research/ps1/protocol.json). |
+
+### Market studies v1: four prospective experiments
+
+The [study guide](docs/MARKET_STUDIES.md) explains eligibility, publication deadlines, scoring,
+review gates, and pause/resume procedures. The [frozen protocol](research_tools/market_studies/protocol.json)
+is the exact specification; the [report](reports/market_studies.md) records each study's actual launch and progress.
+
+| Experiment | What it tests | Primary comparison |
 |---|---|---|
-| Workflow success | badges above, the Actions tab | that data is fresh, or that any result is supported |
-| Data freshness | [reports/latest.md](reports/latest.md) (latest observation, age, cadence coverage) | that research has enough observations |
-| Research integrity | the Integrity column of [reports/research.md](reports/research.md) | that a result exists; it only says the inputs of the latest attempt validated |
-| Evidence maturity | the Status column of [reports/research.md](reports/research.md) (`exploratory`, `under prospective evaluation`, `supported`, `retired`, `blocked`) | profitability: `supported` means pre-declared descriptive criteria held on prospective replays |
+| Turnover control | Independent B2 and volatility-only accounts with 5% and 10% rebalance bands, each under ordinary and stressed costs; eight accounts using the same captured quote | Stressed-cost, duration-weighted log-return Sharpe: B2 10% minus B2 5%; higher is better |
+| Range calibration | Daily trailing-window calibration of the 24h 80% range interval, leaving the point forecast unchanged | Calibrated minus original interval score; lower is better. Coverage and width are reported together |
+| Continuous market state | Hourly observations, including ordinary periods, comparing price/volatility with added flow, positioning, and funding for 4h direction | Full model minus baseline Brier score (probability error); lower is better, on the same eligible sample |
+| Paired spot/perpetual flow | Concurrent five-minute spot/perpetual bar captures; three arms separate added spot information from the effect of waiting for both sources | Combined minus perpetual-only 60m Brier score at a synchronized clock; lower is better. 15m outcomes and clock comparisons are secondary |
 
-Counts, ages and statuses change every run, so they live only in the generated reports.
+The turnover accounts collect their own executions; historical PS1 fills are not new evidence.
+The paired-flow study uses minute bars, not subsecond execution data. Earlier observations used
+for training remain training data, never prospective confirmation.
+
+### Three data-quality pilots
+
+| Pilot | What is collected | Interpretation boundary |
+|---|---|---|
+| Options usability | Per-leg and expiry quality, rejection reasons, 7d/30d 25-delta risk reversals (RR25), and eligible hourly changes | Existing filters stay fixed. Missing quote sizes remain unavailable; collection does not admit a predictive signal |
+| Liquidation revisions | First and later captures of the same OKX hour, with raw responses, pagination status, and size/direction revisions | Incomplete or absent coverage is unknown, not zero liquidations. Revisions never replace first-seen predictors |
+| Exchange stress | Binance ADL risk ratings and insurance-pool snapshots with source and receipt clocks, missing states, and variation | An ADL rating is not an auto-deleveraging event count; a pool can cover several symbols. This is a capability pilot, not a return-prediction test |
+
+These pilots and experiments write to [`streams/market-studies/v1/`](streams/market-studies/v1/).
+Their [JSON report](reports/market_studies.json) retains exclusions, model/clock comparisons,
+and pilot details beyond the readable summary. Prepared protocols elsewhere in the repository
+and the [optional streaming recorder](stream/README.md) are not proof of a commissioned study.
+
+## Reading the evidence
+
+| Signal | Where to check | What it establishes |
+|---|---|---|
+| Workflow success | [Actions](https://github.com/mannoj93-spec/jbm-desk-data/actions) | The named run passed its checks; it does not establish fresh inputs or a research result |
+| Freshness and continuity | [Health](reports/health.md), [coverage](reports/latest.md), and the relevant study report | What was captured and published, when, and with which gaps; recovery activity is distinct from native scheduling |
+| Integrity and eligibility | The relevant [lab](reports/research.md), [range](reports/range.md), [PS1](reports/paper_ps1.md), or [market study](reports/market_studies.md) report and its detailed artifacts | Whether records and comparisons pass their declared checks; valid records can still be too few to assess |
+| Evidence maturity | Each program's report and frozen protocol | Whether its own sample, time, uncertainty, and review conditions are met; labels from one program do not transfer to another |
+
+For market studies, **registration is not launch**. The protocol and implementation must first
+be verified on main. Each study then needs its first on-time published forecast or verified
+paper execution. Merging code, reaching a scheduled slot, or having training rows is insufficient.
+
+Read scheduled, on-time published, and scored/executed counts together. Missing runs, unavailable
+inputs, warmup, late publication, neutral signals, and pending outcomes have different meanings.
+Missing outcomes are never scored as zero. A conditional hit rate excludes neutral signals;
+use the primary paired score and coverage alongside it.
+
+Market studies do not promote themselves automatically. Turnover has 180-/365-day checkpoints
+and a 365-day floor for its first possible support review; the other primary studies have a
+180-day review floor plus minimum blocks. A missing uncertainty interval means insufficient
+blocks, not zero uncertainty. Full rules and guardrails remain in the
+[study guide](docs/MARKET_STUDIES.md#interpretation-and-operations).
 
 ## How it works
 
-1. **Collector** (every 15 minutes) appends raw observations under `data/` with the time each was
-   written; history is never rewritten.
-2. **Research lab** (every 6 hours) replays each design in `lab/designs/` as of the data it could
-   have seen, freezes its decisions, records checkpoints once, and writes evidence cards and
-   reports. Evaluation versions are hashes of the semantic code, so a logic change starts a new
-   clock; presentation changes do not.
-3. **Persist** merges the lab's outputs into the latest checkout only if they are complete and
-   consistent with the lab's own publication metadata; otherwise nothing is published.
-4. **Weekly report** scores the issue-intake forecasts and summarises; **forecast intake** freezes new ones
-   from issues. Desk range forecasts are scored **hourly** by `range-score.yml` (step 5), not weekly.
-5. **Range forecasts** (after every 4H close) run the crypto desk's range model in `desk/`, register
-   its 4h, 24h and 72h forecasts with a persistence baseline in one transaction, and confirm the
-   publication before the windows open.
-6. **Research streams** (after each range run; 2.20) register a B1 companion forecast for every RC1D window,
-   run the paper sizing experiment PS1 on quotes captured after each decision is confirmed, and refresh the
-   feasibility report ([docs/RESEARCH_STREAMS.md](docs/RESEARCH_STREAMS.md)). Paper results are simulations.
-   Each run logs every stage and fails when a required stage, its output or an integrity check fails (2.21–2.22);
-   PS1 runs protocol v3.
+```mermaid
+flowchart LR
+    A[Public market sources] --> B[Collectors and quality checks]
+    B --> C[Stored observations and availability clocks]
+    C --> D[Registered forecasts and paper decisions]
+    D --> E[Matured outcomes and paired scores]
+    E --> F[Reports and audit artifacts]
+    F --> G[Read-only dashboard snapshot]
+```
+
+| Pipeline | Intended cadence or trigger | Main output / reference |
+|---|---|---|
+| [Collector](.github/workflows/collect.yml) | Every 15 minutes; manual/backfill and recovery paths | Public market history, snapshots, captured books, and health reports |
+| [Research lab](.github/workflows/research.yml) | Every 6 hours | Versioned research evidence, proposals, and coverage refresh |
+| [Range publication](.github/workflows/range.yml) / [scoring](.github/workflows/range-score.yml) | Four-hour decisions / hourly scoring | Forecasts confirmed before windows open; matured outcomes and current status |
+| [Research streams](.github/workflows/research-streams.yml) | After range runs, with a four-hour fallback | B1 companion, PS1, and feasibility reports |
+| [Market studies](.github/workflows/market-studies.yml) | After Collector and Range forecasts, with a quarter-hour fallback | Registration, publication confirmation, paper executions, pilots, matured scores, and reports |
+| [Forecast intake](.github/workflows/intake.yml) / [weekly report](.github/workflows/report.yml) | Issue events plus recovery / weekly | Frozen issue-submitted forecasts and their scores |
+| [Dashboard](.github/workflows/dashboard.yml) | Relevant workflow completions, dashboard changes, and a half-hour fallback | Static snapshot with source hashes and checkout identity |
+
+Workflow files are the source of truth for exact triggers. Scheduled times are targets;
+queueing, late starts, and missing runs remain observable. The [recovery dispatcher](.github/workflows/recovery.yml)
+and [operations reference](docs/OPERATIONS.md) describe service recovery and monitoring.
+Writers publish only their allowed paths through the shared repository-write queue. The lab
+also checks publication completeness before merging its computed outputs.
+
+The [data catalog](research_tools/catalog.json) describes stored datasets, units, and availability
+clocks as of its stated date; the new pilots are specified in the [market studies guide](docs/MARKET_STUDIES.md).
+Use event time, receipt time, durable availability, and publication confirmation for their named
+purposes. Historical backfill cannot recreate a missed live snapshot or turn a late forecast
+into an on-time one.
+
+## Dashboard
+
+The dashboard is a read-only repository snapshot. Refresh loads the latest deployed snapshot;
+it may lag repository reports. Market studies currently have dedicated reports linked above,
+rather than dedicated dashboard views.
+
+| Workspace | Purpose |
+|---|---|
+| Overview | Recorded BTC history, model comparisons, forecast availability, and research watchlist |
+| Range forecasts | Full-window range quantiles, expiry, and descriptive scoring evidence |
+| Research lab | Evidence cards, integrity, checkpoints, protocol readiness, and data catalog |
+| Data health | Source coverage, timestamps, filters, and operational health |
+| Paper desk | PS1 lifecycle and paired B2/B1 comparisons |
+| Reports & audit | Commit-pinned reports, acceptance and supplementary audits, and exportable source hashes |
 
 <details>
-<summary>Repository map</summary>
+<summary>Dashboard preview — October 19, 2026 (dated observations, not live prices)</summary>
 
-| Path | Contents |
-|---|---|
-| `collector.py`, `enrich.py`, `hlsample.py`, `optionsbook.py`, `schema.py`, `storage.py` | collection, sampling, storage |
-| `data/`, `state/`, `registry/` | collected history, run state, registered forecasts (append-only) |
-| `lab/` | research lab: designs, evaluation, controls, evidence, reports |
-| `research/` | frozen decisions, outcomes, checkpoints, control selections, evidence cards |
-| `reports/` | generated reports (coverage, research, proposals, weekly) |
-| `report.py`, `scoring.py`, `intake.py`, `watchdog.py` | reports, scoring, forecast intake, watchdog |
-| `scripts/` | persistence, merge gate, before/after reproductions |
-| `regression/`, `test_fixtures.py` | offline regression tests and numerical fixtures |
-| `desk/` | the crypto desk's range model, loaders, monthly fits and forecast job (see desk/README.md); companion and PS1 jobs (2.20) |
-| `streams/`, `feasibility.py` | prospective research streams (companion B1, paper sizing PS1) and the read-only feasibility report |
-| `stream/` | optional streaming recorder (not deployed) |
-| `docs/OPERATIONS.md` | detailed operations and research reference |
+![JBM Research Desk — terminal preview, October 19, 2026](docs/dashboard-preview-2026-10-19.jpg)
 
 </details>
 
 ## Quick start
 
-Python 3.12, standard library only; no exchange keys or trading credentials.
+From a checkout of this repository, use **Python 3.12**, matching CI, and Git. The Python
+pipeline and static dashboard build use the standard library; no dependency installation or
+exchange keys are required. Dashboard JavaScript checks additionally use Node.js 22 in CI.
+
+### Inspect and verify
+
+These commands check the checkout or compute without publishing research records:
 
 ```sh
-python test_fixtures.py                          # numerical fixtures
-python -m unittest discover -s regression        # offline regression suite
-python -m lab.run update --no-write              # research lab, compute and print only
-python report.py --coverage-only                 # refresh the coverage report
+python --version                               # use Python 3.12
+python test_fixtures.py                         # numerical fixtures
+python scripts/check_checksums.py check         # maintained-file hashes and scope
+python -m lab.run update --no-write              # compute and print; no research output writes
 ```
 
-Deployment, schedules, backfill, forecast submission, scoring and the research-lab rules are in
-[docs/OPERATIONS.md](docs/OPERATIONS.md).
+For the full regression suite, use the Ubuntu CI environment or a compatible environment with
+Bash and GNU `timeout`; tests use temporary Git repositories and local loopback servers:
+
+```sh
+python -m unittest discover -s regression -v
+python desk/research/o21_reanalysis.py verify
+```
+
+The [release workflow](.github/workflows/release-check.yml) requires the regression/numerical
+suite and replay verification before checking checksums and the desk release identity. The
+[validation record](VALIDATION.md) preserves release-specific evidence.
+
+### Preview or regenerate local output
+
+```sh
+python scripts/build_dashboard.py               # writes .dashboard-build/
+python -m http.server 8765 --bind 127.0.0.1 --directory .dashboard-build
+```
+
+Open <http://localhost:8765>. See [dashboard setup and checks](dashboard/README.md) for publishing
+and browser validation. To regenerate coverage locally, `python report.py --coverage-only`
+**rewrites `reports/latest.md`**; it does not score forecasts.
+
+Live collection, backfill, registration, and publication are separate operations documented in
+[operations](docs/OPERATIONS.md). Market study runtime stages are restricted to GitHub Actions
+on main; use their [workflow and lifecycle guide](docs/MARKET_STUDIES.md) instead of attempting
+a local launch. Never copy development results into prospective evidence.
+
+## Repository map
+
+| Path | Contents |
+|---|---|
+| `collector.py`, `enrich.py`, `hlsample.py`, `optionsbook.py`, `schema.py`, `storage.py` | Collection, sampling, and storage |
+| `data/` | Stored market observations and collection records |
+| `registry/` | Registered forecasts and provenance; [format reference](registry/README.md) |
+| `state/` | Operational state, checkpoints, and scoring logs; some files are updated in place |
+| `lab/`, `research/` | Research implementation and versioned decisions, outcomes, checkpoints, and evidence |
+| `desk/` | Range model, fits, forecasts, companion, and PS1 jobs |
+| `research_tools/` | Data catalog, research helpers, prepared-study tooling, and `market_studies/` runtime/protocol |
+| `streams/` | Prospective stream records, including `rc1d-b1/`, `ps1/`, and `market-studies/v1/` |
+| `reports/` | Generated summaries and detailed artifacts; latest reports are regenerated |
+| `dashboard/`, `scripts/build_dashboard.py` | Static interface and snapshot builder |
+| `scripts/`, `.github/workflows/` | Persistence guards, release checks, scheduling, and deployment |
+| `regression/`, `test_fixtures.py` | Regression tests and numerical fixtures |
+| `stream/` | Optional streaming recorder; [deployment status and requirements](stream/README.md) |
+| `docs/`, `CHANGELOG.md`, `VALIDATION.md` | Operating guides, acceptance evidence, release history, and validation |
+
+Historical records and frozen evidence have append-only or content-addressed contracts defined
+by their owning pipeline. That does not make every file append-only: current reports, derived
+indexes, and operational state can be regenerated or updated.
+
+## Maintaining this guide
+
+When adding or changing a program:
+
+1. Add its question, output links, and interpretation boundary here. Keep exact thresholds,
+   launch rules, and pause procedures in its protocol and operating guide.
+2. Link the workflow and both readable and machine-readable reports when available. Distinguish
+   prepared tooling, registered studies, verified launches, and data-only pilots.
+3. Check repository-relative links and commands against the changed checkout. Label screenshots
+   with capture dates; keep live counts and verdicts in generated reports.
+4. For maintained-file edits, refresh and review `SHA256SUMS` with
+   `python scripts/check_checksums.py refresh`, then run `python scripts/check_checksums.py check`.
+   Stage newly added maintained files first so the checker includes them. The
+   [checksum scope](scripts/check_checksums.py) excludes evolving data and generated reports.
+5. Submit the change through the release checks. Research logic changes must follow the owning
+   protocol's versioning rules; documentation alone must not reset evaluation clocks.
