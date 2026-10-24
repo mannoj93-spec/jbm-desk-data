@@ -36,6 +36,14 @@ def paired_summary(values, block):
             'status': 'collecting (descriptive); no automatic promotion'}
 
 
+def hit_summary(pairs):
+    """Conditional direction accuracy; neutral forecasts remain visible in the population."""
+    selected = [(p, y) for p, y in pairs if p != .5]
+    hits = sum((p > .5) == bool(y) for p, y in selected)
+    return {'scored': len(pairs), 'directional': len(selected), 'neutral': len(pairs) - len(selected),
+            'hits': hits, 'conditional_hit_rate': hits / len(selected) if selected else None}
+
+
 def turnover_summary(executions, expected):
     arms = {}
     cfg = protocol()['turnover']
@@ -200,6 +208,10 @@ def build(base, now):
                                                 'difference': mean([x['primary_difference'] for x in ss if x['event'] == flag])}
                                             for k, flag in [('event', True), ('ordinary', False)]}
             elif kind == 'paired':
+                byslot = {r['data']['slot']: r['data'] for r, _ in eligible}
+                summary['conditional_hits'] = {
+                    str(h): {arm: hit_summary([(byslot[x['slot']]['probabilities'][arm], x['horizons'][str(h)][arm]['outcome']['y']) for x in ss])
+                             for arm in protocol()['paired']['arms']} for h in (60, 15)}
                 summary['equal_entry_clock_share'] = mean([float(r['data']['entries']['perp_original_clock'] == r['data']['entries']['perp_synchronized_clock']) for r, _ in eligible])
                 summary['secondary_15m_difference'] = mean([x['horizons']['15']['combined_synchronized_clock']['brier'] - x['horizons']['15']['perp_synchronized_clock']['brier'] for x in ss])
                 summary['clock_only_60m_difference'] = mean([x['horizons']['60']['perp_synchronized_clock']['brier'] - x['horizons']['60']['perp_original_clock']['brier'] for x in ss])
@@ -239,6 +251,12 @@ def write(base, now):
     lines += ['', '## Range calibration', '', '| Arm | 80% interval coverage | Mean interval width (ln H/L) |', '|---|---:|---:|']
     for key, a in out['studies']['range'].get('calibration', {}).items():
         lines.append(f'| {key} | {number(a["coverage"], True)} | {number(a["width"])} |')
+    lines += ['', '## Paired-flow direction checks', '',
+              'Conditional hit rates exclude neutral signals. Scored and neutral counts stay visible; scheduled coverage is above.', '',
+              '| Horizon | Arm | Scored | Directional | Neutral | Conditional hit rate |', '|---|---|---:|---:|---:|---:|']
+    for horizon, arms in out['studies']['paired'].get('conditional_hits', {}).items():
+        for arm, h in arms.items():
+            lines.append(f'| {horizon}m | {arm} | {h["scored"]} | {h["directional"]} | {h["neutral"]} | {number(h["conditional_hit_rate"], True)} |')
     pilot = out['pilots']
     options, stress, liq = pilot['options'], pilot['stress'], pilot['liquidations']
     comparable = [x for x in liq['revisions'] if x['comparable']]

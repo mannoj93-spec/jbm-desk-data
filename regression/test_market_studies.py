@@ -331,6 +331,11 @@ class MarketTests(unittest.TestCase):
             r=network.fetch('https://example.invalid')
         self.assertEqual(r['state'],'request-error');self.assertIsNone(r['raw'])
 
+    def test_conditional_hit_rate_keeps_neutral_denominator_visible(self):
+        result=R.hit_summary([(.75,1),(.25,0),(.5,1)])
+        self.assertEqual(result,{'scored':3,'directional':2,'neutral':1,'hits':2,'conditional_hit_rate':1.0})
+        self.assertIsNone(R.hit_summary([(.5,0)])['conditional_hit_rate'])
+
     def test_only_new_writer_paths_authorized(self):
         writers=json.loads((K.ROOT/'scripts/writers.json').read_text())['writers']['market-studies']
         self.assertEqual(writers['allow'],['streams/market-studies/','reports/market_studies.json','reports/market_studies.md'])
