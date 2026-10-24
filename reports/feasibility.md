@@ -1,6 +1,6 @@
 # Research feasibility
 
-Generated 2026-10-24T12:18:27Z by feasibility-1.2.1; source cutoff 2026-10-24T11:32Z. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
+Generated 2026-10-24T12:58:22Z by feasibility-1.2.1; source cutoff 2026-10-24T11:32Z. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
 
 ## Lab designs
 
@@ -100,9 +100,9 @@ Observable days = hours with a selected hourly control (the lab's coverage count
 
 | stream | limiting factor | detail |
 |---|---|---|
-| RC1D B2 vs B0 (24h) | time (accumulation) | {"blocks": 3, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 28.35, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 154, "rate_per_day": 5.43, "time_to_checkpoint": "~49 d"} |
-| RC1D B2 vs B0 (4h) | time (accumulation) | {"blocks": 3, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 28.35, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 159, "rate_per_day": 5.61, "time_to_checkpoint": "~47 d"} |
-| RC1D B2 vs B0 (72h) | time (accumulation) | {"blocks": 3, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 28.35, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 142, "rate_per_day": 5.01, "time_to_checkpoint": "~55 d"} |
+| RC1D B2 vs B0 (24h) | time (accumulation) | {"blocks": 3, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 28.37, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 154, "rate_per_day": 5.43, "time_to_checkpoint": "~49 d"} |
+| RC1D B2 vs B0 (4h) | time (accumulation) | {"blocks": 3, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 28.37, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 159, "rate_per_day": 5.6, "time_to_checkpoint": "~47 d"} |
+| RC1D B2 vs B0 (72h) | time (accumulation) | {"blocks": 3, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 28.37, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 142, "rate_per_day": 5.0, "time_to_checkpoint": "~56 d"} |
 | Companion B2 vs B1 (24h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 4, "paired": 123} |
 | Companion B2 vs B1 (4h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 7, "paired": 125} |
 | Companion B2 vs B1 (72h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 0, "paired": 115} |
