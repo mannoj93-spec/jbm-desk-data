@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-10-24T17:36:11.945Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-10-24T18:31:21.109Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | registered; not launched | 0 | 0 | 0 |
 | range | registered; not launched | 0 | 0 | 0 |
-| state | registered; not launched | 0 | 0 | 0 |
-| paired | registered; not launched | 0 | 0 | 0 |
+| state | registered; not launched | 1 | 0 | 0 |
+| paired | collecting (descriptive) | 3 | 2 | 0 |
 
 ## Primary comparisons
 
@@ -18,7 +18,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 | turnover | — | — (insufficient blocks) | not launched |
 | range | — | — (insufficient blocks) | not launched |
 | state | — | — (insufficient blocks) | not launched |
-| paired | — | — (insufficient blocks) | not launched |
+| paired | — | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
 
@@ -57,9 +57,9 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 ## Data usability pilots
 
-- Options: 0 captures; usable 7d RR25 in 0, usable 30d RR25 in 0; 0 valid hourly changes.
+- Options: 1 captures; usable 7d RR25 in 1, usable 30d RR25 in 1; 0 valid hourly changes.
 - Liquidations: 0 comparable first/later vintage pairs; 0 direction changes. Capture states: `{}`.
-- Exchange stress: 0/0 scheduled records. Capture states: `{}`. Ratings: `{}`.
+- Exchange stress: 2/2 scheduled records. Capture states: `{"missed": 1, "ok": 1}`. Ratings: `{"low": 1}`.
 
 These pilots measure availability and revisions; they are not predictive evidence. Unknown source coverage is never zero activity.
 
