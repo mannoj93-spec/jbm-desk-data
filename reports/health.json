@@ -1,6 +1,6 @@
 {
  "availability": {
-  "generated_utc": "2026-10-24T22:18:45.349Z",
+  "generated_utc": "2026-10-24T22:30:47.211Z",
   "horizons": {
    "24h": {
     "recorded_state": "valid-current",
@@ -182,7 +182,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-10-24T22:29:42Z",
+ "generated_utc": "2026-10-24T22:44:38Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -190,7 +190,7 @@
   "external_timer": {
    "absent": [],
    "delayed": [],
-   "last_arrival_utc": "2026-10-24T22:27:01Z",
+   "last_arrival_utc": "2026-10-24T22:42:02Z",
    "on_time": 96,
    "on_time_max_lag_s": 3,
    "opportunities": 96,
@@ -253,11 +253,11 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_completed_utc": "2026-10-24T22:27:18Z",
+    "last_completed_utc": "2026-10-24T22:42:15Z",
     "last_result": "success",
-    "last_run_id": 40138606223,
-    "last_scheduled_start_utc": "2026-10-24T22:27:01Z",
-    "last_success_utc": "2026-10-24T22:27:01Z",
+    "last_run_id": 40139670570,
+    "last_scheduled_start_utc": "2026-10-24T22:42:02Z",
+    "last_success_utc": "2026-10-24T22:42:02Z",
     "native": {
      "last_completed_utc": "2026-10-24T21:54:54Z",
      "last_result": "success",
@@ -265,7 +265,7 @@
      "last_scheduled_start_utc": "2026-10-24T21:54:37Z",
      "last_success_utc": "2026-10-24T21:54:37Z",
      "stale_after_min": 45,
-     "state": "fresh"
+     "state": "stale"
     },
     "stale_after_min": 45,
     "state": "fresh"
@@ -297,7 +297,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 8.7,
+  "report_age_min": 23.6,
   "report_coverage": 0.8864,
   "report_generated_utc": "2026-10-24T22:21:02.786Z",
   "report_scheduled_decisions": 132,
@@ -307,25 +307,25 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 32.7,
+  "age_min": 47.6,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 103,
    "expected_slots": 96,
-   "from_ms": 1792794582598,
-   "from_utc": "2026-10-23T22:29:42Z",
+   "from_ms": 1792795478090,
+   "from_utc": "2026-10-23T22:44:38Z",
    "intervals": 95,
    "intervals_with_automated_run": 95,
    "intervals_with_successful_automated_run": 95,
-   "longest_automated_gap_min": 16.2,
-   "longest_successful_gap_min": 16.2,
+   "longest_automated_gap_min": 16.1,
+   "longest_successful_gap_min": 16.1,
    "rule": "activity = any automated stored record (heartbeat); success = critical_success records only",
    "runs_by_source": {
     "native-schedule": 8,
     "recovery": 95
    },
-   "to_ms": 1792880982598,
-   "to_utc": "2026-10-24T22:29:42Z"
+   "to_ms": 1792881878090,
+   "to_utc": "2026-10-24T22:44:38Z"
   },
   "gaps": [
    {
@@ -435,7 +435,7 @@
     "breached_24h": false,
     "breached_now": false,
     "current_gap_min": 1.7,
-    "longest_successful_gap_24h_min": 16.2,
+    "longest_successful_gap_24h_min": 16.1,
     "max_gap_min": 45,
     "rule": "restoration acceptance target (45 min between persisted critical successes); separate from the watchdog's stale limit"
    },
@@ -444,10 +444,10 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-10-24T22:27:58Z",
-   "last_automated_utc": "2026-10-24T22:27:58Z",
+   "last_activity_utc": "2026-10-24T22:42:58Z",
+   "last_automated_utc": "2026-10-24T22:42:58Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-10-24T22:27:58Z",
+   "last_success_utc": "2026-10-24T22:42:58Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
