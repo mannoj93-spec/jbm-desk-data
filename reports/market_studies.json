@@ -1,5 +1,5 @@
 {
-  "generated_ms": 1792964776472,
+  "generated_ms": 1792966132236,
   "activation": {
     "commit": "c37fa7906c02ff9407e1a1bdf73f04f69d24a9ce",
     "confirmed_ms": 1792863369620,
@@ -152,7 +152,7 @@
         "status": "collecting (descriptive)",
         "checkpoint_rules": "Descriptive only before 365 days and 20 blocks. Support requires stressed primary 90% block interval above zero, >=80% scheduled coverage, both B2 volatilities 10%-20%, and B2_10 drawdown no more than 2 percentage points worse. No automated promotion.",
         "review": {
-          "days_since_launch": 1.0233131828703703,
+          "days_since_launch": 1.0390048958333333,
           "C1_due": false,
           "C2_due": false,
           "action": "operator review only; no automatic status change"
@@ -198,14 +198,14 @@
       }
     },
     "state": {
-      "scheduled": 28,
-      "recorded": 28,
+      "scheduled": 29,
+      "recorded": 29,
       "states": {
         "missed": 18,
-        "ready": 10
+        "ready": 11
       },
       "missing_run": 0,
-      "on_time_published": 10,
+      "on_time_published": 11,
       "late_publication": 0,
       "pending_confirmation": 0,
       "scored": 9,
@@ -239,14 +239,14 @@
       }
     },
     "paired": {
-      "scheduled": 112,
-      "recorded": 112,
+      "scheduled": 113,
+      "recorded": 113,
       "states": {
         "missed": 76,
-        "ready": 36
+        "ready": 37
       },
       "missing_run": 0,
-      "on_time_published": 36,
+      "on_time_published": 37,
       "late_publication": 0,
       "pending_confirmation": 0,
       "scored": 34,
@@ -317,49 +317,49 @@
   },
   "pilots": {
     "stress": {
-      "opportunities": 56,
-      "records": 56,
+      "opportunities": 57,
+      "records": 57,
       "states": {
         "missed": 36,
-        "ok": 20
+        "ok": 21
       },
       "ratings": {
-        "low": 20
+        "low": 21
       },
       "rating_transitions": 0,
       "insurance_ranges": {
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/LDUSDT": {
-          "n": 20,
+          "n": 21,
           "min": 1e-08,
           "max": 1e-08,
           "unique": 1
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/USDC": {
-          "n": 20,
+          "n": 21,
           "min": 499980383.5818181,
           "max": 499980383.5818181,
           "unique": 1
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/USDT": {
-          "n": 20,
+          "n": 21,
           "min": 794114925.3691456,
           "max": 795321556.8964945,
           "unique": 2
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/BTC": {
-          "n": 20,
+          "n": 21,
           "min": 69.00161004,
           "max": 69.00276412,
           "unique": 2
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/BNB": {
-          "n": 20,
+          "n": 21,
           "min": 1.45e-06,
           "max": 1.45e-06,
           "unique": 1
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/BNFCR": {
-          "n": 20,
+          "n": 21,
           "min": 1873227.29414098,
           "max": 1873252.52579221,
           "unique": 2
@@ -370,7 +370,7 @@
     "liquidations": {
       "states": {
         "missed": 54,
-        "ok": 29
+        "ok": 33
       },
       "revisions": [
         {
@@ -888,10 +888,10 @@
         {
           "end": 1792944000000,
           "vintage_hours": 6,
-          "comparable": false,
-          "size_revision": null,
-          "signal_flip": null,
-          "eligibility_flip": null
+          "comparable": true,
+          "size_revision": 0.0,
+          "signal_flip": false,
+          "eligibility_flip": false
         },
         {
           "end": 1792944000000,
@@ -1020,25 +1020,49 @@
           "size_revision": null,
           "signal_flip": null,
           "eligibility_flip": null
+        },
+        {
+          "end": 1792965600000,
+          "vintage_hours": 1,
+          "comparable": false,
+          "size_revision": null,
+          "signal_flip": null,
+          "eligibility_flip": null
+        },
+        {
+          "end": 1792965600000,
+          "vintage_hours": 6,
+          "comparable": false,
+          "size_revision": null,
+          "signal_flip": null,
+          "eligibility_flip": null
+        },
+        {
+          "end": 1792965600000,
+          "vintage_hours": 18,
+          "comparable": false,
+          "size_revision": null,
+          "signal_flip": null,
+          "eligibility_flip": null
         }
       ],
       "interpretation": "source-specific retrospective diagnostic; first observations stay immutable"
     },
     "options": {
-      "captures": 28,
-      "expected_hourly_slots": 28,
+      "captures": 29,
+      "expected_hourly_slots": 29,
       "rr25_7d_states": {
-        "ok": 28
+        "ok": 29
       },
       "rr25_30d_states": {
-        "ok": 28
+        "ok": 29
       },
       "rejections": {
-        "delta-distance": 18393,
-        "low-oi": 4100,
-        "maturity": 11540,
-        "missing-or-malformed": 1456,
-        "wide": 1915
+        "delta-distance": 19048,
+        "low-oi": 4252,
+        "maturity": 11949,
+        "missing-or-malformed": 1500,
+        "wide": 1991
       },
       "changes": [
         {
@@ -1148,6 +1172,10 @@
         {
           "t": 1792962845192,
           "change_7d": -0.16500000000000004
+        },
+        {
+          "t": 1792965994421,
+          "change_7d": -0.28659999999999997
         }
       ],
       "term_structure": [
@@ -1262,6 +1290,10 @@
         {
           "t": 1792962845192,
           "rr25_30d_minus_7d": -1.1982
+        },
+        {
+          "t": 1792965994421,
+          "rr25_30d_minus_7d": -0.9548000000000005
         }
       ],
       "interpretation": "usability only; no predictive admission"
