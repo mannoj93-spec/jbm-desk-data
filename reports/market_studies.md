@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-10-24T23:18:10.931Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-10-25T00:13:11.032Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
-| turnover | collecting (descriptive) | 1 | 1 | 1 |
-| range | registered; not launched | 1 | 0 | 0 |
-| state | collecting (descriptive) | 6 | 3 | 0 |
-| paired | collecting (descriptive) | 22 | 10 | 7 |
+| turnover | collecting (descriptive) | 2 | 1 | 1 |
+| range | registered; not launched | 2 | 0 | 0 |
+| state | collecting (descriptive) | 7 | 4 | 0 |
+| paired | collecting (descriptive) | 25 | 11 | 8 |
 
 ## Primary comparisons
 
@@ -48,18 +48,18 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 | Horizon | Arm | Scored | Directional | Neutral | Conditional hit rate |
 |---|---|---:|---:|---:|---:|
-| 60m | perp_original_clock | 7 | 4 | 3 | 50.00% |
-| 60m | perp_synchronized_clock | 7 | 4 | 3 | 50.00% |
-| 60m | combined_synchronized_clock | 7 | 4 | 3 | 50.00% |
-| 15m | perp_original_clock | 7 | 4 | 3 | 50.00% |
-| 15m | perp_synchronized_clock | 7 | 4 | 3 | 50.00% |
-| 15m | combined_synchronized_clock | 7 | 4 | 3 | 50.00% |
+| 60m | perp_original_clock | 8 | 5 | 3 | 60.00% |
+| 60m | perp_synchronized_clock | 8 | 5 | 3 | 60.00% |
+| 60m | combined_synchronized_clock | 8 | 5 | 3 | 60.00% |
+| 15m | perp_original_clock | 8 | 5 | 3 | 60.00% |
+| 15m | perp_synchronized_clock | 8 | 5 | 3 | 60.00% |
+| 15m | combined_synchronized_clock | 8 | 5 | 3 | 60.00% |
 
 ## Data usability pilots
 
-- Options: 6 captures; usable 7d RR25 in 6, usable 30d RR25 in 6; 5 valid hourly changes.
-- Liquidations: 2 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"missed": 3, "ok": 6}`.
-- Exchange stress: 11/11 scheduled records. Capture states: `{"missed": 6, "ok": 5}`. Ratings: `{"low": 5}`.
+- Options: 7 captures; usable 7d RR25 in 7, usable 30d RR25 in 7; 6 valid hourly changes.
+- Liquidations: 3 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"missed": 3, "ok": 8}`.
+- Exchange stress: 13/13 scheduled records. Capture states: `{"missed": 7, "ok": 6}`. Ratings: `{"low": 6}`.
 
 These pilots measure availability and revisions; they are not predictive evidence. Unknown source coverage is never zero activity.
 
