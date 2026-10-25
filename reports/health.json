@@ -1,6 +1,6 @@
 {
  "availability": {
-  "generated_utc": "2026-10-24T22:30:47.211Z",
+  "generated_utc": "2026-10-24T23:46:38.570Z",
   "horizons": {
    "24h": {
     "recorded_state": "valid-current",
@@ -182,7 +182,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-10-24T23:44:45Z",
+ "generated_utc": "2026-10-24T23:59:48Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -190,7 +190,7 @@
   "external_timer": {
    "absent": [],
    "delayed": [],
-   "last_arrival_utc": "2026-10-24T23:42:02Z",
+   "last_arrival_utc": "2026-10-24T23:57:02Z",
    "on_time": 96,
    "on_time_max_lag_s": 3,
    "opportunities": 96,
@@ -198,11 +198,11 @@
    "state": "arriving",
    "window_h": 24
   },
-  "newest_scheduled_start_utc": "2026-10-24T23:42:52Z",
+  "newest_scheduled_start_utc": "2026-10-24T23:47:52Z",
   "problems_detected_by": [],
   "rule": "state is the heartbeat (last completed run, any result); last_result is how that run ended; last_check is what its check step did (2.28): only a check that ran and reported a finding detected a problem - setup running, a skipped check or no runner detected nothing",
   "source": "GitHub Actions API, scheduled runs",
-  "state": "fresh",
+  "state": "stale",
   "workflows": {
    "collect.yml": {
     "last_completed_utc": "2026-10-24T21:59:20Z",
@@ -226,20 +226,20 @@
     "last_success_utc": "2026-10-24T23:38:33Z"
    },
    "range-monitor.yml": {
-    "last_completed_utc": "2026-10-24T19:51:18Z",
+    "last_completed_utc": "2026-10-24T23:48:01Z",
     "last_result": "success",
-    "last_run_id": 40127168646,
-    "last_scheduled_start_utc": "2026-10-24T19:51:10Z",
-    "last_success_utc": "2026-10-24T19:51:10Z",
+    "last_run_id": 40144181569,
+    "last_scheduled_start_utc": "2026-10-24T23:47:52Z",
+    "last_success_utc": "2026-10-24T23:47:52Z",
     "stale_after_min": 510,
     "state": "fresh"
    },
    "range-score.yml": {
-    "last_completed_utc": "2026-10-24T21:11:51Z",
+    "last_completed_utc": "2026-10-24T23:46:44Z",
     "last_result": "success",
-    "last_run_id": 40133081424,
+    "last_run_id": 40143850968,
     "last_scheduled_start_utc": "2026-10-24T23:42:52Z",
-    "last_success_utc": "2026-10-24T21:10:57Z"
+    "last_success_utc": "2026-10-24T23:42:52Z"
    },
    "range.yml": {
     "last_completed_utc": "2026-10-24T22:18:49Z",
@@ -253,11 +253,11 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_completed_utc": "2026-10-24T23:42:18Z",
+    "last_completed_utc": "2026-10-24T23:57:20Z",
     "last_result": "success",
-    "last_run_id": 40143797450,
-    "last_scheduled_start_utc": "2026-10-24T23:42:02Z",
-    "last_success_utc": "2026-10-24T23:42:02Z",
+    "last_run_id": 40144767458,
+    "last_scheduled_start_utc": "2026-10-24T23:57:02Z",
+    "last_success_utc": "2026-10-24T23:57:02Z",
     "native": {
      "last_completed_utc": "2026-10-24T21:54:54Z",
      "last_result": "success",
@@ -291,13 +291,13 @@
     "last_scheduled_start_utc": "2026-10-24T22:29:03Z",
     "last_success_utc": "2026-10-24T22:29:03Z",
     "stale_after_min": 90,
-    "state": "fresh"
+    "state": "stale"
    }
   }
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 58.0,
+  "report_age_min": 73.0,
   "report_coverage": 0.8864,
   "report_generated_utc": "2026-10-24T22:46:46.208Z",
   "report_scheduled_decisions": 132,
@@ -307,13 +307,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 107.7,
+  "age_min": 122.8,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 102,
    "expected_slots": 96,
-   "from_ms": 1792799085167,
-   "from_utc": "2026-10-23T23:44:45Z",
+   "from_ms": 1792799988922,
+   "from_utc": "2026-10-23T23:59:48Z",
    "intervals": 95,
    "intervals_with_automated_run": 95,
    "intervals_with_successful_automated_run": 95,
@@ -324,8 +324,8 @@
     "native-schedule": 7,
     "recovery": 95
    },
-   "to_ms": 1792885485167,
-   "to_utc": "2026-10-24T23:44:45Z"
+   "to_ms": 1792886388922,
+   "to_utc": "2026-10-24T23:59:48Z"
   },
   "gaps": [
    {
@@ -429,7 +429,7 @@
    {
     "end_ms": null,
     "end_utc": null,
-    "minutes": 107.72,
+    "minutes": 122.79,
     "start_ms": 1792879021752,
     "start_utc": "2026-10-24T21:57:01Z"
    }
@@ -451,10 +451,10 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-10-24T23:42:58Z",
-   "last_automated_utc": "2026-10-24T23:42:58Z",
+   "last_activity_utc": "2026-10-24T23:58:01Z",
+   "last_automated_utc": "2026-10-24T23:58:01Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-10-24T23:42:58Z",
+   "last_success_utc": "2026-10-24T23:58:01Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
