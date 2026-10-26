@@ -256,3 +256,38 @@ class DeploymentDiagnostics(unittest.TestCase):
         self.assertEqual(O.selected_options(d,legs,'rr25_7d'),[])
 
 if __name__=='__main__':unittest.main()
+
+
+class AbstentionCounts(unittest.TestCase):
+    def test_closed_recorded_abstained_and_missing_have_explicit_denominators(self):
+        rows = [{'slot':i, 'state':s, 'recorded':s!='no-run', 'forecast_state':s,
+                 'eligible_forecast':s=='ok', 'success_ms':i if s=='ok' else None}
+                for i,s in enumerate(['ok','abstained','no-run','warmup','abstained','ok','missed'])]
+        x=O.study_coverage(rows,[],0)
+        self.assertEqual((x['due'],x['recorded'],x['eligible_forecasts'],x['abstained']),(7,6,2,2))
+        self.assertEqual(x['abstention_rate'],2/6)
+        out={'warnings':[]};O.abstention_warning(out,'state',x)
+        self.assertEqual(len(out['warnings']),1)
+        self.assertEqual(O.study_coverage(rows,[],4)['recorded'],3)
+        out={'warnings':[]};O.abstention_warning(out,'state',O.study_coverage(rows,[],4))
+        self.assertEqual(out['warnings'],[])
+        empty=O.study_coverage([],rows,0)
+        self.assertEqual(empty['due'],0);self.assertIsNone(empty['abstention_rate'])
+
+    def test_v2_reader_does_not_register_or_pool_with_v1(self):
+        from research_tools.state_v2 import core as V
+        with tempfile.TemporaryDirectory() as tmp:
+            base=Path(tmp);now=100*K.DAY
+            out={'studies':{},'depth_diagnostics':{},'warnings':[],'alerts':[]}
+            O.state_v2_health(base,now,out)
+            self.assertEqual(list(base.iterdir()),[])
+            reg=V.register(base,now-K.HOUR)
+            V.Journal(base,'activation').add('state-v2',{'registration_sha':reg['sha256'],
+                'confirmed_ms':now-K.HOUR,'first_slot':now,'commit':'main'})
+            V.Journal(base,'forecasts').add('state-'+str(now),{'study':'state','slot':now,
+                'state':'abstained','prepared_ms':now+K.MIN,'deadline_ms':now+25*K.MIN,'reasons':['no-eligible-depth']})
+            O.state_v2_health(base,now+40*K.MIN,out)
+            x=out['studies']['state_v2']
+            self.assertEqual((x['due'],x['recorded'],x['eligible_forecasts'],x['abstained']),(1,1,0,1))
+            self.assertFalse((base/K.STREAM).exists())
+            self.assertEqual(out['depth_diagnostics']['state_v2_last_24h']['abstained'],1)

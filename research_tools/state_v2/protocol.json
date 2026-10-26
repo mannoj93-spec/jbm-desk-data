@@ -1,0 +1,37 @@
+{
+  "scope": "BTC research only; simulated execution, no orders",
+  "approval": "Merge of the implementing PR approves these frozen rules. Registration requires observation on origin/main; the first opportunity is the next UTC hour. No historical launch.",
+  "state": {
+    "step_hours": 1,
+    "entry_delay_minutes": 30,
+    "deadline_minutes": 25,
+    "horizon_hours": 4,
+    "training_days": 30,
+    "minimum_training": 200,
+    "baseline": [
+      "ret_15m_bp",
+      "rv_1h_bp"
+    ],
+    "flow": [
+      "flow_per_depth"
+    ],
+    "positioning": [
+      "d_oi_1h_pct",
+      "oi_x_ret"
+    ],
+    "funding": [
+      "funding_dispersion_bp_8h"
+    ],
+    "fit": "Daily logistic regression, standardize and clip to +/-5 training SD, 200 full-batch gradient steps, learning rate 0.1, L2 penalty 0.1 excluding intercept. Same jointly eligible training and evaluation rows for all models; no tuning.",
+    "primary": "Brier(full)-Brier(price/vol baseline) on hourly 4h direction outcomes",
+    "secondary": "baseline+flow, baseline+flow+positioning; event/ordinary strata. Ties count as non-up. Complete 240-minute outcome path required.",
+    "training": "Historical as-of panel permitted for training only, marked discovery. Outcomes must have matured and arrived before midnight; training ends at cutoff-4h30m. Models and member hashes retained before predictions.",
+    "bootstrap_block_observations": 168,
+    "minimum_blocks": 10,
+    "review_days": 180
+  },
+  "inference": "Fixed primary per study. Moving-block paired bootstrap, 2000 draws, seed 20261024; no intervals below the minimum blocks, no optional stopping or automated supported status. Retain every scheduled opportunity, missing, abstained, late and pending. No inference for pilots.",
+  "version": "market-state-2",
+  "prior_exposure": "The v1 depth abstentions through 2026-10-26 were inspected before design. Prior rows are discovery/training only. Start a new prospective clock; never pool v1 and v2 results.",
+  "depth_selection": "Among the latest 12 snapshots durably available by decision T, first require a valid nonnegative two-sided book with total >=1 BTC, measurement <= availability <= T, age <=30 minutes, and distance <=10 minutes from the same 15-minute flow window. Rank eligible candidates by distance ascending, measurement descending, availability descending, then canonical snapshot hash ascending. Record all rejected candidates. Apply exactly the same selector in training and prediction. Other v1 features, models, outcomes and inference rules are unchanged."
+}

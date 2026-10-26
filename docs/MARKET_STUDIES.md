@@ -99,3 +99,55 @@ call/put strikes at the interpolation expiries**. Matching uses expiry, strike a
 missing or ambiguous matches fail closed. Shared expiries count once per capture within a horizon. The summaries
 include quote age, relative spread, delta distance, size availability and diagnostic reasons; they do not rerun
 selection or change eligibility. Repeated captures and shared legs across horizons are dependent observations.
+
+
+## Corrected state study v2
+
+The October 26 audit found a selection-order defect: a 31-minute-old depth observation inside the
+flow window could shadow an eligible 16-minute-old observation one minute outside it. This was
+observed in five v1 abstentions. The correction is a separately registered study, implemented in
+`research_tools/state_v2/`, with the [frozen v2 protocol](../research_tools/state_v2/protocol.json).
+All v1 implementation files and historical journals remain byte-for-byte unchanged. V1 continues
+as a reference; the other three experiments and pilots keep their existing identities and clocks.
+
+V2 considers the latest 12 durably available snapshots, just as v1 did. Before ranking, it requires
+valid nonnegative bid/ask depth totaling at least 1 BTC, measurement time no later than durable
+availability, availability by decision T, age at most 30 minutes, and distance at most 10 minutes
+from the same 15-minute flow window. Eligible candidates rank by nearest distance, newest measurement,
+newest availability, then canonical snapshot hash. Candidate measurements, availability, rejection
+reasons and the chosen snapshot hash are retained in each row. Unavailable or future data cannot
+enter selection. An invalid flow window stays invalid. Training and live preparation share this
+selector; all other features, model settings, outcomes and score definitions remain v1's.
+
+The workflow registers v2, persists its identity and protocol, then observes the exact code and
+registration on main. The first scheduled opportunity is the next UTC hour after that observation.
+Every fit and forecast must then be observed on main before its original 25-minute deadline. Entries
+remain at +30 minutes, with complete four-hour outcomes. No historical forecasts are inserted or
+rescored. Historical corrected rows are permitted only as explicitly labelled training/discovery.
+Reports at `reports/market_state_v2.{json,md}` retain every scheduled slot, including missing,
+abstained and late opportunities, and show secondary contrasts and event/ordinary strata. The new
+clock starts the 180-day review floor; minimum blocks, missing grid positions, and descriptive-only
+status remain unchanged. Neither a favourable v1/v2 comparison nor their combined count permits promotion.
+
+V2 shares the serialized Market studies writer. Its failures are persisted and fail the workflow's
+final verdict without preventing v1's downstream stages from running. A global v1 pause also pauses
+v2 preparation. `streams/market-studies/state-v2/paused.json` pauses only v2. Scoring/reporting continue
+while paused. Verify activation, timely confirmations and fresh health after merge; a green PR test
+run is not evidence that the new study is collecting.
+
+Health reports distinguish closed scheduled opportunities, recorded records (including missed,
+warmup and abstained records), publication-eligible forecasts, and abstentions. The rolling abstention
+rate is abstentions / recorded closed opportunities, with a warning above 20% after at least six
+recorded opportunities. Missing runs remain in scheduled coverage; open deadlines stay separate.
+This operational warning neither alters the research denominator nor relaxes input rules. V2 health,
+depth diagnostics, pauses and scoring backlog are reported separately, without resetting the PR #53
+recovery baseline.
+
+### Dashboard deployment collisions
+
+The Pages job retains the official deployment action and the serialized production concurrency group.
+If creation fails, it inspects only the current job's current-attempt failure annotations. Only the
+specific HTTP 400 "in progress deployment" error permits one retry of the same artifact after 45 seconds.
+Annotation lookup is bounded to three checks, ten seconds apart. It never cancels another deployment.
+Permissions, artifact, timeout, unknown and exhausted-retry failures remain failures. A final step
+requires an actual successful deployment; `continue-on-error` on the first attempt cannot hide failure.

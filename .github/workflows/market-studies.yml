@@ -46,10 +46,14 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify the study runtime
-        run: python -m unittest regression.test_market_studies -v
+        run: python -m unittest regression.test_market_studies regression.test_state_v2 -v
       - name: Prepare immutable opportunities and training artifacts
         id: prepare
         run: python -m research_tools.market_studies prepare
+      - name: Prepare separately registered state v2
+        id: state_prepare
+        continue-on-error: true
+        run: python -m research_tools.state_v2 prepare
       - name: Publish before observing outcomes or capturing execution quotes
         id: publish
         env:
@@ -61,6 +65,10 @@ jobs:
       - name: Confirm exact records and implementation on main
         id: confirm
         run: python -m research_tools.market_studies confirm
+      - name: Confirm state v2 on its own publication clock
+        id: state_confirm
+        continue-on-error: true
+        run: python -m research_tools.state_v2 confirm
       - name: Execute independent paper sizing accounts
         id: execute
         continue-on-error: true
@@ -77,6 +85,14 @@ jobs:
         id: report
         continue-on-error: true
         run: python -m research_tools.market_studies report
+      - name: Score state v2 outcomes
+        id: state_score
+        continue-on-error: true
+        run: python -m research_tools.state_v2 score
+      - name: Report state v2 separately
+        id: state_report
+        continue-on-error: true
+        run: python -m research_tools.state_v2 report
       - name: Report operational coverage without changing research evidence
         id: health
         if: always()
@@ -90,7 +106,7 @@ jobs:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}
           DESK_META_TOKEN: ${{ github.token }}
           COMMIT_MESSAGE: Market study evidence and coverage
-        run: bash scripts/commit_push.sh streams/market-studies reports/market_studies.json reports/market_studies.md reports/market_study_health.json reports/market_study_health.md
+        run: bash scripts/commit_push.sh streams/market-studies reports/market_studies.json reports/market_studies.md reports/market_study_health.json reports/market_study_health.md reports/market_state_v2.json reports/market_state_v2.md
       - name: Require every stage
         if: always()
         env:
@@ -102,8 +118,12 @@ jobs:
           SCORE: ${{ steps.score.outcome }}
           REPORT: ${{ steps.report.outcome }}
           PERSIST: ${{ steps.persist.outcome }}
+          STATE_PREPARE: ${{ steps.state_prepare.outcome }}
+          STATE_CONFIRM: ${{ steps.state_confirm.outcome }}
+          STATE_SCORE: ${{ steps.state_score.outcome }}
+          STATE_REPORT: ${{ steps.state_report.outcome }}
           HEALTH: ${{ steps.health.outcome }}
         run: |
-          for result in "$PREPARE" "$PUBLISH" "$CONFIRM" "$EXECUTE" "$COLLECT" "$SCORE" "$REPORT" "$PERSIST" "$HEALTH"; do
+          for result in "$PREPARE" "$PUBLISH" "$CONFIRM" "$EXECUTE" "$COLLECT" "$SCORE" "$REPORT" "$PERSIST" "$HEALTH" "$STATE_PREPARE" "$STATE_CONFIRM" "$STATE_SCORE" "$STATE_REPORT"; do
             test "$result" = success || exit 1
           done

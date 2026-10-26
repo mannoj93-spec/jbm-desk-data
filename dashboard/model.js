@@ -334,6 +334,14 @@ export function validStudyOps(s) {
         row.active_consecutive_misses != null && (!count(row.active_consecutive_misses) || row.active_consecutive_misses > row.consecutive_misses) ||
         row.recovered_before_close != null && typeof row.recovered_before_close !== 'boolean') return false;
   }
+  for (const row of [...Object.values(s.studies), ...Object.values(deployment?.studies || {})]) {
+    if (row.recorded !== undefined && (!count(row.recorded) || row.recorded > row.due ||
+        !count(row.eligible_forecasts) || row.eligible_forecasts > row.recorded ||
+        !count(row.abstained) || row.abstained + row.eligible_forecasts > row.recorded ||
+        (row.recorded === 0 ? row.abstention_rate !== null : !numeric(row.abstention_rate) ||
+          Math.abs(row.abstention_rate - row.abstained / row.recorded) > 1e-9))) return false;
+    if (row.paused !== undefined && typeof row.paused !== 'boolean') return false;
+  }
   const dist = d => obj(d) && count(d.n) && ['min','median','p90','max'].every(k => d[k] === null || numeric(d[k]));
   if (s.depth_diagnostics != null) {
     if (!obj(s.depth_diagnostics)) return false;
@@ -367,12 +375,13 @@ export function studyRows(s, now = Date.now()) {
   const clock = age < -1 ? 'clock mismatch' : age > s.stale_after_minutes ? 'stale' : 'within cadence';
   const rows = [{area: 'Study report', state: s.integrity === 'failed' ? 'integrity failed' : clock,
     detail: `Generated ${s.generated_utc}; counts cover closed opportunities in the 24 hours to this report`}];
-  const label = name => ({turnover:'Turnover control', range:'Range calibration', state:'Continuous market state', paired:'Paired spot/perpetual', stress:'Exchange stress', liquidations:'Liquidation revisions', options:'Options usability'})[name] || name;
-  const status = r => clock !== 'within cadence' ? clock : s.paused ? 'paused' :
+  const label = name => ({turnover:'Turnover control', range:'Range calibration', state:'Continuous market state v1', state_v2:'Corrected market state v2', paired:'Paired spot/perpetual', stress:'Exchange stress', liquidations:'Liquidation revisions', options:'Options usability'})[name] || name;
+  const status = r => clock !== 'within cadence' ? clock : (s.paused || r.paused) ? 'paused' :
     r.recovered_before_close ? 'recovered; history retained' : r.due === 0 ? 'none due' :
     (r.active_consecutive_misses ?? r.consecutive_misses) >= 2 ? 'missed opportunities' :
     r.coverage < .8 ? 'historical coverage below 80%' : 'within target';
   const detail = r => `${r.successful}/${r.due} closed opportunities successful; ${r.consecutive_misses} trailing closed misses` +
+    (r.recorded !== undefined ? `; ${r.recorded} recorded, ${r.eligible_forecasts} eligible forecasts, ${r.abstained} abstentions (${r.abstention_rate == null ? 'unknown' : (100*r.abstention_rate).toFixed(1)+'%'} of recorded)` : '') +
     (r.pending_successful ? `; ${r.pending_successful} additional successes awaiting deadline/grace closure` : '') +
     (r.recovered_before_close ? '; a newer verified success cleared the current miss alert' : '');
   for (const [name, r] of Object.entries({...s.studies, ...s.pilots})) {
@@ -386,13 +395,14 @@ export function studyRows(s, now = Date.now()) {
     }
   }
   for (const detail of s.alerts) rows.push({area: 'Recorded alert', state: clock === 'within cadence' ? 'attention' : clock, detail});
+  for (const detail of s.warnings) rows.push({area: 'Recorded warning', state: clock === 'within cadence' ? 'review' : clock, detail});
   const p = s.paired_diagnostics;
   if (p) rows.push({area: 'Paired sample (since launch)', state: 'descriptive', detail:
     `${p.scored_forecasts} scored forecasts; ${p.unique_entries} distinct entries; ${p.largest_disjoint_60m_subset} disjoint 60m windows. ` +
     `Equal entry clocks: ${p.equal_entry_clock_share == null ? 'unknown' : (100*p.equal_entry_clock_share).toFixed(1)+'%'}. Counts do not establish independence.`});
   const fmt = (x, scale = 1) => x == null ? 'unavailable' : (x * scale).toFixed(2);
   for (const [period, d] of Object.entries(s.depth_diagnostics || {})) {
-    rows.push({area: `State depth (${period === 'last_24h' ? '24h' : 'since deployment'})`, state: clock === 'within cadence' ? 'descriptive' : clock,
+    rows.push({area: `State depth (${period === 'last_24h' ? 'v1, 24h' : period === 'state_v2_last_24h' ? 'v2, 24h' : 'v1, since deployment'})`, state: clock === 'within cadence' ? 'descriptive' : clock,
       detail: `${d.forecasts} forecasts; ${d.abstained} abstentions; depth age median ${fmt(d.depth_age_minutes.median)} min, max ${fmt(d.depth_age_minutes.max)} min; ${d.missing_depth_age} unavailable ages. ` +
         Object.entries(d.abstention_reasons).map(([why, n]) => `${n}: ${why}`).join('; ')});
   }
