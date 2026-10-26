@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-10-26T03:02:07.431Z",
-  "generated_ms": 1792983727431,
-  "window_start_ms": 1792897327431,
+  "generated_utc": "2026-10-26T03:16:23.730Z",
+  "generated_ms": 1792984583730,
+  "window_start_ms": 1792898183730,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -296,30 +296,24 @@
     },
     "paired": {
       "due": 93,
-      "successful": 33,
-      "coverage": 0.3548387096774194,
+      "successful": 34,
+      "coverage": 0.3655913978494624,
       "states": {
-        "missed": 60,
-        "ok": 33
+        "ok": 34,
+        "missed": 59
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1792980966368,
-      "pending_outcomes": 5,
+      "last_success_ms": 1792981853332,
+      "pending_outcomes": 6,
       "overdue_scores": 0,
       "publication_delay_minutes": {
-        "n": 33,
+        "n": 34,
         "min": 0.8560166666666666,
-        "median": 10.153716666666666,
+        "median": 9.827291666666667,
         "p90": 17.774083333333333,
         "max": 20.326466666666665
       },
       "opportunities": [
-        {
-          "slot": 1792898100000,
-          "state": "missed",
-          "success_ms": null,
-          "reason": "no on-time preparation"
-        },
         {
           "slot": 1792899000000,
           "state": "ok",
@@ -871,21 +865,27 @@
           "state": "ok",
           "success_ms": 1792980966368,
           "reason": null
+        },
+        {
+          "slot": 1792981800000,
+          "state": "ok",
+          "success_ms": 1792981853332,
+          "reason": null
         }
       ]
     }
   },
   "pilots": {
     "stress": {
-      "due": 46,
-      "successful": 19,
-      "coverage": 0.41304347826086957,
+      "due": 47,
+      "successful": 20,
+      "coverage": 0.425531914893617,
       "states": {
-        "ok": 19,
+        "ok": 20,
         "missed": 27
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1792980967550
+      "last_success_ms": 1792981854245
     },
     "liquidations": {
       "due": 83,
@@ -945,14 +945,14 @@
       }
     },
     "options": {
-      "due": 22,
-      "successful": 22,
+      "due": 23,
+      "successful": 23,
       "coverage": 1.0,
       "states": {
-        "ok": 22
+        "ok": 23
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1792977235256
+      "last_success_ms": 1792980841561
     }
   },
   "alerts": [
@@ -965,7 +965,7 @@
     "paired: last-24h operational coverage below 80% (not a research threshold)"
   ],
   "integrity": "ok",
-  "last_prepare_ms": 1792983718922,
+  "last_prepare_ms": 1792984577825,
   "paired_diagnostics": {
     "scored_forecasts": 44,
     "unique_entries": 29,
@@ -977,46 +977,46 @@
   },
   "options_quality": {
     "captures": 24,
-    "legs": 17858,
+    "legs": 17854,
     "rejection_counts": {
-      "delta-distance": 15660,
-      "low-oi": 3513,
-      "maturity": 9832,
-      "wide": 1656,
-      "missing-or-malformed": 1146
+      "delta-distance": 15651,
+      "low-oi": 3509,
+      "maturity": 9824,
+      "wide": 1661,
+      "missing-or-malformed": 1134
     },
     "size_states": {
-      "not-in-source": 17858
+      "not-in-source": 17854
     },
     "quote_age_ms": {
-      "n": 16712,
+      "n": 16720,
       "min": 3085,
-      "median": 5065.0,
+      "median": 5089.0,
       "p90": 5973,
       "max": 6266
     },
     "relative_spread": {
-      "n": 16712,
+      "n": 16720,
       "min": 0.0013245033112582794,
-      "median": 0.035226779177266174,
+      "median": 0.03508771929824565,
       "p90": 0.25,
       "max": 1.2000000000000002
     },
     "delta_distance": {
-      "n": 17858,
+      "n": 17854,
       "min": 4.4942908195899633e-05,
-      "median": 0.2425264227820459,
-      "p90": 0.7184666110759546,
+      "median": 0.2425055374135306,
+      "p90": 0.718313461328421,
       "max": 0.75
     },
     "selected_strike_changes_by_expiry": {
-      "13NOV26": 8,
-      "27NOV26": 4,
+      "13NOV26": 7,
+      "27NOV26": 3,
       "26OCT26": 1,
-      "27OCT26": 10,
+      "27OCT26": 11,
       "30OCT26": 6,
       "6NOV26": 6,
-      "28OCT26": 1
+      "28OCT26": 2
     },
     "bracketing_expiry_changes": 0,
     "interpretation": "All observed legs, not independent samples. Rejection reasons overlap. No filter change or predictive admission; quote size stays unavailable when absent."
