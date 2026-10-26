@@ -321,10 +321,35 @@ export function validStudyOps(s) {
       s.stale_after_minutes !== 45 || !['ok', 'failed'].includes(s.integrity) || typeof s.paused !== 'boolean' ||
       !obj(s.studies) || !obj(s.pilots) || !Array.isArray(s.alerts) || !Array.isArray(s.warnings) ||
       ![...s.alerts, ...s.warnings].every(x => typeof x === 'string')) return false;
-  for (const row of [...Object.values(s.studies), ...Object.values(s.pilots)]) {
+  const deployment = s.deployment;
+  if (deployment != null && (!obj(deployment) || !Number.isFinite(Date.parse(deployment.started_utc)) ||
+      !/^[0-9a-f]{40}$/.test(deployment.commit) || typeof deployment.label !== 'string' ||
+      !obj(deployment.studies) || !obj(deployment.pilots))) return false;
+  for (const row of [...Object.values(s.studies), ...Object.values(s.pilots),
+      ...Object.values(deployment?.studies || {}), ...Object.values(deployment?.pilots || {})]) {
     if (!obj(row) || !count(row.due) || !count(row.successful) || row.successful > row.due ||
         !count(row.consecutive_misses) || row.consecutive_misses > row.due ||
         (row.due === 0 ? row.coverage !== null : !numeric(row.coverage) || Math.abs(row.coverage-row.successful/row.due) > 1e-9)) return false;
+    if (row.pending_successful != null && !count(row.pending_successful) ||
+        row.active_consecutive_misses != null && (!count(row.active_consecutive_misses) || row.active_consecutive_misses > row.consecutive_misses) ||
+        row.recovered_before_close != null && typeof row.recovered_before_close !== 'boolean') return false;
+  }
+  const dist = d => obj(d) && count(d.n) && ['min','median','p90','max'].every(k => d[k] === null || numeric(d[k]));
+  if (s.depth_diagnostics != null) {
+    if (!obj(s.depth_diagnostics)) return false;
+    for (const d of Object.values(s.depth_diagnostics)) {
+      if (!obj(d) || !count(d.forecasts) || !count(d.abstained) || d.abstained > d.forecasts ||
+          !count(d.missing_depth_age) || d.missing_depth_age > d.forecasts || !dist(d.depth_age_minutes) ||
+          !obj(d.abstention_reasons) || !Object.values(d.abstention_reasons).every(count)) return false;
+    }
+  }
+  if (s.options_quality?.selected_by_horizon != null) {
+    if (!obj(s.options_quality.selected_by_horizon)) return false;
+    for (const d of Object.values(s.options_quality.selected_by_horizon)) {
+      if (!obj(d) || !count(d.usable_captures) || !count(d.legs) ||
+          !['quote_age_ms','relative_spread','delta_distance'].every(k => dist(d[k])) ||
+          !obj(d.size_states) || !Object.values(d.size_states).every(count)) return false;
+    }
   }
   if (s.paired_diagnostics != null) {
     const p = s.paired_diagnostics;
@@ -342,15 +367,39 @@ export function studyRows(s, now = Date.now()) {
   const clock = age < -1 ? 'clock mismatch' : age > s.stale_after_minutes ? 'stale' : 'within cadence';
   const rows = [{area: 'Study report', state: s.integrity === 'failed' ? 'integrity failed' : clock,
     detail: `Generated ${s.generated_utc}; counts cover closed opportunities in the 24 hours to this report`}];
+  const label = name => ({turnover:'Turnover control', range:'Range calibration', state:'Continuous market state', paired:'Paired spot/perpetual', stress:'Exchange stress', liquidations:'Liquidation revisions', options:'Options usability'})[name] || name;
+  const status = r => clock !== 'within cadence' ? clock : s.paused ? 'paused' :
+    r.recovered_before_close ? 'recovered; history retained' : r.due === 0 ? 'none due' :
+    (r.active_consecutive_misses ?? r.consecutive_misses) >= 2 ? 'missed opportunities' :
+    r.coverage < .8 ? 'historical coverage below 80%' : 'within target';
+  const detail = r => `${r.successful}/${r.due} closed opportunities successful; ${r.consecutive_misses} trailing closed misses` +
+    (r.pending_successful ? `; ${r.pending_successful} additional successes awaiting deadline/grace closure` : '') +
+    (r.recovered_before_close ? '; a newer verified success cleared the current miss alert' : '');
   for (const [name, r] of Object.entries({...s.studies, ...s.pilots})) {
-    const state = clock !== 'within cadence' ? clock : s.paused ? 'paused' : r.due === 0 ? 'none due' :
-      r.consecutive_misses >= 2 ? 'missed opportunities' : r.coverage < .8 ? 'coverage below 80%' : 'within target';
-    rows.push({area: ({turnover:'Turnover control', range:'Range calibration', state:'Continuous market state', paired:'Paired spot/perpetual', stress:'Exchange stress', liquidations:'Liquidation revisions', options:'Options usability'})[name] || name, state, detail: `${r.successful}/${r.due} successful; ${r.consecutive_misses} consecutive misses`});
+    rows.push({area: `${label(name)} (24h)`, state: status(r), detail: detail(r)});
+  }
+  if (s.deployment) {
+    rows.push({area: 'Recovery deployment', state: clock === 'within cadence' ? 'operational comparison' : clock,
+      detail: `${s.deployment.label}; opportunity times from ${s.deployment.started_utc}. Fixed baseline; research clocks unchanged.`});
+    for (const [name, r] of Object.entries({...s.deployment.studies, ...s.deployment.pilots})) {
+      rows.push({area: `${label(name)} (since deployment)`, state: status(r), detail: detail(r)});
+    }
   }
   for (const detail of s.alerts) rows.push({area: 'Recorded alert', state: clock === 'within cadence' ? 'attention' : clock, detail});
   const p = s.paired_diagnostics;
   if (p) rows.push({area: 'Paired sample (since launch)', state: 'descriptive', detail:
     `${p.scored_forecasts} scored forecasts; ${p.unique_entries} distinct entries; ${p.largest_disjoint_60m_subset} disjoint 60m windows. ` +
     `Equal entry clocks: ${p.equal_entry_clock_share == null ? 'unknown' : (100*p.equal_entry_clock_share).toFixed(1)+'%'}. Counts do not establish independence.`});
+  const fmt = (x, scale = 1) => x == null ? 'unavailable' : (x * scale).toFixed(2);
+  for (const [period, d] of Object.entries(s.depth_diagnostics || {})) {
+    rows.push({area: `State depth (${period === 'last_24h' ? '24h' : 'since deployment'})`, state: clock === 'within cadence' ? 'descriptive' : clock,
+      detail: `${d.forecasts} forecasts; ${d.abstained} abstentions; depth age median ${fmt(d.depth_age_minutes.median)} min, max ${fmt(d.depth_age_minutes.max)} min; ${d.missing_depth_age} unavailable ages. ` +
+        Object.entries(d.abstention_reasons).map(([why, n]) => `${n}: ${why}`).join('; ')});
+  }
+  for (const [horizon, d] of Object.entries(s.options_quality?.selected_by_horizon || {})) {
+    rows.push({area: `Selected options (${horizon === 'rr25_7d' ? '7d' : '30d'}, 24h)`, state: clock === 'within cadence' ? 'descriptive' : clock,
+      detail: `${d.usable_captures} usable captures; ${d.legs} selected leg observations; quote age median ${fmt(d.quote_age_ms.median, .001)} s; spread median ${fmt(d.relative_spread.median, 100)}%, p90 ${fmt(d.relative_spread.p90, 100)}%; delta distance median ${fmt(d.delta_distance.median)}. ` +
+        `${d.size_states['not-in-source'] || 0} legs lack quote size. Repeated legs are not independent observations.`});
+  }
   return rows;
 }

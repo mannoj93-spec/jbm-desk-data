@@ -118,3 +118,13 @@ from the existing collector health. Its 45-minute clock is evaluated on the view
 cannot refresh old observations. Unknown/malformed reports never produce healthy coverage. Report cards link to
 both the original market-study results and the separate operational report. See
 [study operations](../docs/MARKET_STUDIES.md#operational-recovery-and-diagnostics) for diagnostic definitions.
+## Study recovery comparison
+
+Data health keeps the rolling 24-hour study coverage and adds a fixed comparison from the recovery deployment
+recorded in `market_study_ops.json`. Additional verified successes awaiting deadline/grace closure are shown
+separately. A newer success clears the current miss alarm without erasing historical misses. Both periods expire
+on the viewer clock. Optional fields preserve compatibility with older operational reports.
+
+State depth ages and abstention reasons, selected 7d/30d options leg quality, and paired-entry dependence are
+descriptive diagnostics. They also appear in the Data health CSV export. Neither restoration nor dashboard
+comparisons change prospective eligibility, evaluation clocks, or research denominators.

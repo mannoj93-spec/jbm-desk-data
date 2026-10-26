@@ -170,4 +170,89 @@ class AdditionalDiagnostics(unittest.TestCase):
         with self.assertRaisesRegex(ValueError,'hash mismatch'):
             O.options_diagnostics(self.base,[{'data':{'legs_file':str(p.relative_to(self.base)),'legs_sha':'wrong'}}])
 
+class DeploymentDiagnostics(unittest.TestCase):
+    setUp = Diagnostics.setUp
+    forecast = Diagnostics.forecast
+
+    def deployment(self, start):
+        (self.base/'market_study_ops.json').write_text(json.dumps({'schema':'market-study-operations/1',
+            'deployment':{'label':'Recovery', 'started_utc':O.U.iso_ms(start), 'commit':'a'*40}}))
+
+    def test_new_success_clears_alarm_before_closure_without_erasing_misses(self):
+        self.forecast('range',state='missed')
+        self.forecast('range',slot=self.slot+4*K.HOUR,state='missed')
+        self.forecast('range',slot=self.slot+8*K.HOUR)
+        self.deployment(self.slot+K.HOUR)
+        x=O.build(self.base,self.slot+8*K.HOUR+20*K.MIN)
+        r=x['studies']['range']
+        self.assertEqual((r['due'],r['successful'],r['consecutive_misses']),(2,0,2))
+        self.assertEqual((r['pending_successful'],r['active_consecutive_misses']),(1,0))
+        self.assertTrue(r['recovered_before_close'])
+        self.assertFalse(any(a.startswith('range:') for a in x['alerts']))
+        self.assertEqual(x['deployment']['studies']['range']['due'],1)
+        later=O.build(self.base,self.slot+8*K.HOUR+31*K.MIN)['studies']['range']
+        self.assertEqual((later['due'],later['successful'],later['pending_successful']),(3,1,0))
+
+    def test_unconfirmed_or_late_success_cannot_clear_alarm(self):
+        self.forecast('range',state='missed')
+        self.forecast('range',slot=self.slot+4*K.HOUR,state='missed')
+        self.forecast('range',slot=self.slot+8*K.HOUR,late=True)
+        r=O.build(self.base,self.slot+8*K.HOUR+28*K.MIN)['studies']['range']
+        self.assertEqual(r['active_consecutive_misses'],2)
+        self.assertEqual(r['pending_successful'],0)
+
+    def test_liquidation_streak_counts_capture_times_in_both_periods(self):
+        closed=[{'slot':self.slot,'state':'missed','success_ms':None} for _ in range(4)]
+        r=O.capture_coverage(closed,[],self.slot,grouped=True)
+        self.assertEqual((r['due'],r['consecutive_misses'],r['active_consecutive_misses']),(4,1,1))
+        pending=[{'slot':self.slot+K.HOUR,'state':'ok','success_ms':self.slot+K.HOUR}]
+        r=O.capture_coverage(closed,pending,self.slot,grouped=True)
+        self.assertEqual((r['due'],r['successful'],r['active_consecutive_misses']),(4,0,0))
+
+    def test_deployment_outlives_rolling_window_and_respects_exact_boundary(self):
+        self.deployment(self.slot+1)
+        for i in range(3):
+            self.forecast(slot=self.slot+i*K.HOUR)
+        x=O.build(self.base,self.slot+26*K.HOUR)
+        self.assertEqual(x['studies']['state']['successful'],1)
+        self.assertEqual(x['deployment']['studies']['state']['successful'],2)
+        self.assertEqual(x['deployment']['started_ms'],self.slot+1)
+
+    def test_depth_uses_recorded_age_and_retains_reasons_and_missingness(self):
+        rows=[({'data':{'study':'state','slot':self.slot,'state':'abstained','reasons':['stale depth'],
+                      'row':{'inputs':{'sources':{'depth':{'age_s':1867,'state':'stale'}}}}}},None),
+              ({'data':{'study':'state','slot':self.slot+K.HOUR,'state':'missed'}},None)]
+        x=O.depth_diagnostics(rows,self.slot,self.slot+K.HOUR)
+        self.assertEqual((x['forecasts'],x['abstained'],x['missing_depth_age']),(2,1,1))
+        self.assertEqual(x['depth_age_minutes']['n'],1)
+        self.assertAlmostEqual(x['depth_age_minutes']['median'],1867/60)
+        self.assertEqual(x['abstention_reasons'],{'stale depth':1})
+
+    def test_selected_options_use_recorded_expiries_strikes_and_separate_horizons(self):
+        import gzip
+        def leg(expiry, strike, side, spread):
+            return {'instrument':f'BTC-{expiry}-{strike}-{side}', 'relative_spread':spread,
+                    'quote_age_ms':4000, 'delta_distance':.02, 'size_state':'not-in-source','reasons':[]}
+        legs=[leg(e,k,s,v) for e,k,v in [('A',100,.01),('B',200,.03),('C',300,.05)] for s in ['C','P']]
+        legs.append({**leg('A',999,'C',.9),'reasons':['wide']})
+        d={'expiries':{e:{'state':'ok','pair':{'call_K':k,'put_K':k}} for e,k in [('A',100),('B',200),('C',300)]},
+           'rr25_7d':{'state':'ok','expiries':['A','B']},'rr25_30d':{'state':'ok','expiries':['B','C']}}
+        raw=json.dumps(legs).encode();p=self.base/K.STREAM/'option_legs'/'test.json.gz';p.parent.mkdir()
+        p.write_bytes(gzip.compress(raw));d.update(legs_file=str(p.relative_to(self.base)),legs_sha=hashlib.sha256(raw).hexdigest())
+        x=O.options_diagnostics(self.base,[{'data':d}])
+        self.assertEqual(x['legs'],7)
+        selected=x['selected_by_horizon']
+        self.assertEqual(selected['rr25_7d']['legs'],4)
+        self.assertEqual(selected['rr25_7d']['relative_spread']['median'],.02)
+        self.assertEqual(selected['rr25_30d']['relative_spread']['median'],.04)
+        self.assertEqual(selected['rr25_7d']['size_states'],{'not-in-source':4})
+        d['rr25_7d']['expiries']=['A','A']
+        self.assertEqual(len(O.selected_options(d,legs,'rr25_7d')),2)
+        with self.assertRaisesRegex(ValueError,'missing or ambiguous'):
+            O.selected_options(d,legs+[legs[0]],'rr25_7d')
+        with self.assertRaisesRegex(ValueError,'missing or ambiguous'):
+            O.selected_options(d,legs[1:],'rr25_7d')
+        d['rr25_7d']={'state':'unusable'}
+        self.assertEqual(O.selected_options(d,legs,'rr25_7d'),[])
+
 if __name__=='__main__':unittest.main()

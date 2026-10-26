@@ -2,9 +2,9 @@ name: Research dashboard
 on:
   push:
     branches: [main]
-    paths: ['reports/market_study_health.json', 'dashboard/**', 'scripts/build_dashboard.py', 'market_study_ops.py', 'regression/test_market_study_ops.py', 'regression/test_dashboard.py', '.github/workflows/dashboard.yml']
+    paths: ['reports/market_study_health.json', 'dashboard/**', 'scripts/build_dashboard.py', 'market_study_ops.py', 'market_study_ops.json', 'regression/test_market_study_ops.py', 'regression/test_dashboard.py', '.github/workflows/dashboard.yml']
   pull_request:
-    paths: ['dashboard/**', 'scripts/build_dashboard.py', 'market_study_ops.py', 'regression/test_market_study_ops.py', 'regression/test_dashboard.py', '.github/workflows/dashboard.yml']
+    paths: ['dashboard/**', 'scripts/build_dashboard.py', 'market_study_ops.py', 'market_study_ops.json', 'regression/test_market_study_ops.py', 'regression/test_dashboard.py', '.github/workflows/dashboard.yml']
   # Data commits made with GITHUB_TOKEN do not trigger push workflows.
   # Completion events and the fallback schedule keep the snapshot refreshed.
   workflow_run:

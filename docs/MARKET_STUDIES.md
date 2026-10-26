@@ -78,3 +78,24 @@ or commission an options prediction experiment.
 The dashboard's Data health view displays this operational report, expires it after 45 minutes on the viewer's
 clock, and links to the original study results separately. Publication of the new health report triggers a dashboard
 build directly, including when the study run was started by recovery. Missing reports remain unknown.
+
+The dashboard also shows **since recovery deployment** coverage alongside the unchanged rolling 24-hour view.
+`market_study_ops.json` pins PR #53's merge time and commit; builds and later diagnostic changes never move that
+baseline. Only opportunity times at or after that timestamp enter this comparison. The denominator still counts
+closed deadlines plus persistence grace. Already verified successes whose deadlines/grace have not closed appear
+separately, not as extra successes in that denominator. This is an operational cohort, not a new study launch.
+
+A newer verified success clears the current consecutive-miss alert even before its reporting window closes.
+Historical misses, the closed-window streak, and coverage warnings remain visible. Late or unconfirmed forecasts
+cannot clear it; turnover requires a verified execution. Staleness, integrity and scoring-backlog alerts remain
+independent. This avoids displaying a current collection failure after recovery has already been demonstrated.
+
+State-depth diagnostics summarize the ages recorded in each forecast's as-of input evidence, missing ages, and
+abstention reasons for both periods. Missing ages are never zero and missed forecasts are not labelled abstentions.
+No feature is reselected and the frozen 30-minute freshness limit is unchanged.
+
+Options quality retains its all-leg context and adds separate 7d/30d summaries for **only the recorded selected
+call/put strikes at the interpolation expiries**. Matching uses expiry, strike and side in hash-verified leg files;
+missing or ambiguous matches fail closed. Shared expiries count once per capture within a horizon. The summaries
+include quote age, relative spread, delta distance, size availability and diagnostic reasons; they do not rerun
+selection or change eligibility. Repeated captures and shared legs across horizons are dependent observations.

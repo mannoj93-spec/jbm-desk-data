@@ -342,3 +342,29 @@ test('malformed study coverage is withheld, including counts disguised as rates'
   assert.equal(validStudyOps(s),true);
   s.alerts=[{}];assert.equal(validStudyOps(s),false);
 });
+
+test('deployment coverage preserves historical misses and expires on viewer clock', () => {
+  const s=studyHealth();
+  s.studies.range={...s.studies.range,pending_successful:1,recovered_before_close:true,active_consecutive_misses:0};
+  s.deployment={label:'Recovery',started_utc:'2026-10-25T10:00:00Z',commit:'a'.repeat(40),pilots:{},
+    studies:{range:{due:0,successful:0,coverage:null,consecutive_misses:0,pending_successful:1}}};
+  const rows=studyRows(s,Date.parse('2026-10-25T12:20:00Z'));
+  assert.equal(rows[1].state,'recovered; history retained');
+  assert.match(rows[1].detail,/0\/6 closed/);
+  const recent=rows.find(r=>r.area==='Range calibration (since deployment)');
+  assert.match(recent.detail,/1 additional successes/);
+  assert.equal(studyRows(s,Date.parse('2026-10-25T12:46:00Z')).find(r=>r.area===recent.area).state,'stale');
+  s.deployment.studies.range.successful=1;assert.equal(validStudyOps(s),false);
+});
+
+test('depth and selected options distinguish unavailable values from zero', () => {
+  const s=studyHealth();const dist={n:0,min:null,median:null,p90:null,max:null};
+  s.depth_diagnostics={last_24h:{forecasts:1,abstained:1,missing_depth_age:1,depth_age_minutes:dist,
+    abstention_reasons:{'missing depth':1}}};
+  s.options_quality={selected_by_horizon:{rr25_7d:{usable_captures:0,legs:0,quote_age_ms:dist,
+    relative_spread:dist,delta_distance:dist,size_states:{}}}};
+  const rows=studyRows(s,Date.parse('2026-10-25T12:20:00Z'));
+  assert.match(rows.find(r=>r.area==='State depth (24h)').detail,/median unavailable/);
+  assert.match(rows.find(r=>r.area.startsWith('Selected options')).detail,/0 usable captures/);
+  s.depth_diagnostics.last_24h.abstained=2;assert.equal(validStudyOps(s),false);
+});
