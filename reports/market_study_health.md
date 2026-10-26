@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-26T23:01:18.515Z. Integrity: ok.
+Generated 2026-10-26T23:17:22.823Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -17,11 +17,11 @@ None.
 | turnover | 6/6 | 100.0% | 0 |
 | range | 5/6 | 83.3% | 0 |
 | state | 18/23 | 78.3% | 0 |
-| paired | 88/93 | 94.6% | 0 |
+| paired | 89/93 | 95.7% | 0 |
 | state_v2 | 0/0 | — | 0 |
-| stress | 45/46 | 97.8% | 0 |
+| stress | 46/47 | 97.9% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options | 22/22 | 100.0% | 0 |
+| options | 23/23 | 100.0% | 0 |
 
 turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -29,7 +29,7 @@ range: 6/6 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. A
 
 state: 23/23 closed opportunities recorded; 18 eligible forecasts; 5 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 93/93 closed opportunities recorded; 88 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 93/93 closed opportunities recorded; 89 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 0/0 closed opportunities recorded; 0 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -43,10 +43,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 5/5 | 0 |
 | range | 5/5 | 0 |
 | state | 17/22 | 1 |
-| paired | 86/86 | 3 |
-| stress | 43/43 | 2 |
+| paired | 87/87 | 3 |
+| stress | 44/44 | 1 |
 | liquidations | 88/88 | 4 |
-| options | 21/21 | 1 |
+| options | 22/22 | 1 |
 
 ## Diagnostics
 
