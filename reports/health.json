@@ -1,6 +1,6 @@
 {
  "availability": {
-  "generated_utc": "2026-10-26T18:01:39.516Z",
+  "generated_utc": "2026-10-26T18:26:32.460Z",
   "horizons": {
    "24h": {
     "recorded_state": "valid-current",
@@ -193,15 +193,15 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-10-26T18:15:17Z",
+ "generated_utc": "2026-10-26T18:32:05Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
-  "dispatcher_state": "fresh",
+  "dispatcher_state": "unknown",
   "external_timer": {
    "absent": [],
    "delayed": [],
-   "last_arrival_utc": "2026-10-26T18:12:03Z",
+   "last_arrival_utc": "2026-10-26T18:27:02Z",
    "on_time": 96,
    "on_time_max_lag_s": 3,
    "opportunities": 96,
@@ -209,11 +209,11 @@
    "state": "arriving",
    "window_h": 24
   },
-  "newest_scheduled_start_utc": "2026-10-26T16:55:48Z",
+  "newest_scheduled_start_utc": "2026-10-26T18:24:06Z",
   "problems_detected_by": [],
   "rule": "state is the heartbeat (last completed run, any result); last_result is how that run ended; last_check is what its check step did (2.28): only a check that ran and reported a finding detected a problem - setup running, a skipped check or no runner detected nothing",
   "source": "GitHub Actions API, scheduled runs",
-  "state": "unknown",
+  "state": "stale",
   "workflows": {
    "collect.yml": {
     "last_completed_utc": "2026-10-26T16:59:07Z",
@@ -253,33 +253,15 @@
     "last_success_utc": "2026-10-26T15:28:04Z"
    },
    "range.yml": {
-    "last_completed_utc": "2026-10-26T09:53:31Z",
+    "last_completed_utc": "2026-10-26T18:26:37Z",
     "last_result": "success",
-    "last_run_id": 40302784078,
-    "last_scheduled_start_utc": "2026-10-26T09:51:17Z",
-    "last_success_utc": "2026-10-26T09:51:17Z"
+    "last_run_id": 40377394150,
+    "last_scheduled_start_utc": "2026-10-26T18:24:06Z",
+    "last_success_utc": "2026-10-26T18:24:06Z"
    },
    "recovery.yml": {
-    "events": [
-     "schedule",
-     "workflow_dispatch"
-    ],
-    "last_completed_utc": "2026-10-26T18:12:59Z",
-    "last_result": "success",
-    "last_run_id": 40375604740,
-    "last_scheduled_start_utc": "2026-10-26T18:12:03Z",
-    "last_success_utc": "2026-10-26T18:12:03Z",
-    "native": {
-     "last_completed_utc": "2026-10-26T17:31:07Z",
-     "last_result": "success",
-     "last_run_id": 40369198197,
-     "last_scheduled_start_utc": "2026-10-26T17:30:06Z",
-     "last_success_utc": "2026-10-26T17:30:06Z",
-     "stale_after_min": 45,
-     "state": "fresh"
-    },
-    "stale_after_min": 45,
-    "state": "fresh"
+    "error": "HTTPError",
+    "state": "unknown"
    },
    "research-streams.yml": {
     "last_completed_utc": "2026-10-26T15:33:57Z",
@@ -296,16 +278,21 @@
     "last_success_utc": "2026-10-26T13:29:19Z"
    },
    "watchdog.yml": {
-    "error": "HTTPError",
-    "state": "unknown"
+    "last_completed_utc": "2026-10-26T14:17:14Z",
+    "last_result": "success",
+    "last_run_id": 40338207735,
+    "last_scheduled_start_utc": "2026-10-26T14:17:04Z",
+    "last_success_utc": "2026-10-26T14:17:04Z",
+    "stale_after_min": 90,
+    "state": "stale"
    }
   }
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 111.8,
+  "report_age_min": 2.8,
   "report_coverage": 0.8951,
-  "report_generated_utc": "2026-10-26T16:23:28.252Z",
+  "report_generated_utc": "2026-10-26T18:29:18.821Z",
   "report_scheduled_decisions": 143,
   "rule": "the report's coverage is as of its generation; decisions due after it are listed here with their recorded state, never folded into its percentage"
  },
@@ -313,13 +300,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 78.4,
+  "age_min": 95.2,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 95,
    "expected_slots": 96,
-   "from_ms": 1792952117015,
-   "from_utc": "2026-10-25T18:15:17Z",
+   "from_ms": 1792953125619,
+   "from_utc": "2026-10-25T18:32:05Z",
    "intervals": 95,
    "intervals_with_automated_run": 92,
    "intervals_with_successful_automated_run": 92,
@@ -330,8 +317,8 @@
     "native-schedule": 6,
     "recovery": 89
    },
-   "to_ms": 1793038517015,
-   "to_utc": "2026-10-26T18:15:17Z"
+   "to_ms": 1793039525619,
+   "to_utc": "2026-10-26T18:32:05Z"
   },
   "gaps": [
    {
@@ -473,6 +460,13 @@
     "minutes": 381.6,
     "start_ms": 1793010919914,
     "start_utc": "2026-10-26T10:35:19Z"
+   },
+   {
+    "end_ms": null,
+    "end_utc": null,
+    "minutes": 95.16,
+    "start_ms": 1793033815730,
+    "start_utc": "2026-10-26T16:56:55Z"
    }
   ],
   "last_scheduled_utc": "2026-10-26T16:56:55Z",
@@ -482,24 +476,24 @@
    "acceptance_target": {
     "breached_24h": false,
     "breached_now": false,
-    "current_gap_min": 1.7,
+    "current_gap_min": 1.8,
     "longest_successful_gap_24h_min": 30.1,
     "max_gap_min": 45,
     "rule": "restoration acceptance target (45 min between persisted critical successes); separate from the watchdog's stale limit"
    },
-   "age_min": 1.7,
-   "data_age_min": 1.7,
+   "age_min": 1.8,
+   "data_age_min": 1.8,
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-10-26T18:13:35Z",
-   "last_automated_utc": "2026-10-26T18:13:35Z",
+   "last_activity_utc": "2026-10-26T18:30:16Z",
+   "last_automated_utc": "2026-10-26T18:30:16Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-10-26T18:13:35Z",
+   "last_success_utc": "2026-10-26T18:30:16Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
   "stale_limit_min": 90,
-  "state": "healthy"
+  "state": "stale"
  }
 }
