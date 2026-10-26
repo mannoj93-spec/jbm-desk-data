@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-10-26T17:00:02.636Z",
-  "generated_ms": 1793034002636,
-  "window_start_ms": 1792947602636,
+  "generated_utc": "2026-10-26T17:01:18.421Z",
+  "generated_ms": 1793034078421,
+  "window_start_ms": 1792947678421,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -137,10 +137,10 @@
       },
       "consecutive_misses": 1,
       "last_success_ms": 1793026886578,
-      "pending_successful": 0,
-      "recovered_before_close": false,
-      "active_consecutive_misses": 1,
-      "pending_outcomes": 2,
+      "pending_successful": 1,
+      "recovered_before_close": true,
+      "active_consecutive_misses": 0,
+      "pending_outcomes": 3,
       "overdue_scores": 0,
       "publication_delay_minutes": {
         "n": 16,
@@ -300,10 +300,10 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1793031615057,
-      "pending_successful": 2,
+      "pending_successful": 3,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
-      "pending_outcomes": 4,
+      "pending_outcomes": 5,
       "overdue_scores": 0,
       "publication_delay_minutes": {
         "n": 73,
@@ -885,7 +885,7 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1793031162696,
-      "pending_successful": 1,
+      "pending_successful": 2,
       "recovered_before_close": false,
       "active_consecutive_misses": 0
     },
@@ -899,7 +899,7 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1793031164390,
-      "pending_successful": 0,
+      "pending_successful": 4,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
       "by_vintage": {
@@ -1012,9 +1012,9 @@
         },
         "consecutive_misses": 1,
         "last_success_ms": 1793026886578,
-        "pending_successful": 0,
-        "recovered_before_close": false,
-        "active_consecutive_misses": 1
+        "pending_successful": 1,
+        "recovered_before_close": true,
+        "active_consecutive_misses": 0
       },
       "paired": {
         "due": 62,
@@ -1025,7 +1025,7 @@
         },
         "consecutive_misses": 0,
         "last_success_ms": 1793031615057,
-        "pending_successful": 2,
+        "pending_successful": 3,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       }
@@ -1040,7 +1040,7 @@
         },
         "consecutive_misses": 0,
         "last_success_ms": 1793031162696,
-        "pending_successful": 1,
+        "pending_successful": 2,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       },
@@ -1053,7 +1053,7 @@
         },
         "consecutive_misses": 0,
         "last_success_ms": 1793031164390,
-        "pending_successful": 0,
+        "pending_successful": 4,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       },
@@ -1072,7 +1072,7 @@
       }
     }
   },
-  "last_prepare_ms": 1793033995901,
+  "last_prepare_ms": 1793034069274,
   "paired_diagnostics": {
     "scored_forecasts": 100,
     "unique_entries": 73,
@@ -1084,13 +1084,13 @@
   },
   "depth_diagnostics": {
     "last_24h": {
-      "forecasts": 23,
+      "forecasts": 24,
       "abstained": 3,
       "missing_depth_age": 4,
       "depth_age_minutes": {
-        "n": 19,
+        "n": 20,
         "min": 15.6,
-        "median": 16.1,
+        "median": 16.09166666666667,
         "p90": 31.033333333333335,
         "max": 31.116666666666667
       },
@@ -1272,18 +1272,25 @@
           "reasons": [
             "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
           ]
+        },
+        {
+          "slot": 1793034000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
         }
       ],
       "interpretation": "Recorded as-of depth ages; unavailable ages are not zero. No feature reselection or threshold changes."
     },
     "since_deployment": {
-      "forecasts": 16,
+      "forecasts": 17,
       "abstained": 3,
       "missing_depth_age": 0,
       "depth_age_minutes": {
-        "n": 16,
+        "n": 17,
         "min": 15.683333333333334,
-        "median": 16.09166666666667,
+        "median": 16.083333333333332,
         "p90": 31.033333333333335,
         "max": 31.116666666666667
       },
@@ -1408,6 +1415,13 @@
           "reasons": [
             "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
           ]
+        },
+        {
+          "slot": 1793034000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
         }
       ],
       "interpretation": "Recorded as-of depth ages; unavailable ages are not zero. No feature reselection or threshold changes."
