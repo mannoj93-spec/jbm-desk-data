@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-10-26T08:02:20.681Z",
-  "generated_ms": 1793001740681,
-  "window_start_ms": 1792915340681,
+  "generated_utc": "2026-10-26T08:17:55.667Z",
+  "generated_ms": 1793002675667,
+  "window_start_ms": 1792916275667,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -68,7 +68,7 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1792988374052,
-      "pending_outcomes": 1,
+      "pending_outcomes": 2,
       "overdue_scores": 0,
       "publication_delay_minutes": {
         "n": 1,
@@ -281,30 +281,24 @@
     },
     "paired": {
       "due": 93,
-      "successful": 47,
-      "coverage": 0.5053763440860215,
+      "successful": 48,
+      "coverage": 0.5161290322580645,
       "states": {
-        "missed": 46,
-        "ok": 47
+        "missed": 45,
+        "ok": 48
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1792998970751,
+      "last_success_ms": 1793000767051,
       "pending_outcomes": 5,
       "overdue_scores": 0,
       "publication_delay_minutes": {
-        "n": 47,
+        "n": 48,
         "min": 0.8888666666666667,
-        "median": 3.813633333333333,
+        "median": 4.1905833333333335,
         "p90": 16.2205,
         "max": 19.812166666666666
       },
       "opportunities": [
-        {
-          "slot": 1792916100000,
-          "state": "missed",
-          "success_ms": null,
-          "reason": "no on-time preparation"
-        },
         {
           "slot": 1792917000000,
           "state": "missed",
@@ -856,21 +850,27 @@
           "state": "ok",
           "success_ms": 1792998970751,
           "reason": null
+        },
+        {
+          "slot": 1792999800000,
+          "state": "ok",
+          "success_ms": 1793000767051,
+          "reason": null
         }
       ]
     }
   },
   "pilots": {
     "stress": {
-      "due": 46,
-      "successful": 26,
-      "coverage": 0.5652173913043478,
+      "due": 47,
+      "successful": 27,
+      "coverage": 0.574468085106383,
       "states": {
         "missed": 20,
-        "ok": 26
+        "ok": 27
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1792998070053
+      "last_success_ms": 1793000767826
     },
     "liquidations": {
       "due": 88,
@@ -930,14 +930,14 @@
       }
     },
     "options": {
-      "due": 22,
-      "successful": 22,
+      "due": 23,
+      "successful": 23,
       "coverage": 1.0,
       "states": {
-        "ok": 22
+        "ok": 23
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1792995238073
+      "last_success_ms": 1792998839155
     }
   },
   "alerts": [],
@@ -948,57 +948,57 @@
     "paired: last-24h operational coverage below 80% (not a research threshold)"
   ],
   "integrity": "ok",
-  "last_prepare_ms": 1793001730656,
+  "last_prepare_ms": 1793002669878,
   "paired_diagnostics": {
-    "scored_forecasts": 64,
-    "unique_entries": 44,
+    "scored_forecasts": 65,
+    "unique_entries": 45,
     "repeated_entry_groups": 20,
     "largest_disjoint_60m_subset": 23,
     "equal_entry_clock_share": 1,
-    "entry_grouped_mean_difference": 0.01065340909090909,
+    "entry_grouped_mean_difference": 0.010416666666666666,
     "interpretation": "Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim."
   },
   "options_quality": {
     "captures": 24,
-    "legs": 17847,
+    "legs": 17855,
     "rejection_counts": {
-      "delta-distance": 15636,
+      "delta-distance": 15641,
       "low-oi": 3492,
       "maturity": 9794,
-      "wide": 1668,
-      "missing-or-malformed": 1118
+      "wide": 1677,
+      "missing-or-malformed": 1123
     },
     "size_states": {
-      "not-in-source": 17847
+      "not-in-source": 17855
     },
     "quote_age_ms": {
-      "n": 16729,
+      "n": 16732,
       "min": 3085,
-      "median": 4708,
-      "p90": 6233,
+      "median": 4708.0,
+      "p90": 5973,
       "max": 6546
     },
     "relative_spread": {
-      "n": 16729,
+      "n": 16732,
       "min": 0.0013253810470510285,
       "median": 0.03508771929824565,
-      "p90": 0.25,
-      "max": 1.2000000000000002
+      "p90": 0.2545454545454546,
+      "max": 1.3333333333333333
     },
     "delta_distance": {
-      "n": 17847,
+      "n": 17855,
       "min": 4.4942908195899633e-05,
-      "median": 0.2421077049173384,
+      "median": 0.2422078570035322,
       "p90": 0.7179303405412748,
       "max": 0.7499999999948691
     },
     "selected_strike_changes_by_expiry": {
+      "27OCT26": 10,
+      "30OCT26": 4,
       "13NOV26": 5,
-      "27OCT26": 11,
-      "30OCT26": 5,
       "6NOV26": 7,
-      "27NOV26": 2,
-      "28OCT26": 3,
+      "27NOV26": 3,
+      "28OCT26": 4,
       "29OCT26": 1
     },
     "bracketing_expiry_changes": 0,
