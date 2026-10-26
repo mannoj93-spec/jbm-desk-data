@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-26T03:31:17.177Z. Integrity: ok.
+Generated 2026-10-26T03:47:34.541Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -18,8 +18,8 @@ Paused: False
 | range | 0/6 | 0.0% | 6 |
 | state | 9/24 | 37.5% | 0 |
 | paired | 34/93 | 36.6% | 0 |
-| stress | 19/46 | 41.3% | 0 |
-| liquidations | 34/83 | 41.0% | 0 |
+| stress | 20/47 | 42.6% | 0 |
+| liquidations | 38/87 | 43.7% | 0 |
 | options | 23/23 | 100.0% | 0 |
 
 ## Diagnostics
@@ -32,5 +32,5 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - paired: last-24h operational coverage below 80% (not a research threshold)
 
-Paired study: 46 scored forecasts; 30 unique entries; 19 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 47 scored forecasts; 31 unique entries; 19 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
