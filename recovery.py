@@ -23,6 +23,7 @@ What is due (UTC; derived from the contracts, not tuned to results):
   research streams after the decision's range run completed (or from 50 min after the close when none did), when no
                   streams run started since: normally workflow_run starts it at once; this covers a dropped chain.
                   Dispatched until STREAMS_LAST_DISPATCH_MIN, inside PS1's 90-minute execution deadline.
+  market studies  every quarter-hour, up to two attempts; direct follow-up after recovered range publication.
   range scoring   no run created for SCORING_STALE_MIN (hourly schedule + 10 min).
 At most one dispatch per workflow per invocation; listing failures dispatch nothing; every dispatch failure fails the
 run. It never cancels, re-runs or edits a run, and never touches research state.
@@ -49,7 +50,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-VERSION = "recovery-1.3.0"
+VERSION = "recovery-1.4.0"
 UTC = dt.timezone.utc
 API = "https://api.github.com"
 PRODUCTION_REF = "main"
@@ -67,7 +68,7 @@ SCORING_STALE_MIN = 70
 # progress (bounded), or queued for less than the wait below. A run that failed, was cancelled, never received a
 # runner or has been queued longer no longer suppresses, so dead attempts cannot block recovery indefinitely; the
 # per-key caps bound retries (at most two dispatches per collector slot, range decision or streams decision).
-QUEUE_WAIT_MIN = {"collector": 10, "range": 10, "streams": 10, "scoring": 20}
+QUEUE_WAIT_MIN = {"collector": 10, "range": 10, "streams": 10, "scoring": 20, "studies": 5}
 IN_PROGRESS_MAX_MIN = 40
 COLLECTOR_MAX_DISPATCHES = 2
 STREAMS_MAX_DISPATCHES = 2
@@ -75,7 +76,8 @@ WAITING = ("queued", "pending", "waiting", "requested")
 YIELDS = "state/recovery_yields.jsonl"
 
 WORKFLOWS = {"collector": ("collect.yml", "Collector"), "range": ("range.yml", "Range forecasts"),
-             "streams": ("research-streams.yml", "Research streams"), "scoring": ("range-score.yml", "Range scoring")}
+             "streams": ("research-streams.yml", "Research streams"), "scoring": ("range-score.yml", "Range scoring"),
+             "studies": ("market-studies.yml", "Market studies")}
 
 
 def parse(s):
@@ -198,7 +200,24 @@ def plan(now, runs, minutes=None):
         if not any(is_title(r.get("display_title"), "Range scoring", hk) for r in runs.get("scoring", [])):
             out.append(("scoring", hk, "no successful or progressing range-scoring run for "
                                        + (f"{(now - max(sc)).total_seconds() / 60:.0f} min" if sc else "the listed history")))
+    out.extend(study_plan(now, runs))
     return out
+
+
+def study_plan(now, runs, after=None):
+    """Recover each quarter-hour; a source-publication chain ignores runs created before that source.
+    Two attempts per slot, main only, with bounded queued/in-progress suppression. This changes no study clock.
+    """
+    slot = now.replace(minute=now.minute // 15 * 15, second=0, microsecond=0)
+    key = iso(slot)
+    rs = production(runs).get("studies", [])
+    mine = [r for r in rs if is_title(r.get("display_title"), "Market studies", key)]
+    anchor = max(slot, after) if after else slot
+    covered = any(created(r) and created(r) >= anchor and
+                  progressing(r, now, QUEUE_WAIT_MIN["studies"]) for r in rs)
+    if covered or len(mine) >= 2:
+        return []
+    return [("studies", key, "quarter-hour study opportunity" if not after else "range source now published")]
 
 
 # ------------------------------------------------------------------------------------------------ GitHub API
@@ -225,10 +244,12 @@ def _request(method, url, token, body=None, opener=None, tries=2):
     raise RuntimeError(f"{method} {url.split('/repos/')[-1]}: {last}")
 
 
-def list_runs(repo, token, opener=None, ref=None):
+def list_runs(repo, token, opener=None, ref=None, keys=None):
     ref = ref or PRODUCTION_REF
     out = {}
     for key, (wf, _) in WORKFLOWS.items():
+        if keys is not None and key not in keys:
+            continue
         status, body = _request("GET", f"{API}/repos/{repo}/actions/workflows/{wf}/runs?per_page=40&branch={ref}",
                                 token, opener=opener)
         if status != 200:
@@ -362,6 +383,26 @@ def main(argv):
             with open(os.environ["GITHUB_OUTPUT"], "a") as f:
                 f.write(f"covered={'true' if yes else 'false'}\n")
         return 0
+    if cmd == "study-chain":
+        # Only a verified, persisted range confirmation can open this fast follow-up path.
+        from desk import stream_util as U
+        from research_tools.market_studies.experiments import source
+        slot = parse(argv[argv.index("--slot") + 1]) if "--slot" in argv else None
+        token, repo = os.environ.get("GITHUB_TOKEN"), os.environ.get("GITHUB_REPOSITORY")
+        if slot is None or not token or not repo:
+            return 2
+        now = dt.datetime.now(UTC)
+        src = source(ROOT, int(slot.timestamp() * 1000), '24h', int(now.timestamp() * 1000))
+        if not src or now.timestamp() * 1000 >= U.ms(U.parse(src['document']['start_utc'])):
+            print("No published range source with an open calibration deadline")
+            return 0
+        anchor = dt.datetime.fromtimestamp(src['available_ms'] / 1000, UTC)
+        runs = list_runs(repo, token, keys={'studies'})
+        items = study_plan(now, runs, after=anchor)
+        import provenance
+        results = dispatch(repo, token, items, provenance.child_origin())
+        print(json.dumps(results))
+        return int(any(not r['ok'] for r in results))
     if cmd == "chain":
         slot = argv[argv.index("--slot") + 1] if "--slot" in argv else ""
         token, repo = os.environ.get("GITHUB_TOKEN"), os.environ.get("GITHUB_REPOSITORY")

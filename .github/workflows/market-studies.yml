@@ -1,4 +1,5 @@
 name: Market studies
+run-name: ${{ inputs.trigger == 'recovery' && format('Market studies recovery {0} via {1}', inputs.slot, inputs.origin) || github.event_name == 'workflow_run' && format('Market studies after run {0} attempt {1}', github.event.workflow_run.id, github.event.workflow_run.run_attempt) || '' }}
 on:
   workflow_run:
     workflows: ["Collector", "Range forecasts"]
@@ -7,6 +8,19 @@ on:
   schedule:
     - cron: '12,27,42,57 * * * *'
   workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'Automation only; leave blank when running manually'
+        type: string
+        default: ''
+      slot:
+        description: 'Automation only: recovery opportunity'
+        type: string
+        default: ''
+      origin:
+        description: 'Automation only: recovery lineage'
+        type: string
+        default: ''
 permissions:
   contents: write
 jobs:
@@ -19,6 +33,9 @@ jobs:
       queue: max
       cancel-in-progress: false
     env:
+      DESK_DISPATCH_TRIGGER: ${{ inputs.trigger }}
+      DESK_DISPATCH_SLOT: ${{ inputs.slot }}
+      DESK_DISPATCH_ORIGIN: ${{ inputs.origin }}
       PYTHONDONTWRITEBYTECODE: '1'
       PERSIST_BUDGET_S: '90'
     steps:
@@ -60,6 +77,11 @@ jobs:
         id: report
         continue-on-error: true
         run: python -m research_tools.market_studies report
+      - name: Report operational coverage without changing research evidence
+        id: health
+        if: always()
+        continue-on-error: true
+        run: python market_study_ops.py report
       - name: Persist records including failures
         id: persist
         if: always()
@@ -68,7 +90,7 @@ jobs:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}
           DESK_META_TOKEN: ${{ github.token }}
           COMMIT_MESSAGE: Market study evidence and coverage
-        run: bash scripts/commit_push.sh streams/market-studies reports/market_studies.json reports/market_studies.md
+        run: bash scripts/commit_push.sh streams/market-studies reports/market_studies.json reports/market_studies.md reports/market_study_health.json reports/market_study_health.md
       - name: Require every stage
         if: always()
         env:
@@ -80,7 +102,8 @@ jobs:
           SCORE: ${{ steps.score.outcome }}
           REPORT: ${{ steps.report.outcome }}
           PERSIST: ${{ steps.persist.outcome }}
+          HEALTH: ${{ steps.health.outcome }}
         run: |
-          for result in "$PREPARE" "$PUBLISH" "$CONFIRM" "$EXECUTE" "$COLLECT" "$SCORE" "$REPORT" "$PERSIST"; do
+          for result in "$PREPARE" "$PUBLISH" "$CONFIRM" "$EXECUTE" "$COLLECT" "$SCORE" "$REPORT" "$PERSIST" "$HEALTH"; do
             test "$result" = success || exit 1
           done

@@ -40,3 +40,41 @@ Every scheduled opportunity stays in the denominator, including no run, missing 
 No automatic promotion is enabled. Turnover has 180-/365-day review checkpoints; its first possible support review needs 365 days, 20 blocks, a positive stressed primary interval, >=80% execution coverage, 10%-20% realized risk for both B2 arms and the drawdown guardrail. The other primary studies have a 180-day review floor plus their minimum blocks. Reviewing several primaries still requires multiplicity-aware judgement; a favourable descriptive chart alone is not support.
 
 The workflow shares the repository-write queue, has a 12-minute job deadline, narrow writer permissions, and persists failure records before its final verdict. A failed required stage makes the workflow red. To pause new forecasts, paper execution and pilot requests, add `streams/market-studies/v1/paused.json` through a reviewed change; retained outcomes continue to be scored and reported. Delete that marker through review to resume. Do not edit protocol/implementation hashes in an active registration: changed research semantics require a new protocol version, directory and clock. Raw/evidence journals fail closed on broken chains or changed bindings.
+
+
+## Operational recovery and diagnostics
+
+The recovery dispatcher explicitly starts Market studies for each quarter-hour opportunity, with at most two
+recovery attempts per slot. Main-branch successful or progressing runs suppress duplicate dispatches; failed or
+stalled attempts can retry. Recovery-started range runs also explicitly dispatch studies after their source forecast
+is confirmed and persisted, while the calibration deadline remains open. A study run created before that source
+publication cannot suppress this follow-up. This avoids relying on workflow-run events from token-started runs.
+The original forecast deadlines, first-seen inputs, and scoring populations are unchanged; missed slots stay missed.
+
+`market_study_ops.py` is a separate, read-only diagnostic reader outside the frozen v1 implementation. Its `report`
+command writes only `reports/market_study_health.md` and `.json`; its `check` command writes nothing and returns
+nonzero for actionable alerts. The market-studies writer persists the reports, including an explicit integrity-failed
+report if journal validation fails. The recovery workflow's independent `study-watch` job recomputes health from
+main on its own clock, so a silent study workflow cannot hide behind an old report. A failed watch means an
+operational problem, never an unsupported or failed research hypothesis.
+
+Coverage uses the last 24 hours of opportunity times, after their deadlines and a five-minute persistence allowance.
+Paired opportunities get the full possible 30-minute publication allowance; turnover gets 90 minutes, range/state
+25, stress/liquidation captures 30, and options an hour to capture and persist. Pending outcomes are separate;
+unscored eligible outcomes more than two hours past maturity remain a backlog even after leaving the coverage
+window. No successful preparation for 45 minutes, two consecutive closed missed opportunities/capture times,
+scoring backlogs, or invalid records raise alerts. Historical coverage below 80% is an operational warning, not a
+change to the research protocol. A pause suppresses new-collection alerts but retains integrity and scoring checks.
+
+The JSON also reports publication delays, calibration source-confirmation times, daily training readiness,
+per-vintage liquidation coverage, and the time of the last successful capture. Raw missing-record placeholders
+never count as captured market data. Paired diagnostics show unique entry times, repeated-entry groups, a largest
+disjoint 60-minute subset and equal-clock frequency. The entry-grouped mean averages differences within each
+shared entry before averaging across entries: it is a sensitivity diagnostic, not a replacement primary or an
+independence claim. Options quality adds all-leg quote ages, spreads, delta distances, overlapping rejection
+counts, selected-strike changes within expiry, and changes of interpolation expiries. These do not relax filters
+or commission an options prediction experiment.
+
+The dashboard's Data health view displays this operational report, expires it after 45 minutes on the viewer's
+clock, and links to the original study results separately. Publication of the new health report triggers a dashboard
+build directly, including when the study run was started by recovery. Missing reports remain unknown.

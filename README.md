@@ -155,14 +155,14 @@ into an on-time one.
 
 The dashboard is a read-only repository snapshot. Refresh loads the latest deployed snapshot;
 it may lag repository reports. Market studies currently have dedicated reports linked above,
-rather than dedicated dashboard views.
+with operational coverage and deadline monitoring in the Data health view.
 
 | Workspace | Purpose |
 |---|---|
 | Overview | Recorded BTC history, model comparisons, forecast availability, and research watchlist |
 | Range forecasts | Full-window range quantiles, expiry, and descriptive scoring evidence |
 | Research lab | Evidence cards, integrity, checkpoints, protocol readiness, and data catalog |
-| Data health | Source coverage, timestamps, filters, and operational health |
+| Data health | Source coverage, timestamps, filters, operational health, and market-study coverage/deadline diagnostics |
 | Paper desk | PS1 lifecycle and paired B2/B1 comparisons |
 | Reports & audit | Commit-pinned reports, acceptance and supplementary audits, and exportable source hashes |
 
@@ -230,6 +230,7 @@ a local launch. Never copy development results into prospective evidence.
 | `desk/` | Range model, fits, forecasts, companion, and PS1 jobs |
 | `research_tools/` | Data catalog, research helpers, prepared-study tooling, and `market_studies/` runtime/protocol |
 | `streams/` | Prospective stream records, including `rc1d-b1/`, `ps1/`, and `market-studies/v1/` |
+| `market_study_ops.py` | Read-only study coverage, deadline, paired-entry, and options-quality diagnostics; [operations](docs/MARKET_STUDIES.md#operational-recovery-and-diagnostics) |
 | `reports/` | Generated summaries and detailed artifacts; latest reports are regenerated |
 | `dashboard/`, `scripts/build_dashboard.py` | Static interface and snapshot builder |
 | `scripts/`, `.github/workflows/` | Persistence guards, release checks, scheduling, and deployment |

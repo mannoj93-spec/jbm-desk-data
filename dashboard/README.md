@@ -110,3 +110,11 @@ node --check dashboard/app.js
 Browser QA should cover all six views at desktop/mobile widths, theme persistence, search/filter,
 CSV download, keyboard modal dismissal, stale/expired states, and fetch failure/retry. The project
 uses no third-party client libraries or remote font requests.
+
+
+Market-study operational diagnostics are an optional `studyOps` source from
+`reports/market_study_health.json`. Data health shows closed-opportunity coverage and recorded alerts separately
+from the existing collector health. Its 45-minute clock is evaluated on the viewer's clock; a new dashboard build
+cannot refresh old observations. Unknown/malformed reports never produce healthy coverage. Report cards link to
+both the original market-study results and the separate operational report. See
+[study operations](../docs/MARKET_STUDIES.md#operational-recovery-and-diagnostics) for diagnostic definitions.

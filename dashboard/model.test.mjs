@@ -320,3 +320,25 @@ test('data outcome and activity are shown apart; a fresh failure stays visible; 
  assert.equal(by['Collector service (automated activity)'].state, 'within cadence');
  assert.match(by['Collector data (last persisted critical success)'].detail, /target breached/);
 });
+
+import { studyRows, validStudyOps } from './model.js';
+const studyHealth = () => ({schema:'market-study-health/1', generated_utc:'2026-10-25T12:00:00Z',
+  stale_after_minutes:45, paused:false, integrity:'ok', alerts:[], warnings:[], pilots:{},
+  studies:{range:{due:6,successful:0,coverage:0,consecutive_misses:6}}});
+test('study coverage cannot become healthy through a dashboard rebuild or missing report', () => {
+  const s=studyHealth();
+  assert.equal(validStudyOps(s),true);
+  assert.equal(studyRows(s,Date.parse('2026-10-25T12:20:00Z'))[1].state,'missed opportunities');
+  assert.equal(studyRows(s,Date.parse('2026-10-25T12:46:00Z'))[1].state,'stale');
+  assert.equal(studyRows(s,Date.parse('2026-10-25T11:00:00Z'))[1].state,'clock mismatch');
+  assert.equal(studyRows(null)[0].state,'unknown');
+  s.paused=true;
+  assert.equal(studyRows(s,Date.parse('2026-10-25T12:20:00Z'))[1].state,'paused');
+});
+test('malformed study coverage is withheld, including counts disguised as rates', () => {
+  const s=studyHealth();s.studies.range.coverage=1;
+  assert.equal(validStudyOps(s),false);assert.equal(studyRows(s)[0].state,'invalid');
+  s.studies.range={due:0,successful:0,coverage:null,consecutive_misses:0};
+  assert.equal(validStudyOps(s),true);
+  s.alerts=[{}];assert.equal(validStudyOps(s),false);
+});
