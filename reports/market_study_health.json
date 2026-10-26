@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-10-26T12:02:20.242Z",
-  "generated_ms": 1793016140242,
-  "window_start_ms": 1792929740242,
+  "generated_utc": "2026-10-26T12:19:34.104Z",
+  "generated_ms": 1793017174104,
+  "window_start_ms": 1792930774104,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -68,7 +68,7 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1793002673336,
-      "pending_outcomes": 2,
+      "pending_outcomes": 3,
       "overdue_scores": 0,
       "publication_delay_minutes": {
         "n": 2,
@@ -279,30 +279,24 @@
     },
     "paired": {
       "due": 93,
-      "successful": 58,
-      "coverage": 0.6236559139784946,
+      "successful": 59,
+      "coverage": 0.6344086021505376,
       "states": {
-        "missed": 35,
-        "ok": 58
+        "missed": 34,
+        "ok": 59
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793013371523,
-      "pending_outcomes": 6,
+      "last_success_ms": 1793015173322,
+      "pending_outcomes": 5,
       "overdue_scores": 0,
       "publication_delay_minutes": {
-        "n": 58,
+        "n": 59,
         "min": 0.8888666666666667,
-        "median": 2.1467916666666667,
-        "p90": 16.2205,
+        "median": 2.2304166666666667,
+        "p90": 16.222033333333332,
         "max": 19.812166666666666
       },
       "opportunities": [
-        {
-          "slot": 1792930500000,
-          "state": "missed",
-          "success_ms": null,
-          "reason": "no on-time preparation"
-        },
         {
           "slot": 1792931400000,
           "state": "missed",
@@ -854,21 +848,27 @@
           "state": "ok",
           "success_ms": 1793013371523,
           "reason": null
+        },
+        {
+          "slot": 1793014200000,
+          "state": "ok",
+          "success_ms": 1793015173322,
+          "reason": null
         }
       ]
     }
   },
   "pilots": {
     "stress": {
-      "due": 46,
-      "successful": 32,
-      "coverage": 0.6956521739130435,
+      "due": 47,
+      "successful": 33,
+      "coverage": 0.7021276595744681,
       "states": {
         "missed": 14,
-        "ok": 32
+        "ok": 33
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793012474823
+      "last_success_ms": 1793015174524
     },
     "liquidations": {
       "due": 92,
@@ -928,14 +928,14 @@
       }
     },
     "options": {
-      "due": 22,
-      "successful": 22,
+      "due": 23,
+      "successful": 23,
       "coverage": 1.0,
       "states": {
-        "ok": 22
+        "ok": 23
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793009644319
+      "last_success_ms": 1793013238165
     }
   },
   "alerts": [],
@@ -945,49 +945,49 @@
     "paired: last-24h operational coverage below 80% (not a research threshold)"
   ],
   "integrity": "ok",
-  "last_prepare_ms": 1793016131075,
+  "last_prepare_ms": 1793017167339,
   "paired_diagnostics": {
-    "scored_forecasts": 79,
-    "unique_entries": 56,
-    "repeated_entry_groups": 23,
+    "scored_forecasts": 81,
+    "unique_entries": 57,
+    "repeated_entry_groups": 24,
     "largest_disjoint_60m_subset": 26,
     "equal_entry_clock_share": 1,
-    "entry_grouped_mean_difference": 0.01171875,
+    "entry_grouped_mean_difference": 0.011513157894736841,
     "interpretation": "Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim."
   },
   "options_quality": {
     "captures": 24,
-    "legs": 17868,
+    "legs": 17871,
     "rejection_counts": {
-      "delta-distance": 15646,
-      "low-oi": 3476,
+      "delta-distance": 15645,
+      "low-oi": 3468,
       "maturity": 9794,
-      "wide": 1662,
-      "missing-or-malformed": 1133
+      "wide": 1660,
+      "missing-or-malformed": 1132
     },
     "size_states": {
-      "not-in-source": 17868
+      "not-in-source": 17871
     },
     "quote_age_ms": {
-      "n": 16735,
+      "n": 16739,
       "min": 3085,
-      "median": 4685,
+      "median": 4697,
       "p90": 5478,
       "max": 6546
     },
     "relative_spread": {
-      "n": 16735,
+      "n": 16739,
       "min": 0.0013253810470510285,
       "median": 0.03508771929824565,
       "p90": 0.25,
       "max": 1.3333333333333333
     },
     "delta_distance": {
-      "n": 17868,
+      "n": 17871,
       "min": 4.4942908195899633e-05,
-      "median": 0.24251074796290203,
-      "p90": 0.718218425684724,
-      "max": 0.7499999999984013
+      "median": 0.2425230069517777,
+      "p90": 0.7183137955931695,
+      "max": 0.7499999999988893
     },
     "selected_strike_changes_by_expiry": {
       "13NOV26": 6,
@@ -996,7 +996,7 @@
       "30OCT26": 3,
       "27NOV26": 4,
       "28OCT26": 5,
-      "29OCT26": 3
+      "29OCT26": 4
     },
     "bracketing_expiry_changes": 0,
     "interpretation": "All observed legs, not independent samples. Rejection reasons overlap. No filter change or predictive admission; quote size stays unavailable when absent."
