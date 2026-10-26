@@ -1,5 +1,5 @@
 {
-  "generated_ms": 1792979277800,
+  "generated_ms": 1792980972278,
   "activation": {
     "commit": "c37fa7906c02ff9407e1a1bdf73f04f69d24a9ce",
     "confirmed_ms": 1792863369620,
@@ -152,7 +152,7 @@
         "status": "collecting (descriptive)",
         "checkpoint_rules": "Descriptive only before 365 days and 20 blocks. Support requires stressed primary 90% block interval above zero, >=80% scheduled coverage, both B2 volatilities 10%-20%, and B2_10 drawdown no more than 2 percentage points worse. No automated promotion.",
         "review": {
-          "days_since_launch": 1.1911526273148147,
+          "days_since_launch": 1.2107646412037036,
           "C1_due": false,
           "C2_due": false,
           "action": "operator review only; no automatic status change"
@@ -198,15 +198,15 @@
       }
     },
     "state": {
-      "scheduled": 32,
-      "recorded": 32,
+      "scheduled": 33,
+      "recorded": 33,
       "states": {
         "missed": 19,
-        "ready": 12,
+        "ready": 13,
         "abstained": 1
       },
       "missing_run": 0,
-      "on_time_published": 12,
+      "on_time_published": 13,
       "late_publication": 0,
       "pending_confirmation": 0,
       "scored": 10,
@@ -240,14 +240,14 @@
       }
     },
     "paired": {
-      "scheduled": 128,
-      "recorded": 128,
+      "scheduled": 130,
+      "recorded": 130,
       "states": {
         "missed": 84,
-        "ready": 44
+        "ready": 46
       },
       "missing_run": 0,
-      "on_time_published": 44,
+      "on_time_published": 46,
       "late_publication": 0,
       "pending_confirmation": 0,
       "scored": 40,
@@ -318,49 +318,49 @@
   },
   "pilots": {
     "stress": {
-      "opportunities": 64,
-      "records": 64,
+      "opportunities": 65,
+      "records": 65,
       "states": {
         "missed": 39,
-        "ok": 25
+        "ok": 26
       },
       "ratings": {
-        "low": 25
+        "low": 26
       },
       "rating_transitions": 0,
       "insurance_ranges": {
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/LDUSDT": {
-          "n": 25,
+          "n": 26,
           "min": 1e-08,
           "max": 1e-08,
           "unique": 1
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/USDC": {
-          "n": 25,
+          "n": 26,
           "min": 499980383.5818181,
           "max": 499980383.5818181,
           "unique": 1
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/USDT": {
-          "n": 25,
+          "n": 26,
           "min": 794114925.3691456,
           "max": 795465944.4044915,
           "unique": 3
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/BTC": {
-          "n": 25,
+          "n": 26,
           "min": 69.00161004,
           "max": 69.00280468,
           "unique": 3
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/BNB": {
-          "n": 25,
+          "n": 26,
           "min": 1.45e-06,
           "max": 1.45e-06,
           "unique": 1
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/BNFCR": {
-          "n": 25,
+          "n": 26,
           "min": 1873224.49103075,
           "max": 1873252.52579221,
           "unique": 3
@@ -371,7 +371,7 @@
     "liquidations": {
       "states": {
         "missed": 58,
-        "ok": 41
+        "ok": 45
       },
       "revisions": [
         {
@@ -1097,10 +1097,10 @@
         {
           "end": 1792976400000,
           "vintage_hours": 1,
-          "comparable": false,
-          "size_revision": null,
-          "signal_flip": null,
-          "eligibility_flip": null
+          "comparable": true,
+          "size_revision": 0.0,
+          "signal_flip": false,
+          "eligibility_flip": false
         },
         {
           "end": 1792976400000,
@@ -1117,25 +1117,49 @@
           "size_revision": null,
           "signal_flip": null,
           "eligibility_flip": null
+        },
+        {
+          "end": 1792980000000,
+          "vintage_hours": 1,
+          "comparable": false,
+          "size_revision": null,
+          "signal_flip": null,
+          "eligibility_flip": null
+        },
+        {
+          "end": 1792980000000,
+          "vintage_hours": 6,
+          "comparable": false,
+          "size_revision": null,
+          "signal_flip": null,
+          "eligibility_flip": null
+        },
+        {
+          "end": 1792980000000,
+          "vintage_hours": 18,
+          "comparable": false,
+          "size_revision": null,
+          "signal_flip": null,
+          "eligibility_flip": null
         }
       ],
       "interpretation": "source-specific retrospective diagnostic; first observations stay immutable"
     },
     "options": {
-      "captures": 32,
-      "expected_hourly_slots": 32,
+      "captures": 33,
+      "expected_hourly_slots": 33,
       "rr25_7d_states": {
-        "ok": 32
+        "ok": 33
       },
       "rr25_30d_states": {
-        "ok": 32
+        "ok": 33
       },
       "rejections": {
-        "delta-distance": 21024,
-        "low-oi": 4696,
-        "maturity": 13176,
-        "missing-or-malformed": 1640,
-        "wide": 2223
+        "delta-distance": 21687,
+        "low-oi": 4839,
+        "maturity": 13585,
+        "missing-or-malformed": 1691,
+        "wide": 2298
       },
       "changes": [
         {
@@ -1261,6 +1285,10 @@
         {
           "t": 1792977235256,
           "change_7d": 0.10880000000000001
+        },
+        {
+          "t": 1792980841561,
+          "change_7d": 0.2715000000000001
         }
       ],
       "term_structure": [
@@ -1391,6 +1419,10 @@
         {
           "t": 1792977235256,
           "rr25_30d_minus_7d": -0.7879999999999998
+        },
+        {
+          "t": 1792980841561,
+          "rr25_30d_minus_7d": -1.7822000000000005
         }
       ],
       "interpretation": "usability only; no predictive admission"
