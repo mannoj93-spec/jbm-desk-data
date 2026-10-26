@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-26T12:20:34.409Z. Integrity: ok.
+Generated 2026-10-26T12:46:31.588Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -15,11 +15,11 @@ None.
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
 | turnover | 4/5 | 80.0% | 0 |
-| range | 2/5 | 40.0% | 0 |
-| state | 15/23 | 65.2% | 0 |
-| paired | 60/94 | 63.8% | 0 |
-| stress | 33/47 | 70.2% | 0 |
-| liquidations | 64/92 | 69.6% | 0 |
+| range | 3/6 | 50.0% | 0 |
+| state | 16/24 | 66.7% | 0 |
+| paired | 61/93 | 65.6% | 0 |
+| stress | 34/47 | 72.3% | 0 |
+| liquidations | 68/96 | 70.8% | 0 |
 | options | 23/23 | 100.0% | 0 |
 
 ## Diagnostics
@@ -31,5 +31,5 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - paired: last-24h operational coverage below 80% (not a research threshold)
 
-Paired study: 81 scored forecasts; 57 unique entries; 26 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 82 scored forecasts; 58 unique entries; 27 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
