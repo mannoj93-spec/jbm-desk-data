@@ -1,3 +1,15 @@
+# Revision 2.30.4 — 2026-10-26 recovery diagnostics and retained observations
+
+- Preserve seven unique records from collector run 40251817627 in the late-restoration archive, with verified
+  artifact digest and per-row receipts. Live inputs and on-time coverage are unchanged; see the
+  [incident record](docs/incidents/2026-10-26-collector-persistence.md).
+- Add a fixed comparison from PR #53's recovery deployment alongside rolling study coverage. Show verified
+  successes awaiting deadline/grace closure separately; clear current miss alarms after a newer verified success
+  while retaining historical misses and independent integrity, stale-run and scoring alerts.
+- Add recorded state-depth ages and abstention reasons, plus quality summaries for the exact selected call/put
+  legs at each 7d/30d RR25 interpolation expiry. Show the new diagnostics in Data health and its CSV export.
+- Preserve the frozen study identity, selection rules, protocol, primary results and launch clocks.
+
 # Revision 2.30.3 — 2026-10-25 market-study operations
 
 - Extend recovery to market studies with bounded per-quarter retries and explicit follow-up after recovered range

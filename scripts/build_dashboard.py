@@ -272,15 +272,24 @@ def build(base, output):
         if study_ops.get('schema') != 'market-study-health/1' or study_ops.get('integrity') not in ('ok', 'failed'):
             raise ValueError('Invalid market study health schema')
         utc(study_ops['generated_utc'])
-        for key in ('studies', 'pilots'):
-            if not isinstance(study_ops.get(key), dict):
+        groups = [study_ops]
+        if study_ops.get('deployment') is not None:
+            deployment = study_ops['deployment']
+            utc(deployment['started_utc'])
+            if not isinstance(deployment.get('label'), str) or not re.fullmatch('[0-9a-f]{40}', deployment.get('commit', '')):
+                raise ValueError('Invalid market study deployment')
+            groups.append(deployment)
+        for group, key in ((g, k) for g in groups for k in ('studies', 'pilots')):
+            if not isinstance(group.get(key), dict):
                 raise ValueError('Invalid market study coverage container')
-            for row in study_ops[key].values():
+            for row in group[key].values():
                 due, good = row['due'], row['successful']
                 if type(due) is not int or type(good) is not int or not 0 <= good <= due:
                     raise ValueError('Invalid market study coverage counts')
                 if row['coverage'] != (good/due if due else None):
                     raise ValueError('Invalid market study coverage fraction')
+                if type(row.get('pending_successful', 0)) is not int or row.get('pending_successful', 0) < 0:
+                    raise ValueError('Invalid pending market study successes')
     forecasts = read('reports/range_status.json')
     utc(forecasts['generated_utc'])
     utc(forecasts['status_expires_utc'])

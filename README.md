@@ -230,7 +230,7 @@ a local launch. Never copy development results into prospective evidence.
 | `desk/` | Range model, fits, forecasts, companion, and PS1 jobs |
 | `research_tools/` | Data catalog, research helpers, prepared-study tooling, and `market_studies/` runtime/protocol |
 | `streams/` | Prospective stream records, including `rc1d-b1/`, `ps1/`, and `market-studies/v1/` |
-| `market_study_ops.py` | Read-only study coverage, deadline, paired-entry, and options-quality diagnostics; [operations](docs/MARKET_STUDIES.md#operational-recovery-and-diagnostics) |
+| `market_study_ops.py`, `market_study_ops.json` | Read-only study coverage, fixed deployment comparison, depth freshness, paired-entry, and selected-options diagnostics; [operations](docs/MARKET_STUDIES.md#operational-recovery-and-diagnostics) |
 | `reports/` | Generated summaries and detailed artifacts; latest reports are regenerated |
 | `dashboard/`, `scripts/build_dashboard.py` | Static interface and snapshot builder |
 | `scripts/`, `.github/workflows/` | Persistence guards, release checks, scheduling, and deployment |
