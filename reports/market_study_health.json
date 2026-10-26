@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-10-26T11:22:02.729Z",
-  "generated_ms": 1793013722729,
-  "window_start_ms": 1792927322729,
+  "generated_utc": "2026-10-26T11:46:17.335Z",
+  "generated_ms": 1793015177335,
+  "window_start_ms": 1792928777335,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -131,22 +131,22 @@
       ]
     },
     "state": {
-      "due": 23,
-      "successful": 15,
-      "coverage": 0.6521739130434783,
+      "due": 24,
+      "successful": 16,
+      "coverage": 0.6666666666666666,
       "states": {
-        "ok": 15,
+        "ok": 16,
         "missed": 7,
         "abstained": 1
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793009781970,
-      "pending_outcomes": 5,
+      "last_success_ms": 1793012473534,
+      "pending_outcomes": 4,
       "overdue_scores": 0,
       "publication_delay_minutes": {
-        "n": 15,
+        "n": 16,
         "min": 1.0048666666666666,
-        "median": 8.800616666666667,
+        "median": 6.935241666666666,
         "p90": 16.36616666666667,
         "max": 19.812166666666666
       },
@@ -288,41 +288,35 @@
           "state": "ok",
           "success_ms": 1793009781970,
           "reason": null
+        },
+        {
+          "slot": 1793012400000,
+          "state": "ok",
+          "success_ms": 1793012473534,
+          "reason": null
         }
       ]
     },
     "paired": {
-      "due": 94,
+      "due": 93,
       "successful": 58,
-      "coverage": 0.6170212765957447,
+      "coverage": 0.6236559139784946,
       "states": {
-        "missed": 36,
-        "ok": 58
+        "ok": 58,
+        "missed": 35
       },
       "consecutive_misses": 0,
       "last_success_ms": 1793012473534,
-      "pending_outcomes": 6,
+      "pending_outcomes": 5,
       "overdue_scores": 0,
       "publication_delay_minutes": {
         "n": 58,
         "min": 0.8888666666666667,
-        "median": 2.375983333333333,
+        "median": 2.1467916666666667,
         "p90": 16.2205,
         "max": 19.812166666666666
       },
       "opportunities": [
-        {
-          "slot": 1792927800000,
-          "state": "missed",
-          "success_ms": null,
-          "reason": "no on-time preparation"
-        },
-        {
-          "slot": 1792928700000,
-          "state": "ok",
-          "success_ms": 1792929660292,
-          "reason": null
-        },
         {
           "slot": 1792929600000,
           "state": "ok",
@@ -874,6 +868,12 @@
           "state": "ok",
           "success_ms": 1793012473534,
           "reason": null
+        },
+        {
+          "slot": 1793012400000,
+          "state": "ok",
+          "success_ms": 1793012473534,
+          "reason": null
         }
       ]
     }
@@ -881,69 +881,69 @@
   "pilots": {
     "stress": {
       "due": 47,
-      "successful": 32,
-      "coverage": 0.6808510638297872,
+      "successful": 33,
+      "coverage": 0.7021276595744681,
       "states": {
-        "missed": 15,
-        "ok": 32
+        "ok": 33,
+        "missed": 14
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793010672031
+      "last_success_ms": 1793012474823
     },
     "liquidations": {
-      "due": 91,
-      "successful": 63,
-      "coverage": 0.6923076923076923,
+      "due": 95,
+      "successful": 67,
+      "coverage": 0.7052631578947368,
       "states": {
-        "ok": 63,
+        "ok": 67,
         "missed": 28
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793009784551,
+      "last_success_ms": 1793012476866,
       "by_vintage": {
         "0": {
-          "due": 23,
-          "successful": 16,
-          "coverage": 0.6956521739130435,
+          "due": 24,
+          "successful": 17,
+          "coverage": 0.7083333333333334,
           "states": {
-            "ok": 16,
+            "ok": 17,
             "missed": 7
           },
           "consecutive_misses": 0,
-          "last_success_ms": 1793009784551
+          "last_success_ms": 1793012476866
         },
         "1": {
-          "due": 23,
-          "successful": 16,
-          "coverage": 0.6956521739130435,
+          "due": 24,
+          "successful": 17,
+          "coverage": 0.7083333333333334,
           "states": {
-            "ok": 16,
+            "ok": 17,
             "missed": 7
           },
           "consecutive_misses": 0,
-          "last_success_ms": 1793009784232
+          "last_success_ms": 1793012476475
         },
         "6": {
+          "due": 24,
+          "successful": 17,
+          "coverage": 0.7083333333333334,
+          "states": {
+            "ok": 17,
+            "missed": 7
+          },
+          "consecutive_misses": 0,
+          "last_success_ms": 1793012476063
+        },
+        "18": {
           "due": 23,
           "successful": 16,
           "coverage": 0.6956521739130435,
           "states": {
-            "ok": 16,
-            "missed": 7
-          },
-          "consecutive_misses": 0,
-          "last_success_ms": 1793009783609
-        },
-        "18": {
-          "due": 22,
-          "successful": 15,
-          "coverage": 0.6818181818181818,
-          "states": {
             "missed": 7,
-            "ok": 15
+            "ok": 16
           },
           "consecutive_misses": 0,
-          "last_success_ms": 1793009783293
+          "last_success_ms": 1793012475684
         }
       }
     },
@@ -966,14 +966,14 @@
     "paired: last-24h operational coverage below 80% (not a research threshold)"
   ],
   "integrity": "ok",
-  "last_prepare_ms": 1793013715367,
+  "last_prepare_ms": 1793015169981,
   "paired_diagnostics": {
-    "scored_forecasts": 76,
-    "unique_entries": 54,
-    "repeated_entry_groups": 22,
-    "largest_disjoint_60m_subset": 25,
+    "scored_forecasts": 79,
+    "unique_entries": 56,
+    "repeated_entry_groups": 23,
+    "largest_disjoint_60m_subset": 26,
     "equal_entry_clock_share": 1,
-    "entry_grouped_mean_difference": 0.008680555555555556,
+    "entry_grouped_mean_difference": 0.01171875,
     "interpretation": "Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim."
   },
   "options_quality": {
