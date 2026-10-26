@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-26T14:01:29.037Z. Integrity: ok.
+Generated 2026-10-26T14:13:22.012Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -17,10 +17,10 @@ None.
 | turnover | 5/6 | 83.3% | 0 |
 | range | 3/6 | 50.0% | 0 |
 | state | 16/23 | 69.6% | 1 |
-| paired | 65/93 | 69.9% | 0 |
-| stress | 35/46 | 76.1% | 0 |
+| paired | 66/94 | 70.2% | 0 |
+| stress | 36/47 | 76.6% | 0 |
 | liquidations | 72/92 | 78.3% | 0 |
-| options | 22/22 | 100.0% | 0 |
+| options | 23/23 | 100.0% | 0 |
 
 state: newer verified success; the current miss alert is cleared. Historical misses remain.
 
@@ -34,10 +34,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 3/3 | 0 |
 | range | 3/3 | 0 |
 | state | 11/13 | 1 |
-| paired | 50/50 | 3 |
-| stress | 25/25 | 2 |
+| paired | 51/51 | 2 |
+| stress | 26/26 | 1 |
 | liquidations | 52/52 | 4 |
-| options | 12/12 | 1 |
+| options | 13/13 | 0 |
 
 ## Diagnostics
 
