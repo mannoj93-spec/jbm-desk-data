@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-10-26T20:09:36.188Z",
-  "generated_ms": 1793045376188,
-  "window_start_ms": 1792958976188,
+  "generated_utc": "2026-10-26T20:19:10.460Z",
+  "generated_ms": 1793045950460,
+  "window_start_ms": 1792959550460,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -15,7 +15,7 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1793031615727,
-      "pending_successful": 0,
+      "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
       "pending_outcomes": 0,
@@ -70,10 +70,10 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1793031615057,
-      "pending_successful": 0,
+      "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
-      "pending_outcomes": 4,
+      "pending_outcomes": 5,
       "overdue_scores": 0,
       "publication_delay_minutes": {
         "n": 4,
@@ -282,16 +282,16 @@
       ]
     },
     "paired": {
-      "due": 94,
+      "due": 93,
       "successful": 81,
-      "coverage": 0.8617021276595744,
+      "coverage": 0.8709677419354839,
       "states": {
-        "missed": 13,
+        "missed": 12,
         "ok": 81
       },
       "consecutive_misses": 0,
       "last_success_ms": 1793043089526,
-      "pending_successful": 2,
+      "pending_successful": 3,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
       "pending_outcomes": 5,
@@ -304,12 +304,6 @@
         "max": 19.567533333333333
       },
       "opportunities": [
-        {
-          "slot": 1792959300000,
-          "state": "missed",
-          "success_ms": null,
-          "reason": "no on-time preparation"
-        },
         {
           "slot": 1792960200000,
           "state": "missed",
@@ -955,7 +949,7 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1793042046252,
-      "pending_successful": 0,
+      "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0
     }
@@ -980,7 +974,7 @@
         },
         "consecutive_misses": 0,
         "last_success_ms": 1793031615727,
-        "pending_successful": 0,
+        "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       },
@@ -993,7 +987,7 @@
         },
         "consecutive_misses": 0,
         "last_success_ms": 1793031615057,
-        "pending_successful": 0,
+        "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       },
@@ -1020,7 +1014,7 @@
         },
         "consecutive_misses": 0,
         "last_success_ms": 1793043089526,
-        "pending_successful": 2,
+        "pending_successful": 3,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       }
@@ -1061,20 +1055,20 @@
         },
         "consecutive_misses": 0,
         "last_success_ms": 1793042046252,
-        "pending_successful": 0,
+        "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       }
     }
   },
-  "last_prepare_ms": 1793045369045,
+  "last_prepare_ms": 1793045944404,
   "paired_diagnostics": {
-    "scored_forecasts": 112,
-    "unique_entries": 82,
+    "scored_forecasts": 113,
+    "unique_entries": 83,
     "repeated_entry_groups": 30,
     "largest_disjoint_60m_subset": 33,
     "equal_entry_clock_share": 1,
-    "entry_grouped_mean_difference": 0.005716463414634146,
+    "entry_grouped_mean_difference": 0.005647590361445783,
     "interpretation": "Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim."
   },
   "depth_diagnostics": {
@@ -1451,44 +1445,44 @@
   },
   "options_quality": {
     "captures": 24,
-    "legs": 17860,
+    "legs": 17857,
     "rejection_counts": {
-      "delta-distance": 15632,
-      "low-oi": 3360,
-      "maturity": 9794,
-      "wide": 1624,
-      "missing-or-malformed": 1193
+      "delta-distance": 15629,
+      "low-oi": 3343,
+      "maturity": 9792,
+      "wide": 1620,
+      "missing-or-malformed": 1203
     },
     "size_states": {
-      "not-in-source": 17860
+      "not-in-source": 17857
     },
     "quote_age_ms": {
-      "n": 16667,
+      "n": 16654,
       "min": 3563,
-      "median": 4840,
-      "p90": 6260,
+      "median": 4839.0,
+      "p90": 5320,
       "max": 6546
     },
     "relative_spread": {
-      "n": 16667,
+      "n": 16654,
       "min": 0.0013271400132714012,
-      "median": 0.03448275862068957,
+      "median": 0.03448275862068953,
       "p90": 0.25,
       "max": 1.3333333333333333
     },
     "delta_distance": {
-      "n": 17860,
+      "n": 17857,
       "min": 3.362421259200943e-06,
-      "median": 0.24309473177648355,
-      "p90": 0.7187618759242371,
-      "max": 0.7499999999998042
+      "median": 0.24316225305098815,
+      "p90": 0.7189008524477619,
+      "max": 0.7499999999998352
     },
     "selected_strike_changes_by_expiry": {
       "27OCT26": 5,
       "30OCT26": 3,
-      "6NOV26": 6,
-      "27NOV26": 6,
-      "28OCT26": 8,
+      "6NOV26": 7,
+      "27NOV26": 7,
+      "28OCT26": 9,
       "29OCT26": 9,
       "13NOV26": 2
     },
@@ -1501,7 +1495,7 @@
           "n": 96,
           "min": 3566,
           "median": 4857.0,
-          "p90": 6257,
+          "p90": 5311,
           "max": 6526
         },
         "relative_spread": {
@@ -1515,7 +1509,7 @@
           "n": 96,
           "min": 0.00048354310103038145,
           "median": 0.013656717545982855,
-          "p90": 0.03614578780041433,
+          "p90": 0.03567040580944303,
           "max": 0.04940164973422578
         },
         "size_states": {
@@ -1530,7 +1524,7 @@
           "n": 96,
           "min": 3563,
           "median": 4839.0,
-          "p90": 6258,
+          "p90": 5313,
           "max": 6529
         },
         "relative_spread": {
@@ -1543,7 +1537,7 @@
         "delta_distance": {
           "n": 96,
           "min": 4.847906666932689e-05,
-          "median": 0.007655047967225909,
+          "median": 0.0077369266258611735,
           "p90": 0.015325452624441238,
           "max": 0.02729255489167759
         },
