@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-26T21:16:31.751Z. Integrity: ok.
+Generated 2026-10-26T21:31:22.307Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,13 +16,11 @@ None.
 |---|---:|---:|---:|
 | turnover | 5/5 | 100.0% | 0 |
 | range | 5/6 | 83.3% | 0 |
-| state | 17/23 | 73.9% | 1 |
+| state | 18/24 | 75.0% | 0 |
 | paired | 85/93 | 91.4% | 0 |
-| stress | 44/47 | 93.6% | 0 |
+| stress | 43/46 | 93.5% | 0 |
 | liquidations | 88/92 | 95.7% | 0 |
 | options | 23/23 | 100.0% | 0 |
-
-state: newer verified success; the current miss alert is cleared. Historical misses remain.
 
 ## Since recovery deployment
 
@@ -33,9 +31,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 |---|---:|---:|
 | turnover | 4/4 | 1 |
 | range | 5/5 | 0 |
-| state | 15/20 | 1 |
-| paired | 79/79 | 3 |
-| stress | 40/40 | 1 |
+| state | 16/21 | 0 |
+| paired | 80/80 | 3 |
+| stress | 40/40 | 2 |
 | liquidations | 80/80 | 4 |
 | options | 20/20 | 1 |
 
@@ -46,7 +44,7 @@ Training readiness, per-opportunity reasons and source confirmations, publicatio
 Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 
-Paired study: 117 scored forecasts; 87 unique entries; 34 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 118 scored forecasts; 88 unique entries; 35 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 5 abstentions; 1 unavailable depth ages. Median/max age in minutes: 16.083333333333332 / 31.116666666666667.
