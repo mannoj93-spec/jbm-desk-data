@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-26T16:47:18.094Z. Integrity: ok.
+Generated 2026-10-26T17:00:02.636Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,11 +16,11 @@ None.
 |---|---:|---:|---:|
 | turnover | 4/5 | 80.0% | 0 |
 | range | 4/6 | 66.7% | 0 |
-| state | 17/24 | 70.8% | 1 |
+| state | 16/23 | 69.6% | 1 |
 | paired | 73/93 | 78.5% | 0 |
-| stress | 39/47 | 83.0% | 0 |
-| liquidations | 80/96 | 83.3% | 0 |
-| options | 23/23 | 100.0% | 0 |
+| stress | 38/46 | 82.6% | 0 |
+| liquidations | 76/92 | 82.6% | 0 |
+| options | 22/22 | 100.0% | 0 |
 
 ## Since recovery deployment
 
@@ -32,7 +32,7 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 3/3 | 1 |
 | range | 4/4 | 0 |
 | state | 13/16 | 0 |
-| paired | 61/61 | 3 |
+| paired | 62/62 | 2 |
 | stress | 31/31 | 1 |
 | liquidations | 64/64 | 0 |
 | options | 15/15 | 1 |
@@ -46,10 +46,10 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - paired: last-24h operational coverage below 80% (not a research threshold)
 
-Paired study: 99 scored forecasts; 72 unique entries; 30 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 100 scored forecasts; 73 unique entries; 31 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
-State depth (last_24h): 24 forecasts, 3 abstentions; 4 unavailable depth ages. Median/max age in minutes: 16.1 / 31.116666666666667.
+State depth (last_24h): 23 forecasts, 3 abstentions; 4 unavailable depth ages. Median/max age in minutes: 16.1 / 31.116666666666667.
 - 3: flow_per_depth: stale-depth: measured 31 min before T (limit 30)
 
 State depth (since_deployment): 16 forecasts, 3 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.09166666666667 / 31.116666666666667.
