@@ -1,4 +1,4 @@
-"""Read-only operational diagnostics for market studies v1; never changes its frozen research identity.
+"""Read-only operational diagnostics for market studies; never changes its frozen research identity.
 
 report writes only reports/market_study_health.{json,md}; check recomputes from journals on the current
 clock without writing. Operational alerts are not research admission or promotion criteria.
@@ -67,6 +67,78 @@ def capture_coverage(closed, pending, since, grouped=False):
         out['recovered_before_close'] = bool(out['recovered_before_close'] and out['consecutive_misses'])
         out['active_consecutive_misses'] = 0 if out['recovered_before_close'] else out['consecutive_misses']
     return out
+
+
+def study_coverage(closed, pending, since):
+    out = period_coverage(closed, pending, since)
+    rows = [r for r in closed if r['slot'] >= since]
+    recorded = sum(bool(r['recorded']) for r in rows)
+    abstained = sum(r['forecast_state'] == 'abstained' for r in rows)
+    out.update(recorded=recorded, eligible_forecasts=sum(r['eligible_forecast'] for r in rows),
+               abstained=abstained, abstention_rate=abstained / recorded if recorded else None)
+    return out
+
+
+def abstention_warning(out, kind, summary):
+    # A usability warning, not an outage, research threshold, or reason to relax eligibility.
+    if summary['recorded'] >= 6 and summary['abstention_rate'] > .2:
+        out['warnings'].append(f'{kind}: {summary["abstained"]}/{summary["recorded"]} recorded closed '
+                               'opportunities abstained in 24h (>20%; operational warning only)')
+
+
+def state_v2_health(base, now, out):
+    from research_tools.state_v2 import core as V, study
+    from research_tools.state_v2.__main__ import paused
+    if not (base / V.STREAM / 'registration.jsonl').exists():
+        out['warnings'].append('State v2 awaiting separate registration and activation')
+        return
+    if not V.Journal(base, 'registration').get('state-v2'):
+        raise ValueError('State v2 registration record missing')
+    a = V.activation(base)             # file exists: integrity validation, no reader registration
+    if not a:
+        out['warnings'].append('State v2 registered but not activated')
+        reg = V.Journal(base, 'registration').get('state-v2')
+        if now - reg['data']['created_ms'] > STALE:
+            out['alerts'].append('State v2 registration unconfirmed for more than 45 minutes')
+        return
+    rows = V.verified(base)
+    byslot = {f['data']['slot']: (f, c) for f, c in rows}
+    scores = study.bound_scores(base, rows)
+    closed, pending = [], []
+    pending_outcomes = overdue = 0
+    for f, c in rows:
+        if c and c['data']['eligible'] and f['id'] not in scores:
+            if now > f['data']['end_ms'] + 2 * K.HOUR:
+                overdue += 1
+            else:
+                pending_outcomes += 1
+    for slot in V.slots(max(a['first_slot'], now - K.DAY), now, K.HOUR):
+        f, c = byslot.get(slot, (None, None))
+        d = f['data'] if f else {}
+        ok = bool(c and c['data']['eligible'])
+        state = 'ok' if ok else d.get('state', 'no-run')
+        if state == 'ready':
+            state = 'late-publication' if c else 'unconfirmed'
+        detail = {'slot': slot, 'state': state, 'recorded': f is not None,
+                  'eligible_forecast': ok, 'forecast_state': d.get('state'),
+                  'success_ms': c['data']['confirmed_ms'] if ok else None,
+                  'reasons': d.get('reasons') or [d.get('reason', '')]}
+        (closed if now >= slot + 25 * K.MIN + GRACE else pending).append(detail)
+    summary = study_coverage(closed, pending, now - K.DAY)
+    summary.update(first_slot=a['first_slot'], paused=paused(base), opportunities=closed,
+                   pending_outcomes=pending_outcomes, overdue_scores=overdue)
+    out['studies']['state_v2'] = summary
+    out['depth_diagnostics']['state_v2_last_24h'] = depth_diagnostics(rows, now - K.DAY, now)
+    abstention_warning(out, 'state_v2', summary)
+    runs = [r['data']['ended_ms'] for r in V.Journal(base, 'runs').rows
+            if r['data']['stage'] == 'prepare' and r['data']['state'] == 'completed']
+    if not summary['paused']:
+        if now >= a['first_slot'] + STALE and (not runs or now - max(runs) > STALE):
+            out['alerts'].append('No successful state-v2 preparation in 45 minutes')
+        if summary['active_consecutive_misses'] >= 2:
+            out['alerts'].append('State v2: consecutive closed opportunities not eligible')
+    if overdue:
+        out['alerts'].append(f'State v2: {overdue} scores overdue by more than two hours')
 
 
 def depth_diagnostics(rows, since, now):
@@ -276,6 +348,8 @@ def build(base, now):
                     state = 'ok' if ok else 'no-execution'
                     success = executed[fid]['quote']['t_received_ms'] if ok else None
             detail = {'slot': slot, 'state': state, 'success_ms': success,
+                      'recorded': r is not None, 'forecast_state': d['state'] if d else None,
+                      'eligible_forecast': bool(c and c['data']['eligible']),
                       'reason': d.get('reason') if d else 'No opportunity record'}
             if now < deadline + GRACE:
                 if ok:
@@ -290,16 +364,17 @@ def build(base, now):
                 except (ValueError, KeyError, FileNotFoundError):
                     detail['source_confirmed_ms'] = None
             opportunities.append(detail)
-        summary = period_coverage(opportunities, pending_successes, since)
+        summary = study_coverage(opportunities, pending_successes, since)
         summary.update(pending_outcomes=pending, overdue_scores=overdue,
                        publication_delay_minutes=distribution(delays), opportunities=[x for x in opportunities if x['slot'] >= since])
         out['studies'][kind] = summary
         if deployment_start is not None:
-            out['deployment']['studies'][kind] = period_coverage(opportunities, pending_successes, deployment_start)
+            out['deployment']['studies'][kind] = study_coverage(opportunities, pending_successes, deployment_start)
         if not out['paused'] and summary['active_consecutive_misses'] >= 2:
             out['alerts'].append(f'{kind}: {summary["active_consecutive_misses"]} consecutive closed opportunities missed')
         if overdue:
             out['alerts'].append(f'{kind}: {overdue} scores overdue by more than two hours')
+        abstention_warning(out, kind, summary)
         if summary['coverage'] is not None and summary['coverage'] < .8:
             out['warnings'].append(f'{kind}: last-24h operational coverage below 80% (not a research threshold)')
     for kind, step in [('stress', 30*K.MIN), ('liquidations', K.HOUR), ('options', K.HOUR)]:
@@ -353,6 +428,7 @@ def build(base, now):
     fits = K.Journal(base, 'fits').rows
     out['training'] = {k: {'state': r['data']['state'], 'members': len(r['data']['members']), 'cutoff_ms': r['data']['cutoff']}
                        for k in ('range', 'state') for r in fits if r['id'] == f'{k}-{now//K.DAY*K.DAY}'}
+    state_v2_health(base, now, out)
     return out
 
 
@@ -375,6 +451,11 @@ def markdown(out):
     for name, v in {**out['studies'], **out['pilots']}.items():
         pct = f'{100*v["coverage"]:.1f}%' if v['coverage'] is not None else '—'
         lines.append(f'| {name} | {v["successful"]}/{v["due"]} | {pct} | {v["consecutive_misses"]} |')
+    for name, v in out['studies'].items():
+        if 'recorded' in v:
+            lines += ['', f'{name}: {v["recorded"]}/{v["due"]} closed opportunities recorded; '
+                      f'{v["eligible_forecasts"]} eligible forecasts; {v["abstained"]} abstentions. '
+                      'Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.']
     for name, v in {**out['studies'], **out['pilots']}.items():
         if v.get('recovered_before_close'):
             lines += ['', f'{name}: newer verified success; the current miss alert is cleared. Historical misses remain.']

@@ -364,7 +364,21 @@ test('depth and selected options distinguish unavailable values from zero', () =
   s.options_quality={selected_by_horizon:{rr25_7d:{usable_captures:0,legs:0,quote_age_ms:dist,
     relative_spread:dist,delta_distance:dist,size_states:{}}}};
   const rows=studyRows(s,Date.parse('2026-10-25T12:20:00Z'));
-  assert.match(rows.find(r=>r.area==='State depth (24h)').detail,/median unavailable/);
+  assert.match(rows.find(r=>r.area==='State depth (v1, 24h)').detail,/median unavailable/);
   assert.match(rows.find(r=>r.area.startsWith('Selected options')).detail,/0 usable captures/);
   s.depth_diagnostics.last_24h.abstained=2;assert.equal(validStudyOps(s),false);
+});
+
+test('recorded opportunities, eligibility and abstentions stay separate and warnings are visible', () => {
+  const s={schema:'market-study-health/1',generated_utc:'2026-10-26T12:00:00Z',stale_after_minutes:45,
+    integrity:'ok',paused:false,studies:{state_v2:{due:10,successful:5,coverage:.5,consecutive_misses:0,
+      recorded:8,eligible_forecasts:5,abstained:3,abstention_rate:3/8}},pilots:{},alerts:[],warnings:['state_v2: 3/8 abstained']};
+  assert.equal(validStudyOps(s),true);
+  const rows=studyRows(s,Date.parse(s.generated_utc));
+  assert.match(rows.find(r=>r.area.includes('Corrected market state v2')).detail,/8 recorded, 5 eligible forecasts, 3 abstentions/);
+  assert.equal(rows.find(r=>r.area==='Recorded warning').detail,s.warnings[0]);
+  s.studies.state_v2.abstention_rate=.3;
+  assert.equal(validStudyOps(s),false);
+  s.studies.state_v2.abstention_rate=3/8;s.studies.state_v2.eligible_forecasts=6;
+  assert.equal(validStudyOps(s),false);
 });

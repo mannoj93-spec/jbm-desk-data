@@ -339,7 +339,8 @@ class MarketTests(unittest.TestCase):
     def test_only_new_writer_paths_authorized(self):
         writers=json.loads((K.ROOT/'scripts/writers.json').read_text())['writers']['market-studies']
         self.assertEqual(writers['allow'],['streams/market-studies/','reports/market_studies.json','reports/market_studies.md',
-                                           'reports/market_study_health.json','reports/market_study_health.md'])
+                                           'reports/market_study_health.json','reports/market_study_health.md',
+                                         'reports/market_state_v2.json','reports/market_state_v2.md'])
 
 
 if __name__=='__main__':

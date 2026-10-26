@@ -80,6 +80,19 @@ The turnover accounts collect their own executions; historical PS1 fills are not
 The paired-flow study uses minute bars, not subsecond execution data. Earlier observations used
 for training remain training data, never prospective confirmation.
 
+### Corrected market state v2
+
+The [v2 protocol](research_tools/state_v2/protocol.json) fixes a depth-selection problem: an older
+observation inside the flow window could hide a newer, still-aligned valid observation. V2 filters
+for validity, freshness and alignment before ranking candidates, using the same rule in training
+and prediction. The 30-minute age and 10-minute alignment limits remain fixed.
+
+V2 runs alongside v1 with separate registration, activation, models, forecasts and scores under
+`streams/market-studies/state-v2/`. Its report is generated at `reports/market_state_v2.md` and
+`.json` after deployment; merge alone does not establish launch. The [study guide](docs/MARKET_STUDIES.md#corrected-state-study-v2)
+explains its start clock and operational checks. V1 evidence remains unchanged and is never pooled
+with v2. Data health separately shows recorded opportunities, eligible forecasts and abstentions.
+
 ### Three data-quality pilots
 
 | Pilot | What is collected | Interpretation boundary |
