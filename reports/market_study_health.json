@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-10-26T22:31:13.975Z",
-  "generated_ms": 1793053873975,
-  "window_start_ms": 1792967473975,
+  "generated_utc": "2026-10-26T22:47:55.916Z",
+  "generated_ms": 1793054875916,
+  "window_start_ms": 1792968475916,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -18,6 +18,10 @@
       "pending_successful": 0,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
+      "recorded": 6,
+      "eligible_forecasts": 6,
+      "abstained": 0,
+      "abstention_rate": 0.0,
       "pending_outcomes": 0,
       "overdue_scores": 0,
       "publication_delay_minutes": {
@@ -32,36 +36,54 @@
           "slot": 1792972800000,
           "state": "ok",
           "success_ms": 1792977360161,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792987200000,
           "state": "ok",
           "success_ms": 1792988374720,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793001600000,
           "state": "ok",
           "success_ms": 1793002673761,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793016000000,
           "state": "ok",
           "success_ms": 1793017171048,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793030400000,
           "state": "ok",
           "success_ms": 1793031615727,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793044800000,
           "state": "ok",
           "success_ms": 1793045948394,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         }
       ]
@@ -79,6 +101,10 @@
       "pending_successful": 0,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
+      "recorded": 6,
+      "eligible_forecasts": 5,
+      "abstained": 0,
+      "abstention_rate": 0.0,
       "pending_outcomes": 5,
       "overdue_scores": 0,
       "publication_delay_minutes": {
@@ -93,6 +119,9 @@
           "slot": 1792972800000,
           "state": "missed",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
           "reason": "no on-time preparation",
           "source_confirmed_ms": 1792973671922,
           "source_window_start_ms": 1792974000000
@@ -101,30 +130,45 @@
           "slot": 1792987200000,
           "state": "ok",
           "success_ms": 1792988374052,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793001600000,
           "state": "ok",
           "success_ms": 1793002673336,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793016000000,
           "state": "ok",
           "success_ms": 1793017170396,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793030400000,
           "state": "ok",
           "success_ms": 1793031615057,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793044800000,
           "state": "ok",
           "success_ms": 1793045947889,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         }
       ]
@@ -143,6 +187,10 @@
       "pending_successful": 0,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
+      "recorded": 24,
+      "eligible_forecasts": 18,
+      "abstained": 5,
+      "abstention_rate": 0.20833333333333334,
       "pending_outcomes": 3,
       "overdue_scores": 0,
       "publication_delay_minutes": {
@@ -157,727 +205,1082 @@
           "slot": 1792969200000,
           "state": "missed",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
           "reason": "no on-time preparation"
         },
         {
           "slot": 1792972800000,
           "state": "ok",
           "success_ms": 1792973483041,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792976400000,
           "state": "abstained",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
           "reason": null
         },
         {
           "slot": 1792980000000,
           "state": "ok",
           "success_ms": 1792980966368,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792983600000,
           "state": "ok",
           "success_ms": 1792983722274,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792987200000,
           "state": "ok",
           "success_ms": 1792988374052,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792990800000,
           "state": "ok",
           "success_ms": 1792991766250,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792994400000,
           "state": "ok",
           "success_ms": 1792994462131,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792998000000,
           "state": "ok",
           "success_ms": 1792998068859,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793001600000,
           "state": "ok",
           "success_ms": 1793001733825,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793005200000,
           "state": "ok",
           "success_ms": 1793005277309,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793008800000,
           "state": "ok",
           "success_ms": 1793009781970,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793012400000,
           "state": "ok",
           "success_ms": 1793012473534,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793016000000,
           "state": "ok",
           "success_ms": 1793016135067,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793019600000,
           "state": "abstained",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
           "reason": null
         },
         {
           "slot": 1793023200000,
           "state": "ok",
           "success_ms": 1793023281882,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793026800000,
           "state": "ok",
           "success_ms": 1793026886578,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793030400000,
           "state": "abstained",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
           "reason": null
         },
         {
           "slot": 1793034000000,
           "state": "ok",
           "success_ms": 1793034073010,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793037600000,
           "state": "abstained",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
           "reason": null
         },
         {
           "slot": 1793041200000,
           "state": "ok",
           "success_ms": 1793041283733,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793044800000,
           "state": "abstained",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
           "reason": null
         },
         {
           "slot": 1793048400000,
           "state": "ok",
           "success_ms": 1793048484304,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793052000000,
           "state": "ok",
           "success_ms": 1793052973144,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         }
       ]
     },
     "paired": {
       "due": 93,
-      "successful": 86,
-      "coverage": 0.9247311827956989,
+      "successful": 87,
+      "coverage": 0.9354838709677419,
       "states": {
-        "missed": 7,
-        "ok": 86
+        "missed": 6,
+        "ok": 87
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793051562357,
+      "last_success_ms": 1793052973144,
       "pending_successful": 3,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
-      "pending_outcomes": 5,
+      "recorded": 93,
+      "eligible_forecasts": 87,
+      "abstained": 0,
+      "abstention_rate": 0.0,
+      "pending_outcomes": 6,
       "overdue_scores": 0,
       "publication_delay_minutes": {
-        "n": 86,
+        "n": 87,
         "min": 0.8236333333333333,
-        "median": 1.53465,
-        "p90": 16.13795,
+        "median": 1.53645,
+        "p90": 16.219066666666667,
         "max": 19.567533333333333
       },
       "opportunities": [
         {
-          "slot": 1792968300000,
-          "state": "missed",
-          "success_ms": null,
-          "reason": "no on-time preparation"
-        },
-        {
           "slot": 1792969200000,
           "state": "missed",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
           "reason": "no on-time preparation"
         },
         {
           "slot": 1792970100000,
           "state": "missed",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
           "reason": "no on-time preparation"
         },
         {
           "slot": 1792971000000,
           "state": "ok",
           "success_ms": 1792971762592,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792971900000,
           "state": "missed",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
           "reason": "no on-time preparation"
         },
         {
           "slot": 1792972800000,
           "state": "ok",
           "success_ms": 1792973483041,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792973700000,
           "state": "missed",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
           "reason": "no on-time preparation"
         },
         {
           "slot": 1792974600000,
           "state": "missed",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
           "reason": "no on-time preparation"
         },
         {
           "slot": 1792975500000,
           "state": "missed",
           "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
           "reason": "no on-time preparation"
         },
         {
           "slot": 1792976400000,
           "state": "ok",
           "success_ms": 1792977359391,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792977300000,
           "state": "ok",
           "success_ms": 1792977359391,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792978200000,
           "state": "ok",
           "success_ms": 1792978256800,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792979100000,
           "state": "ok",
           "success_ms": 1792979166399,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792980000000,
           "state": "ok",
           "success_ms": 1792980966368,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792980900000,
           "state": "ok",
           "success_ms": 1792980966368,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792981800000,
           "state": "ok",
           "success_ms": 1792981853332,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792982700000,
           "state": "ok",
           "success_ms": 1792982761578,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792983600000,
           "state": "ok",
           "success_ms": 1792983722274,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792984500000,
           "state": "ok",
           "success_ms": 1792984580414,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792985400000,
           "state": "ok",
           "success_ms": 1792985474046,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792986300000,
           "state": "ok",
           "success_ms": 1792986451293,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792987200000,
           "state": "ok",
           "success_ms": 1792988374052,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792988100000,
           "state": "ok",
           "success_ms": 1792988374052,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792989000000,
           "state": "ok",
           "success_ms": 1792989967943,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792989900000,
           "state": "ok",
           "success_ms": 1792989967943,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792990800000,
           "state": "ok",
           "success_ms": 1792991766250,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792991700000,
           "state": "ok",
           "success_ms": 1792991766250,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792992600000,
           "state": "ok",
           "success_ms": 1792993559017,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792993500000,
           "state": "ok",
           "success_ms": 1792993559017,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792994400000,
           "state": "ok",
           "success_ms": 1792994462131,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792995300000,
           "state": "ok",
           "success_ms": 1792995367968,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792996200000,
           "state": "ok",
           "success_ms": 1792996265760,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792997100000,
           "state": "ok",
           "success_ms": 1792997223790,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792998000000,
           "state": "ok",
           "success_ms": 1792998068859,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792998900000,
           "state": "ok",
           "success_ms": 1792998970751,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1792999800000,
           "state": "ok",
           "success_ms": 1793000767051,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793000700000,
           "state": "ok",
           "success_ms": 1793000767051,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793001600000,
           "state": "ok",
           "success_ms": 1793001733825,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793002500000,
           "state": "ok",
           "success_ms": 1793002673336,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793003400000,
           "state": "ok",
           "success_ms": 1793004366019,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793004300000,
           "state": "ok",
           "success_ms": 1793004366019,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793005200000,
           "state": "ok",
           "success_ms": 1793005277309,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793006100000,
           "state": "ok",
           "success_ms": 1793006166057,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793007000000,
           "state": "ok",
           "success_ms": 1793007122321,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793007900000,
           "state": "ok",
           "success_ms": 1793007963584,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793008800000,
           "state": "ok",
           "success_ms": 1793009781970,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793009700000,
           "state": "ok",
           "success_ms": 1793009781970,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793010600000,
           "state": "ok",
           "success_ms": 1793010670756,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793011500000,
           "state": "ok",
           "success_ms": 1793012473534,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793012400000,
           "state": "ok",
           "success_ms": 1793012473534,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793013300000,
           "state": "ok",
           "success_ms": 1793013371523,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793014200000,
           "state": "ok",
           "success_ms": 1793015173322,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793015100000,
           "state": "ok",
           "success_ms": 1793015173322,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793016000000,
           "state": "ok",
           "success_ms": 1793016135067,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793016900000,
           "state": "ok",
           "success_ms": 1793017170396,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793017800000,
           "state": "ok",
           "success_ms": 1793018787599,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793018700000,
           "state": "ok",
           "success_ms": 1793018787599,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793019600000,
           "state": "ok",
           "success_ms": 1793020053342,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793020500000,
           "state": "ok",
           "success_ms": 1793021468277,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793021400000,
           "state": "ok",
           "success_ms": 1793021468277,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793022300000,
           "state": "ok",
           "success_ms": 1793022377141,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793023200000,
           "state": "ok",
           "success_ms": 1793023281882,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793024100000,
           "state": "ok",
           "success_ms": 1793024988011,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793025000000,
           "state": "ok",
           "success_ms": 1793025049418,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793025900000,
           "state": "ok",
           "success_ms": 1793025972373,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793026800000,
           "state": "ok",
           "success_ms": 1793026886578,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793027700000,
           "state": "ok",
           "success_ms": 1793027787831,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793028600000,
           "state": "ok",
           "success_ms": 1793028683084,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793029500000,
           "state": "ok",
           "success_ms": 1793029581485,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793030400000,
           "state": "ok",
           "success_ms": 1793031161485,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793031300000,
           "state": "ok",
           "success_ms": 1793031615057,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793032200000,
           "state": "ok",
           "success_ms": 1793033234008,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793033100000,
           "state": "ok",
           "success_ms": 1793033234008,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793034000000,
           "state": "ok",
           "success_ms": 1793034073010,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793034900000,
           "state": "ok",
           "success_ms": 1793034991971,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793035800000,
           "state": "ok",
           "success_ms": 1793035931354,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793036700000,
           "state": "ok",
           "success_ms": 1793037767123,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793037600000,
           "state": "ok",
           "success_ms": 1793037767123,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793038500000,
           "state": "ok",
           "success_ms": 1793038635884,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793039400000,
           "state": "ok",
           "success_ms": 1793040398427,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793040300000,
           "state": "ok",
           "success_ms": 1793040398427,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793041200000,
           "state": "ok",
           "success_ms": 1793041283733,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793042100000,
           "state": "ok",
           "success_ms": 1793042231621,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793043000000,
           "state": "ok",
           "success_ms": 1793043089526,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793043900000,
           "state": "ok",
           "success_ms": 1793043992187,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793044800000,
           "state": "ok",
           "success_ms": 1793044904616,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793045700000,
           "state": "ok",
           "success_ms": 1793045947889,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793046600000,
           "state": "ok",
           "success_ms": 1793047600266,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793047500000,
           "state": "ok",
           "success_ms": 1793047600266,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793048400000,
           "state": "ok",
           "success_ms": 1793048484304,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793049300000,
           "state": "ok",
           "success_ms": 1793049388756,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793050200000,
           "state": "ok",
           "success_ms": 1793050278914,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         },
         {
           "slot": 1793051100000,
           "state": "ok",
           "success_ms": 1793051562357,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793052000000,
+          "state": "ok",
+          "success_ms": 1793052973144,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
           "reason": null
         }
       ]
@@ -885,76 +1288,76 @@
   },
   "pilots": {
     "stress": {
-      "due": 46,
-      "successful": 44,
-      "coverage": 0.9565217391304348,
+      "due": 47,
+      "successful": 45,
+      "coverage": 0.9574468085106383,
       "states": {
         "missed": 2,
-        "ok": 44
+        "ok": 45
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793050280002,
-      "pending_successful": 2,
+      "last_success_ms": 1793052974466,
+      "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0
     },
     "liquidations": {
-      "due": 92,
-      "successful": 88,
-      "coverage": 0.9565217391304348,
+      "due": 96,
+      "successful": 92,
+      "coverage": 0.9583333333333334,
       "states": {
         "missed": 4,
-        "ok": 88
+        "ok": 92
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793048486795,
-      "pending_successful": 4,
+      "last_success_ms": 1793052976454,
+      "pending_successful": 0,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
       "by_vintage": {
         "0": {
-          "due": 23,
-          "successful": 22,
-          "coverage": 0.9565217391304348,
+          "due": 24,
+          "successful": 23,
+          "coverage": 0.9583333333333334,
           "states": {
             "missed": 1,
-            "ok": 22
+            "ok": 23
           },
           "consecutive_misses": 0,
-          "last_success_ms": 1793048486795
+          "last_success_ms": 1793052976454
         },
         "1": {
-          "due": 23,
-          "successful": 22,
-          "coverage": 0.9565217391304348,
+          "due": 24,
+          "successful": 23,
+          "coverage": 0.9583333333333334,
           "states": {
             "missed": 1,
-            "ok": 22
+            "ok": 23
           },
           "consecutive_misses": 0,
-          "last_success_ms": 1793048486432
+          "last_success_ms": 1793052976087
         },
         "6": {
-          "due": 23,
-          "successful": 22,
-          "coverage": 0.9565217391304348,
+          "due": 24,
+          "successful": 23,
+          "coverage": 0.9583333333333334,
           "states": {
             "missed": 1,
-            "ok": 22
+            "ok": 23
           },
           "consecutive_misses": 0,
-          "last_success_ms": 1793048486099
+          "last_success_ms": 1793052975675
         },
         "18": {
-          "due": 23,
-          "successful": 22,
-          "coverage": 0.9565217391304348,
+          "due": 24,
+          "successful": 23,
+          "coverage": 0.9583333333333334,
           "states": {
             "missed": 1,
-            "ok": 22
+            "ok": 23
           },
           "consecutive_misses": 0,
-          "last_success_ms": 1793048485768
+          "last_success_ms": 1793052974900
         }
       }
     },
@@ -974,7 +1377,9 @@
   },
   "alerts": [],
   "warnings": [
-    "state: last-24h operational coverage below 80% (not a research threshold)"
+    "state: 5/24 recorded closed opportunities abstained in 24h (>20%; operational warning only)",
+    "state: last-24h operational coverage below 80% (not a research threshold)",
+    "State v2 awaiting separate registration and activation"
   ],
   "integrity": "ok",
   "deployment": {
@@ -994,7 +1399,11 @@
         "last_success_ms": 1793045948394,
         "pending_successful": 0,
         "recovered_before_close": false,
-        "active_consecutive_misses": 0
+        "active_consecutive_misses": 0,
+        "recorded": 5,
+        "eligible_forecasts": 5,
+        "abstained": 0,
+        "abstention_rate": 0.0
       },
       "range": {
         "due": 5,
@@ -1007,7 +1416,11 @@
         "last_success_ms": 1793045947889,
         "pending_successful": 0,
         "recovered_before_close": false,
-        "active_consecutive_misses": 0
+        "active_consecutive_misses": 0,
+        "recorded": 5,
+        "eligible_forecasts": 5,
+        "abstained": 0,
+        "abstention_rate": 0.0
       },
       "state": {
         "due": 22,
@@ -1021,46 +1434,54 @@
         "last_success_ms": 1793052973144,
         "pending_successful": 0,
         "recovered_before_close": false,
-        "active_consecutive_misses": 0
+        "active_consecutive_misses": 0,
+        "recorded": 22,
+        "eligible_forecasts": 17,
+        "abstained": 5,
+        "abstention_rate": 0.22727272727272727
       },
       "paired": {
-        "due": 84,
-        "successful": 84,
+        "due": 85,
+        "successful": 85,
         "coverage": 1.0,
         "states": {
-          "ok": 84
+          "ok": 85
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1793051562357,
+        "last_success_ms": 1793052973144,
         "pending_successful": 3,
         "recovered_before_close": false,
-        "active_consecutive_misses": 0
+        "active_consecutive_misses": 0,
+        "recorded": 85,
+        "eligible_forecasts": 85,
+        "abstained": 0,
+        "abstention_rate": 0.0
       }
     },
     "pilots": {
       "stress": {
-        "due": 42,
-        "successful": 42,
+        "due": 43,
+        "successful": 43,
         "coverage": 1.0,
         "states": {
-          "ok": 42
+          "ok": 43
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1793050280002,
-        "pending_successful": 2,
+        "last_success_ms": 1793052974466,
+        "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       },
       "liquidations": {
-        "due": 84,
-        "successful": 84,
+        "due": 88,
+        "successful": 88,
         "coverage": 1.0,
         "states": {
-          "ok": 84
+          "ok": 88
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1793048486795,
-        "pending_successful": 4,
+        "last_success_ms": 1793052976454,
+        "pending_successful": 0,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       },
@@ -1079,7 +1500,7 @@
       }
     }
   },
-  "last_prepare_ms": 1793053866395,
+  "last_prepare_ms": 1793054869055,
   "paired_diagnostics": {
     "scored_forecasts": 122,
     "unique_entries": 91,
