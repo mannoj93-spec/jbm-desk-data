@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-26T13:31:11.549Z. Integrity: ok.
+Generated 2026-10-26T13:46:20.622Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -14,12 +14,12 @@ None.
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
-| turnover | 4/5 | 80.0% | 0 |
+| turnover | 5/6 | 83.3% | 0 |
 | range | 3/6 | 50.0% | 0 |
 | state | 16/24 | 66.7% | 1 |
 | paired | 64/93 | 68.8% | 0 |
-| stress | 34/46 | 73.9% | 0 |
-| liquidations | 68/92 | 73.9% | 0 |
+| stress | 35/47 | 74.5% | 0 |
+| liquidations | 72/96 | 75.0% | 0 |
 | options | 23/23 | 100.0% | 0 |
 
 ## Since recovery deployment
@@ -29,12 +29,12 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 2/2 | 1 |
+| turnover | 3/3 | 0 |
 | range | 3/3 | 0 |
 | state | 11/13 | 0 |
-| paired | 48/48 | 3 |
-| stress | 24/24 | 2 |
-| liquidations | 48/48 | 4 |
+| paired | 49/49 | 3 |
+| stress | 25/25 | 1 |
+| liquidations | 52/52 | 0 |
 | options | 12/12 | 1 |
 
 ## Diagnostics
