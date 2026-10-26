@@ -25,7 +25,7 @@ on:
     - cron: '12,27,42,57 * * * *'
 permissions:
   contents: read
-  actions: write      # list runs and dispatch the four target workflows; nothing else
+  actions: write      # list runs and dispatch the five target workflows; nothing else
 # One dispatcher at a time; a newer pending invocation replaces an older pending one, a running one is never cancelled.
 concurrency:
   group: recovery-dispatcher
@@ -65,3 +65,16 @@ jobs:
         env:
           WATCHDOG_STALE_MIN: ${{ vars.WATCHDOG_STALE_MIN || '90' }}
         run: python watchdog.py
+
+  study-watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Check study deadlines and collection gaps from current records
+        run: python market_study_ops.py check

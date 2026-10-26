@@ -1,0 +1,286 @@
+"""Read-only operational diagnostics for market studies v1; never changes its frozen research identity.
+
+report writes only reports/market_study_health.{json,md}; check recomputes from journals on the current
+clock without writing. Operational alerts are not research admission or promotion criteria.
+"""
+import argparse
+from collections import Counter, defaultdict
+import gzip
+import hashlib
+import json
+from pathlib import Path
+import statistics
+import time
+
+from desk import stream_util as U
+from research_tools.market_studies import core as K, experiments as X
+
+ROOT = Path(__file__).resolve().parent
+SCHEMA = 'market-study-health/1'
+GRACE = 5 * K.MIN             # allow final evidence persistence before declaring a missed deadline
+STALE = 45 * K.MIN
+
+
+def distribution(xs):
+    xs = sorted(x for x in xs if x is not None)
+    return {'n': len(xs), 'min': min(xs) if xs else None, 'median': statistics.median(xs) if xs else None,
+            'p90': xs[min(len(xs)-1, int(.9*(len(xs)-1)))] if xs else None, 'max': max(xs) if xs else None}
+
+
+def coverage(opportunities):
+    counts = Counter(x['state'] for x in opportunities)
+    good = [x for x in opportunities if x['state'] == 'ok']
+    streak = 0
+    for x in reversed(opportunities):
+        if x['state'] == 'ok':
+            break
+        streak += 1
+    n = len(opportunities)
+    return {'due': n, 'successful': len(good), 'coverage': len(good)/n if n else None,
+            'states': dict(counts), 'consecutive_misses': streak,
+            'last_success_ms': max((x['success_ms'] for x in good), default=None)}
+
+
+def bound_scores(base, forecasts):
+    out = []
+    for r in K.Journal(base, 'scores').rows:
+        f, c = forecasts.get(r['id'], (None, None))
+        d = r['data']
+        if not f or not c or not c['data']['eligible'] or d['forecast_sha'] != f['sha256'] or d['confirmation_sha'] != c['sha256']:
+            raise ValueError('Unbound operational score')
+        out.append((f['data'], d))
+    return out
+
+
+def paired_diagnostics(pairs):
+    groups = defaultdict(list)
+    for f, s in pairs:
+        if f['study'] == 'paired':
+            groups[f['entries']['combined_synchronized_clock']].append((f, s))
+    means = [statistics.mean(s['primary_difference'] for _, s in rows) for rows in groups.values()]
+    clocks = [f['entries']['perp_original_clock'] == f['entries']['perp_synchronized_clock']
+              for rows in groups.values() for f, _ in rows]
+    entries = sorted(groups)
+    # Distinct entry windows can still overlap. No count here is an effective sample size.
+    disjoint, end = 0, None
+    for t in entries:
+        if end is None or t >= end:
+            disjoint += 1
+            end = t + K.HOUR
+    return {'scored_forecasts': len(clocks), 'unique_entries': len(groups),
+            'repeated_entry_groups': sum(len(v) > 1 for v in groups.values()),
+            'largest_disjoint_60m_subset': disjoint,
+            'equal_entry_clock_share': statistics.mean(clocks) if clocks else None,
+            'entry_grouped_mean_difference': statistics.mean(means) if means else None,
+            'interpretation': 'Sensitivity only: average within each shared entry, then across entries. '
+                              'Overlapping windows remain dependent; no new primary, interval or support claim.'}
+
+
+def options_diagnostics(base, rows):
+    ages, spreads, delta = [], [], []
+    rejected, sizes, signatures, switches = Counter(), Counter(), {}, Counter()
+    expiry_sets, rolls, count = None, 0, 0
+    for r in rows:
+        d = r['data']
+        path = (Path(base) / d['legs_file']).resolve()
+        if not path.is_relative_to((Path(base) / K.STREAM / 'option_legs').resolve()):
+            raise ValueError('Options evidence path outside study directory')
+        raw = gzip.decompress(path.read_bytes())
+        if hashlib.sha256(raw).hexdigest() != d['legs_sha']:
+            raise ValueError('Options leg evidence hash mismatch')
+        legs = json.loads(raw)
+        for leg in legs:
+            count += 1
+            rejected.update(set(leg['reasons']))
+            sizes[leg['size_state']] += 1
+            ages.append(leg['quote_age_ms'])
+            spreads.append(leg['relative_spread'])
+            delta.append(leg['delta_distance'])
+        # Strike changes within the same expiry are distinct from changes of interpolation expiries.
+        for expiry, info in d['expiries'].items():
+            if info['state'] == 'ok':
+                sig = (info['pair']['call_K'], info['pair']['put_K'])
+                if expiry in signatures and signatures[expiry] != sig:
+                    switches[expiry] += 1
+                signatures[expiry] = sig
+        current = tuple(tuple(d[k].get('expiries', [])) for k in ('rr25_7d', 'rr25_30d'))
+        if expiry_sets is not None and current != expiry_sets:
+            rolls += 1
+        expiry_sets = current
+    return {'captures': len(rows), 'legs': count, 'rejection_counts': dict(rejected),
+            'size_states': dict(sizes), 'quote_age_ms': distribution(ages),
+            'relative_spread': distribution(spreads), 'delta_distance': distribution(delta),
+            'selected_strike_changes_by_expiry': dict(switches), 'bracketing_expiry_changes': rolls,
+            'interpretation': 'All observed legs, not independent samples. Rejection reasons overlap. '
+                              'No filter change or predictive admission; quote size stays unavailable when absent.'}
+
+
+def build(base, now):
+    base = Path(base)
+    out = {'schema': SCHEMA, 'generated_utc': U.iso_ms(now), 'generated_ms': now, 'window_start_ms': now-K.DAY,
+           'stale_after_minutes': STALE//K.MIN, 'paused': (base/K.STREAM/'paused.json').exists(),
+           'studies': {}, 'pilots': {}, 'alerts': [], 'warnings': [], 'integrity': 'ok'}
+    if not (base/K.STREAM/'registration.jsonl').exists():
+        out['alerts'].append('Market studies are not registered; launch state is unknown')
+        return out
+    # Existing registration is checked, never created by this reader.
+    a = K.activation(base)
+    if not a:
+        out['alerts'].append('Registration exists but activation is not confirmed')
+        return out
+    first, since = a['first_slot'], now-K.DAY
+    rows = K.verified(base)
+    forecasts = {r['id']: (r, c) for r, c in rows}
+    _, executions = X.turnover_chain(base)
+    executed = {e['id']: e['data'] for e in executions}
+    pairs = bound_scores(base, forecasts)
+    scored = {f['study']+'-'+str(f['slot']): s for f, s in pairs}
+    runs = [r['data'] for r in K.Journal(base, 'runs').rows if r['data']['stage'] == 'prepare' and r['data']['state'] == 'completed']
+    last_run = max((r['ended_ms'] for r in runs), default=None)
+    out['last_prepare_ms'] = last_run
+    if not out['paused'] and now >= first + STALE and (last_run is None or now-last_run > STALE):
+        out['alerts'].append('No successful study preparation in 45 minutes')
+    for kind, step, delay in [('turnover', 4*K.HOUR, 90*K.MIN), ('range', 4*K.HOUR, 25*K.MIN),
+                              ('state', K.HOUR, 25*K.MIN), ('paired', 15*K.MIN, 30*K.MIN)]:
+        opportunities = []
+        delays = []
+        pending = overdue = 0
+        # Backlogs do not disappear when the originating opportunity leaves the rolling coverage window.
+        for f, c in rows:
+            d = f['data']
+            if d['study'] != kind or kind == 'turnover' or not c or not c['data']['eligible'] or f['id'] in scored:
+                continue
+            end = d.get('end_ms', max(d.get('entries', {}).values(), default=d['slot'])+K.HOUR)
+            if now <= end+2*K.HOUR:
+                pending += 1
+            else:
+                overdue += 1
+        for slot in K.slots(max(first, since), now, step):
+            fid = kind+'-'+str(slot)
+            r, c = forecasts.get(fid, (None, None))
+            d = r['data'] if r else None
+            deadline = max(slot+delay, d['deadline_ms']) if d else slot+delay
+            if now < deadline + GRACE:
+                continue
+            ok = bool(c and c['data']['eligible'])
+            state = 'ok' if ok else (d['state'] if d else 'no-run')
+            if d and d['state'] == 'ready' and not ok:
+                state = 'late-publication' if c else 'unconfirmed'
+            success = c['data']['confirmed_ms'] if ok else None
+            if ok:
+                delays.append((success-slot)/K.MIN)
+                if kind == 'turnover':
+                    ok = fid in executed
+                    state = 'ok' if ok else 'no-execution'
+                    success = executed[fid]['quote']['t_received_ms'] if ok else None
+            detail = {'slot': slot, 'state': state, 'success_ms': success,
+                      'reason': d.get('reason') if d else 'No opportunity record'}
+            if kind == 'range' and not ok:
+                try:
+                    fid_source = 'range-rc1d-24h-'+U.iso_ms(slot).replace('-', '').replace(':', '')[:13]+'Z'
+                    doc, _, pub = U.rc1d_record(base, fid_source)
+                    detail['source_confirmed_ms'] = pub['confirmed'] if pub and pub.get('eligible') else None
+                    detail['source_window_start_ms'] = U.ms(U.parse(doc['start_utc']))
+                except (ValueError, KeyError, FileNotFoundError):
+                    detail['source_confirmed_ms'] = None
+            opportunities.append(detail)
+        summary = coverage(opportunities)
+        summary.update(pending_outcomes=pending, overdue_scores=overdue,
+                       publication_delay_minutes=distribution(delays), opportunities=opportunities)
+        out['studies'][kind] = summary
+        if not out['paused'] and summary['consecutive_misses'] >= 2:
+            out['alerts'].append(f'{kind}: {summary["consecutive_misses"]} consecutive closed opportunities missed')
+        if overdue:
+            out['alerts'].append(f'{kind}: {overdue} scores overdue by more than two hours')
+        if summary['coverage'] is not None and summary['coverage'] < .8:
+            out['warnings'].append(f'{kind}: last-24h operational coverage below 80% (not a research threshold)')
+    for kind, step in [('stress', 30*K.MIN), ('liquidations', K.HOUR), ('options', K.HOUR)]:
+        journal = K.Journal(base, kind).rows
+        byslot = {}
+        for r in journal:
+            d = r['data']
+            if kind == 'liquidations':
+                byslot[(d['end'], d['vintage_hours'])] = d
+            elif kind == 'options':
+                byslot[d['observed_at']//K.HOUR*K.HOUR] = d
+            else:
+                byslot[d['slot']] = d
+        opportunities = []
+        starts = K.slots(first+K.HOUR if kind == 'liquidations' else first, now, step)
+        for slot in starts:
+            for vintage in ([0, 1, 6, 18] if kind == 'liquidations' else [0]):
+                due = slot+vintage*K.HOUR
+                # Options arrive from the existing hourly capture, with a full hour to persist.
+                grace = K.HOUR if kind == 'options' else 30*K.MIN
+                if due < since or due+grace+GRACE > now:
+                    continue
+                d = byslot.get((slot, vintage) if kind == 'liquidations' else slot)
+                state = d.get('state', 'ok') if d else 'no-run'
+                if kind == 'options' and d:
+                    state = 'ok' if all(d[k]['state'] == 'ok' for k in ('rr25_7d', 'rr25_30d')) else 'unusable'
+                success = (d.get('received_ms') or d.get('observed_at') or max((x['received_ms'] for x in d.get('raw', [])), default=None)) if d and state == 'ok' else None
+                opportunities.append({'slot': due, 'state': state, 'success_ms': success, 'vintage_hours': vintage})
+        opportunities.sort(key=lambda x: (x['slot'], x['vintage_hours']))
+        summary = coverage(opportunities)
+        if kind == 'liquidations':
+            summary['by_vintage'] = {str(v): coverage([x for x in opportunities if x['vintage_hours'] == v]) for v in [0, 1, 6, 18]}
+            # Count consecutive failed capture times, not four failures for a single run.
+            unique = sorted({x['slot'] for x in opportunities})
+            summary['consecutive_misses'] = coverage([{'state': 'ok' if any(x['state']=='ok' for x in opportunities if x['slot']==t) else 'missed', 'success_ms':t} for t in unique])['consecutive_misses']
+        out['pilots'][kind] = summary
+        if not out['paused'] and summary['consecutive_misses'] >= 2:
+            out['alerts'].append(f'{kind}: consecutive capture opportunities missed or unusable')
+    out['paired_diagnostics'] = paired_diagnostics(pairs)
+    opts = [r for r in K.Journal(base, 'options').rows if since <= r['data']['observed_at'] <= now]
+    out['options_quality'] = options_diagnostics(base, opts)
+    fits = K.Journal(base, 'fits').rows
+    out['training'] = {k: {'state': r['data']['state'], 'members': len(r['data']['members']), 'cutoff_ms': r['data']['cutoff']}
+                       for k in ('range', 'state') for r in fits if r['id'] == f'{k}-{now//K.DAY*K.DAY}'}
+    return out
+
+
+def safe_build(base, now):
+    try:
+        return build(base, now)
+    except Exception as exc:
+        return {'schema': SCHEMA, 'generated_utc': U.iso_ms(now), 'generated_ms': now,
+                'stale_after_minutes': STALE//K.MIN, 'paused': False, 'integrity': 'failed',
+                'studies': {}, 'pilots': {}, 'warnings': [], 'alerts': [f'Integrity or diagnostics failure: {type(exc).__name__}: {exc}']}
+
+
+def markdown(out):
+    lines = ['# Market study operational health', '', f'Generated {out["generated_utc"]}. Integrity: {out["integrity"]}.',
+             '', 'Operational diagnostics only; frozen study results and launch clocks are unchanged.',
+             'Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.',
+             '', 'Paused: '+str(out['paused']), '', '## Alerts']
+    lines += ['- '+x for x in out['alerts']] or ['None.']
+    lines += ['', '## Coverage', '', '| Program | Successful / due | Coverage | Consecutive misses |', '|---|---:|---:|---:|']
+    for name, v in {**out['studies'], **out['pilots']}.items():
+        pct = f'{100*v["coverage"]:.1f}%' if v['coverage'] is not None else '—'
+        lines.append(f'| {name} | {v["successful"]}/{v["due"]} | {pct} | {v["consecutive_misses"]} |')
+    lines += ['', '## Diagnostics', '', 'Training readiness, per-opportunity reasons and source confirmations, publication delays, '
+              'pending/overdue scores, per-vintage collection, paired unique-entry sensitivity and options quality are in '
+              '[the JSON report](market_study_health.json).', '', 'Warnings:']
+    lines += ['- '+x for x in out['warnings']] or ['None.']
+    if out.get('paired_diagnostics'):
+        p = out['paired_diagnostics']
+        lines += ['', f'Paired study: {p["scored_forecasts"]} scored forecasts; {p["unique_entries"]} unique entries; '
+                  f'{p["largest_disjoint_60m_subset"]} windows in the largest disjoint subset. These are not independent-sample counts.',
+                  p['interpretation']]
+    return '\n'.join(lines)+'\n'
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument('command', choices=['check', 'report'])
+    args = ap.parse_args()
+    out = safe_build(ROOT, int(time.time()*1000))
+    print(markdown(out))
+    if args.command == 'report':
+        K.atomic(ROOT/'reports/market_study_health.json', (json.dumps(out, indent=2, allow_nan=False)+'\n').encode())
+        K.atomic(ROOT/'reports/market_study_health.md', markdown(out).encode())
+    return int(bool(out['alerts'])) if args.command == 'check' else int(out['integrity'] != 'ok')
+
+
+if __name__ == '__main__':
+    raise SystemExit(main())

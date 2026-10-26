@@ -33,7 +33,7 @@ import re
 BOT = "github-actions[bot]"
 VERSION = "provenance-1.2.0"
 # workflow_run children and the workflows allowed to start them (their `on: workflow_run: workflows:` lists)
-WORKFLOW_RUN_PARENTS = {"research-streams.yml": ("range.yml",),
+WORKFLOW_RUN_PARENTS = {"market-studies.yml": ("collect.yml", "range.yml"), "research-streams.yml": ("range.yml",),
                         "dashboard.yml": ("research.yml", "range-score.yml", "research-streams.yml")}
 _AFTER = re.compile(r" after run (\d+) attempt (\d+)$")
 

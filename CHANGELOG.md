@@ -1,3 +1,17 @@
+# Revision 2.30.3 — 2026-10-25 market-study operations
+
+- Extend recovery to market studies with bounded per-quarter retries and explicit follow-up after recovered range
+  publication. A prior study run before source availability cannot suppress the calibration follow-up.
+- Add an independent study watch and separate operational reports for closed-deadline coverage, publication
+  latency, training readiness, capture success, and scoring backlogs. Missing records are not successful captures.
+- Add paired unique-entry/overlap sensitivity and options leg-quality/stability diagnostics without changing
+  the frozen v1 implementation, protocol, primary comparisons, launch clocks, or stored evidence.
+- Show study health and report links in the dashboard. Viewer-clock expiry and malformed-data checks preserve
+  unknown/stale states; publication of health reports refreshes the dashboard even for recovery-started studies.
+
+See [operating rules](docs/MARKET_STUDIES.md#operational-recovery-and-diagnostics). Operational coverage is not
+research support. Production recovery and first calibration publication must be observed after merge.
+
 # Revision 2.30.2 — 2026-10-23 reliability follow-up
 
 Base: `3343e1239931b1e82eb30a02f046d515c4d82b1e` (October 23 ET). The eight lab evaluation versions,

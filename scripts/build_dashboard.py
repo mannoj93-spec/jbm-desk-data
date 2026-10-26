@@ -267,6 +267,20 @@ def build(base, output):
         cutoff = card.get('cutoff_ms')
         designs[-1]['cutoff_utc'] = (datetime.fromtimestamp(cutoff / 1000, timezone.utc).isoformat().replace('+00:00', 'Z')
                                      if isinstance(cutoff, (int, float)) and math.isfinite(cutoff) else None)
+    study_ops = read('reports/market_study_health.json') if (base / 'reports/market_study_health.json').exists() else None
+    if study_ops is not None:
+        if study_ops.get('schema') != 'market-study-health/1' or study_ops.get('integrity') not in ('ok', 'failed'):
+            raise ValueError('Invalid market study health schema')
+        utc(study_ops['generated_utc'])
+        for key in ('studies', 'pilots'):
+            if not isinstance(study_ops.get(key), dict):
+                raise ValueError('Invalid market study coverage container')
+            for row in study_ops[key].values():
+                due, good = row['due'], row['successful']
+                if type(due) is not int or type(good) is not int or not 0 <= good <= due:
+                    raise ValueError('Invalid market study coverage counts')
+                if row['coverage'] != (good/due if due else None):
+                    raise ValueError('Invalid market study coverage fraction')
     forecasts = read('reports/range_status.json')
     utc(forecasts['generated_utc'])
     utc(forecasts['status_expires_utc'])
@@ -286,6 +300,7 @@ def build(base, output):
                             'statuses': dict(Counter(d['status'] for d in designs))},
                'companion': read('reports/companion_b1.json'), 'paper': read('reports/paper_ps1.json'),
                'feasibility': read('reports/feasibility.json'), 'market': price_history(base, record),
+               'studyOps': study_ops,
                'ops': read('reports/health.json') if (base / 'reports/health.json').exists() else None,
                'developments': developments(base, record),
                'workflow': {'status': 'unverified', 'url': REPO + '/actions'}, 'sources': sources}

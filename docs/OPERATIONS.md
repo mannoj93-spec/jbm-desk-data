@@ -32,6 +32,13 @@ unchanged from the README in revision 2.13; start at the [README](../README.md).
 Python's standard library is sufficient. There are no exchange keys or trading credentials.
 The GitHub workflows use the repository's scoped `GITHUB_TOKEN` for commits and issues.
 
+## Market-study recovery
+
+Market studies now participate in the external recovery dispatcher and receive an explicit follow-up after
+recovered range publication. The independent recovery watch checks deadlines and capture gaps even if the study
+job never starts. See [market-study operations](MARKET_STUDIES.md#operational-recovery-and-diagnostics) for exact
+operational alert rules, diagnostic outputs, pause behavior and the separation from frozen research criteria.
+
 ## Scheduled work
 
 | Workflow | Trigger | Purpose |

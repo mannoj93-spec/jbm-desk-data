@@ -120,6 +120,7 @@ export function validateSnapshot(s) {
   need(list(s.health?.datasets).every(r => obj(r) && typeof r.name === 'string' && time(r.observed_utc, true)), 'health.datasets rows');
   need(time(s.built_utc) && time(s.range?.generated_utc) && time(s.range?.status_expires_utc, true), 'snapshot and range timestamps');
   need(s.ops == null || (obj(s.ops) && time(s.ops.generated_utc) && obj(s.ops.source) && obj(s.ops.decisions)), 'ops (health report)');
+  need(s.studyOps == null || validStudyOps(s.studyOps), 'market study operational report');
   need(obj(s.paper) && typeof s.paper.status === 'string' && obj(s.paper.integrity) && obj(s.paper.lifecycle),
        'paper.status/integrity/lifecycle');
   need(obj(s.companion) && obj(s.companion.evaluation) && obj(s.companion.evaluation.horizons) && obj(s.companion.integrity),
@@ -310,4 +311,46 @@ export function csv(rows) {
 }
 export function escapeHTML(value) {
   return String(value ?? '—').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+// Operational status has its own expiry. Rebuilding the dashboard never refreshes a study report.
+export function validStudyOps(s) {
+  const obj = x => x !== null && typeof x === 'object' && !Array.isArray(x);
+  const count = x => Number.isInteger(x) && x >= 0;
+  if (!obj(s) || s.schema !== 'market-study-health/1' || !Number.isFinite(Date.parse(s.generated_utc)) ||
+      s.stale_after_minutes !== 45 || !['ok', 'failed'].includes(s.integrity) || typeof s.paused !== 'boolean' ||
+      !obj(s.studies) || !obj(s.pilots) || !Array.isArray(s.alerts) || !Array.isArray(s.warnings) ||
+      ![...s.alerts, ...s.warnings].every(x => typeof x === 'string')) return false;
+  for (const row of [...Object.values(s.studies), ...Object.values(s.pilots)]) {
+    if (!obj(row) || !count(row.due) || !count(row.successful) || row.successful > row.due ||
+        !count(row.consecutive_misses) || row.consecutive_misses > row.due ||
+        (row.due === 0 ? row.coverage !== null : !numeric(row.coverage) || Math.abs(row.coverage-row.successful/row.due) > 1e-9)) return false;
+  }
+  if (s.paired_diagnostics != null) {
+    const p = s.paired_diagnostics;
+    if (!obj(p) || !['scored_forecasts','unique_entries','largest_disjoint_60m_subset'].every(k => count(p[k])) ||
+        p.unique_entries > p.scored_forecasts || p.largest_disjoint_60m_subset > p.unique_entries ||
+        !(p.equal_entry_clock_share === null || numeric(p.equal_entry_clock_share) && p.equal_entry_clock_share >= 0 && p.equal_entry_clock_share <= 1)) return false;
+  }
+  return true;
+}
+
+export function studyRows(s, now = Date.now()) {
+  if (!s) return [{area: 'Market studies', state: 'unknown', detail: 'Operational study report not in this snapshot'}];
+  if (!validStudyOps(s)) return [{area: 'Market studies', state: 'invalid', detail: 'Invalid study report; results withheld'}];
+  const age = (now - Date.parse(s.generated_utc)) / 60000;
+  const clock = age < -1 ? 'clock mismatch' : age > s.stale_after_minutes ? 'stale' : 'within cadence';
+  const rows = [{area: 'Study report', state: s.integrity === 'failed' ? 'integrity failed' : clock,
+    detail: `Generated ${s.generated_utc}; counts cover closed opportunities in the 24 hours to this report`}];
+  for (const [name, r] of Object.entries({...s.studies, ...s.pilots})) {
+    const state = clock !== 'within cadence' ? clock : s.paused ? 'paused' : r.due === 0 ? 'none due' :
+      r.consecutive_misses >= 2 ? 'missed opportunities' : r.coverage < .8 ? 'coverage below 80%' : 'within target';
+    rows.push({area: ({turnover:'Turnover control', range:'Range calibration', state:'Continuous market state', paired:'Paired spot/perpetual', stress:'Exchange stress', liquidations:'Liquidation revisions', options:'Options usability'})[name] || name, state, detail: `${r.successful}/${r.due} successful; ${r.consecutive_misses} consecutive misses`});
+  }
+  for (const detail of s.alerts) rows.push({area: 'Recorded alert', state: clock === 'within cadence' ? 'attention' : clock, detail});
+  const p = s.paired_diagnostics;
+  if (p) rows.push({area: 'Paired sample (since launch)', state: 'descriptive', detail:
+    `${p.scored_forecasts} scored forecasts; ${p.unique_entries} distinct entries; ${p.largest_disjoint_60m_subset} disjoint 60m windows. ` +
+    `Equal entry clocks: ${p.equal_entry_clock_share == null ? 'unknown' : (100*p.equal_entry_clock_share).toFixed(1)+'%'}. Counts do not establish independence.`});
+  return rows;
 }
