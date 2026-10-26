@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-26T14:13:22.012Z. Integrity: ok.
+Generated 2026-10-26T14:29:51.317Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -17,7 +17,7 @@ None.
 | turnover | 5/6 | 83.3% | 0 |
 | range | 3/6 | 50.0% | 0 |
 | state | 16/23 | 69.6% | 1 |
-| paired | 66/94 | 70.2% | 0 |
+| paired | 67/94 | 71.3% | 0 |
 | stress | 36/47 | 76.6% | 0 |
 | liquidations | 72/92 | 78.3% | 0 |
 | options | 23/23 | 100.0% | 0 |
@@ -34,10 +34,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 3/3 | 0 |
 | range | 3/3 | 0 |
 | state | 11/13 | 1 |
-| paired | 51/51 | 2 |
+| paired | 52/52 | 2 |
 | stress | 26/26 | 1 |
 | liquidations | 52/52 | 4 |
-| options | 13/13 | 0 |
+| options | 13/13 | 1 |
 
 ## Diagnostics
 
@@ -48,7 +48,7 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - paired: last-24h operational coverage below 80% (not a research threshold)
 
-Paired study: 88 scored forecasts; 62 unique entries; 28 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 89 scored forecasts; 63 unique entries; 28 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 2 abstentions; 5 unavailable depth ages. Median/max age in minutes: 16.1 / 31.116666666666667.
@@ -57,6 +57,6 @@ State depth (last_24h): 24 forecasts, 2 abstentions; 5 unavailable depth ages. M
 State depth (since_deployment): 14 forecasts, 2 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.09166666666667 / 31.116666666666667.
 - 2: flow_per_depth: stale-depth: measured 31 min before T (limit 30)
 
-Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4696.5; relative spread median: 0.08695652173913052. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4743.5; relative spread median: 0.08695652173913052. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4696.0; relative spread median: 0.06451612903225812. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4740.0; relative spread median: 0.06451612903225812. Repeated legs and horizons are dependent; missing sizes stay unavailable.
