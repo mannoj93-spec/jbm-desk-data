@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-27T15:03:28.663Z. Integrity: ok.
+Generated 2026-10-27T15:16:55.257Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -19,9 +19,9 @@ Paused: False
 | state | 18/23 | 78.3% | 0 |
 | paired | 91/93 | 97.8% | 0 |
 | state_v2 | 15/15 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options | 19/22 | 86.4% | 3 |
+| options | 19/23 | 82.6% | 4 |
 
 turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -43,10 +43,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 9/9 | 0 |
 | range | 9/9 | 0 |
 | state | 31/38 | 0 |
-| paired | 148/150 | 3 |
-| stress | 75/75 | 2 |
+| paired | 149/151 | 3 |
+| stress | 76/76 | 1 |
 | liquidations | 152/152 | 4 |
-| options | 34/37 | 0 |
+| options | 34/38 | 0 |
 
 ## Diagnostics
 
@@ -56,7 +56,7 @@ Warnings:
 - state: 5/23 recorded closed opportunities abstained in 24h (>20%; operational warning only)
 - state: last-24h operational coverage below 80% (not a research threshold)
 
-Paired study: 186 scored forecasts; 147 unique entries; 51 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 187 scored forecasts; 148 unique entries; 51 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 6 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.075 / 31.05.
@@ -69,6 +69,6 @@ State depth (since_deployment): 39 forecasts, 8 abstentions; 0 unavailable depth
 
 State depth (state_v2_last_24h): 16 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.066666666666666 / 16.3.
 
-Selected rr25_7d legs: 20 usable captures, 80 leg observations. Quote age median (ms): 4586.5; relative spread median: 0.0833333333333334. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 19 usable captures, 76 leg observations. Quote age median (ms): 4600.5; relative spread median: 0.08333333333333337. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4589.5; relative spread median: 0.054054054054054106. Repeated legs and horizons are dependent; missing sizes stay unavailable.
