@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-27T05:31:04.150Z. Integrity: ok.
+Generated 2026-10-27T05:42:53.722Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -14,22 +14,22 @@ None.
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
-| turnover | 5/5 | 100.0% | 0 |
+| turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 20/24 | 83.3% | 0 |
-| paired | 91/93 | 97.8% | 0 |
+| paired | 92/94 | 97.9% | 0 |
 | state_v2 | 6/6 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options | 23/23 | 100.0% | 0 |
 
-turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state: 24/24 closed opportunities recorded; 20 eligible forecasts; 4 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 93/93 closed opportunities recorded; 91 eligible forecasts; 2 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 94/94 closed opportunities recorded; 92 eligible forecasts; 2 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -40,12 +40,12 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 6/6 | 1 |
+| turnover | 7/7 | 0 |
 | range | 7/7 | 0 |
 | state | 24/29 | 0 |
-| paired | 110/112 | 3 |
-| stress | 56/56 | 2 |
-| liquidations | 112/112 | 4 |
+| paired | 111/113 | 2 |
+| stress | 57/57 | 1 |
+| liquidations | 116/116 | 0 |
 | options | 28/28 | 1 |
 
 ## Diagnostics
@@ -55,7 +55,7 @@ Training readiness, per-opportunity reasons and source confirmations, publicatio
 Warnings:
 None.
 
-Paired study: 147 scored forecasts; 113 unique entries; 42 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 149 scored forecasts; 114 unique entries; 42 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 4 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.09166666666667 / 31.05.
