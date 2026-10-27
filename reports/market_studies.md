@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-10-27T22:31:35.392Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-10-27T22:47:07.214Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 19 | 17 | 17 |
 | range | collecting (descriptive) | 19 | 11 | 5 |
 | state | collecting (descriptive) | 77 | 48 | 45 |
-| paired | collecting (descriptive) | 307 | 221 | 216 |
+| paired | collecting (descriptive) | 308 | 222 | 217 |
 
 ## Primary comparisons
 
@@ -18,7 +18,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 | turnover | 1.05652 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
 | range | -0.00629747 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | 0.000992158 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
-| paired | 0.00694444 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
+| paired | 0.00691244 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
 
@@ -48,12 +48,12 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 | Horizon | Arm | Scored | Directional | Neutral | Conditional hit rate |
 |---|---|---:|---:|---:|---:|
-| 60m | perp_original_clock | 216 | 134 | 82 | 50.75% |
-| 60m | perp_synchronized_clock | 216 | 134 | 82 | 50.75% |
-| 60m | combined_synchronized_clock | 216 | 142 | 74 | 49.30% |
-| 15m | perp_original_clock | 216 | 134 | 82 | 46.27% |
-| 15m | perp_synchronized_clock | 216 | 134 | 82 | 46.27% |
-| 15m | combined_synchronized_clock | 216 | 142 | 74 | 45.77% |
+| 60m | perp_original_clock | 217 | 134 | 83 | 50.75% |
+| 60m | perp_synchronized_clock | 217 | 134 | 83 | 50.75% |
+| 60m | combined_synchronized_clock | 217 | 142 | 75 | 49.30% |
+| 15m | perp_original_clock | 217 | 134 | 83 | 46.27% |
+| 15m | perp_synchronized_clock | 217 | 134 | 83 | 46.27% |
+| 15m | combined_synchronized_clock | 217 | 142 | 75 | 45.77% |
 
 ## Data usability pilots
 
