@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-10-27T09:02:52.912Z",
-  "generated_ms": 1793091772912,
-  "window_start_ms": 1793005372912,
+  "generated_utc": "2026-10-27T09:16:32.409Z",
+  "generated_ms": 1793092592409,
+  "window_start_ms": 1793006192409,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -406,7 +406,7 @@
         "abstained": 2
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793089195959,
+      "last_success_ms": 1793090780053,
       "pending_successful": 3,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
@@ -419,20 +419,11 @@
       "publication_delay_minutes": {
         "n": 91,
         "min": 0.8236333333333333,
-        "median": 1.46385,
-        "p90": 16.225566666666666,
+        "median": 1.4792666666666667,
+        "p90": 16.334216666666666,
         "max": 19.78785
       },
       "opportunities": [
-        {
-          "slot": 1793006100000,
-          "state": "ok",
-          "success_ms": 1793006166057,
-          "recorded": true,
-          "forecast_state": "ready",
-          "eligible_forecast": true,
-          "reason": null
-        },
         {
           "slot": 1793007000000,
           "state": "ok",
@@ -1260,6 +1251,15 @@
           "forecast_state": "ready",
           "eligible_forecast": true,
           "reason": null
+        },
+        {
+          "slot": 1793089800000,
+          "state": "ok",
+          "success_ms": 1793090780053,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
         }
       ]
     },
@@ -1388,15 +1388,15 @@
   },
   "pilots": {
     "stress": {
-      "due": 46,
-      "successful": 46,
+      "due": 47,
+      "successful": 47,
       "coverage": 1.0,
       "states": {
-        "ok": 46
+        "ok": 47
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793088076667,
-      "pending_successful": 2,
+      "last_success_ms": 1793090782127,
+      "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0
     },
@@ -1456,14 +1456,14 @@
       }
     },
     "options": {
-      "due": 22,
-      "successful": 22,
+      "due": 23,
+      "successful": 23,
       "coverage": 1.0,
       "states": {
-        "ok": 22
+        "ok": 23
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1793085240732,
+      "last_success_ms": 1793088839757,
       "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0
@@ -1531,35 +1531,35 @@
         "abstention_rate": 0.15625
       },
       "paired": {
-        "due": 126,
-        "successful": 124,
-        "coverage": 0.9841269841269841,
+        "due": 127,
+        "successful": 125,
+        "coverage": 0.984251968503937,
         "states": {
-          "ok": 124,
+          "ok": 125,
           "abstained": 2
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1793089195959,
+        "last_success_ms": 1793090780053,
         "pending_successful": 3,
         "recovered_before_close": false,
         "active_consecutive_misses": 0,
-        "recorded": 126,
-        "eligible_forecasts": 124,
+        "recorded": 127,
+        "eligible_forecasts": 125,
         "abstained": 2,
-        "abstention_rate": 0.015873015873015872
+        "abstention_rate": 0.015748031496062992
       }
     },
     "pilots": {
       "stress": {
-        "due": 63,
-        "successful": 63,
+        "due": 64,
+        "successful": 64,
         "coverage": 1.0,
         "states": {
-          "ok": 63
+          "ok": 64
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1793088076667,
-        "pending_successful": 2,
+        "last_success_ms": 1793090782127,
+        "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       },
@@ -1577,28 +1577,28 @@
         "active_consecutive_misses": 0
       },
       "options": {
-        "due": 31,
-        "successful": 31,
+        "due": 32,
+        "successful": 32,
         "coverage": 1.0,
         "states": {
-          "ok": 31
+          "ok": 32
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1793085240732,
+        "last_success_ms": 1793088839757,
         "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       }
     }
   },
-  "last_prepare_ms": 1793091764636,
+  "last_prepare_ms": 1793092583116,
   "paired_diagnostics": {
-    "scored_forecasts": 162,
-    "unique_entries": 126,
+    "scored_forecasts": 163,
+    "unique_entries": 127,
     "repeated_entry_groups": 36,
-    "largest_disjoint_60m_subset": 45,
+    "largest_disjoint_60m_subset": 46,
     "equal_entry_clock_share": 1,
-    "entry_grouped_mean_difference": 0.011656746031746032,
+    "entry_grouped_mean_difference": 0.01156496062992126,
     "interpretation": "Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim."
   },
   "depth_diagnostics": {
@@ -2150,47 +2150,47 @@
   },
   "options_quality": {
     "captures": 24,
-    "legs": 17699,
+    "legs": 17688,
     "rejection_counts": {
-      "delta-distance": 15488,
-      "low-oi": 3173,
-      "maturity": 9778,
-      "wide": 1472,
-      "missing-or-malformed": 1317
+      "delta-distance": 15479,
+      "low-oi": 3166,
+      "maturity": 9782,
+      "wide": 1467,
+      "missing-or-malformed": 1320
     },
     "size_states": {
-      "not-in-source": 17699
+      "not-in-source": 17688
     },
     "quote_age_ms": {
-      "n": 16382,
+      "n": 16368,
       "min": 3030,
-      "median": 4653.0,
+      "median": 4694.0,
       "p90": 5235,
       "max": 6464
     },
     "relative_spread": {
-      "n": 16382,
+      "n": 16368,
       "min": 0.0013271400132714012,
       "median": 0.03333333333333337,
       "p90": 0.2222222222222222,
       "max": 1.2000000000000002
     },
     "delta_distance": {
-      "n": 17699,
+      "n": 17688,
       "min": 3.362421259200943e-06,
-      "median": 0.24487384548633506,
-      "p90": 0.7206136684989887,
+      "median": 0.24500917205453424,
+      "p90": 0.7209066786418148,
       "max": 0.75
     },
     "selected_strike_changes_by_expiry": {
-      "29OCT26": 11,
+      "29OCT26": 10,
       "27NOV26": 10,
       "28OCT26": 10,
       "6NOV26": 9,
       "30OCT26": 8,
-      "13NOV26": 4
+      "13NOV26": 5
     },
-    "bracketing_expiry_changes": 0,
+    "bracketing_expiry_changes": 1,
     "selected_by_horizon": {
       "rr25_7d": {
         "usable_captures": 24,
@@ -2198,7 +2198,7 @@
         "quote_age_ms": {
           "n": 96,
           "min": 3030,
-          "median": 4628.5,
+          "median": 4648.0,
           "p90": 5223,
           "max": 6459
         },
@@ -2212,9 +2212,9 @@
         "delta_distance": {
           "n": 96,
           "min": 0.00031360926469747863,
-          "median": 0.015437514873747171,
-          "p90": 0.028036486924659876,
-          "max": 0.04716438822448343
+          "median": 0.017226760866315693,
+          "p90": 0.028854976192884907,
+          "max": 0.07731245711812762
         },
         "size_states": {
           "not-in-source": 96
@@ -2227,21 +2227,21 @@
         "quote_age_ms": {
           "n": 96,
           "min": 3030,
-          "median": 4629.5,
+          "median": 4650.0,
           "p90": 5234,
           "max": 6460
         },
         "relative_spread": {
           "n": 96,
           "min": 0.025316455696202556,
-          "median": 0.053342816500711286,
+          "median": 0.054804804804804756,
           "p90": 0.08695652173913052,
           "max": 0.10526315789473693
         },
         "delta_distance": {
           "n": 96,
           "min": 4.847906666932689e-05,
-          "median": 0.008564024763186628,
+          "median": 0.009811703558927687,
           "p90": 0.01686341782448203,
           "max": 0.024881164322954563
         },
