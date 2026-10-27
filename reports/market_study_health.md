@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-27T05:16:13.025Z. Integrity: ok.
+Generated 2026-10-27T05:31:04.150Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 |---|---:|---:|---:|
 | turnover | 5/5 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
-| state | 19/23 | 82.6% | 0 |
+| state | 20/24 | 83.3% | 0 |
 | paired | 91/93 | 97.8% | 0 |
-| state_v2 | 5/5 | 100.0% | 0 |
-| stress | 47/47 | 100.0% | 0 |
+| state_v2 | 6/6 | 100.0% | 0 |
+| stress | 46/46 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
 | options | 23/23 | 100.0% | 0 |
 
@@ -27,11 +27,11 @@ turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions
 
 range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state: 23/23 closed opportunities recorded; 19 eligible forecasts; 4 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state: 24/24 closed opportunities recorded; 20 eligible forecasts; 4 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 paired: 93/93 closed opportunities recorded; 91 eligible forecasts; 2 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state_v2: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state_v2: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 ## Since recovery deployment
 
@@ -42,9 +42,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 |---|---:|---:|
 | turnover | 6/6 | 1 |
 | range | 7/7 | 0 |
-| state | 23/28 | 1 |
-| paired | 109/111 | 3 |
-| stress | 56/56 | 1 |
+| state | 24/29 | 0 |
+| paired | 110/112 | 3 |
+| stress | 56/56 | 2 |
 | liquidations | 112/112 | 4 |
 | options | 28/28 | 1 |
 
