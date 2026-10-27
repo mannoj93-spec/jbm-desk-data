@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-27T16:21:28.026Z. Integrity: ok.
+Generated 2026-10-27T16:27:22.119Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -60,7 +60,7 @@ Warnings:
 - state: 5/23 recorded closed opportunities abstained in 24h (>20%; operational warning only)
 - state: last-24h operational coverage below 80% (not a research threshold)
 
-Paired study: 191 scored forecasts; 151 unique entries; 52 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 192 scored forecasts; 152 unique entries; 52 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 5 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.066666666666666 / 31.05.
