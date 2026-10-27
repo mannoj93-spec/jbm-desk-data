@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-27T04:01:22.012Z. Integrity: ok.
+Generated 2026-10-27T04:11:44.916Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -17,11 +17,11 @@ None.
 | turnover | 5/5 | 100.0% | 0 |
 | range | 5/5 | 100.0% | 0 |
 | state | 19/23 | 82.6% | 0 |
-| paired | 91/93 | 97.8% | 0 |
+| paired | 92/94 | 97.9% | 0 |
 | state_v2 | 4/4 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options | 22/22 | 100.0% | 0 |
+| options | 23/23 | 100.0% | 0 |
 
 turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -29,7 +29,7 @@ range: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. A
 
 state: 23/23 closed opportunities recorded; 19 eligible forecasts; 4 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 93/93 closed opportunities recorded; 91 eligible forecasts; 2 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 94/94 closed opportunities recorded; 92 eligible forecasts; 2 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 4/4 closed opportunities recorded; 4 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -40,13 +40,13 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 6/6 | 0 |
-| range | 6/6 | 0 |
+| turnover | 6/6 | 1 |
+| range | 6/6 | 1 |
 | state | 22/27 | 1 |
-| paired | 104/106 | 3 |
-| stress | 53/53 | 2 |
+| paired | 105/107 | 2 |
+| stress | 54/54 | 1 |
 | liquidations | 108/108 | 4 |
-| options | 26/26 | 1 |
+| options | 27/27 | 0 |
 
 ## Diagnostics
 
