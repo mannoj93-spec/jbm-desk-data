@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-10-27T16:27:20.974Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-10-27T16:47:17.712Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 18 | 16 | 16 |
 | range | collecting (descriptive) | 18 | 10 | 3 |
-| state | collecting (descriptive) | 71 | 44 | 40 |
-| paired | collecting (descriptive) | 282 | 196 | 192 |
+| state | collecting (descriptive) | 71 | 44 | 41 |
+| paired | collecting (descriptive) | 284 | 198 | 192 |
 
 ## Primary comparisons
 
@@ -17,7 +17,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 |---|---:|---|---|
 | turnover | 1.12235 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
 | range | -0.00643804 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
-| state | 0.00383427 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
+| state | 0.003104 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
 | paired | 0.0123698 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
@@ -59,7 +59,7 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 - Options: 71 captures; usable 7d RR25 in 66, usable 30d RR25 in 71; 62 valid hourly changes.
 - Liquidations: 115 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"missed": 58, "ok": 197}`.
-- Exchange stress: 141/141 scheduled records. Capture states: `{"missed": 39, "ok": 102}`. Ratings: `{"low": 102}`.
+- Exchange stress: 142/142 scheduled records. Capture states: `{"missed": 39, "ok": 103}`. Ratings: `{"low": 103}`.
 
 These pilots measure availability and revisions; they are not predictive evidence. Unknown source coverage is never zero activity.
 
