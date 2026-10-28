@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-28T15:02:05.297Z. Integrity: ok.
+Generated 2026-10-28T15:17:45.016Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -19,11 +19,11 @@ None.
 | state | 20/23 | 87.0% | 1 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options capture | 22/22 | 100.0% | 0 |
-| options usability rr25_7d | 16/22 | 72.7% | 6 |
-| options usability rr25_30d | 16/22 | 72.7% | 6 |
+| options capture | 23/23 | 100.0% | 0 |
+| options usability rr25_7d | 16/23 | 69.6% | 7 |
+| options usability rr25_30d | 16/23 | 69.6% | 7 |
 
 turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -45,21 +45,21 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 15/15 | 0 |
 | range | 15/15 | 0 |
 | state | 51/62 | 0 |
-| paired | 244/246 | 3 |
-| stress | 123/123 | 2 |
+| paired | 245/247 | 3 |
+| stress | 124/124 | 1 |
 | liquidations | 248/248 | 4 |
-| options | 50/61 | 0 |
+| options | 50/62 | 0 |
 
 ## Diagnostics
 
 Training readiness, per-opportunity reasons and source confirmations, publication delays, pending/overdue scores, per-vintage collection, paired unique-entry sensitivity and options quality are in [the JSON report](market_study_health.json).
 
 Warnings:
-- options rr25_7d: 16/22 closed opportunities usable (<80%; quality warning, not a collection outage)
-- options rr25_30d: 16/22 closed opportunities usable (<80%; quality warning, not a collection outage)
+- options rr25_7d: 16/23 closed opportunities usable (<80%; quality warning, not a collection outage)
+- options rr25_30d: 16/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 282 scored forecasts; 228 unique entries; 71 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 283 scored forecasts; 229 unique entries; 72 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 4 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.066666666666666 / 31.066666666666666.
@@ -74,7 +74,7 @@ State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable dept
 
 Selected rr25_7d legs: 16 usable captures, 64 leg observations. Quote age median (ms): 4931.5; relative spread median: 0.09090909090909097. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-Selected rr25_30d legs: 17 usable captures, 68 leg observations. Quote age median (ms): 4895.5; relative spread median: 0.05714285714285699. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_30d legs: 16 usable captures, 64 leg observations. Quote age median (ms): 4929.0; relative spread median: 0.05714285714285699. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 State v2 numerical replay: verified, 35 scores reproduced.
 
