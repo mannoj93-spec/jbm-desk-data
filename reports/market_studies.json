@@ -1,5 +1,5 @@
 {
-  "generated_ms": 1793149277731,
+  "generated_ms": 1793150195392,
   "activation": {
     "commit": "c37fa7906c02ff9407e1a1bdf73f04f69d24a9ce",
     "confirmed_ms": 1792863369620,
@@ -152,7 +152,7 @@
         "status": "collecting (descriptive)",
         "checkpoint_rules": "Descriptive only before 365 days and 20 blocks. Support requires stressed primary 90% block interval above zero, >=80% scheduled coverage, both B2 volatilities 10%-20%, and B2_10 drawdown no more than 2 percentage points worse. No automated promotion.",
         "review": {
-          "days_since_launch": 3.1587444212962965,
+          "days_since_launch": 3.169365497685185,
           "C1_due": false,
           "C2_due": false,
           "action": "operator review only; no automatic status change"
@@ -241,23 +241,23 @@
       }
     },
     "paired": {
-      "scheduled": 317,
-      "recorded": 317,
+      "scheduled": 318,
+      "recorded": 318,
       "states": {
         "missed": 84,
-        "ready": 231,
+        "ready": 232,
         "abstained": 2
       },
       "missing_run": 0,
-      "on_time_published": 231,
+      "on_time_published": 232,
       "late_publication": 0,
       "pending_confirmation": 0,
-      "scored": 226,
+      "scored": 227,
       "launch_ms": 1792866677940,
       "status": "collecting (descriptive)",
       "results": {
-        "paired": 226,
-        "mean_difference": 0.006084070796460177,
+        "paired": 227,
+        "mean_difference": 0.006057268722466961,
         "block_size": 672,
         "complete_block_equivalents": 0,
         "ci90": null,
@@ -268,53 +268,53 @@
       "conditional_hits": {
         "60": {
           "perp_original_clock": {
-            "scored": 226,
-            "directional": 141,
+            "scored": 227,
+            "directional": 142,
             "neutral": 85,
-            "hits": 71,
-            "conditional_hit_rate": 0.5035460992907801
+            "hits": 72,
+            "conditional_hit_rate": 0.5070422535211268
           },
           "perp_synchronized_clock": {
-            "scored": 226,
-            "directional": 141,
+            "scored": 227,
+            "directional": 142,
             "neutral": 85,
-            "hits": 71,
-            "conditional_hit_rate": 0.5035460992907801
+            "hits": 72,
+            "conditional_hit_rate": 0.5070422535211268
           },
           "combined_synchronized_clock": {
-            "scored": 226,
-            "directional": 147,
+            "scored": 227,
+            "directional": 148,
             "neutral": 79,
-            "hits": 72,
-            "conditional_hit_rate": 0.4897959183673469
+            "hits": 73,
+            "conditional_hit_rate": 0.49324324324324326
           }
         },
         "15": {
           "perp_original_clock": {
-            "scored": 226,
-            "directional": 141,
+            "scored": 227,
+            "directional": 142,
             "neutral": 85,
-            "hits": 67,
-            "conditional_hit_rate": 0.475177304964539
+            "hits": 68,
+            "conditional_hit_rate": 0.4788732394366197
           },
           "perp_synchronized_clock": {
-            "scored": 226,
-            "directional": 141,
+            "scored": 227,
+            "directional": 142,
             "neutral": 85,
-            "hits": 67,
-            "conditional_hit_rate": 0.475177304964539
+            "hits": 68,
+            "conditional_hit_rate": 0.4788732394366197
           },
           "combined_synchronized_clock": {
-            "scored": 226,
-            "directional": 147,
+            "scored": 227,
+            "directional": 148,
             "neutral": 79,
-            "hits": 69,
-            "conditional_hit_rate": 0.46938775510204084
+            "hits": 70,
+            "conditional_hit_rate": 0.47297297297297297
           }
         }
       },
       "equal_entry_clock_share": 1.0,
-      "secondary_15m_difference": 0.0038716814159292035,
+      "secondary_15m_difference": 0.003854625550660793,
       "clock_only_60m_difference": 0.0
     }
   },
@@ -2276,21 +2276,21 @@
       "interpretation": "source-specific retrospective diagnostic; first observations stay immutable"
     },
     "options": {
-      "captures": 79,
+      "captures": 80,
       "expected_hourly_slots": 80,
       "rr25_7d_states": {
-        "ok": 74,
+        "ok": 75,
         "31OCT26:low-oi|6NOV26:ok": 5
       },
       "rr25_30d_states": {
-        "ok": 79
+        "ok": 80
       },
       "rejections": {
-        "delta-distance": 51509,
-        "low-oi": 11021,
-        "maturity": 32421,
-        "missing-or-malformed": 4201,
-        "wide": 5151
+        "delta-distance": 52162,
+        "low-oi": 11149,
+        "maturity": 32834,
+        "missing-or-malformed": 4261,
+        "wide": 5212
       },
       "changes": [
         {
@@ -2572,6 +2572,10 @@
         {
           "t": 1793145902298,
           "change_7d": -0.8089000000000001
+        },
+        {
+          "t": 1793150045308,
+          "change_7d": -0.8698999999999999
         }
       ],
       "term_structure": [
@@ -2870,6 +2874,10 @@
         {
           "t": 1793145902298,
           "rr25_30d_minus_7d": -1.6311
+        },
+        {
+          "t": 1793150045308,
+          "rr25_30d_minus_7d": -0.8592
         }
       ],
       "interpretation": "usability only; no predictive admission"
