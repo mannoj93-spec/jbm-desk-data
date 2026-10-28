@@ -1,6 +1,6 @@
 # Paper sizing experiment PS1
 
-Generated 2026-10-28T16:26:34.088Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-10-28T16:26:29.895Z.
+Generated 2026-10-28T20:20:48.614Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-10-28T20:20:46.189Z.
 
 > PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.
 
@@ -8,32 +8,32 @@ Generated 2026-10-28T16:26:34.088Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e
 
 Retired before launch, zero observations: `desk/research/ps1/protocol_v2_retired.json` (be015545540d), `desk/research/ps1/protocol_v1_retired.json` (00acb5bcf3e8)
 
-Ledger rows: 840 physical; 840 verified, 0 quarantined, 0 excluded, 0 in progress.
+Ledger rows: 846 physical; 846 verified, 0 quarantined, 0 excluded, 0 in progress.
 
-Launched at decision 2026-10-03T00:00:00Z; 25.69 days; 155 scheduled decisions; coverage 90.3%; execution delay after the 4H close: median 19.1 min, max 51.2 min.
+Launched at decision 2026-10-03T00:00:00Z; 25.85 days; 156 scheduled decisions; coverage 90.4%; execution delay after the 4H close: median 19.1 min, max 51.2 min.
 
-Time accounting: elapsed hours between fills; 8760 h/yr; drift and variance rates per hour (protocol v3); no interpolation; the interval opened by the latest trade is pending. 139 closed intervals over 616.1 h; extended intervals 6.
+Time accounting: elapsed hours between fills; 8760 h/yr; drift and variance rates per hour (protocol v3); no interpolation; the interval opened by the latest trade is pending. 140 closed intervals over 620.0 h; extended intervals 6.
 
-Outcomes: executed 140; missed: no run 6; missed: stale: processed after close + max_delay 8; no-rebalance: forecast unavailable 1
+Outcomes: executed 141; missed: no run 6; missed: stale: processed after close + max_delay 8; no-rebalance: forecast unavailable 1
 
-Execution states: completed 140
+Execution states: completed 141
 
 | scenario | arm | closed intervals | hours | net return | log return (ann.) | vol (ann.) | log-return Sharpe (ann.) | exposure | turnover (ann., closed) | costs closed / incl. open trade | max DD | worst (log) | ES5% (log) |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| ordinary | FIXED | 139 | 616 | -1.67% | -24.0% | 9.8% | -2.44 | 0.34 | 4.9 | 37.45 / 37.45 | -2.68% | -0.84% | -0.58% |
-| ordinary | VOL | 139 | 616 | -2.32% | -33.3% | 13.5% | -2.47 | 0.46 | 10.0 | 76.49 / 76.49 | -3.69% | -1.25% | -0.80% |
-| ordinary | B2 | 139 | 616 | -2.33% | -33.5% | 13.6% | -2.47 | 0.54 | 133.9 | 1053.29 / 1077.37 | -4.34% | -0.99% | -0.81% |
-| stressed | FIXED | 139 | 616 | -1.70% | -24.4% | 9.8% | -2.48 | 0.34 | 4.9 | 68.11 / 68.11 | -2.68% | -0.84% | -0.58% |
-| stressed | VOL | 139 | 616 | -2.38% | -34.2% | 13.5% | -2.53 | 0.46 | 10.0 | 139.06 / 139.06 | -3.71% | -1.25% | -0.80% |
-| stressed | B2 | 139 | 616 | -3.15% | -45.6% | 13.6% | -3.36 | 0.54 | 133.9 | 1886.89 / 1930.27 | -5.00% | -0.99% | -0.82% |
+| ordinary | FIXED | 140 | 620 | -1.38% | -19.7% | 9.9% | -1.99 | 0.34 | 4.9 | 37.45 / 37.45 | -2.68% | -0.84% | -0.55% |
+| ordinary | VOL | 140 | 620 | -1.89% | -27.0% | 13.6% | -1.99 | 0.46 | 9.9 | 76.49 / 76.49 | -3.69% | -1.25% | -0.76% |
+| ordinary | B2 | 140 | 620 | -2.13% | -30.4% | 13.6% | -2.24 | 0.54 | 136.1 | 1077.37 / 1093.01 | -4.34% | -0.99% | -0.78% |
+| stressed | FIXED | 140 | 620 | -1.41% | -20.1% | 9.9% | -2.04 | 0.34 | 4.9 | 68.11 / 68.11 | -2.68% | -0.84% | -0.55% |
+| stressed | VOL | 140 | 620 | -1.96% | -27.9% | 13.6% | -2.06 | 0.46 | 10.0 | 139.06 / 139.06 | -3.71% | -1.25% | -0.76% |
+| stressed | B2 | 140 | 620 | -2.97% | -42.6% | 13.5% | -3.15 | 0.54 | 136.2 | 1930.27 / 1958.48 | -5.00% | -0.99% | -0.78% |
 
 | scenario | paired intervals | resampling blocks | Sharpe B2−VOL | 90% interval | ann. log return B2−VOL | mean log diff | standardized | B2−FIXED |
 |---|---|---|---|---|---|---|---|---|
-| ordinary | 139 | 3 | 0.001 | unavailable: 3 complete block(s) of 42 intervals; PS1 needs 10 | -0.19% | -0.00000 | -0.001 | -0.00005 |
-| stressed | 139 | 3 | -0.826 | unavailable: 3 complete block(s) of 42 intervals; PS1 needs 10 | -11.32% | -0.00006 | -0.055 | -0.00011 |
+| ordinary | 140 | 3 | -0.248 | unavailable: 3 complete block(s) of 42 intervals; PS1 needs 10 | -3.34% | -0.00002 | -0.016 | -0.00005 |
+| stressed | 140 | 3 | -1.092 | unavailable: 3 complete block(s) of 42 intervals; PS1 needs 10 | -14.69% | -0.00007 | -0.070 | -0.00011 |
 
 Dependence: adjacent, non-overlapping intervals that are serially dependent (volatility clusters); 42-interval blocks are the bootstrap's resampling unit, not a measured effective sample size. Uncertainty: moving-block bootstrap of paired intervals (B2 and VOL (log return, dt_h) pairs resampled together), blocks of 42 intervals, 5,000 resamples, seed 20261003; 90% percentile interval of the duration-weighted Sharpe difference. Baseline: VOL (primary), FIXED (control).
-Open interval since 2026-10-28T16:00:00Z: pending - not marked until the next executed rebalance.
-Checkpoints: C1 after 180 days with ≥10 blocks (recorded: False); C2 after 365 days with ≥20 blocks (recorded: False). Owner: operator (paper_ps1.py checkpoint C1|C2 "<note>"); the job never records one. Progress: 25.7 days, 3 complete block(s).
+Open interval since 2026-10-28T20:00:00Z: pending - not marked until the next executed rebalance.
+Checkpoints: C1 after 180 days with ≥10 blocks (recorded: False); C2 after 365 days with ≥20 blocks (recorded: False). Owner: operator (paper_ps1.py checkpoint C1|C2 "<note>"); the job never records one. Progress: 25.8 days, 3 complete block(s).
 
 Simulated fills on captured quotes; not executions. Sizing only - no direction is tested. No status here is a trading edge or an entry endorsement.
