@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-28T14:16:48.905Z. Integrity: ok.
+Generated 2026-10-28T14:31:35.122Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 |---|---:|---:|---:|
 | turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
-| state | 20/23 | 87.0% | 0 |
+| state | 20/24 | 83.3% | 1 |
 | paired | 93/93 | 100.0% | 0 |
-| state_v2 | 23/23 | 100.0% | 0 |
-| stress | 47/47 | 100.0% | 0 |
+| state_v2 | 24/24 | 100.0% | 0 |
+| stress | 46/46 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 16/23 | 69.6% | 6 |
@@ -29,11 +29,11 @@ turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions
 
 range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state: 23/23 closed opportunities recorded; 20 eligible forecasts; 3 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state: 24/24 closed opportunities recorded; 20 eligible forecasts; 4 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 paired: 93/93 closed opportunities recorded; 93 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state_v2: 23/23 closed opportunities recorded; 23 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state_v2: 24/24 closed opportunities recorded; 24 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 ## Since recovery deployment
 
@@ -44,9 +44,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 |---|---:|---:|
 | turnover | 15/15 | 0 |
 | range | 15/15 | 0 |
-| state | 51/61 | 0 |
-| paired | 241/243 | 3 |
-| stress | 122/122 | 1 |
+| state | 51/62 | 0 |
+| paired | 242/244 | 3 |
+| stress | 122/122 | 2 |
 | liquidations | 244/244 | 4 |
 | options | 50/61 | 0 |
 
