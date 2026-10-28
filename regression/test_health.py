@@ -207,3 +207,26 @@ class MonitorHeartbeatTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+class RecoveryCheckTests(unittest.TestCase):
+    def test_recovery_check_evidence_is_separate_from_overall_run_failure(self):
+        from unittest.mock import patch
+        runs=[{'id':1,'head_branch':'main','status':'completed','conclusion':'failure','updated_at':'2026-10-27T12:02:00Z'},
+              {'id':2,'head_branch':'main','status':'in_progress','updated_at':'2026-10-27T12:10:00Z'},
+              {'id':3,'head_branch':'pr','status':'completed','updated_at':'2026-10-27T12:11:00Z'}]
+        jobs=[{'name':name,'runner_id':42,'steps':[{'name':step,'started_at':'2026-10-27T12:01:00Z',
+                'completed_at':'2026-10-27T12:02:00Z','conclusion':result}]} for name,step,result in [
+                ('service-watch','Collector service continuity','success'),
+                ('study-watch','Check study deadlines and collection gaps from current records','failure')]]
+        with patch.object(H,'_get',return_value={'jobs':jobs}) as get:
+            r=H.recovery_checks(runs,H.parse('2026-10-27T12:15:00Z'),'t','o/r',None)
+            self.assertIn('/runs/1/jobs',get.call_args.args[0])
+            self.assertEqual(r['service-watch']['last_check'],'passed')
+            self.assertEqual(r['study-watch']['last_check'],'check failed')
+            self.assertEqual(r['study-watch']['state'],'fresh')
+            stale=H.recovery_checks(runs,H.parse('2026-10-27T13:00:00Z'),'t','o/r',None)
+            self.assertEqual(stale['service-watch']['state'],'stale')
+            jobs[0]['steps']=[];jobs[0]['runner_id']=0
+            unknown=H.recovery_checks(runs,H.parse('2026-10-27T12:15:00Z'),'t','o/r',None)
+            self.assertEqual(unknown['service-watch']['last_check'],'no runner')
+            self.assertIsNone(unknown['service-watch']['last_completed_utc'])

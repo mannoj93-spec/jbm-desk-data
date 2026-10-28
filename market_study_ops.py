@@ -1,6 +1,6 @@
 """Read-only operational diagnostics for market studies; never changes its frozen research identity.
 
-report writes only reports/market_study_health.{json,md}; check recomputes from journals on the current
+report writes health reports and a separate source-quality incident journal; check recomputes on the current
 clock without writing. Operational alerts are not research admission or promotion criteria.
 """
 import argparse
@@ -87,7 +87,7 @@ def abstention_warning(out, kind, summary):
 
 
 def state_v2_health(base, now, out):
-    from research_tools.state_v2 import core as V, study
+    from research_tools.state_v2 import core as V
     from research_tools.state_v2.__main__ import paused
     if not (base / V.STREAM / 'registration.jsonl').exists():
         out['warnings'].append('State v2 awaiting separate registration and activation')
@@ -103,7 +103,9 @@ def state_v2_health(base, now, out):
         return
     rows = V.verified(base)
     byslot = {f['data']['slot']: (f, c) for f, c in rows}
-    scores = study.bound_scores(base, rows)
+    from state_score_verifier import verify
+    scores = verify(base, rows, now)
+    out['state_v2_verification'] = {'state': 'verified', 'scores': len(scores)}
     closed, pending = [], []
     pending_outcomes = overdue = 0
     for f, c in rows:
@@ -226,7 +228,8 @@ def paired_diagnostics(pairs):
 def options_diagnostics(base, rows):
     ages, spreads, delta = [], [], []
     rejected, sizes, signatures, switches = Counter(), Counter(), {}, Counter()
-    expiry_sets, rolls, count = None, 0, 0
+    expiry_sets, rolls, count = {}, 0, 0
+    last_usable, transitions = {}, Counter()
     selected = {h: [] for h in ('rr25_7d', 'rr25_30d')}
     usable = Counter()
     for r in rows:
@@ -256,13 +259,20 @@ def options_diagnostics(base, rows):
                 if expiry in signatures and signatures[expiry] != sig:
                     switches[expiry] += 1
                 signatures[expiry] = sig
-        current = tuple(tuple(d[k].get('expiries', [])) for k in ('rr25_7d', 'rr25_30d'))
-        if expiry_sets is not None and current != expiry_sets:
-            rolls += 1
-        expiry_sets = current
+        for horizon in ('rr25_7d', 'rr25_30d'):
+            current = tuple(d[horizon].get('expiries', [])) if d[horizon]['state'] == 'ok' else None
+            is_usable = current is not None
+            if horizon in last_usable and last_usable[horizon] != is_usable:
+                transitions[horizon] += 1
+            last_usable[horizon] = is_usable
+            if current:
+                if horizon in expiry_sets and current != expiry_sets[horizon]:
+                    rolls += 1
+                expiry_sets[horizon] = current
     return {'captures': len(rows), 'legs': count, 'rejection_counts': dict(rejected),
             'size_states': dict(sizes), 'quote_age_ms': distribution(ages),
             'relative_spread': distribution(spreads), 'delta_distance': distribution(delta),
+            'eligibility_transitions_by_horizon': dict(transitions),
             'selected_strike_changes_by_expiry': dict(switches), 'bracketing_expiry_changes': rolls,
             'selected_by_horizon': {h: {'usable_captures': usable[h], 'legs': len(ls),
                 'quote_age_ms': distribution([l['quote_age_ms'] for l in ls]),
@@ -389,6 +399,7 @@ def build(base, now):
             else:
                 byslot[d['slot']] = d
         opportunities, pending_successes = [], []
+        captured, capture_pending = [], []
         starts = K.slots(first+K.HOUR if kind == 'liquidations' else first, now, step)
         for slot in starts:
             for vintage in ([0, 1, 6, 18] if kind == 'liquidations' else [0]):
@@ -403,6 +414,11 @@ def build(base, now):
                     state = 'ok' if all(d[k]['state'] == 'ok' for k in ('rr25_7d', 'rr25_30d')) else 'unusable'
                 success = (d.get('received_ms') or d.get('observed_at') or max((x['received_ms'] for x in d.get('raw', [])), default=None)) if d and state == 'ok' else None
                 detail = {'slot': due, 'state': state, 'success_ms': success, 'vintage_hours': vintage}
+                if kind == 'options':
+                    capture = dict(detail, state='ok' if d else 'no-run', success_ms=d['observed_at'] if d else None)
+                    (capture_pending if due+grace+GRACE > now else captured).append(capture)
+                    detail['success_ms'] = d['observed_at'] if d else None
+                    detail['horizons'] = {h: d[h]['state'] if d else 'no-run' for h in ('rr25_7d','rr25_30d')}
                 if due+grace+GRACE > now:
                     if state == 'ok':
                         pending_successes.append(detail)
@@ -417,7 +433,17 @@ def build(base, now):
         if kind == 'liquidations':
             summary['by_vintage'] = {str(v): coverage([x for x in opportunities if x['vintage_hours'] == v]) for v in [0, 1, 6, 18]}
         out['pilots'][kind] = summary
-        if not out['paused'] and summary['active_consecutive_misses'] >= 2:
+        alarm = summary
+        if kind == 'options':
+            summary['capture'] = capture_coverage(captured, capture_pending, since)
+            summary['horizons'] = {}
+            alarm = summary['capture']
+            for horizon in ('rr25_7d','rr25_30d'):
+                hs = coverage([dict(x, state='ok' if x['horizons'][horizon] == 'ok' else x['horizons'][horizon]) for x in opportunities])
+                summary['horizons'][horizon] = hs
+                if hs['due'] >= 6 and hs['coverage'] < .8:
+                    out['warnings'].append(f'options {horizon}: {hs["successful"]}/{hs["due"]} closed opportunities usable (<80%; quality warning, not a collection outage)')
+        if not out['paused'] and alarm['active_consecutive_misses'] >= 2:
             out['alerts'].append(f'{kind}: consecutive capture opportunities missed or unusable')
     out['paired_diagnostics'] = paired_diagnostics(pairs)
     out['depth_diagnostics'] = {'last_24h': depth_diagnostics(rows, since, now)}
@@ -429,6 +455,13 @@ def build(base, now):
     out['training'] = {k: {'state': r['data']['state'], 'members': len(r['data']['members']), 'cutoff_ms': r['data']['cutoff']}
                        for k in ('range', 'state') for r in fits if r['id'] == f'{k}-{now//K.DAY*K.DAY}'}
     state_v2_health(base, now, out)
+    options_pilot_health(base, now, out)
+    import source_quality
+    out['source_quality'] = source_quality.build(base, now)
+    if out['source_quality']['unresolved']:
+        out['alerts'].append('Unresolved flat zero-trade market data; inspect source-quality incidents')
+    if out['source_quality']['incidents']:
+        out['warnings'].append(f'{len(out["source_quality"]["incidents"])} retained source-quality incidents; affected score windows are listed without changing results')
     return out
 
 
@@ -441,6 +474,36 @@ def safe_build(base, now):
                 'studies': {}, 'pilots': {}, 'warnings': [], 'alerts': [f'Integrity or diagnostics failure: {type(exc).__name__}: {exc}']}
 
 
+def options_pilot_health(base, now, out):
+    from research_tools.options_pilot import core as P, study
+    from research_tools.options_pilot.__main__ import paused
+    if not (base / P.STREAM / 'registration.jsonl').exists():
+        out['options_expiry_pilot'] = {'state': 'awaiting-registration'}
+        return
+    reg = P.Journal(base, 'registration').get('options-v2')
+    if not reg:
+        raise ValueError('Options pilot registration missing')
+    a = P.activation(base)
+    out['options_expiry_pilot'] = study.report(base, now)
+    if paused(base):
+        out['options_expiry_pilot']['state'] = 'paused'
+        return
+    if not a:
+        if now - reg['data']['created_ms'] > STALE:
+            out['alerts'].append('Options pilot registration unconfirmed for more than 45 minutes')
+        return
+    runs = [r['data'] for r in P.Journal(base, 'runs').rows if r['data']['stage'] == 'collect'
+            and r['data']['state'] == 'completed']
+    last = max((r['ended_ms'] for r in runs), default=a['confirmed_ms'])
+    if now - last > STALE:
+        out['alerts'].append('Options pilot collection heartbeat older than 45 minutes')
+    rows = {r['data']['slot']: r['data'] for r in P.Journal(base, 'observations').rows}
+    closed = list(range(a['first_slot'], (now - GRACE) // K.HOUR * K.HOUR, K.HOUR))
+    recent = closed[-2:]
+    if len(recent) == 2 and all(rows.get(t, {}).get('state') != 'captured' for t in recent):
+        out['alerts'].append('Options pilot missed two consecutive closed captures')
+
+
 def markdown(out):
     lines = ['# Market study operational health', '', f'Generated {out["generated_utc"]}. Integrity: {out["integrity"]}.',
              '', 'Operational diagnostics only; frozen study results and launch clocks are unchanged.',
@@ -448,7 +511,13 @@ def markdown(out):
              '', 'Paused: '+str(out['paused']), '', '## Alerts']
     lines += ['- '+x for x in out['alerts']] or ['None.']
     lines += ['', '## Coverage', '', '| Program | Successful / due | Coverage | Consecutive misses |', '|---|---:|---:|---:|']
-    for name, v in {**out['studies'], **out['pilots']}.items():
+    summaries = {**out['studies'], **out['pilots']}
+    options = out['pilots'].get('options', {})
+    if 'capture' in options:
+        summaries.pop('options', None)
+        summaries['options capture'] = options['capture']
+        summaries.update({'options usability ' + k: v for k, v in options['horizons'].items()})
+    for name, v in summaries.items():
         pct = f'{100*v["coverage"]:.1f}%' if v['coverage'] is not None else '—'
         lines.append(f'| {name} | {v["successful"]}/{v["due"]} | {pct} | {v["consecutive_misses"]} |')
     for name, v in out['studies'].items():
@@ -485,6 +554,19 @@ def markdown(out):
         lines += ['', f'Selected {horizon} legs: {d["usable_captures"]} usable captures, {d["legs"]} leg observations. '
                   f'Quote age median (ms): {d["quote_age_ms"]["median"]}; relative spread median: '
                   f'{d["relative_spread"]["median"]}. Repeated legs and horizons are dependent; missing sizes stay unavailable.']
+    v = out.get('state_v2_verification')
+    if v:
+        lines += ['', f"State v2 numerical replay: {v['state']}, {v['scores']} scores reproduced."]
+    q = out.get('source_quality', {})
+    if q:
+        lines += ['', '## Source quality', '', q['interpretation']]
+        for incident in q['incidents']:
+            lines += [f"- {incident['series']}: {incident['minutes']} flat zero-trade minutes; {incident['state']}; "
+                      f"{len(incident['affected_score_windows'])} overlapping score windows (including dependent arms). "
+                      f"Incident {incident['id']}; cross-feed differences in bp: {incident['cross_feed_bp']}."]
+    p = out.get('options_expiry_pilot', {})
+    lines += ['', f"Separate options expiry pilot: {p.get('state', 'unknown')}. "
+              '[Prospective feasibility report](options_expiry_pilot.md).']
     return '\n'.join(lines)+'\n'
 
 
@@ -495,6 +577,9 @@ def main():
     out = safe_build(ROOT, int(time.time()*1000))
     print(markdown(out))
     if args.command == 'report':
+        if out['integrity'] == 'ok':
+            import source_quality
+            source_quality.persist(ROOT, out['source_quality'])
         K.atomic(ROOT/'reports/market_study_health.json', (json.dumps(out, indent=2, allow_nan=False)+'\n').encode())
         K.atomic(ROOT/'reports/market_study_health.md', markdown(out).encode())
     return int(bool(out['alerts'])) if args.command == 'check' else int(out['integrity'] != 'ok')
