@@ -245,6 +245,12 @@ evidence's hash (query bounds, pagination, runs, parents, jobs/steps). Exit code
 `docs/acceptance/results/<window>/` with their evidence; a corrected checker's re-evaluation is a labelled supplementary
 audit beside the result of record, never a replacement.
 
+**Shallow fetch (repo 2.30.5).** The collector checks out main at depth 1, so every persistence fetch is bounded
+(`--depth`, `PERSIST_FETCH_DEPTH`, default 10) and the rebase replays only this job's commits
+(`git rebase --onto <fetched tip> <previous tip>`). An unbounded fetch after a merge commit walks the merged branch's
+history below the shallow boundary - the whole repository (1.5 GB in a reproduction) - and timed out on three Oct 26
+runs. A depth-10 fetch of the same merge took 7 s and 14 MB. Recovered: `docs/incidents/2026-10-26-collector-persistence.md`.
+
 **Persistence stages (repo 2.30).** `scripts/commit_push.sh` separates three stages and logs each with its class,
 ending with `persistence: CONFIRMED ...` or `persistence: NOT CONFIRMED class=... stage=...`: a bounded **fetch** of the
 branch (45 s per attempt, `PERSIST_FETCH_CAP_S`), retried on timeouts, disconnects, resets and DNS failures within the

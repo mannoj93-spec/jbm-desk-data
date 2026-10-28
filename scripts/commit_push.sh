@@ -14,6 +14,14 @@
 #   push    a rejection because the remote advanced leads back to fetch + rebase; a transport failure leaves the
 #           outcome uncertain, so the remote is read back and the push counts only if the remote tip is HEAD or
 #           descends from it; an authentication or ruleset refusal stops at once.
+# Repo 2.30.5 (shallow fetch). The collector checks out main at depth 1. A plain `git fetch` of a main that had
+# just received a merge commit walked the merged branch's history past the shallow boundary and downloaded the
+# whole repository history (1.5 GB, unfinished after 150 s in a reproduction; Oct 26 runs 40251817627,
+# 40327143379, 40414468575 each timed out twice at 45 s and lost their push). Fetches are now bounded in depth
+# (PERSIST_FETCH_DEPTH, default 10: enough for the read-back to see later commits on top of ours; the real Oct 26
+# merge fetched at depth 10 in 7 s and 14 MB), and the
+# rebase replays only this job's commits (`--onto <fetched tip> <previous tip>`), which needs no shared history
+# with the fetched tip.
 # Nothing is ever force-pushed. The writer guard runs on the staged changes and on every outgoing commit before
 # each push (so again after every rebase). The last line printed says whether remote persistence was confirmed.
 set -euo pipefail
@@ -29,6 +37,7 @@ guard=$(dirname "$0")/push_guard.py
 message=${COMMIT_MESSAGE:-"Update desk data"}
 budget=${PERSIST_BUDGET_S:-240}
 fetch_cap=${PERSIST_FETCH_CAP_S:-45}   # per fetch attempt, so a hung fetch leaves room to retry within the budget
+fetch_depth=${PERSIST_FETCH_DEPTH:-10} # history fetched per attempt; never unbounded in a shallow checkout (2.30.5)
 push_cap=${PERSIST_PUSH_CAP_S:-60}     # per push attempt (as before)
 started=$SECONDS
 sshdir=""
@@ -145,7 +154,7 @@ fetch_tip() {
   while :; do
     n=$((n + 1))
     rc=0
-    run_logged "$fetch_cap" git fetch --quiet "$remote" "$branch" || rc=$?
+    run_logged "$fetch_cap" git fetch --quiet --depth="$fetch_depth" "$remote" "$branch" || rc=$?
     if [ "$rc" -eq 0 ]; then
       tip=$(git rev-parse --verify -q FETCH_HEAD || true)
       log "stage=fetch attempt=$n result=ok tip=${tip:-unknown}"
@@ -176,7 +185,7 @@ remote_has_head() {
 
 confirmed() {
   if [ "$remote" != origin ]; then
-    bounded 60 git fetch --quiet origin "$branch" || true   # refresh origin/<branch> for later persistence checks
+    bounded 60 git fetch --quiet --depth="$fetch_depth" origin "$branch" || true   # refresh origin/<branch> for later checks
   fi
   log "CONFIRMED stage=push attempt=$attempt head=$(git rev-parse --verify -q HEAD || true) after $((SECONDS - started)) s"
   exit 0
@@ -191,7 +200,7 @@ synchronize() {
   fresh=0
   local rc=0
   : > "$errf"
-  git rebase --quiet FETCH_HEAD 2>"$errf" || rc=$?
+  git rebase --quiet --onto FETCH_HEAD "$base" 2>"$errf" || rc=$?   # only this job's commits (base..HEAD)
   if [ -s "$errf" ]; then cat "$errf" >&2; fi
   if [ "$rc" -ne 0 ]; then
     if rebase_in_progress; then

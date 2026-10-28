@@ -20,3 +20,18 @@ The restored rows are byte-identical to the archive. They remain outside live da
 execution, and lab input hashes. Their restoration does not repair on-time coverage or retrospectively rescue
 the 01:00 UTC state forecast's stale-depth abstention. Working state and frozen registries from the archive were
 not restored. Subsequent successful production runs do not erase this incident.
+
+## Root cause (added in repo 2.30.5, 2026-10-28)
+
+The same signature (push rejected, two 45 s fetch timeouts, unconfirmed after about 93 s) recurred at 13:01 UTC
+(run 40327143379, PR #55 merge) and 22:42 UTC (run 40414468575, PR #56 merge). Each run started minutes before a
+pull-request merge. The collector's checkout is depth 1; `scripts/commit_push.sh` (repo 2.30) fetched main without a
+depth limit. When the new tip is a merge commit whose second parent forks below the shallow boundary, that fetch
+downloads the merged branch's ancestry down to the root: reproduced against this repository from the commit before
+the PR #53 merge, an unbounded fetch received 1.48 GB and was still running after 150 s, while `--depth=10` finished in
+7 s with 14 MB. Ordinary collector-on-collector advances are linear and were unaffected.
+
+Fix: bounded-depth fetches and `rebase --onto <fetched tip> <previous tip>` (repo 2.30.5,
+`regression/test_rev2305_persistence.py`, which fails on the 2.30 script). The 13:01 and 22:42 artifacts
+(`12653405041`, `12695580365`) are reconciled in their own recovery change.
+

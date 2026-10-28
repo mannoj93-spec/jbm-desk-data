@@ -1,3 +1,23 @@
+# Revision 2.30.5 — 2026-10-28 bounded persistence fetch in the shallow checkout
+
+- **Root cause of the Oct 26 persistence failures.** Collector runs 40251817627, 40327143379 and 40414468575 each
+  started minutes before a pull-request merge (#53, #55, #56). Their pushes were rejected because main moved; the
+  repo 2.30 `scripts/commit_push.sh` then fetched main without `--depth` in the depth-1 checkout, which after a merge
+  commit downloads the merged branch's history to the root (1.48 GB and unfinished after 150 s in a reproduction;
+  `--depth=10`: 7 s, 14 MB). Both 45 s fetch attempts timed out and persistence stayed unconfirmed. This was a defect
+  in the 2.30 repair, which was tested only from full clones.
+- `scripts/commit_push.sh`: fetches are bounded (`PERSIST_FETCH_DEPTH`, default 10, also for the post-confirmation
+  refresh); the rebase replays only this job's commits (`--onto <fetched tip> <previous tip>`), which needs no shared
+  history with the fetched tip. Stages, classes, budget, guard checks and the never-force rule are unchanged.
+- `regression/test_rev2305_persistence.py`: a depth-1 checkout against a long history and a merge whose branch forks
+  below the boundary; it reruns every 2.30 persistence scenario from that checkout and adds the merge case (fails on the
+  2.30 script: the fetch reaches the root commit), a landed push with a later commit on top (fails with depth 1: the
+  read-back cannot see our commit), and a conflict after a merge. The 2.30 advance shim now catches up before pushing.
+- Readiness: the persistence record names 2.30.5, unmerged and unobserved. `docs/OPERATIONS.md` and the Oct 26
+  incident record carry the cause.
+
+Not established: production behaviour; it is observed only when a collector run's push meets a merge on main.
+
 # Revision 2.30.4 — 2026-10-26 recovery diagnostics and retained observations
 
 - Preserve seven unique records from collector run 40251817627 in the late-restoration archive, with verified
