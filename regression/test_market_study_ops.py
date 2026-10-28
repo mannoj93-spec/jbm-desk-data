@@ -141,7 +141,8 @@ class Diagnostics(unittest.TestCase):
         reg=K.Journal(root,'registration').get('v1')
         self.assertEqual(K.identity(),reg['data']['identity'])
         before={p:hashlib.sha256(p.read_bytes()).hexdigest() for p in (root/K.STREAM).glob('*.jsonl')}
-        x=O.safe_build(root,json.loads((root/'reports/market_studies.json').read_text())['generated_ms'])
+        # V2 scoring follows the v1 report in the workflow; that report's timestamp can predate a new score.
+        x=O.safe_build(root,K.U.clock_ms())
         self.assertEqual(x['integrity'],'ok')
         self.assertEqual(before,{p:hashlib.sha256(p.read_bytes()).hexdigest() for p in before})
 
