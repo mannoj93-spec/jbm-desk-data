@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-28T12:19:50.072Z. Integrity: ok.
+Generated 2026-10-28T12:47:27.780Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -15,25 +15,25 @@ None.
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
 | turnover | 5/5 | 100.0% | 0 |
-| range | 5/5 | 100.0% | 0 |
-| state | 20/23 | 87.0% | 0 |
+| range | 6/6 | 100.0% | 0 |
+| state | 21/24 | 87.5% | 0 |
 | paired | 93/93 | 100.0% | 0 |
-| state_v2 | 23/23 | 100.0% | 0 |
+| state_v2 | 24/24 | 100.0% | 0 |
 | stress | 47/47 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 16/23 | 69.6% | 4 |
 | options usability rr25_30d | 19/23 | 82.6% | 4 |
 
 turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-range: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state: 23/23 closed opportunities recorded; 20 eligible forecasts; 3 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state: 24/24 closed opportunities recorded; 21 eligible forecasts; 3 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 paired: 93/93 closed opportunities recorded; 93 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state_v2: 23/23 closed opportunities recorded; 23 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state_v2: 24/24 closed opportunities recorded; 24 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 ## Since recovery deployment
 
@@ -43,11 +43,11 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
 | turnover | 14/14 | 1 |
-| range | 14/14 | 1 |
-| state | 49/59 | 1 |
-| paired | 233/235 | 3 |
-| stress | 118/118 | 1 |
-| liquidations | 236/236 | 4 |
+| range | 15/15 | 0 |
+| state | 50/60 | 0 |
+| paired | 235/237 | 3 |
+| stress | 119/119 | 1 |
+| liquidations | 240/240 | 0 |
 | options | 50/59 | 0 |
 
 ## Diagnostics
@@ -58,7 +58,7 @@ Warnings:
 - options rr25_7d: 16/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 271 scored forecasts; 220 unique entries; 69 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 273 scored forecasts; 222 unique entries; 70 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 3 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.05 / 31.0.
@@ -75,7 +75,7 @@ Selected rr25_7d legs: 16 usable captures, 64 leg observations. Quote age median
 
 Selected rr25_30d legs: 19 usable captures, 76 leg observations. Quote age median (ms): 4848.5; relative spread median: 0.05714285714285699. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 32 scores reproduced.
+State v2 numerical replay: verified, 33 scores reproduced.
 
 ## Source quality
 
