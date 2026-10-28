@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-10-28T20:04:10.101Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-10-28T20:19:25.590Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
-| turnover | collecting (descriptive) | 25 | 22 | 22 |
-| range | collecting (descriptive) | 25 | 16 | 10 |
+| turnover | collecting (descriptive) | 25 | 23 | 23 |
+| range | collecting (descriptive) | 25 | 17 | 10 |
 | state | collecting (descriptive) | 99 | 67 | 63 |
-| paired | collecting (descriptive) | 393 | 307 | 302 |
+| paired | collecting (descriptive) | 394 | 308 | 303 |
 
 ## Primary comparisons
 
@@ -15,10 +15,10 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 
 | Study | Paired difference | 90% block interval | First verified launch |
 |---|---:|---|---|
-| turnover | 1.41086 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
+| turnover | 1.25302 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
 | range | -0.00647133 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | 0.00133613 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
-| paired | 0.000620861 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
+| paired | 0.000618812 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
 
@@ -26,14 +26,14 @@ Returns, costs and turnover below cover closed intervals. Each latest trade open
 
 | Scenario / arm | Net return | Annualized risk | Exposure | Drawdown | Annual turnover | Costs (USDT) |
 |---|---:|---:|---:|---:|---:|---:|
-| ordinary/B2_05 | -0.15% | 9.60% | 49.26% | 0.84% | 142.474 | 162.815 |
-| ordinary/B2_10 | -0.06% | 9.52% | 50.02% | 0.77% | 77.7199 | 88.8705 |
-| ordinary/VOL_05 | 0.07% | 8.90% | 47.52% | 0.67% | 45.6473 | 52.2225 |
-| ordinary/VOL_10 | 0.07% | 8.90% | 47.52% | 0.67% | 45.6473 | 52.2225 |
-| stressed/B2_05 | -0.28% | 9.59% | 49.27% | 0.88% | 142.596 | 295.979 |
-| stressed/B2_10 | -0.14% | 9.41% | 50.04% | 0.78% | 77.8211 | 161.642 |
-| stressed/VOL_05 | 0.03% | 8.81% | 47.54% | 0.67% | 45.707 | 94.9864 |
-| stressed/VOL_10 | 0.03% | 8.81% | 47.54% | 0.67% | 45.707 | 94.9864 |
+| ordinary/B2_05 | 0.03% | 9.55% | 48.29% | 0.84% | 157.11 | 187.429 |
+| ordinary/B2_10 | 0.11% | 9.45% | 49.02% | 0.77% | 101.601 | 121.283 |
+| ordinary/VOL_05 | 0.48% | 9.57% | 47.77% | 0.67% | 49.036 | 58.5665 |
+| ordinary/VOL_10 | 0.44% | 9.42% | 47.52% | 0.67% | 43.7243 | 52.2225 |
+| stressed/B2_05 | -0.12% | 9.51% | 48.29% | 0.88% | 157.207 | 340.662 |
+| stressed/B2_10 | 0.01% | 9.30% | 49.03% | 0.78% | 101.675 | 220.517 |
+| stressed/VOL_05 | 0.43% | 9.48% | 47.79% | 0.67% | 49.0791 | 106.48 |
+| stressed/VOL_10 | 0.40% | 9.35% | 47.54% | 0.67% | 43.7815 | 94.9864 |
 
 ## Range calibration
 
@@ -48,16 +48,16 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 | Horizon | Arm | Scored | Directional | Neutral | Conditional hit rate |
 |---|---|---:|---:|---:|---:|
-| 60m | perp_original_clock | 302 | 182 | 120 | 49.45% |
-| 60m | perp_synchronized_clock | 302 | 182 | 120 | 49.45% |
-| 60m | combined_synchronized_clock | 302 | 189 | 113 | 49.74% |
-| 15m | perp_original_clock | 302 | 182 | 120 | 46.70% |
-| 15m | perp_synchronized_clock | 302 | 182 | 120 | 46.70% |
-| 15m | combined_synchronized_clock | 302 | 189 | 113 | 47.09% |
+| 60m | perp_original_clock | 303 | 182 | 121 | 49.45% |
+| 60m | perp_synchronized_clock | 303 | 182 | 121 | 49.45% |
+| 60m | combined_synchronized_clock | 303 | 189 | 114 | 49.74% |
+| 15m | perp_original_clock | 303 | 182 | 121 | 46.70% |
+| 15m | perp_synchronized_clock | 303 | 182 | 121 | 46.70% |
+| 15m | combined_synchronized_clock | 303 | 189 | 114 | 47.09% |
 
 ## Data usability pilots
 
-- Options: 98 captures; usable 7d RR25 in 82, usable 30d RR25 in 86; 77 valid hourly changes.
+- Options: 99 captures; usable 7d RR25 in 83, usable 30d RR25 in 86; 77 valid hourly changes.
 - Liquidations: 199 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"missed": 58, "ok": 309}`.
 - Exchange stress: 197/197 scheduled records. Capture states: `{"missed": 39, "ok": 158}`. Ratings: `{"low": 158}`.
 
