@@ -1,12 +1,12 @@
 {
- "as_of_utc": "2026-10-20T12:26:30Z",
+ "as_of_utc": "2026-10-28T22:36:22Z",
  "blockers": [
-  "observe a collector run on the 2.30 script whose push meets a moved main (the 12:11Z Oct 20 run that failed ran the old script from 7bde6a89)"
+  "2.30 left the fetch unbounded in the depth-1 checkout: three Oct 26 runs lost their push after merges; 2.30.5 bounds it. Observe a run whose push meets a moved main after a merge"
  ],
  "code": {
   "path": "scripts/commit_push.sh",
-  "sha256": "887ac9de77ef099b1c71328661db798f760be22490f2b6d18628b2df0fc16441",
-  "version": "repo 2.30"
+  "sha256": "e29a82a385481713fa1c25aa18f3318cb643a9af9a65e60226689ec2179974b0",
+  "version": "repo 2.30.5"
  },
  "generator": "scripts/readiness.py readiness-1.0.0",
  "id": "persistence-retry",
@@ -20,19 +20,14 @@
    "evidence": [
     {
      "kind": "commit",
-     "ref": "at or before 0abdbd11c265"
+     "ref": "at or before 5b6050b9970c"
     }
    ],
    "value": true
   },
   "merged": {
-   "evidence": [
-    {
-     "kind": "merge-commit",
-     "ref": "d26ab329 PR #48 merged 2026-10-20T12:14:00Z"
-    }
-   ],
-   "value": true
+   "evidence": [],
+   "value": false
   },
   "observed": {
    "evidence": [],
@@ -42,7 +37,7 @@
    "evidence": [
     {
      "kind": "branch",
-     "ref": "repo-2.30-integration-hardening"
+     "ref": "repo-2.30.5-shallow-fetch"
     }
    ],
    "value": true
@@ -52,10 +47,14 @@
     {
      "kind": "test",
      "ref": "regression/test_rev230_persistence.py"
+    },
+    {
+     "kind": "test",
+     "ref": "regression/test_rev2305_persistence.py"
     }
    ],
    "value": true
   }
  },
- "title": "Collector persistence retry (20A)"
+ "title": "Collector persistence retry (20A; shallow fetch 2.30.5)"
 }

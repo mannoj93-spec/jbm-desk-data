@@ -44,6 +44,7 @@ exec "$real" "$@"
 ADVANCE = r'''#!/usr/bin/env bash
 set -e
 cd __OTHER__
+__REAL__ pull -q --rebase origin main || true   # 2.30.5: catch up first, so an advance can land on our pushed commit
 n=$(( $(cat __DIR__/advances 2>/dev/null || echo 0) + 1 ))
 echo "$n" > __DIR__/advances
 mkdir -p docs
