@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-10-28T00:07:48.223Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-10-28T00:18:48.010Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
-| turnover | collecting (descriptive) | 20 | 17 | 17 |
-| range | collecting (descriptive) | 20 | 11 | 5 |
+| turnover | collecting (descriptive) | 20 | 18 | 18 |
+| range | collecting (descriptive) | 20 | 12 | 5 |
 | state | collecting (descriptive) | 79 | 50 | 46 |
-| paired | collecting (descriptive) | 313 | 227 | 222 |
+| paired | collecting (descriptive) | 314 | 228 | 223 |
 
 ## Primary comparisons
 
@@ -15,10 +15,10 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 
 | Study | Paired difference | 90% block interval | First verified launch |
 |---|---:|---|---|
-| turnover | 1.05652 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
+| turnover | 0.947885 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
 | range | -0.00629747 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | 4.45046e-05 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
-| paired | 0.00675676 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
+| paired | 0.00532511 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
 
@@ -26,14 +26,14 @@ Returns, costs and turnover below cover closed intervals. Each latest trade open
 
 | Scenario / arm | Net return | Annualized risk | Exposure | Drawdown | Annual turnover | Costs (USDT) |
 |---|---:|---:|---:|---:|---:|---:|
-| ordinary/B2_05 | 0.03% | 10.18% | 48.38% | 0.84% | 133.377 | 118.904 |
-| ordinary/B2_10 | 0.08% | 9.89% | 48.43% | 0.77% | 84.0658 | 74.9863 |
-| ordinary/VOL_05 | 0.19% | 9.40% | 47.48% | 0.67% | 58.5251 | 52.2225 |
-| ordinary/VOL_10 | 0.19% | 9.40% | 47.48% | 0.67% | 58.5251 | 52.2225 |
-| stressed/B2_05 | -0.07% | 10.13% | 48.38% | 0.88% | 133.528 | 216.219 |
-| stressed/B2_10 | 0.02% | 9.75% | 48.44% | 0.78% | 84.1848 | 136.413 |
-| stressed/VOL_05 | 0.14% | 9.29% | 47.50% | 0.67% | 58.6013 | 94.9864 |
-| stressed/VOL_10 | 0.14% | 9.29% | 47.50% | 0.67% | 58.6013 | 94.9864 |
+| ordinary/B2_05 | 0.02% | 9.86% | 48.76% | 0.84% | 137.459 | 129.407 |
+| ordinary/B2_10 | 0.07% | 9.58% | 48.81% | 0.77% | 94.3471 | 88.8705 |
+| ordinary/VOL_05 | 0.18% | 9.11% | 47.49% | 0.67% | 55.4188 | 52.2225 |
+| ordinary/VOL_10 | 0.18% | 9.11% | 47.49% | 0.67% | 55.4188 | 52.2225 |
+| stressed/B2_05 | -0.09% | 9.81% | 48.77% | 0.88% | 137.607 | 235.296 |
+| stressed/B2_10 | -0.01% | 9.44% | 48.83% | 0.78% | 94.4665 | 161.642 |
+| stressed/VOL_05 | 0.14% | 9.00% | 47.51% | 0.67% | 55.491 | 94.9864 |
+| stressed/VOL_10 | 0.14% | 9.00% | 47.51% | 0.67% | 55.491 | 94.9864 |
 
 ## Range calibration
 
@@ -48,12 +48,12 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 | Horizon | Arm | Scored | Directional | Neutral | Conditional hit rate |
 |---|---|---:|---:|---:|---:|
-| 60m | perp_original_clock | 222 | 137 | 85 | 51.09% |
-| 60m | perp_synchronized_clock | 222 | 137 | 85 | 51.09% |
-| 60m | combined_synchronized_clock | 222 | 145 | 77 | 49.66% |
-| 15m | perp_original_clock | 222 | 137 | 85 | 47.45% |
-| 15m | perp_synchronized_clock | 222 | 137 | 85 | 47.45% |
-| 15m | combined_synchronized_clock | 222 | 145 | 77 | 46.90% |
+| 60m | perp_original_clock | 223 | 138 | 85 | 50.72% |
+| 60m | perp_synchronized_clock | 223 | 138 | 85 | 50.72% |
+| 60m | combined_synchronized_clock | 223 | 145 | 78 | 49.66% |
+| 15m | perp_original_clock | 223 | 138 | 85 | 47.10% |
+| 15m | perp_synchronized_clock | 223 | 138 | 85 | 47.10% |
+| 15m | combined_synchronized_clock | 223 | 145 | 78 | 46.90% |
 
 ## Data usability pilots
 
