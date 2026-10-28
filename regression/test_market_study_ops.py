@@ -141,7 +141,8 @@ class Diagnostics(unittest.TestCase):
         reg=K.Journal(root,'registration').get('v1')
         self.assertEqual(K.identity(),reg['data']['identity'])
         before={p:hashlib.sha256(p.read_bytes()).hexdigest() for p in (root/K.STREAM).glob('*.jsonl')}
-        x=O.safe_build(root,json.loads((root/'reports/market_studies.json').read_text())['generated_ms'])
+        # V2 scoring follows the v1 report in the workflow; that report's timestamp can predate a new score.
+        x=O.safe_build(root,K.U.clock_ms())
         self.assertEqual(x['integrity'],'ok')
         self.assertEqual(before,{p:hashlib.sha256(p.read_bytes()).hexdigest() for p in before})
 
@@ -291,3 +292,33 @@ class AbstentionCounts(unittest.TestCase):
             self.assertEqual((x['due'],x['recorded'],x['eligible_forecasts'],x['abstained']),(1,1,0,1))
             self.assertFalse((base/K.STREAM).exists())
             self.assertEqual(out['depth_diagnostics']['state_v2_last_24h']['abstained'],1)
+
+class OptionsContinuity(unittest.TestCase):
+    setUp = Diagnostics.setUp
+    def test_collection_success_survives_five_low_oi_hours(self):
+        for i in range(8):
+            t=self.slot+i*K.HOUR+K.MIN
+            K.Journal(self.base,'options').add(str(t),{'observed_at':t,
+                'rr25_7d':{'state':'ok' if i<3 else 'low-oi'},'rr25_30d':{'state':'ok'}})
+        with patch.object(O,'options_diagnostics',return_value={}):
+            x=O.build(self.base,self.slot+8*K.HOUR+O.GRACE)
+        o=x['pilots']['options']
+        self.assertEqual(o['capture']['successful'],8)
+        self.assertEqual(o['horizons']['rr25_7d']['successful'],3)
+        self.assertEqual(o['horizons']['rr25_30d']['successful'],8)
+        self.assertFalse(any(a.startswith('options:') for a in x['alerts']))
+        self.assertTrue(any('quality warning' in a for a in x['warnings']))
+
+    def test_unavailable_and_recovered_are_not_expiry_rolls(self):
+        import gzip
+        from desk import stream_util as U
+        p=self.base/K.STREAM/'option_legs'/'legs.json.gz';p.parent.mkdir(parents=True)
+        raw=U.canonical([]);p.write_bytes(gzip.compress(raw))
+        rows=[]
+        for state,pair in [('ok',['A','B']),('low-oi',[]),('ok',['A','B']),('ok',['B','C'])]:
+            rows.append({'data':{'legs_file':str(p.relative_to(self.base)),'legs_sha':hashlib.sha256(raw).hexdigest(),
+                        'expiries':{},'rr25_7d':{'state':state,'expiries':pair},'rr25_30d':{'state':'unusable'}}})
+        with patch.object(O,'selected_options',return_value=[]):
+            d=O.options_diagnostics(self.base,rows)
+        self.assertEqual(d['bracketing_expiry_changes'],1)
+        self.assertEqual(d['eligibility_transitions_by_horizon']['rr25_7d'],2)

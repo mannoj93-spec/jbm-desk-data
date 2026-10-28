@@ -238,7 +238,7 @@ test('operational health rows are judged on the viewer clock; a missing report i
  assert.equal(by['Recorded silences'].state, '1 in 72 h');                       // a recovered gap stays visible
  assert.equal(by['Range decisions'].state, '1 missed or failed');
  assert.equal(by['PS1 report coverage'].state, '1 due decision(s) not in the report');
- assert.equal(by['Monitor watchdog.yml'].state, 'stale');                         // an old success is not current health
+ assert.equal(by['Native monitor watchdog.yml'].state, 'stale');                         // an old success is not current health
  const later = Object.fromEntries(opsRows(ops, Date.parse('2026-10-03T15:30:00Z')).map(r => [r.area, r]));
  assert.equal(later['Health report'].state, 'stale');
  assert.equal(later['Collector schedule'].state, 'stale');
@@ -263,7 +263,7 @@ test('a failed monitor detected a problem only when its check step ran and repor
  const mon = extra => ({generated_utc: '2026-10-05T07:00:00Z', clock: 'runner', decisions: {}, scoring_backlog: {}, source: {},
    monitors: {workflows: {'range-monitor.yml': {last_completed_utc: '2026-10-05T06:01:40Z', last_result: 'failure',
      last_success_utc: '2026-10-04T18:00:00Z', stale_after_min: 510, ...extra}}}});
- const row = extra => Object.fromEntries(opsRows(mon(extra), Date.parse('2026-10-05T07:05:00Z')).map(r => [r.area, r]))['Monitor range-monitor.yml'];
+ const row = extra => Object.fromEntries(opsRows(mon(extra), Date.parse('2026-10-05T07:05:00Z')).map(r => [r.area, r]))['Native monitor range-monitor.yml'];
  assert.equal(row({last_executed: true, last_check: 'found a problem', last_execution: 'found a problem: decision missed'}).state,
               'ran its check; found a problem');
  assert.equal(row({last_executed: true, last_check: 'check failed'}).state, 'ran its check; failed without a finding');
@@ -381,4 +381,12 @@ test('recorded opportunities, eligibility and abstentions stay separate and warn
   assert.equal(validStudyOps(s),false);
   s.studies.state_v2.abstention_rate=3/8;s.studies.state_v2.eligible_forecasts=6;
   assert.equal(validStudyOps(s),false);
+});
+
+test('recovery check result is separate from native heartbeat and overall failure', () => {
+  const ops = {generated_utc:'2026-10-27T12:05:00Z',monitors:{recovery_checks:{'service-watch':{
+    state:'fresh',last_check:'passed',last_completed_utc:'2026-10-27T12:02:00Z',run_id:1,run_result:'failure',stale_after_min:45}}}};
+  const row = now => opsRows(ops, Date.parse(now)).find(r => r.area === 'Recovery service-watch');
+  assert.equal(row('2026-10-27T12:10:00Z').state,'passed');
+  assert.equal(row('2026-10-27T13:00:00Z').state,'stale');
 });

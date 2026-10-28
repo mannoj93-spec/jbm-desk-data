@@ -230,10 +230,15 @@ export function opsRows(ops, now = Date.now()) {
       : v.last_check ? (CHECK[v.last_check] || `failed; ${v.last_check}`)
       : v.last_executed === false ? 'could not execute (no runner/steps)'
       : 'failed; check evidence unknown (report before 2.28)';
-    return {area: `Monitor ${k}`, state: st,
+    return {area: `${k === "recovery.yml" ? "Dispatcher" : "Native monitor"} ${k}`, state: st,
             detail: v.last_completed_utc ? `last run ${v.last_completed_utc} (${v.last_result || '—'}${v.last_execution ? '; ' + v.last_execution : ''}); last success ${v.last_success_utc || 'none'}`
                                          : `last success ${v.last_success_utc || 'unknown'}`};
   });
+  for (const [name, v] of Object.entries(mon.recovery_checks || {})) {
+    const age = (now - Date.parse(v.last_completed_utc)) / 60000;
+    monRows.push({area: `Recovery ${name}`, state: !Number.isFinite(age) ? 'unknown' : age < -1 ? 'clock mismatch' : age > (v.stale_after_min || 45) ? 'stale' : v.last_check,
+      detail: `Check ${v.last_check}; completion ${v.last_completed_utc || 'unavailable'}; run ${v.run_id || 'unknown'} (${v.run_result || 'unknown'} overall)`});
+  }
   // Repo 2.28: arrivals of the designated primary trigger (external timer), apart from the native dispatcher and from
   // overall service health - fallback keeping service healthy never hides missing primary arrivals.
   const tm = mon.external_timer;
@@ -326,7 +331,8 @@ export function validStudyOps(s) {
       !/^[0-9a-f]{40}$/.test(deployment.commit) || typeof deployment.label !== 'string' ||
       !obj(deployment.studies) || !obj(deployment.pilots))) return false;
   for (const row of [...Object.values(s.studies), ...Object.values(s.pilots),
-      ...Object.values(deployment?.studies || {}), ...Object.values(deployment?.pilots || {})]) {
+      ...Object.values(deployment?.studies || {}), ...Object.values(deployment?.pilots || {}),
+      ...(s.pilots.options?.capture ? [s.pilots.options.capture] : []), ...Object.values(s.pilots.options?.horizons || {})]) {
     if (!obj(row) || !count(row.due) || !count(row.successful) || row.successful > row.due ||
         !count(row.consecutive_misses) || row.consecutive_misses > row.due ||
         (row.due === 0 ? row.coverage !== null : !numeric(row.coverage) || Math.abs(row.coverage-row.successful/row.due) > 1e-9)) return false;
@@ -365,6 +371,14 @@ export function validStudyOps(s) {
         p.unique_entries > p.scored_forecasts || p.largest_disjoint_60m_subset > p.unique_entries ||
         !(p.equal_entry_clock_share === null || numeric(p.equal_entry_clock_share) && p.equal_entry_clock_share >= 0 && p.equal_entry_clock_share <= 1)) return false;
   }
+  if (s.state_v2_verification != null && (!obj(s.state_v2_verification) ||
+      s.state_v2_verification.state !== 'verified' || !count(s.state_v2_verification.scores))) return false;
+  if (s.source_quality != null && (!obj(s.source_quality) || !Array.isArray(s.source_quality.incidents) ||
+      !s.source_quality.incidents.every(v => obj(v) && typeof v.series === 'string' && count(v.minutes) &&
+        count(v.start_ms) && Number.isFinite(new Date(v.start_ms).getTime()) && typeof v.state === 'string' && Array.isArray(v.affected_score_windows)))) return false;
+  if (s.options_expiry_pilot != null && (!obj(s.options_expiry_pilot) || typeof s.options_expiry_pilot.state !== 'string' ||
+      s.options_expiry_pilot.closed != null && (!count(s.options_expiry_pilot.closed) ||
+        !count(s.options_expiry_pilot.captured) || s.options_expiry_pilot.captured > s.options_expiry_pilot.closed))) return false;
   return true;
 }
 
@@ -385,13 +399,17 @@ export function studyRows(s, now = Date.now()) {
     (r.pending_successful ? `; ${r.pending_successful} additional successes awaiting deadline/grace closure` : '') +
     (r.recovered_before_close ? '; a newer verified success cleared the current miss alert' : '');
   for (const [name, r] of Object.entries({...s.studies, ...s.pilots})) {
-    rows.push({area: `${label(name)} (24h)`, state: status(r), detail: detail(r)});
+    if (name === 'options' && r.capture) {
+      rows.push({area: 'Options capture (24h)', state: status(r.capture), detail: detail(r.capture)});
+      for (const [h, v] of Object.entries(r.horizons || {})) rows.push({area: `Options usability ${h} (24h)`,
+        state: clock !== 'within cadence' ? clock : v.coverage != null && v.coverage < .8 ? 'quality warning' : 'descriptive', detail: detail(v)});
+    } else rows.push({area: `${label(name)} (24h)`, state: status(r), detail: detail(r)});
   }
   if (s.deployment) {
     rows.push({area: 'Recovery deployment', state: clock === 'within cadence' ? 'operational comparison' : clock,
       detail: `${s.deployment.label}; opportunity times from ${s.deployment.started_utc}. Fixed baseline; research clocks unchanged.`});
     for (const [name, r] of Object.entries({...s.deployment.studies, ...s.deployment.pilots})) {
-      rows.push({area: `${label(name)} (since deployment)`, state: status(r), detail: detail(r)});
+      rows.push({area: `${label(name)} (since deployment)`, state: name === 'options' && clock === 'within cadence' ? 'descriptive usability' : status(r), detail: detail(r)});
     }
   }
   for (const detail of s.alerts) rows.push({area: 'Recorded alert', state: clock === 'within cadence' ? 'attention' : clock, detail});
@@ -411,5 +429,11 @@ export function studyRows(s, now = Date.now()) {
       detail: `${d.usable_captures} usable captures; ${d.legs} selected leg observations; quote age median ${fmt(d.quote_age_ms.median, .001)} s; spread median ${fmt(d.relative_spread.median, 100)}%, p90 ${fmt(d.relative_spread.p90, 100)}%; delta distance median ${fmt(d.delta_distance.median)}. ` +
         `${d.size_states['not-in-source'] || 0} legs lack quote size. Repeated legs are not independent observations.`});
   }
+  if (s.state_v2_verification) rows.push({area: 'State v2 numerical replay', state: s.state_v2_verification.state,
+    detail: `${s.state_v2_verification.scores} cached scores reproduced from original as-of inputs`});
+  for (const v of s.source_quality?.incidents || []) rows.push({area: 'Source-quality incident', state: v.state,
+    detail: `${v.series}: ${v.minutes} flat zero-trade minutes from ${new Date(v.start_ms).toISOString()}; ${v.affected_score_windows.length} overlapping outcome windows. Cause unknown; historical evidence retained.`});
+  if (s.options_expiry_pilot) rows.push({area: 'Prospective options expiry pilot', state: s.options_expiry_pilot.state,
+    detail: `${s.options_expiry_pilot.captured ?? 0}/${s.options_expiry_pilot.closed ?? 0} closed hours captured. Separate registration; feasibility only.`});
   return rows;
 }

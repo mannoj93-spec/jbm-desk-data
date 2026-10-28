@@ -91,9 +91,25 @@ V2 runs alongside v1 with separate registration, activation, models, forecasts a
 `streams/market-studies/state-v2/`. Its report is generated at `reports/market_state_v2.md` and
 `.json` after deployment; merge alone does not establish launch. The [study guide](docs/MARKET_STUDIES.md#corrected-state-study-v2)
 explains its start clock and operational checks. V1 evidence remains unchanged and is never pooled
-with v2. Data health separately shows recorded opportunities, eligible forecasts and abstentions.
+with v2. Data health separately shows recorded opportunities, eligible forecasts and abstentions. An external
+verifier reproduces every v2 cached score from its original as-of outcome path without changing
+the frozen study identity.
 
-### Three data-quality pilots
+### Prospective options expiry-selection pilot
+
+The [separately registered pilot](research_tools/options_pilot/protocol.json) compares the nearest
+listed expiries with the nearest expiries that pass the existing leg filters, on the same hourly
+capture. It uses no extrapolation and limits the alternate bracket to 14 days for the 7d target
+and 35 days for the 30d target. It starts at the next UTC hour after its own code and registration
+are confirmed on main; earlier captures are never counted as prospective observations.
+
+Its own records live under `streams/market-studies/options-v2/`; deployment generates
+`reports/options_expiry_pilot.md` and `.json`. Selected-contract order books add size observations
+with separate source, request and receipt clocks. Later books cannot alter the original quote
+eligibility. This measures feasibility, not predictive skill. See the
+[pilot and operational guide](docs/MARKET_QUALITY.md) for limits, missing states and pause controls.
+
+### Existing v1 data-quality pilots
 
 | Pilot | What is collected | Interpretation boundary |
 |---|---|---|
@@ -101,10 +117,15 @@ with v2. Data health separately shows recorded opportunities, eligible forecasts
 | Liquidation revisions | First and later captures of the same OKX hour, with raw responses, pagination status, and size/direction revisions | Incomplete or absent coverage is unknown, not zero liquidations. Revisions never replace first-seen predictors |
 | Exchange stress | Binance ADL risk ratings and insurance-pool snapshots with source and receipt clocks, missing states, and variation | An ADL rating is not an auto-deleveraging event count; a pool can cover several symbols. This is a capability pilot, not a return-prediction test |
 
-These pilots and experiments write to [`streams/market-studies/v1/`](streams/market-studies/v1/).
+The v1 pilots and experiments write to [`streams/market-studies/v1/`](streams/market-studies/v1/).
 Their [JSON report](reports/market_studies.json) retains exclusions, model/clock comparisons,
 and pilot details beyond the readable summary. Prepared protocols elsewhere in the repository
 and the [optional streaming recorder](stream/README.md) are not proof of a commissioned study.
+
+The operational health report also separates options capture continuity from 7d/30d usability,
+retains flat zero-trade source incidents and lists overlapping score windows. Recovery service-watch
+and study-watch check results are shown separately from native scheduled-monitor heartbeats.
+[Details and interpretation](docs/MARKET_QUALITY.md).
 
 ## Reading the evidence
 

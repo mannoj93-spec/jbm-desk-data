@@ -46,7 +46,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Verify the study runtime
-        run: python -m unittest regression.test_market_studies regression.test_state_v2 -v
+        run: python -m unittest regression.test_market_studies regression.test_state_v2 regression.test_options_pilot -v
       - name: Prepare immutable opportunities and training artifacts
         id: prepare
         run: python -m research_tools.market_studies prepare
@@ -54,6 +54,10 @@ jobs:
         id: state_prepare
         continue-on-error: true
         run: python -m research_tools.state_v2 prepare
+      - name: Register the prospective options expiry pilot
+        id: options_prepare
+        continue-on-error: true
+        run: python -m research_tools.options_pilot prepare
       - name: Publish before observing outcomes or capturing execution quotes
         id: publish
         env:
@@ -69,6 +73,10 @@ jobs:
         id: state_confirm
         continue-on-error: true
         run: python -m research_tools.state_v2 confirm
+      - name: Confirm the options pilot on main
+        id: options_confirm
+        continue-on-error: true
+        run: python -m research_tools.options_pilot confirm
       - name: Execute independent paper sizing accounts
         id: execute
         continue-on-error: true
@@ -77,6 +85,10 @@ jobs:
         id: collect
         continue-on-error: true
         run: python -m research_tools.market_studies collect
+      - name: Collect paired expiry selections and selected-contract books
+        id: options_collect
+        continue-on-error: true
+        run: python -m research_tools.options_pilot collect
       - name: Score matured paired outcomes
         id: score
         continue-on-error: true
@@ -93,6 +105,10 @@ jobs:
         id: state_report
         continue-on-error: true
         run: python -m research_tools.state_v2 report
+      - name: Report options expiry feasibility separately
+        id: options_report
+        continue-on-error: true
+        run: python -m research_tools.options_pilot report
       - name: Report operational coverage without changing research evidence
         id: health
         if: always()
@@ -106,7 +122,7 @@ jobs:
           DESK_DEPLOY_KEY: ${{ secrets.DESK_DEPLOY_KEY }}
           DESK_META_TOKEN: ${{ github.token }}
           COMMIT_MESSAGE: Market study evidence and coverage
-        run: bash scripts/commit_push.sh streams/market-studies reports/market_studies.json reports/market_studies.md reports/market_study_health.json reports/market_study_health.md reports/market_state_v2.json reports/market_state_v2.md
+        run: bash scripts/commit_push.sh streams/market-studies reports/market_studies.json reports/market_studies.md reports/market_study_health.json reports/market_study_health.md reports/market_state_v2.json reports/market_state_v2.md reports/options_expiry_pilot.json reports/options_expiry_pilot.md
       - name: Require every stage
         if: always()
         env:
@@ -122,8 +138,12 @@ jobs:
           STATE_CONFIRM: ${{ steps.state_confirm.outcome }}
           STATE_SCORE: ${{ steps.state_score.outcome }}
           STATE_REPORT: ${{ steps.state_report.outcome }}
+          OPTIONS_PREPARE: ${{ steps.options_prepare.outcome }}
+          OPTIONS_CONFIRM: ${{ steps.options_confirm.outcome }}
+          OPTIONS_COLLECT: ${{ steps.options_collect.outcome }}
+          OPTIONS_REPORT: ${{ steps.options_report.outcome }}
           HEALTH: ${{ steps.health.outcome }}
         run: |
-          for result in "$PREPARE" "$PUBLISH" "$CONFIRM" "$EXECUTE" "$COLLECT" "$SCORE" "$REPORT" "$PERSIST" "$HEALTH" "$STATE_PREPARE" "$STATE_CONFIRM" "$STATE_SCORE" "$STATE_REPORT"; do
+          for result in "$PREPARE" "$PUBLISH" "$CONFIRM" "$EXECUTE" "$COLLECT" "$SCORE" "$REPORT" "$PERSIST" "$HEALTH" "$STATE_PREPARE" "$STATE_CONFIRM" "$STATE_SCORE" "$STATE_REPORT" "$OPTIONS_PREPARE" "$OPTIONS_CONFIRM" "$OPTIONS_COLLECT" "$OPTIONS_REPORT"; do
             test "$result" = success || exit 1
           done

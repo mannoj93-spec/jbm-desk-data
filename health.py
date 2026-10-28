@@ -275,6 +275,7 @@ def monitors(now, token=None, repo=None, opener=None):
         if last_start and (newest is None or last_start > newest):
             newest = last_start
         out[wf] = e
+    checks = {}
     wf, lim = DISPATCHER
     try:
         req = urllib.request.Request(f"https://api.github.com/repos/{repo}/actions/workflows/{wf}/runs?per_page=30",
@@ -286,6 +287,7 @@ def monitors(now, token=None, repo=None, opener=None):
         native = [x for x in runs if x.get("event") == "schedule"]
         e["native"], _ = heartbeat(native, now, lim)
         out[wf] = e
+        checks = recovery_checks(runs, now, token, repo, opener)
     except Exception as exc:                                      # noqa: BLE001 - reported as unknown
         out[wf] = {"state": "unknown", "error": type(exc).__name__}
     try:
@@ -305,7 +307,7 @@ def monitors(now, token=None, repo=None, opener=None):
                     "last_check is what its check step did (2.28): only a check that ran and reported a finding "
                     "detected a problem - setup running, a skipped check or no runner detected nothing",
             "dispatcher_state": (out.get(DISPATCHER[0]) or {}).get("state"),
-            "external_timer": timer}
+            "external_timer": timer, "recovery_checks": checks}
 
 
 CHECK_STEPS = {"watchdog.yml": "Check for a stale, missing, or failing collector",
@@ -346,6 +348,37 @@ def execution(run_id, token, repo, opener=None, wf=None):
     finding = next((n for n in notes or [] if not str(n).startswith(X.EXIT_ONLY)), None)
     return {"last_executed": ran, "last_check": outcome,
             "last_execution": outcome + (f": {finding[:160]}" if finding else "")}
+
+
+def recovery_checks(runs, now, token, repo, opener):
+    """Read the check steps of the latest completed main recovery run, regardless of its overall result."""
+    import execution as X
+    names = {'service-watch': 'Collector service continuity',
+             'study-watch': 'Check study deadlines and collection gaps from current records'}
+    out = {name: {'state': 'unknown', 'last_check': 'unknown'} for name in names}
+    completed = [r for r in runs if r.get('head_branch') == 'main' and r.get('status') == 'completed'
+                 and r.get('id') and parse(r.get('updated_at'))]
+    if not completed:
+        return out
+    run = max(completed, key=lambda r: parse(r['updated_at']))
+    try:
+        jobs = _get(f"https://api.github.com/repos/{repo}/actions/runs/{run['id']}/jobs?per_page=50", token, opener)['jobs']
+        if not isinstance(jobs, list):
+            raise ValueError('Missing jobs')
+    except Exception as exc:
+        return {name: dict(v, error=type(exc).__name__) for name, v in out.items()}
+    for name, step_name in names.items():
+        selected = [j for j in jobs if j.get('name') == name]
+        outcome, ran = X.check_outcome(selected, step_name)
+        step = next((s for j in selected for s in j.get('steps', []) if s.get('name') == step_name), {})
+        stamp = parse(step.get('completed_at')) if ran else None
+        age = (now - stamp).total_seconds() / 60 if stamp else None
+        state = 'unknown' if age is None else 'clock mismatch' if age < -1 else 'stale' if age > 45 else 'fresh'
+        out[name] = {'state': state, 'last_check': outcome, 'last_executed': ran, 'run_id': run['id'],
+                     'last_completed_utc': step.get('completed_at') if stamp else None,
+                     'age_min': round(age, 1) if age is not None else None, 'stale_after_min': 45,
+                     'run_result': run.get('conclusion')}
+    return out
 
 
 def external_timer(runs, now, hours=24, tolerance_s=90, delayed_s=600):
@@ -481,7 +514,7 @@ def record(base, doc):
 def markdown(doc):
     s, cov, av, mon = doc["source"], doc["ps1_coverage"], doc["availability"], doc["monitors"]
     L = ["# Operational health", "", f"Generated {doc['generated_utc']} by {doc['job']} ({doc['clock']}). {doc['freshness_rule']}.", "",
-         f"**Source:** {s['state']}; last scheduled collector run {s['last_scheduled_utc']} ({s['age_min']} min). "
+         f"**Native collector schedule:** {s['state']}; last scheduled collector run {s['last_scheduled_utc']} ({s['age_min']} min). "
          f"Silences over {s['stale_limit_min']} min in the last {LOOKBACK_H} h: "
          + ("; ".join(f"{g['start_utc']} to {g['end_utc'] or 'ongoing'} ({g['minutes']:.0f} min)" for g in s["gaps"]) or "none") + ".", "",
          f"**Service continuity:** {(s.get('service') or {}).get('state')}; last persisted critical success "
@@ -501,7 +534,7 @@ def markdown(doc):
          f"**Range availability:** status {av['status']} (expires {av['status_expires_utc']}); "
          + "; ".join(f"{h} {v['state_now']}" for h, v in av["horizons"].items()) + ".", "",
          "**Scoring backlog:** " + ("; ".join(f"{h} {len(v)}" for h, v in doc["scoring_backlog"].items()) or "none") + ".", "",
-         f"**Monitors:** {mon['state']} ({mon['source']})"
+         f"**Native scheduled monitors:** {mon['state']} ({mon['source']})"
          + "".join(f"; {k} heartbeat {v.get('state', 'n/a')} (last run {v.get('last_completed_utc')}: {v.get('last_result')}"
                    + (f", {v['last_execution']}" if v.get('last_execution') else "") + f"; last success {v.get('last_success_utc')})"
                    for k, v in mon["workflows"].items() if k in MONITORS)
@@ -511,6 +544,9 @@ def markdown(doc):
                     + (", ".join(t.get('absent') or []) or "none") + f"; last arrival {t.get('last_arrival_utc')}. Arrivals "
                     "only: whether each request was sent needs the provider's history." if isinstance(t, dict) and "opportunities" in t
                     else "**External timer:** unknown.")(mon.get("external_timer") or {}), ""]
+    for name, check in mon.get('recovery_checks', {}).items():
+        L += [f"Recovery {name}: {check['state']}; {check['last_check']}; "
+              f"last check completion {check.get('last_completed_utc') or 'unavailable'}."]
     return "\n".join(L)
 
 
