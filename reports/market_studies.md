@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-10-28T22:31:21.508Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-10-28T22:47:22.141Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 25 | 23 | 23 |
 | range | collecting (descriptive) | 25 | 17 | 11 |
-| state | collecting (descriptive) | 101 | 68 | 65 |
-| paired | collecting (descriptive) | 403 | 317 | 312 |
+| state | collecting (descriptive) | 101 | 68 | 66 |
+| paired | collecting (descriptive) | 404 | 318 | 312 |
 
 ## Primary comparisons
 
@@ -17,7 +17,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 |---|---:|---|---|
 | turnover | 1.25302 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
 | range | -0.00648713 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
-| state | 0.000512225 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
+| state | -0.00021906 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
 | paired | 0.000600962 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
