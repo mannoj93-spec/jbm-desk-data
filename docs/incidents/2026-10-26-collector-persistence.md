@@ -35,3 +35,11 @@ Fix: bounded-depth fetches and `rebase --onto <fetched tip> <previous tip>` (rep
 `regression/test_rev2305_persistence.py`, which fails on the 2.30 script). The 13:01 and 22:42 artifacts
 (`12653405041`, `12695580365`) are reconciled in their own recovery change.
 
+## Follow-up (repo 2.30.6, 2026-10-29)
+
+PR #59 (the bounded fetch) merged 2026-10-28T23:29:09Z as `cc299cec`. Collector run 40787475302 had started at
+23:27:17Z on `04b59c83`, before the merge, so it ran the 2.30 script: its push at 23:30:21Z was rejected because the
+merge moved main, and both unbounded fetches timed out - the same signature, one last time. Artifact `12859973279`
+(digest `5b803138...`) was restored late: 7 unique rows kept, 24 superseded. In the 22 collector runs after the merge
+(to about 12:30Z Oct 29) no push met a moved main, so the fix is merged but not yet observed in production.
+

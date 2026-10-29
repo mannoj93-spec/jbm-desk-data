@@ -1,7 +1,7 @@
 {
- "as_of_utc": "2026-10-28T22:36:22Z",
+ "as_of_utc": "2026-10-29T12:28:55Z",
  "blockers": [
-  "2.30 left the fetch unbounded in the depth-1 checkout: three Oct 26 runs lost their push after merges; 2.30.5 bounds it. Observe a run whose push meets a moved main after a merge"
+  "observe a collector run on the 2.30.5 script whose push meets a moved main (none in the 22 collector runs after the merge, to 2026-10-29T12:30Z); the run that straddled the #59 merge still ran 2.30 and failed (recovered in 2.30.6)"
  ],
  "code": {
   "path": "scripts/commit_push.sh",
@@ -20,14 +20,19 @@
    "evidence": [
     {
      "kind": "commit",
-     "ref": "at or before 5b6050b9970c"
+     "ref": "at or before 9ac9eeb16be4"
     }
    ],
    "value": true
   },
   "merged": {
-   "evidence": [],
-   "value": false
+   "evidence": [
+    {
+     "kind": "merge-commit",
+     "ref": "cc299cec PR #59 merged 2026-10-28T23:29:09Z"
+    }
+   ],
+   "value": true
   },
   "observed": {
    "evidence": [],
@@ -36,8 +41,8 @@
   "pushed": {
    "evidence": [
     {
-     "kind": "branch",
-     "ref": "repo-2.30.5-shallow-fetch"
+     "kind": "pull-request",
+     "ref": "#59"
     }
    ],
    "value": true

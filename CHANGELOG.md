@@ -1,3 +1,14 @@
+# Revision 2.30.6 (records and recovery) — 2026-10-29
+
+- Restored collector run 40787475302 (started 23:27:17Z Oct 28 on the 2.30 script, push rejected when the PR #59 merge
+  moved main, both unbounded fetches timed out): artifact 12859973279 matched GitHub's digest; 7 unique rows kept under
+  `data/restored/collector-40787475302/` with receipts, 24 superseded. Late evidence only.
+- `desk/deployments.jsonl`: PR #58 and #59 merges; the 40787475302 persistence failure.
+- Readiness: the persistence repair is merged (PR #59, `cc299cec`) and not yet observed; no collector push has met a
+  moved main since the merge. Incident record follow-up added.
+
+No code change.
+
 # Revision 2.30.5 — 2026-10-28 bounded persistence fetch in the shallow checkout
 
 - **Root cause of the Oct 26 persistence failures.** Collector runs 40251817627, 40327143379 and 40414468575 each
