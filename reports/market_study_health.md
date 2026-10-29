@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-29T06:31:40.678Z. Integrity: ok.
+Generated 2026-10-29T06:46:37.321Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -19,8 +19,8 @@ None.
 | state | 20/24 | 83.3% | 0 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 12/23 | 52.2% | 0 |
 | options usability rr25_30d | 1/23 | 4.3% | 22 |
@@ -45,9 +45,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 19/19 | 0 |
 | range | 19/19 | 0 |
 | state | 64/78 | 0 |
-| paired | 306/308 | 3 |
-| stress | 154/154 | 2 |
-| liquidations | 308/308 | 4 |
+| paired | 307/309 | 3 |
+| stress | 155/155 | 1 |
+| liquidations | 312/312 | 0 |
 | options | 50/77 | 0 |
 
 ## Diagnostics
@@ -59,7 +59,7 @@ Warnings:
 - options rr25_30d: 1/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 344 scored forecasts; 282 unique entries; 85 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 345 scored forecasts; 283 unique entries; 85 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 4 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.075 / 31.066666666666666.
@@ -76,7 +76,7 @@ Selected rr25_7d legs: 12 usable captures, 48 leg observations. Quote age median
 
 Selected rr25_30d legs: 1 usable captures, 4 leg observations. Quote age median (ms): 4075.5; relative spread median: 0.03680160588825697. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 50 scores reproduced.
+State v2 numerical replay: verified, 51 scores reproduced.
 
 ## Source quality
 
