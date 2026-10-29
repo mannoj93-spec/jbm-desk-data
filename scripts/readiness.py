@@ -45,9 +45,10 @@ def _f(ref):
 COMPONENTS = {
     "persistence-retry": ("Collector persistence retry (20A; shallow fetch 2.30.5)", "scripts/commit_push.sh", "repo 2.30.5",
                           {"implemented": True, "tested": [_t("regression/test_rev230_persistence.py"), _t("regression/test_rev2305_persistence.py")],
-                           "pushed": [{"kind": "branch", "ref": "repo-2.30.5-shallow-fetch"}], "merged": False, "deployed": False,
+                           "pushed": [{"kind": "pull-request", "ref": "#59"}],
+                           "merged": [{"kind": "merge-commit", "ref": "cc299cec PR #59 merged 2026-10-28T23:29:09Z"}], "deployed": False,
                            "observed": False},
-                          ["2.30 left the fetch unbounded in the depth-1 checkout: three Oct 26 runs lost their push after merges; 2.30.5 bounds it. Observe a run whose push meets a moved main after a merge"]),
+                          ["observe a collector run on the 2.30.5 script whose push meets a moved main (none in the 22 collector runs after the merge, to 2026-10-29T12:30Z); the run that straddled the #59 merge still ran 2.30 and failed (recovered in 2.30.6)"]),
     "recovery-39333253907": ("Failed-run recovery (20B)", "scripts/restore_failed_run.py",
                              "restore-1.0.0 (recovery branch recovery-39333253907)", {"implemented": True, "pushed": [{"kind": "pull-request", "ref": "#47"}],
                                                "merged": [{"kind": "merge-commit", "ref": "ad3f3d81 PR #47 merged 2026-10-20T12:13:44Z"}]},
