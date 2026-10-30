@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-10-30T01:31:52.302Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-10-30T01:47:56.194Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 32 | 30 | 30 |
-| range | collecting (descriptive) | 32 | 24 | 17 |
+| range | collecting (descriptive) | 32 | 24 | 18 |
 | state | collecting (descriptive) | 128 | 88 | 87 |
-| paired | collecting (descriptive) | 511 | 425 | 420 |
+| paired | collecting (descriptive) | 512 | 426 | 420 |
 
 ## Primary comparisons
 
@@ -16,7 +16,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 | Study | Paired difference | 90% block interval | First verified launch |
 |---|---:|---|---|
 | turnover | -0.818795 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
-| range | -0.00648338 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
+| range | -0.00289758 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | 0.00389853 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
 | paired | -0.0016369 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
@@ -39,8 +39,8 @@ Returns, costs and turnover below cover closed intervals. Each latest trade open
 
 | Arm | 80% interval coverage | Mean interval width (ln H/L) |
 |---|---:|---:|
-| control | 94.12% | 0.0322052 |
-| calibrated | 94.12% | 0.0256805 |
+| control | 88.89% | 0.0321734 |
+| calibrated | 88.89% | 0.0256513 |
 
 ## Paired-flow direction checks
 
