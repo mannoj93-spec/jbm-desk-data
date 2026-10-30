@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-30T20:12:58.852Z. Integrity: ok.
+Generated 2026-10-30T20:14:21.901Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -73,7 +73,7 @@ State depth (since_deployment): 116 forecasts, 29 abstentions; 0 unavailable dep
 
 State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.883333333333333 / 29.95.
 
-Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4974.5; relative spread median: 0.08695652173913052. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 23 usable captures, 92 leg observations. Quote age median (ms): 4936.5; relative spread median: 0.08695652173913052. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 Selected rr25_30d legs: 0 usable captures, 0 leg observations. Quote age median (ms): None; relative spread median: None. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
