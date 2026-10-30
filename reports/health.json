@@ -1,6 +1,6 @@
 {
  "availability": {
-  "generated_utc": "2026-10-30T16:18:42.060Z",
+  "generated_utc": "2026-10-30T17:31:23.881Z",
   "horizons": {
    "24h": {
     "recorded_state": "valid-current",
@@ -217,7 +217,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-10-30T17:29:55Z",
+ "generated_utc": "2026-10-30T17:44:59Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -227,7 +227,7 @@
     "2026-10-30T14:27:00Z"
    ],
    "delayed": [],
-   "last_arrival_utc": "2026-10-30T17:27:02Z",
+   "last_arrival_utc": "2026-10-30T17:42:03Z",
    "on_time": 95,
    "on_time_max_lag_s": 3,
    "opportunities": 96,
@@ -239,24 +239,14 @@
   "problems_detected_by": [],
   "recovery_checks": {
    "service-watch": {
-    "age_min": 2.8,
-    "last_check": "passed",
-    "last_completed_utc": "2026-10-30T17:27:09Z",
-    "last_executed": true,
-    "run_id": 41098920767,
-    "run_result": "success",
-    "stale_after_min": 45,
-    "state": "fresh"
+    "error": "HTTPError",
+    "last_check": "unknown",
+    "state": "unknown"
    },
    "study-watch": {
-    "age_min": 2.0,
-    "last_check": "passed",
-    "last_completed_utc": "2026-10-30T17:27:56Z",
-    "last_executed": true,
-    "run_id": 41098920767,
-    "run_result": "success",
-    "stale_after_min": 45,
-    "state": "fresh"
+    "error": "HTTPError",
+    "last_check": "unknown",
+    "state": "unknown"
    }
   },
   "rule": "state is the heartbeat (last completed run, any result); last_result is how that run ended; last_check is what its check step did (2.28): only a check that ran and reported a finding detected a problem - setup running, a skipped check or no runner detected nothing",
@@ -315,7 +305,7 @@
     "last_completed_utc": "2026-10-30T17:27:58Z",
     "last_result": "success",
     "last_run_id": 41098920767,
-    "last_scheduled_start_utc": "2026-10-30T17:27:02Z",
+    "last_scheduled_start_utc": "2026-10-30T17:42:03Z",
     "last_success_utc": "2026-10-30T17:27:02Z",
     "native": {
      "last_completed_utc": "2026-10-30T15:31:22Z",
@@ -356,7 +346,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 63.2,
+  "report_age_min": 78.3,
   "report_coverage": 0.9102,
   "report_generated_utc": "2026-10-30T16:26:41.665Z",
   "report_scheduled_decisions": 167,
@@ -366,13 +356,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 68.6,
+  "age_min": 83.7,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 99,
    "expected_slots": 96,
-   "from_ms": 1793294995806,
-   "from_utc": "2026-10-29T17:29:55Z",
+   "from_ms": 1793295899811,
+   "from_utc": "2026-10-29T17:44:59Z",
    "intervals": 95,
    "intervals_with_automated_run": 94,
    "intervals_with_successful_automated_run": 94,
@@ -383,8 +373,8 @@
     "native-schedule": 5,
     "recovery": 94
    },
-   "to_ms": 1793381395806,
-   "to_utc": "2026-10-30T17:29:55Z"
+   "to_ms": 1793382299811,
+   "to_utc": "2026-10-30T17:44:59Z"
   },
   "gaps": [
    {
@@ -503,10 +493,10 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-10-30T17:28:13Z",
-   "last_automated_utc": "2026-10-30T17:28:13Z",
+   "last_activity_utc": "2026-10-30T17:43:20Z",
+   "last_automated_utc": "2026-10-30T17:43:20Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-10-30T17:28:13Z",
+   "last_success_utc": "2026-10-30T17:43:20Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
