@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-31T19:31:42.431Z. Integrity: ok.
+Generated 2026-10-31T19:42:09.341Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -17,10 +17,10 @@ None.
 | turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 19/24 | 79.2% | 0 |
-| paired | 93/93 | 100.0% | 0 |
+| paired | 94/94 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 23/23 | 100.0% | 0 |
 | options usability rr25_30d | 0/23 | 0.0% | 23 |
@@ -31,7 +31,7 @@ range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. A
 
 state: 24/24 closed opportunities recorded; 19 eligible forecasts; 5 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 93/93 closed opportunities recorded; 93 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 94/94 closed opportunities recorded; 94 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 24/24 closed opportunities recorded; 24 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -45,9 +45,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 34/34 | 0 |
 | range | 34/34 | 0 |
 | state | 106/139 | 0 |
-| paired | 550/552 | 3 |
-| stress | 276/276 | 2 |
-| liquidations | 552/552 | 4 |
+| paired | 551/553 | 2 |
+| stress | 277/277 | 1 |
+| liquidations | 556/556 | 0 |
 | options | 50/138 | 0 |
 
 ## Diagnostics
