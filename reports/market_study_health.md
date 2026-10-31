@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-10-31T11:01:58.198Z. Integrity: ok.
+Generated 2026-10-31T11:17:29.860Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -19,11 +19,11 @@ None.
 | state | 18/23 | 78.3% | 1 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options capture | 22/22 | 100.0% | 0 |
-| options usability rr25_7d | 22/22 | 100.0% | 0 |
-| options usability rr25_30d | 0/22 | 0.0% | 22 |
+| options capture | 23/23 | 100.0% | 0 |
+| options usability rr25_7d | 23/23 | 100.0% | 0 |
+| options usability rr25_30d | 0/23 | 0.0% | 23 |
 
 turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -45,10 +45,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 32/32 | 0 |
 | range | 32/32 | 0 |
 | state | 100/130 | 0 |
-| paired | 516/518 | 3 |
-| stress | 259/259 | 2 |
+| paired | 517/519 | 3 |
+| stress | 260/260 | 1 |
 | liquidations | 520/520 | 4 |
-| options | 50/129 | 0 |
+| options | 50/130 | 0 |
 
 ## Diagnostics
 
@@ -57,10 +57,10 @@ Training readiness, per-opportunity reasons and source confirmations, publicatio
 Warnings:
 - state: 5/23 recorded closed opportunities abstained in 24h (>20%; operational warning only)
 - state: last-24h operational coverage below 80% (not a research threshold)
-- options rr25_30d: 0/22 closed opportunities usable (<80%; quality warning, not a collection outage)
+- options rr25_30d: 0/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 554 scored forecasts; 456 unique entries; 132 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 555 scored forecasts; 457 unique entries; 132 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 6 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.0 / 31.133333333333333.
