@@ -1,5 +1,5 @@
 {
-  "generated_ms": 1793466106379,
+  "generated_ms": 1793467060611,
   "activation": {
     "commit": "c37fa7906c02ff9407e1a1bdf73f04f69d24a9ce",
     "confirmed_ms": 1792863369620,
@@ -152,7 +152,7 @@
         "status": "collecting (descriptive)",
         "checkpoint_rules": "Descriptive only before 365 days and 20 blocks. Support requires stressed primary 90% block interval above zero, >=80% scheduled coverage, both B2 volatilities 10%-20%, and B2_10 drawdown no more than 2 percentage points worse. No automated promotion.",
         "review": {
-          "days_since_launch": 6.825742662037037,
+          "days_since_launch": 6.836787013888889,
           "C1_due": false,
           "C2_due": false,
           "action": "operator review only; no automatic status change"
@@ -174,12 +174,12 @@
       "on_time_published": 34,
       "late_publication": 0,
       "pending_confirmation": 0,
-      "scored": 27,
+      "scored": 28,
       "launch_ms": 1792988374052,
       "status": "collecting (descriptive)",
       "results": {
-        "paired": 27,
-        "mean_difference": 0.007545820987155556,
+        "paired": 28,
+        "mean_difference": 0.007045023935757143,
         "block_size": 42,
         "complete_block_equivalents": 0,
         "ci90": null,
@@ -189,12 +189,12 @@
       "review_eligible": false,
       "calibration": {
         "control": {
-          "coverage": 0.7777777777777778,
-          "width": 0.032919773245925925
+          "coverage": 0.7857142857142857,
+          "width": 0.03264966806657143
         },
         "calibrated": {
-          "coverage": 0.7407407407407407,
-          "width": 0.02641291106848889
+          "coverage": 0.75,
+          "width": 0.02614389037932857
         }
       }
     },
@@ -241,23 +241,23 @@
       }
     },
     "paired": {
-      "scheduled": 669,
-      "recorded": 669,
+      "scheduled": 670,
+      "recorded": 670,
       "states": {
         "missed": 84,
-        "ready": 583,
+        "ready": 584,
         "abstained": 2
       },
       "missing_run": 0,
-      "on_time_published": 583,
+      "on_time_published": 584,
       "late_publication": 0,
       "pending_confirmation": 0,
-      "scored": 578,
+      "scored": 579,
       "launch_ms": 1792866677940,
       "status": "collecting (descriptive)",
       "results": {
-        "paired": 578,
-        "mean_difference": -0.0010813148788927337,
+        "paired": 579,
+        "mean_difference": -0.001079447322970639,
         "block_size": 672,
         "complete_block_equivalents": 0,
         "ci90": null,
@@ -268,53 +268,53 @@
       "conditional_hits": {
         "60": {
           "perp_original_clock": {
-            "scored": 578,
-            "directional": 346,
+            "scored": 579,
+            "directional": 347,
             "neutral": 232,
             "hits": 184,
-            "conditional_hit_rate": 0.5317919075144508
+            "conditional_hit_rate": 0.5302593659942363
           },
           "perp_synchronized_clock": {
-            "scored": 578,
-            "directional": 346,
+            "scored": 579,
+            "directional": 347,
             "neutral": 232,
             "hits": 184,
-            "conditional_hit_rate": 0.5317919075144508
+            "conditional_hit_rate": 0.5302593659942363
           },
           "combined_synchronized_clock": {
-            "scored": 578,
-            "directional": 344,
+            "scored": 579,
+            "directional": 345,
             "neutral": 234,
             "hits": 184,
-            "conditional_hit_rate": 0.5348837209302325
+            "conditional_hit_rate": 0.5333333333333333
           }
         },
         "15": {
           "perp_original_clock": {
-            "scored": 578,
-            "directional": 346,
+            "scored": 579,
+            "directional": 347,
             "neutral": 232,
-            "hits": 164,
-            "conditional_hit_rate": 0.47398843930635837
+            "hits": 165,
+            "conditional_hit_rate": 0.4755043227665706
           },
           "perp_synchronized_clock": {
-            "scored": 578,
-            "directional": 346,
+            "scored": 579,
+            "directional": 347,
             "neutral": 232,
-            "hits": 164,
-            "conditional_hit_rate": 0.47398843930635837
+            "hits": 165,
+            "conditional_hit_rate": 0.4755043227665706
           },
           "combined_synchronized_clock": {
-            "scored": 578,
-            "directional": 344,
+            "scored": 579,
+            "directional": 345,
             "neutral": 234,
-            "hits": 164,
-            "conditional_hit_rate": 0.47674418604651164
+            "hits": 165,
+            "conditional_hit_rate": 0.4782608695652174
           }
         }
       },
       "equal_entry_clock_share": 1.0,
-      "secondary_15m_difference": -0.0010813148788927337,
+      "secondary_15m_difference": -0.001079447322970639,
       "clock_only_60m_difference": 0.0
     }
   },
@@ -4388,10 +4388,10 @@
       "interpretation": "source-specific retrospective diagnostic; first observations stay immutable"
     },
     "options": {
-      "captures": 167,
+      "captures": 168,
       "expected_hourly_slots": 168,
       "rr25_7d_states": {
-        "ok": 144,
+        "ok": 145,
         "31OCT26:low-oi|6NOV26:ok": 5,
         "1NOV26:no-25-delta-strike|6NOV26:ok": 2,
         "1NOV26:low-oi|6NOV26:ok": 10,
@@ -4400,14 +4400,14 @@
       },
       "rr25_30d_states": {
         "ok": 86,
-        "no-bracketing-expiry": 81
+        "no-bracketing-expiry": 82
       },
       "rejections": {
-        "delta-distance": 110415,
-        "low-oi": 23653,
-        "maturity": 73805,
-        "missing-or-malformed": 9288,
-        "wide": 10534
+        "delta-distance": 111081,
+        "low-oi": 23802,
+        "maturity": 74290,
+        "missing-or-malformed": 9342,
+        "wide": 10588
       },
       "changes": [
         {
@@ -4953,6 +4953,10 @@
         {
           "t": 1793462975464,
           "change_7d": -0.6646999999999998
+        },
+        {
+          "t": 1793466849491,
+          "change_7d": 0.10449999999999982
         }
       ],
       "term_structure": [
