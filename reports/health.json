@@ -1,6 +1,6 @@
 {
  "availability": {
-  "generated_utc": "2026-10-31T09:57:53.152Z",
+  "generated_utc": "2026-10-31T11:16:14.671Z",
   "horizons": {
    "24h": {
     "recorded_state": "valid-current",
@@ -221,7 +221,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-10-31T11:14:56Z",
+ "generated_utc": "2026-10-31T11:20:14Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -239,11 +239,11 @@
    "state": "gaps",
    "window_h": 24
   },
-  "newest_scheduled_start_utc": "2026-10-31T09:56:59Z",
+  "newest_scheduled_start_utc": "2026-10-31T11:15:17Z",
   "problems_detected_by": [],
   "recovery_checks": {
    "service-watch": {
-    "age_min": 2.8,
+    "age_min": 8.1,
     "last_check": "passed",
     "last_completed_utc": "2026-10-31T11:12:11Z",
     "last_executed": true,
@@ -253,7 +253,7 @@
     "state": "fresh"
    },
    "study-watch": {
-    "age_min": 2.0,
+    "age_min": 7.3,
     "last_check": "passed",
     "last_completed_utc": "2026-10-31T11:12:58Z",
     "last_executed": true,
@@ -271,7 +271,7 @@
     "last_completed_utc": "2026-10-31T05:52:27Z",
     "last_result": "success",
     "last_run_id": 41174084383,
-    "last_scheduled_start_utc": "2026-10-31T05:49:06Z",
+    "last_scheduled_start_utc": "2026-10-31T11:15:17Z",
     "last_success_utc": "2026-10-31T05:49:06Z"
    },
    "dashboard.yml": {
@@ -360,7 +360,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 172.0,
+  "report_age_min": 177.3,
   "report_coverage": 0.9123,
   "report_generated_utc": "2026-10-31T08:22:56.657Z",
   "report_scheduled_decisions": 171,
@@ -370,13 +370,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 325.0,
+  "age_min": 1.8,
   "coverage_24h": {
    "automated_critical_failures": 0,
-   "automated_runs": 98,
+   "automated_runs": 99,
    "expected_slots": 96,
-   "from_ms": 1793358896402,
-   "from_utc": "2026-10-30T11:14:56Z",
+   "from_ms": 1793359214715,
+   "from_utc": "2026-10-30T11:20:14Z",
    "intervals": 95,
    "intervals_with_automated_run": 94,
    "intervals_with_successful_automated_run": 94,
@@ -384,11 +384,11 @@
    "longest_successful_gap_min": 30.0,
    "rule": "activity = any automated stored record (heartbeat); success = critical_success records only",
    "runs_by_source": {
-    "native-schedule": 4,
+    "native-schedule": 5,
     "recovery": 94
    },
-   "to_ms": 1793445296402,
-   "to_utc": "2026-10-31T11:14:56Z"
+   "to_ms": 1793445614715,
+   "to_utc": "2026-10-31T11:20:14Z"
   },
   "gaps": [
    {
@@ -490,14 +490,14 @@
     "start_utc": "2026-10-31T00:09:43Z"
    },
    {
-    "end_ms": null,
-    "end_utc": null,
-    "minutes": 324.97,
+    "end_ms": 1793445506378,
+    "end_utc": "2026-10-31T11:18:26Z",
+    "minutes": 328.47,
     "start_ms": 1793425797955,
     "start_utc": "2026-10-31T05:49:57Z"
    }
   ],
-  "last_scheduled_utc": "2026-10-31T05:49:57Z",
+  "last_scheduled_utc": "2026-10-31T11:18:26Z",
   "manual_runs_since": 0,
   "rule": "scheduled runs only (manual, local and recovery runs do not close a scheduled gap)",
   "service": {
@@ -514,14 +514,14 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-10-31T11:13:07Z",
-   "last_automated_utc": "2026-10-31T11:13:07Z",
-   "last_source": "recovery",
-   "last_success_utc": "2026-10-31T11:13:07Z",
+   "last_activity_utc": "2026-10-31T11:18:26Z",
+   "last_automated_utc": "2026-10-31T11:18:26Z",
+   "last_source": "native-schedule",
+   "last_success_utc": "2026-10-31T11:18:26Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
   "stale_limit_min": 90,
-  "state": "stale"
+  "state": "healthy"
  }
 }
