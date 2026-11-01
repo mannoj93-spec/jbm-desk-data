@@ -4,7 +4,7 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-11-01T04:18:08.308Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-11-01T09:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-11-01T04:32:05.070Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-11-01T09:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
@@ -14,7 +14,7 @@ Generated 2026-11-01T04:18:08.308Z by reader-12.4.6; contract `RC1D/contract-12.
 | 24h | stale | range-rc1d-24h-20261031T2000Z | 2026-10-31T20:25:00Z → 2026-11-01T20:25:00Z | 2026-11-01T01:15:00Z | expired at 2026-11-01T01:15:00Z (a newer decision was due; no newer forecast is current) |
 | 72h | stale | range-rc1d-72h-20261031T2000Z | 2026-10-31T20:25:00Z → 2026-11-03T20:25:00Z | 2026-11-01T01:15:00Z | expired at 2026-11-01T01:15:00Z (a newer decision was due; no newer forecast is current) |
 
-Current decision 2026-11-01T04:00:00Z: failed (run 41272163999: refit failure). Due production decisions: 216; outcomes: failed 2, missing 5, registered-pending 17, scored 188, skipped 4.
+Current decision 2026-11-01T04:00:00Z: failed (run 41273161340: refit failure). Due production decisions: 216; outcomes: failed 2, missing 5, registered-pending 17, scored 188, skipped 4.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
@@ -37,8 +37,8 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 | horizon | waiting maturity | ready | overdue | scoring failed | scored | ineligible |
 |---|---|---|---|---|---|---|
 | 4h | 0 | 0 | 0 | 0 | 205 | 0 |
-| 24h | 5 | 0 | 0 | 0 | 200 | 0 |
-| 72h | 17 | 0 | 0 | 0 | 188 | 0 |
+| 24h | 4 | 1 | 0 | 0 | 200 | 0 |
+| 72h | 16 | 1 | 0 | 0 | 188 | 0 |
 
 ## Recent decisions (history)
 
