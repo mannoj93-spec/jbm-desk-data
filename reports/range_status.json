@@ -8,12 +8,12 @@
    "b0_point_lr": 0.020701403591,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-31T20:00:00Z",
-   "elapsed_fraction": 0.3557,
+   "elapsed_fraction": 0.4,
    "end_utc": "2026-11-01T20:25:00Z",
    "frozen_sha256": "84ca109dc89082eb51e2d108c2122a9b9365bc4e84cd8b2170e0e4cbe0b12ed3",
    "horizon": "24h",
    "id": "range-rc1d-24h-20261031T2000Z",
-   "now_utc": "2026-11-01T04:57:12.767Z",
+   "now_utc": "2026-11-01T06:01:02.287Z",
    "point_lr": 0.018095468409,
    "points_at_decision_close": {
     "point": 1415.9,
@@ -47,7 +47,7 @@
    "frozen_sha256": "1c7d871025f10025a5585390fe400778378c366e1d014d58ef93c0177eae535f",
    "horizon": "4h",
    "id": "range-rc1d-4h-20261031T2000Z",
-   "now_utc": "2026-11-01T04:57:12.767Z",
+   "now_utc": "2026-11-01T06:01:02.287Z",
    "point_lr": 0.004569107382,
    "points_at_decision_close": {
     "point": 355.1,
@@ -76,12 +76,12 @@
    "b0_point_lr": 0.042580085698,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-31T20:00:00Z",
-   "elapsed_fraction": 0.1186,
+   "elapsed_fraction": 0.1333,
    "end_utc": "2026-11-03T20:25:00Z",
    "frozen_sha256": "0cf8449830736e33e7c8aa50deb18fe5ba06851ddbe524299f49d29358725c95",
    "horizon": "72h",
    "id": "range-rc1d-72h-20261031T2000Z",
-   "now_utc": "2026-11-01T04:57:12.767Z",
+   "now_utc": "2026-11-01T06:01:02.287Z",
    "point_lr": 0.045230691944,
    "points_at_decision_close": {
     "point": 3587.7,
@@ -104,14 +104,8 @@
    "valid_until_utc": "2026-11-01T01:15:00Z"
   }
  },
- "current_decision": {
-  "decision_utc": "2026-11-01T04:00:00Z",
-  "grace_until_utc": "2026-11-01T05:15:00Z",
-  "ids": [],
-  "outcome": "failed",
-  "reason": "run 41274842438: refit failure"
- },
- "due_decisions": 216,
+ "current_decision": null,
+ "due_decisions": 217,
  "evaluation": {
   "block_decisions": 42,
   "horizons": {
@@ -204,16 +198,16 @@
   "min_blocks": 10,
   "note": "Descriptive. Overlapping windows are dependent; the count of non-overlapping windows is not an effective sample size. No support claim; promotion criteria unchanged (queue.md section 0)."
  },
- "expected_decisions": 216,
+ "expected_decisions": 217,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-11-01T04:57:12.767Z",
+ "generated_utc": "2026-11-01T06:01:02.287Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
  "note": "Generated file. Freshness is the reader's rule applied to your own clock: a valid-current entry is current only while now < current[h].valid_until_utc (range_reader.revalidate); recompute elapsed_fraction from start/end. Only valid-current is citable, as a full-window forecast. A green workflow is not a registration. Publication confirmation uses the runner's clock after a remote fetch.",
  "orphans": [],
  "outcomes": {
-  "failed": 2,
+  "failed": 3,
   "missing": 5,
   "registered-pending": 16,
   "scored": 189,
@@ -231,16 +225,6 @@
  ],
  "reader": "reader-12.4.6",
  "recent": [
-  {
-   "decision_utc": "2026-10-29T04:00:00Z",
-   "ids": [
-    "range-rc1d-4h-20261029T0400Z",
-    "range-rc1d-24h-20261029T0400Z",
-    "range-rc1d-72h-20261029T0400Z"
-   ],
-   "outcome": "scored",
-   "reason": "all horizons scored"
-  },
   {
    "decision_utc": "2026-10-29T08:00:00Z",
    "ids": [
@@ -406,6 +390,12 @@
    "ids": [],
    "outcome": "failed",
    "reason": "run 41256826055: refit failure"
+  },
+  {
+   "decision_utc": "2026-11-01T04:00:00Z",
+   "ids": [],
+   "outcome": "failed",
+   "reason": "run 41274842438: refit failure"
   }
  ],
  "release": {
