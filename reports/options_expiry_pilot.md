@@ -1,16 +1,16 @@
 # Prospective options expiry pilot
 
-State: active. Captures: 105/105 closed hours.
+State: active. Captures: 106/106 closed hours.
 
 Control: nearest listed expiries. Alternate: nearest eligible expiries, capped at 14/35-day spans for 7d/30d.
 Identical frozen leg filters and source capture; no extrapolation. Later books do not alter quote eligibility.
 
 | Horizon | Both usable | Gained | Lost | Neither | Missing capture |
 |---|---:|---:|---:|---:|---:|
-| 7d | 87 | 18 | 0 | 0 | 0 |
-| 30d | 6 | 0 | 0 | 99 | 0 |
+| 7d | 88 | 18 | 0 | 0 | 0 |
+| 30d | 6 | 0 | 0 | 100 | 0 |
 
-Books: 424 usable / 424 attempted / 444 selected distinct contracts across hours.
+Books: 428 usable / 428 attempted / 448 selected distinct contracts across hours.
 Quote sizes, source-to-book lag, spans, value differences and failure reasons: [JSON report](options_expiry_pilot.json).
 
 Repeated horizons and contracts are dependent. A usability gain does not demonstrate predictive skill.
