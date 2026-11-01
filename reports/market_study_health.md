@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-01T10:32:27.052Z. Integrity: ok.
+Generated 2026-11-01T10:46:16.331Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -20,8 +20,8 @@ Paused: False
 | state | 20/24 | 83.3% | 0 |
 | paired | 91/93 | 97.8% | 0 |
 | state_v2 | 23/24 | 95.8% | 0 |
-| stress | 45/46 | 97.8% | 0 |
-| liquidations | 91/92 | 98.9% | 0 |
+| stress | 46/47 | 97.9% | 0 |
+| liquidations | 95/96 | 99.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 23/23 | 100.0% | 0 |
 | options usability rr25_30d | 0/23 | 0.0% | 23 |
@@ -46,9 +46,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 35/38 | 0 |
 | range | 35/38 | 0 |
 | state | 120/154 | 0 |
-| paired | 608/612 | 3 |
-| stress | 305/306 | 2 |
-| liquidations | 611/612 | 4 |
+| paired | 609/613 | 3 |
+| stress | 306/307 | 1 |
+| liquidations | 615/616 | 0 |
 | options | 50/153 | 0 |
 
 ## Diagnostics
@@ -93,7 +93,7 @@ Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median
 
 Selected rr25_30d legs: 0 usable captures, 0 leg observations. Quote age median (ms): None; relative spread median: None. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 126 scores reproduced.
+State v2 numerical replay: verified, 127 scores reproduced.
 
 ## Source quality
 
