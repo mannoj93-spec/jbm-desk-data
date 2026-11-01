@@ -230,7 +230,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-11-01T20:44:42Z",
+ "generated_utc": "2026-11-01T20:59:47Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -243,7 +243,7 @@
     "2026-11-01T08:57:00Z"
    ],
    "delayed": [],
-   "last_arrival_utc": "2026-11-01T20:42:02Z",
+   "last_arrival_utc": "2026-11-01T20:57:01Z",
    "on_time": 92,
    "on_time_max_lag_s": 2,
    "opportunities": 96,
@@ -251,17 +251,17 @@
    "state": "gaps",
    "window_h": 24
   },
-  "newest_scheduled_start_utc": "2026-11-01T20:27:11Z",
+  "newest_scheduled_start_utc": "2026-11-01T20:52:55Z",
   "problems_detected_by": [
    "range-monitor.yml"
   ],
   "recovery_checks": {
    "service-watch": {
-    "age_min": 2.6,
+    "age_min": 2.7,
     "last_check": "passed",
-    "last_completed_utc": "2026-11-01T20:42:09Z",
+    "last_completed_utc": "2026-11-01T20:57:08Z",
     "last_executed": true,
-    "run_id": 41348189729,
+    "run_id": 41349440518,
     "run_result": "failure",
     "stale_after_min": 45,
     "state": "fresh"
@@ -269,9 +269,9 @@
    "study-watch": {
     "age_min": 1.8,
     "last_check": "check failed",
-    "last_completed_utc": "2026-11-01T20:42:56Z",
+    "last_completed_utc": "2026-11-01T20:57:58Z",
     "last_executed": true,
-    "run_id": 41348189729,
+    "run_id": 41349440518,
     "run_result": "failure",
     "stale_after_min": 45,
     "state": "fresh"
@@ -279,7 +279,7 @@
   },
   "rule": "state is the heartbeat (last completed run, any result); last_result is how that run ended; last_check is what its check step did (2.28): only a check that ran and reported a finding detected a problem - setup running, a skipped check or no runner detected nothing",
   "source": "GitHub Actions API, scheduled runs",
-  "state": "stale",
+  "state": "fresh",
   "workflows": {
    "collect.yml": {
     "last_completed_utc": "2026-11-01T20:29:04Z",
@@ -333,10 +333,10 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_completed_utc": "2026-11-01T20:42:59Z",
+    "last_completed_utc": "2026-11-01T20:58:00Z",
     "last_result": "failure",
-    "last_run_id": 41348189729,
-    "last_scheduled_start_utc": "2026-11-01T20:42:02Z",
+    "last_run_id": 41349440518,
+    "last_scheduled_start_utc": "2026-11-01T20:57:01Z",
     "last_success_utc": null,
     "native": {
      "last_completed_utc": "2026-11-01T19:54:18Z",
@@ -351,11 +351,11 @@
     "state": "fresh"
    },
    "research-streams.yml": {
-    "last_completed_utc": "2026-11-01T15:33:03Z",
+    "last_completed_utc": "2026-11-01T20:54:16Z",
     "last_result": "success",
-    "last_run_id": 41321470148,
-    "last_scheduled_start_utc": "2026-11-01T15:29:22Z",
-    "last_success_utc": "2026-11-01T15:29:22Z"
+    "last_run_id": 41349108280,
+    "last_scheduled_start_utc": "2026-11-01T20:52:55Z",
+    "last_success_utc": "2026-11-01T20:52:55Z"
    },
    "research.yml": {
     "last_completed_utc": "2026-11-01T18:24:34Z",
@@ -365,13 +365,13 @@
     "last_success_utc": "2026-11-01T18:03:50Z"
    },
    "watchdog.yml": {
-    "last_completed_utc": "2026-11-01T16:25:23Z",
+    "last_completed_utc": "2026-11-01T20:50:40Z",
     "last_result": "success",
-    "last_run_id": 41326231504,
-    "last_scheduled_start_utc": "2026-11-01T16:25:13Z",
-    "last_success_utc": "2026-11-01T16:25:13Z",
+    "last_run_id": 41348911989,
+    "last_scheduled_start_utc": "2026-11-01T20:50:32Z",
+    "last_success_utc": "2026-11-01T20:50:32Z",
     "stale_after_min": 90,
-    "state": "stale"
+    "state": "fresh"
    }
   }
  },
@@ -382,9 +382,9 @@
     "recorded_state": "no-rebalance"
    }
   ],
-  "report_age_min": 8.6,
+  "report_age_min": 5.6,
   "report_coverage": 0.8833,
-  "report_generated_utc": "2026-11-01T20:36:09.902Z",
+  "report_generated_utc": "2026-11-01T20:54:11.652Z",
   "report_scheduled_decisions": 180,
   "rule": "the report's coverage is as of its generation; decisions due after it are listed here with their recorded state, never folded into its percentage"
  },
@@ -392,13 +392,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 17.6,
+  "age_min": 32.7,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 96,
    "expected_slots": 96,
-   "from_ms": 1793479482919,
-   "from_utc": "2026-10-31T20:44:42Z",
+   "from_ms": 1793480387222,
+   "from_utc": "2026-10-31T20:59:47Z",
    "intervals": 95,
    "intervals_with_automated_run": 92,
    "intervals_with_successful_automated_run": 92,
@@ -409,8 +409,8 @@
     "native-schedule": 5,
     "recovery": 91
    },
-   "to_ms": 1793565882919,
-   "to_utc": "2026-11-01T20:44:42Z"
+   "to_ms": 1793566787222,
+   "to_utc": "2026-11-01T20:59:47Z"
   },
   "gaps": [
    {
@@ -526,20 +526,20 @@
    "acceptance_target": {
     "breached_24h": true,
     "breached_now": false,
-    "current_gap_min": 1.5,
+    "current_gap_min": 1.6,
     "longest_successful_gap_24h_min": 66.4,
     "max_gap_min": 45,
     "rule": "restoration acceptance target (45 min between persisted critical successes); separate from the watchdog's stale limit"
    },
-   "age_min": 1.5,
-   "data_age_min": 1.5,
+   "age_min": 1.6,
+   "data_age_min": 1.6,
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-11-01T20:43:10Z",
-   "last_automated_utc": "2026-11-01T20:43:10Z",
+   "last_activity_utc": "2026-11-01T20:58:11Z",
+   "last_automated_utc": "2026-11-01T20:58:11Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-11-01T20:43:10Z",
+   "last_success_utc": "2026-11-01T20:58:11Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
