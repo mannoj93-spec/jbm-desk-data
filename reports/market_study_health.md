@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-01T20:24:12.493Z. Integrity: ok.
+Generated 2026-11-01T20:34:27.467Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -9,18 +9,18 @@ Paused: False
 
 ## Alerts
 - turnover: 5 consecutive closed opportunities missed
-- range: 5 consecutive closed opportunities missed
+- range: 6 consecutive closed opportunities missed
 
 ## Coverage
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
 | turnover | 0/5 | 0.0% | 5 |
-| range | 0/5 | 0.0% | 5 |
-| state | 22/23 | 95.7% | 0 |
-| paired | 92/94 | 97.9% | 0 |
-| state_v2 | 22/23 | 95.7% | 0 |
-| stress | 46/47 | 97.9% | 0 |
+| range | 0/6 | 0.0% | 6 |
+| state | 23/24 | 95.8% | 0 |
+| paired | 91/93 | 97.8% | 0 |
+| state_v2 | 23/24 | 95.8% | 0 |
+| stress | 45/46 | 97.8% | 0 |
 | liquidations | 91/92 | 98.9% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 23/23 | 100.0% | 0 |
@@ -28,13 +28,13 @@ Paused: False
 
 turnover: 5/5 closed opportunities recorded; 0 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-range: 5/5 closed opportunities recorded; 0 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+range: 6/6 closed opportunities recorded; 0 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state: 23/23 closed opportunities recorded; 22 eligible forecasts; 1 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state: 24/24 closed opportunities recorded; 23 eligible forecasts; 1 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 94/94 closed opportunities recorded; 92 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 93/93 closed opportunities recorded; 91 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state_v2: 23/23 closed opportunities recorded; 22 eligible forecasts; 1 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state_v2: 24/24 closed opportunities recorded; 23 eligible forecasts; 1 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 ## Since recovery deployment
 
@@ -44,10 +44,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
 | turnover | 35/40 | 0 |
-| range | 35/40 | 0 |
-| state | 129/163 | 1 |
-| paired | 648/652 | 2 |
-| stress | 325/326 | 1 |
+| range | 35/41 | 0 |
+| state | 130/164 | 0 |
+| paired | 648/652 | 3 |
+| stress | 325/326 | 2 |
 | liquidations | 651/652 | 4 |
 | options | 50/163 | 0 |
 
@@ -61,7 +61,7 @@ Warnings:
 - options rr25_30d: 0/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 685 scored forecasts; 571 unique entries; 161 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 686 scored forecasts; 572 unique entries; 161 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim.
 
 State depth (last_24h): 24 forecasts, 1 abstentions; 1 unavailable depth ages. Median/max age in minutes: 16.05 / 16.15.
