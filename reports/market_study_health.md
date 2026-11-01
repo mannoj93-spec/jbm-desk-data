@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-01T20:18:58.934Z. Integrity: ok.
+Generated 2026-11-01T20:24:12.493Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -18,7 +18,7 @@ Paused: False
 | turnover | 0/5 | 0.0% | 5 |
 | range | 0/5 | 0.0% | 5 |
 | state | 22/23 | 95.7% | 0 |
-| paired | 91/93 | 97.8% | 0 |
+| paired | 92/94 | 97.9% | 0 |
 | state_v2 | 22/23 | 95.7% | 0 |
 | stress | 46/47 | 97.9% | 0 |
 | liquidations | 91/92 | 98.9% | 0 |
@@ -32,7 +32,7 @@ range: 5/5 closed opportunities recorded; 0 eligible forecasts; 0 abstentions. A
 
 state: 23/23 closed opportunities recorded; 22 eligible forecasts; 1 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 93/93 closed opportunities recorded; 91 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 94/94 closed opportunities recorded; 92 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 23/23 closed opportunities recorded; 22 eligible forecasts; 1 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -46,7 +46,7 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 35/40 | 0 |
 | range | 35/40 | 0 |
 | state | 129/163 | 1 |
-| paired | 647/651 | 3 |
+| paired | 648/652 | 2 |
 | stress | 325/326 | 1 |
 | liquidations | 651/652 | 4 |
 | options | 50/163 | 0 |
