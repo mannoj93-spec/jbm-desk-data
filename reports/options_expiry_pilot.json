@@ -1,6 +1,6 @@
 {
   "schema": "options-expiry-pilot/1",
-  "generated_ms": 1793605586993,
+  "generated_ms": 1793606501380,
   "activation": {
     "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
     "confirmed_ms": 1793152036181,
@@ -8,44 +8,44 @@
     "registration_sha": "de4f07467397f5339782ec934a41f71e30d3c14eaaf43964b721289ef488211a"
   },
   "state": "active",
-  "closed": 125,
-  "captured": 125,
-  "pending_captured": 1,
+  "closed": 126,
+  "captured": 126,
+  "pending_captured": 0,
   "horizons": {
     "7": {
       "paired": {
-        "both": 107,
+        "both": 108,
         "gained": 18,
         "lost": 0,
         "neither": 0
       },
       "missing_capture": 0,
       "states": {
-        "nearest-eligible:ok": 125,
-        "nearest-listed:ok": 107,
+        "nearest-eligible:ok": 126,
+        "nearest-listed:ok": 108,
         "nearest-listed:1NOV26:no-25-delta-strike|6NOV26:ok": 2,
         "nearest-listed:1NOV26:low-oi|6NOV26:ok": 10,
         "nearest-listed:2NOV26:no-25-delta-strike|6NOV26:ok": 5,
         "nearest-listed:2NOV26:low-oi|6NOV26:ok": 1
       },
       "joint_value_difference": {
-        "n": 107,
+        "n": 108,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 107,
+          "n": 108,
           "min": 3.9999999999999996,
           "max": 7.000000000000001,
-          "mean": 6.224299065420561
+          "mean": 6.231481481481482
         },
         "nearest-eligible": {
-          "n": 125,
+          "n": 126,
           "min": 3.9999999999999996,
           "max": 7.000000000000001,
-          "mean": 6.144
+          "mean": 6.150793650793651
         }
       }
     },
@@ -54,14 +54,14 @@
         "both": 6,
         "gained": 0,
         "lost": 0,
-        "neither": 119
+        "neither": 120
       },
       "missing_capture": 0,
       "states": {
         "nearest-eligible:ok": 6,
         "nearest-listed:ok": 6,
-        "nearest-eligible:no-eligible-bracket": 119,
-        "nearest-listed:no-bracketing-expiry": 119
+        "nearest-eligible:no-eligible-bracket": 120,
+        "nearest-listed:no-bracketing-expiry": 120
       },
       "joint_value_difference": {
         "n": 6,
@@ -86,12 +86,12 @@
     }
   },
   "books": {
-    "expected": 524,
+    "expected": 528,
     "attempted": 500,
     "usable": 500,
     "states": {
       "completed": 119,
-      "source-too-old": 6
+      "source-too-old": 7
     },
     "quote_states": {
       "ok": 500
