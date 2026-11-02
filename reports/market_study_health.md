@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-02T00:35:09.999Z. Integrity: ok.
+Generated 2026-11-02T00:46:28.701Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -18,7 +18,7 @@ Paused: False
 | turnover | 0/5 | 0.0% | 5 |
 | range | 0/6 | 0.0% | 6 |
 | state | 23/24 | 95.8% | 0 |
-| paired | 92/94 | 97.9% | 0 |
+| paired | 91/93 | 97.8% | 0 |
 | state_v2 | 23/24 | 95.8% | 0 |
 | stress | 46/47 | 97.9% | 0 |
 | liquidations | 95/96 | 99.0% | 0 |
@@ -32,7 +32,7 @@ range: 6/6 closed opportunities recorded; 0 eligible forecasts; 0 abstentions. A
 
 state: 24/24 closed opportunities recorded; 23 eligible forecasts; 1 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 94/94 closed opportunities recorded; 92 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 93/93 closed opportunities recorded; 91 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 24/24 closed opportunities recorded; 23 eligible forecasts; 1 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -46,7 +46,7 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 35/41 | 0 |
 | range | 35/42 | 0 |
 | state | 134/168 | 0 |
-| paired | 665/669 | 2 |
+| paired | 665/669 | 3 |
 | stress | 334/335 | 1 |
 | liquidations | 671/672 | 0 |
 | options | 50/167 | 0 |
@@ -91,7 +91,7 @@ Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median
 
 Selected rr25_30d legs: 0 usable captures, 0 leg observations. Quote age median (ms): None; relative spread median: None. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 139 scores reproduced.
+State v2 numerical replay: verified, 140 scores reproduced.
 
 ## Source quality
 
