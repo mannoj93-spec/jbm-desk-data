@@ -4,7 +4,7 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-11-02T19:17:27.109Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-11-02T21:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-11-02T20:18:36.556Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-11-03T01:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
@@ -14,7 +14,7 @@ Generated 2026-11-02T19:17:27.109Z by reader-12.4.6; contract `RC1D/contract-12.
 | 24h | stale | range-rc1d-24h-20261031T2000Z | 2026-10-31T20:25:00Z → 2026-11-01T20:25:00Z | 2026-11-01T01:15:00Z | window ended |
 | 72h | stale | range-rc1d-72h-20261031T2000Z | 2026-10-31T20:25:00Z → 2026-11-03T20:25:00Z | 2026-11-01T01:15:00Z | expired at 2026-11-01T01:15:00Z (a newer decision was due; no newer forecast is current) |
 
-Due production decisions: 226; outcomes: failed 12, missing 5, registered-pending 7, scored 198, skipped 4.
+Current decision 2026-11-02T20:00:00Z: failed (run 41517084883: refit failure). Due production decisions: 226; outcomes: failed 12, missing 5, registered-pending 7, scored 198, skipped 4.
 Non-production attempts (tests, local runs): 0. Orphan source files: 0. Integrity failures: 0. Legacy 2.14 registrations (q50-scored, pre-contract): 0.
 Valid-current rows are current only until their valid_until_utc (see the JSON twin).
 
