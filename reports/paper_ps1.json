@@ -119,7 +119,7 @@
    "recorded": false
   },
   "owner": "operator (paper_ps1.py checkpoint C1|C2 \"<note>\"); the job never records one",
-  "progress": "29.9 days, 3 complete block(s)"
+  "progress": "30.0 days, 3 complete block(s)"
  },
  "checkpoints": {},
  "clocks": {
@@ -127,8 +127,8 @@
   "processed_utc": "latest decision computation or execution-state record (processing)",
   "source_cutoff_utc": "latest market observation used: the 4H close a rebalance decision read, or a captured quote's receipt (repo 2.23; 2.22 also counted computation time); null before the first decision - expected pre-launch, not a collection failure"
  },
- "coverage": 0.8833,
- "days_since_launch": 29.87,
+ "coverage": 0.8785,
+ "days_since_launch": 30.01,
  "evidence_class": "descriptive",
  "evidence_vocabulary": [
   "descriptive",
@@ -146,7 +146,7 @@
  "execution_states": {
   "completed": 159
  },
- "generated_utc": "2026-11-01T20:54:11.652Z",
+ "generated_utc": "2026-11-02T00:21:20.193Z",
  "integrity": {
   "excluded_decisions": [],
   "failed_executions": [],
@@ -180,14 +180,14 @@
   "authority": "termination and archiving: operator only; pause: operator or job (infrastructure)",
   "last": {
    "by": "job",
-   "from": "approved",
+   "from": "active",
    "key": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
-   "reason": "first verified execution",
-   "state": "active",
-   "t_ms": 1790986825236
+   "reason": "six expired scheduled decisions not executed (2026-11-01T00:00:00Z .. 2026-11-01T20:00:00Z)",
+   "state": "paused",
+   "t_ms": 1793568600000
   },
-  "paused_by": null,
-  "state": "active"
+  "paused_by": "job",
+  "state": "paused"
  },
  "note": "Simulated fills on captured quotes; not executions. Sizing only - no direction is tested. No status here is a trading edge or an entry endorsement.",
  "open_interval": {
@@ -198,7 +198,7 @@
   "executed": 159,
   "missed: no run": 6,
   "missed: stale: processed after close + max_delay": 8,
-  "no-rebalance: forecast unavailable": 7
+  "no-rebalance: forecast unavailable": 8
  },
  "paired": {
   "ordinary": {
@@ -240,7 +240,7 @@
    "uncertainty_method": "moving-block bootstrap of paired intervals (B2 and VOL (log return, dt_h) pairs resampled together), blocks of 42 intervals, 5,000 resamples, seed 20261003; 90% percentile interval of the duration-weighted Sharpe difference"
   }
  },
- "processed_utc": "2026-11-01T20:20:14.893Z",
+ "processed_utc": "2026-11-02T00:21:11.315Z",
  "protocol": "PS1 v3",
  "protocol_sha256": "d0e8c837be9c3a1e51c8a4836d44e73851f488305b2748cb770f35ff1d909952",
  "report": "paper_ps1",
@@ -256,10 +256,10 @@
    "state": "retired before launch, zero observations"
   }
  ],
- "scheduled_decisions": 180,
+ "scheduled_decisions": 181,
  "schema": "ps1-report-4",
  "source_cutoff_utc": "2026-10-31T20:21:25.078Z",
- "status": "collecting (descriptive)",
+ "status": "paused",
  "time_accounting": {
   "basis": "elapsed hours between fills; 8760 h/yr; drift and variance rates per hour (protocol v3); no interpolation; the interval opened by the latest trade is pending",
   "elapsed_hours": 692.0166227777778,
