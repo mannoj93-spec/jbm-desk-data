@@ -13,7 +13,7 @@
    "frozen_sha256": "84ca109dc89082eb51e2d108c2122a9b9365bc4e84cd8b2170e0e4cbe0b12ed3",
    "horizon": "24h",
    "id": "range-rc1d-24h-20261031T2000Z",
-   "now_utc": "2026-11-03T20:02:50.050Z",
+   "now_utc": "2026-11-03T20:20:08.260Z",
    "point_lr": 0.018095468409,
    "points_at_decision_close": {
     "point": 1415.9,
@@ -47,7 +47,7 @@
    "frozen_sha256": "1c7d871025f10025a5585390fe400778378c366e1d014d58ef93c0177eae535f",
    "horizon": "4h",
    "id": "range-rc1d-4h-20261031T2000Z",
-   "now_utc": "2026-11-03T20:02:50.050Z",
+   "now_utc": "2026-11-03T20:20:08.260Z",
    "point_lr": 0.004569107382,
    "points_at_decision_close": {
     "point": 355.1,
@@ -76,12 +76,12 @@
    "b0_point_lr": 0.042580085698,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-31T20:00:00Z",
-   "elapsed_fraction": 0.9949,
+   "elapsed_fraction": 0.9989,
    "end_utc": "2026-11-03T20:25:00Z",
    "frozen_sha256": "0cf8449830736e33e7c8aa50deb18fe5ba06851ddbe524299f49d29358725c95",
    "horizon": "72h",
    "id": "range-rc1d-72h-20261031T2000Z",
-   "now_utc": "2026-11-03T20:02:50.050Z",
+   "now_utc": "2026-11-03T20:20:08.260Z",
    "point_lr": 0.045230691944,
    "points_at_decision_close": {
     "point": 3587.7,
@@ -108,8 +108,8 @@
   "decision_utc": "2026-11-03T20:00:00Z",
   "grace_until_utc": "2026-11-03T21:15:00Z",
   "ids": [],
-  "outcome": "not-started",
-  "reason": "no run has recorded anything for this decision yet"
+  "outcome": "failed",
+  "reason": "run 41710399508: refit failure"
  },
  "due_decisions": 232,
  "evaluation": {
@@ -206,7 +206,7 @@
  },
  "expected_decisions": 232,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-11-03T20:02:50.050Z",
+ "generated_utc": "2026-11-03T20:20:08.260Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
@@ -350,7 +350,7 @@
   "release_sha256": "93aec8e39b286eaf99f4f41600fe4b4ad74295934f711dae19049d334db53210",
   "repo_revision": "2.28"
  },
- "runs_recorded": 2744,
+ "runs_recorded": 2748,
  "scored": {
   "24h": {
    "coverage_b0": 0.8,
