@@ -4,7 +4,7 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-11-03T11:21:07.023Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-11-03T13:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-11-03T11:44:09.963Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-11-03T13:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
@@ -61,4 +61,4 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 | 2026-11-02T20:00:00Z | failed | run 41518281919: refit failure |
 | 2026-11-03T00:00:00Z | failed | run 41563591284: refit failure |
 | 2026-11-03T04:00:00Z | failed | run 41578215816: refit failure |
-| 2026-11-03T08:00:00Z | failed | run 41603391373: refit failure |
+| 2026-11-03T08:00:00Z | failed | run 41629556748: refit failure |
