@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-11-03T20:37:54.826Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-03T20:48:43.061Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 61 | 41 | 41 |
 | range | collecting (descriptive) | 61 | 35 | 35 |
 | state | collecting (descriptive) | 243 | 177 | 173 |
-| paired | collecting (descriptive) | 971 | 883 | 878 |
+| paired | collecting (descriptive) | 972 | 884 | 878 |
 
 ## Primary comparisons
 
