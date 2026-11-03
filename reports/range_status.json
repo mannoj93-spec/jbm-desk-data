@@ -13,7 +13,7 @@
    "frozen_sha256": "84ca109dc89082eb51e2d108c2122a9b9365bc4e84cd8b2170e0e4cbe0b12ed3",
    "horizon": "24h",
    "id": "range-rc1d-24h-20261031T2000Z",
-   "now_utc": "2026-11-03T04:32:46.681Z",
+   "now_utc": "2026-11-03T04:33:42.224Z",
    "point_lr": 0.018095468409,
    "points_at_decision_close": {
     "point": 1415.9,
@@ -47,7 +47,7 @@
    "frozen_sha256": "1c7d871025f10025a5585390fe400778378c366e1d014d58ef93c0177eae535f",
    "horizon": "4h",
    "id": "range-rc1d-4h-20261031T2000Z",
-   "now_utc": "2026-11-03T04:32:46.681Z",
+   "now_utc": "2026-11-03T04:33:42.224Z",
    "point_lr": 0.004569107382,
    "points_at_decision_close": {
     "point": 355.1,
@@ -76,12 +76,12 @@
    "b0_point_lr": 0.042580085698,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-10-31T20:00:00Z",
-   "elapsed_fraction": 0.7796,
+   "elapsed_fraction": 0.7798,
    "end_utc": "2026-11-03T20:25:00Z",
    "frozen_sha256": "0cf8449830736e33e7c8aa50deb18fe5ba06851ddbe524299f49d29358725c95",
    "horizon": "72h",
    "id": "range-rc1d-72h-20261031T2000Z",
-   "now_utc": "2026-11-03T04:32:46.681Z",
+   "now_utc": "2026-11-03T04:33:42.224Z",
    "point_lr": 0.045230691944,
    "points_at_decision_close": {
     "point": 3587.7,
@@ -173,20 +173,20 @@
    },
    "72h": {
     "b2_better": 137,
-    "b2_worse": 63,
+    "b2_worse": 64,
     "blocks": 4,
     "coverage_b0": 0.945,
     "coverage_b2": 0.9,
-    "diff_mean": -0.0562,
+    "diff_mean": -0.05556,
     "diff_mean_ci95": null,
-    "diff_median": -0.06288,
+    "diff_median": -0.0614,
     "first_decision_utc": "2026-09-26T04:00:00Z",
-    "last_decision_utc": "2026-10-31T00:00:00Z",
-    "mae_b0": 0.29489,
-    "mae_b2": 0.23869,
+    "last_decision_utc": "2026-10-31T04:00:00Z",
+    "mae_b0": 0.29508,
+    "mae_b2": 0.23952,
     "metric": "mean absolute error of ln range (log units), B2 vs B0 persistence",
-    "n": 200,
-    "reduction_vs_b0": 0.1906,
+    "n": 201,
+    "reduction_vs_b0": 0.1883,
     "ties": 0,
     "uncertainty": "unavailable: 4 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10",
     "width_b0": 1.1947,
@@ -194,10 +194,10 @@
     "window_overlap": {
      "basis": "actual registered [start, end) windows of the scored pairs; every eligible pair stays in the analysis - the disjoint count describes dependence, it is not an effective sample size and selects nothing",
      "largest_disjoint_subset": 12,
-     "overlapping_another": 200,
-     "windows": 200
+     "overlapping_another": 201,
+     "windows": 201
     },
-    "windows": "72h windows, one per 4H decision; actual registered [start, end) windows: 200 of 200 overlap another, largest disjoint subset 12"
+    "windows": "72h windows, one per 4H decision; actual registered [start, end) windows: 201 of 201 overlap another, largest disjoint subset 12"
    }
   },
   "method": "rc1d-eval-1 (2026-09-30)",
@@ -206,7 +206,7 @@
  },
  "expected_decisions": 228,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-11-03T04:32:46.681Z",
+ "generated_utc": "2026-11-03T04:33:42.224Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
@@ -215,8 +215,8 @@
  "outcomes": {
   "failed": 14,
   "missing": 5,
-  "registered-pending": 5,
-  "scored": 200,
+  "registered-pending": 4,
+  "scored": 201,
   "skipped": 4
  },
  "provenance_corrections": [
@@ -238,8 +238,8 @@
     "range-rc1d-24h-20261031T0400Z",
     "range-rc1d-72h-20261031T0400Z"
    ],
-   "outcome": "registered-pending",
-   "reason": "eligible; 2/3 scored"
+   "outcome": "scored",
+   "reason": "all horizons scored"
   },
   {
    "decision_utc": "2026-10-31T08:00:00Z",
@@ -387,10 +387,10 @@
   "72h": {
    "coverage_b0": 0.945,
    "coverage_b2": 0.9,
-   "mae_b0": 0.29489,
-   "mae_b2": 0.23869,
-   "n": 200,
-   "skill": 0.1906
+   "mae_b0": 0.29508,
+   "mae_b2": 0.23952,
+   "n": 201,
+   "skill": 0.1883
   }
  },
  "scoring": {
@@ -416,8 +416,8 @@
    "backlog": [],
    "ineligible": 0,
    "overdue": 0,
-   "ready": 1,
-   "scored": 200,
+   "ready": 0,
+   "scored": 201,
    "scoring-failed": 0,
    "waiting-maturity": 4
   }
