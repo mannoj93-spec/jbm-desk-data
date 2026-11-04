@@ -1,24 +1,24 @@
 # Operational health
 
-Generated 2026-11-04T11:45:03Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-11-04T12:02:23Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Native collector schedule:** stale; last scheduled collector run 2026-11-04T02:38:43Z (546.3 min). Silences over 90 min in the last 72 h: 2026-11-01T09:19:30Z to 2026-11-01T16:06:11Z (407 min); 2026-11-01T16:06:11Z to 2026-11-01T20:27:04Z (261 min); 2026-11-01T20:27:04Z to 2026-11-01T23:49:40Z (203 min); 2026-11-01T23:49:40Z to 2026-11-02T02:48:02Z (178 min); 2026-11-02T02:48:02Z to 2026-11-02T10:03:19Z (435 min); 2026-11-02T10:03:19Z to 2026-11-02T20:09:20Z (606 min); 2026-11-02T20:09:20Z to 2026-11-03T02:22:57Z (374 min); 2026-11-03T02:22:57Z to 2026-11-03T09:56:19Z (453 min); 2026-11-03T09:56:19Z to 2026-11-03T17:40:14Z (464 min); 2026-11-03T17:40:14Z to 2026-11-03T22:34:32Z (294 min); 2026-11-03T22:34:32Z to 2026-11-04T02:38:43Z (244 min); 2026-11-04T02:38:43Z to ongoing (546 min).
+**Native collector schedule:** stale; last scheduled collector run 2026-11-04T02:38:43Z (563.7 min). Silences over 90 min in the last 72 h: 2026-11-01T09:19:30Z to 2026-11-01T16:06:11Z (407 min); 2026-11-01T16:06:11Z to 2026-11-01T20:27:04Z (261 min); 2026-11-01T20:27:04Z to 2026-11-01T23:49:40Z (203 min); 2026-11-01T23:49:40Z to 2026-11-02T02:48:02Z (178 min); 2026-11-02T02:48:02Z to 2026-11-02T10:03:19Z (435 min); 2026-11-02T10:03:19Z to 2026-11-02T20:09:20Z (606 min); 2026-11-02T20:09:20Z to 2026-11-03T02:22:57Z (374 min); 2026-11-03T02:22:57Z to 2026-11-03T09:56:19Z (453 min); 2026-11-03T09:56:19Z to 2026-11-03T17:40:14Z (464 min); 2026-11-03T17:40:14Z to 2026-11-03T22:34:32Z (294 min); 2026-11-03T22:34:32Z to 2026-11-04T02:38:43Z (244 min); 2026-11-04T02:38:43Z to ongoing (564 min).
 
-**Service continuity:** healthy; last persisted critical success 2026-11-04T11:43:16Z (1.8 min); last automated activity 2026-11-04T11:43:16Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 3, recovery 90; 90 of 95 slot intervals hold an automated critical success (90 hold any automated activity); longest gap between successes 50.5 min.
+**Service continuity:** healthy; last persisted critical success 2026-11-04T12:00:30Z (1.9 min); last automated activity 2026-11-04T12:00:30Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 3, recovery 89; 90 of 95 slot intervals hold an automated critical success (90 hold any automated activity); longest gap between successes 50.5 min.
 
 **Range decisions:** 11-03T04:00 failed: failed before forecasting; 11-03T08:00 failed: failed before forecasting; 11-03T12:00 failed: failed before forecasting; 11-03T16:00 failed: failed before forecasting; 11-03T20:00 failed: failed before forecasting; 11-04T00:00 failed: failed before forecasting; 11-04T04:00 failed: failed before forecasting; 11-04T08:00 failed: failed before forecasting.
 
-**PS1 decisions:** 11-03T04:00 no-rebalance; 11-03T08:00 no-rebalance; 11-03T12:00 no-rebalance; 11-03T16:00 no-rebalance; 11-03T20:00 no-rebalance; 11-04T00:00 no-rebalance; 11-04T04:00 no-rebalance; 11-04T08:00 no-rebalance.
+**PS1 decisions:** 11-03T08:00 no-rebalance; 11-03T12:00 no-rebalance; 11-03T16:00 no-rebalance; 11-03T20:00 no-rebalance; 11-04T00:00 no-rebalance; 11-04T04:00 no-rebalance; 11-04T08:00 no-rebalance; 11-04T12:00 pending.
 
-**PS1 report coverage:** 0.8154 as of 2026-11-04T08:35:55.007Z; due since and not covered: 11-04T08:00 no-rebalance.
+**PS1 report coverage:** 0.8154 as of 2026-11-04T11:58:14.762Z; due since and not covered: none.
 
 **Range availability:** status within expiry (expires 2026-11-04T13:15:00Z); 24h stale; 4h stale; 72h stale.
 
 **Scoring backlog:** none.
 
-**Native scheduled monitors:** stale (GitHub Actions API, scheduled runs); watchdog.yml heartbeat stale (last run 2026-11-04T08:03:43Z: success; last success 2026-11-04T08:03:33Z); range-monitor.yml heartbeat fresh (last run 2026-11-04T08:08:47Z: failure, found a problem: actions: the latest scheduled range.yml run 41746887931 (2026-11-04T00:26:56Z) concluded failure (recorded; the stream has not recovered since); last success 2026-10-31T20:41:40Z); newest scheduled start of any workflow 2026-11-04T09:53:42Z.
+**Native scheduled monitors:** stale (GitHub Actions API, scheduled runs); watchdog.yml heartbeat stale (last run 2026-11-04T08:03:43Z: success; last success 2026-11-04T08:03:33Z); range-monitor.yml heartbeat fresh (last run 2026-11-04T08:08:47Z: failure, found a problem: actions: the latest scheduled range.yml run 41746887931 (2026-11-04T00:26:56Z) concluded failure (recorded; the stream has not recovered since); last success 2026-10-31T20:41:40Z); newest scheduled start of any workflow 2026-11-04T11:54:33Z.
 
-**External timer (primary trigger):** gaps; 95 of 96 opportunities on time in 24 h, 0 delayed, absent 2026-11-04T09:42:00Z; last arrival 2026-11-04T11:42:02Z. Arrivals only: whether each request was sent needs the provider's history.
+**External timer (primary trigger):** gaps; 95 of 96 opportunities on time in 24 h, 0 delayed, absent 2026-11-04T09:42:00Z; last arrival 2026-11-04T11:57:02Z. Arrivals only: whether each request was sent needs the provider's history.
 
-Recovery service-watch: fresh; passed; last check completion 2026-11-04T11:42:11Z.
-Recovery study-watch: fresh; check failed; last check completion 2026-11-04T11:42:59Z.
+Recovery service-watch: fresh; passed; last check completion 2026-11-04T11:57:09Z.
+Recovery study-watch: fresh; check failed; last check completion 2026-11-04T11:57:58Z.
