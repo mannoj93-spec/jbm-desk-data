@@ -109,6 +109,21 @@ with separate source, request and receipt clocks. Later books cannot alter the o
 eligibility. This measures feasibility, not predictive skill. See the
 [pilot and operational guide](docs/MARKET_QUALITY.md) for limits, missing states and pause controls.
 
+### Separate 30-day maturity pilot and operational repairs
+
+The [30-day maturity protocol](research_tools/options_30d/protocol.json) compares nearest eligible
+expiries within 45 versus 90 days, with the same quote filters and 35-day maximum span in both arms.
+It has its own registration and next-hour activation under `streams/market-studies/options-30d-v1/`;
+`reports/options_30d_pilot.md` and `.json` appear after deployment. The earlier pilot continues on its
+original rules and clock. A coverage gain is feasibility evidence, not predictive validation.
+
+Operational repairs restore the November range refit using reviewed, retained source evidence for
+six missing October 28 bars; missed forecasts remain missed. Replay tolerates only tiny rounding
+errors in explicitly named calculations, preserving exact hashes, clocks and selections. Health
+isolates failures and shows each published report's last successful refresh. Immediate selected-contract
+books reduce collection delay while preserving separate quote and book clocks. See the
+[repair, timing and evidence guide](docs/MARKET_QUALITY.md#november-repair-and-portable-replay).
+
 ### Existing v1 data-quality pilots
 
 | Pilot | What is collected | Interpretation boundary |

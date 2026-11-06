@@ -4,6 +4,7 @@ report writes health reports and a separate source-quality incident journal; che
 clock without writing. Operational alerts are not research admission or promotion criteria.
 """
 import argparse
+import copy
 from collections import Counter, defaultdict
 import gzip
 import hashlib
@@ -106,6 +107,15 @@ def state_v2_health(base, now, out):
     from state_score_verifier import verify
     scores = verify(base, rows, now)
     out['state_v2_verification'] = {'state': 'verified', 'scores': len(scores)}
+    cfg = V.protocol()['state']
+    required = cfg['bootstrap_block_observations'] * cfg['minimum_blocks']
+    out['state_v2_progress'] = {'scored': len(scores), 'minimum_scored_for_interval': required,
+        'remaining_scored_for_interval': max(0, required-len(scores)),
+        'block_observations': cfg['bootstrap_block_observations'],
+        'complete_block_equivalents': len(scores) // cfg['bootstrap_block_observations'],
+        'minimum_blocks': cfg['minimum_blocks'],
+        'review_due_ms': a['first_slot'] + cfg['review_days'] * K.DAY,
+        'interpretation': 'Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.'}
     closed, pending = [], []
     pending_outcomes = overdue = 0
     for f, c in rows:
@@ -222,7 +232,8 @@ def paired_diagnostics(pairs):
             'equal_entry_clock_share': statistics.mean(clocks) if clocks else None,
             'entry_grouped_mean_difference': statistics.mean(means) if means else None,
             'interpretation': 'Sensitivity only: average within each shared entry, then across entries. '
-                              'Overlapping windows remain dependent; no new primary, interval or support claim.'}
+                              'Overlapping windows remain dependent; no new primary, interval or support claim. '
+                              'Equal minute entry clocks cannot establish a subminute execution or latency advantage.'}
 
 
 def options_diagnostics(base, rows):
@@ -288,11 +299,16 @@ def options_diagnostics(base, rows):
                               'No filter change or predictive admission; quote size stays unavailable when absent.'}
 
 
-def build(base, now):
+def empty_report(base, now):
     base = Path(base)
     out = {'schema': SCHEMA, 'generated_utc': U.iso_ms(now), 'generated_ms': now, 'window_start_ms': now-K.DAY,
            'stale_after_minutes': STALE//K.MIN, 'paused': (base/K.STREAM/'paused.json').exists(),
            'studies': {}, 'pilots': {}, 'alerts': [], 'warnings': [], 'integrity': 'ok'}
+    return out
+
+
+def v1_health(base, now, out):
+    base = Path(base)
     if not (base/K.STREAM/'registration.jsonl').exists():
         out['alerts'].append('Market studies are not registered; launch state is unknown')
         return out
@@ -454,28 +470,72 @@ def build(base, now):
     fits = K.Journal(base, 'fits').rows
     out['training'] = {k: {'state': r['data']['state'], 'members': len(r['data']['members']), 'cutoff_ms': r['data']['cutoff']}
                        for k in ('range', 'state') for r in fits if r['id'] == f'{k}-{now//K.DAY*K.DAY}'}
-    state_v2_health(base, now, out)
-    options_pilot_health(base, now, out)
+    return out
+
+
+def source_health(base, now, out):
     import source_quality
     out['source_quality'] = source_quality.build(base, now)
     if out['source_quality']['unresolved']:
         out['alerts'].append('Unresolved flat zero-trade market data; inspect source-quality incidents')
     if out['source_quality']['incidents']:
         out['warnings'].append(f'{len(out["source_quality"]["incidents"])} retained source-quality incidents; affected score windows are listed without changing results')
+
+
+def report_freshness(base, now, out):
+    out['report_freshness'] = {}
+    for name, path, field in [('v1', 'market_studies.json', 'generated_ms'),
+                              ('state_v2', 'market_state_v2.json', 'generated_utc'),
+                              ('options_expiry', 'options_expiry_pilot.json', 'generated_ms'),
+                              ('options_30d', 'options_30d_pilot.json', 'generated_ms')]:
+        file = base / 'reports' / path
+        try:
+            report = json.loads(file.read_text())
+            stamp = report[field]
+            stamp = U.ms(U.parse(stamp)) if isinstance(stamp, str) else stamp
+            if type(stamp) is not int or stamp > now:
+                raise ValueError('invalid report clock')
+            age = now - stamp
+            out['report_freshness'][name] = {'state': 'stale' if age > STALE else 'fresh',
+                                           'last_success_ms': stamp, 'age_minutes': age / K.MIN}
+            if age > STALE:
+                out['warnings'].append(f'{name} published report stale: last successful refresh {U.iso_ms(stamp)}')
+        except (OSError, ValueError, KeyError, TypeError) as exc:
+            out['report_freshness'][name] = {'state': 'unavailable', 'last_success_ms': None,
+                                            'reason': type(exc).__name__}
+
+
+def build(base, now):
+    base = Path(base)
+    out = empty_report(base, now)
+    out.update(components={}, depth_diagnostics={})
+    # Commit each component's results only after its own verification succeeds.
+    # A damaged component remains red while independent programs and incidents refresh.
+    for name, fn in [('v1', v1_health), ('state_v2', state_v2_health),
+                     ('options_expiry', options_pilot_health), ('options_30d', maturity_health),
+                     ('immediate_books', immediate_book_health), ('source_quality', source_health),
+                     ('report_freshness', report_freshness)]:
+        candidate = copy.deepcopy(out)
+        try:
+            fn(base, now, candidate)
+        except Exception as exc:
+            error = f'{type(exc).__name__}: {exc}'
+            out['components'][name] = {'integrity': 'failed', 'error': error}
+            out['integrity'] = 'failed'
+            out['alerts'].append(f'{name} integrity or diagnostics failure: {error}')
+        else:
+            out = candidate
+            out['components'][name] = {'integrity': 'ok', 'verified_ms': now}
     return out
 
 
 def safe_build(base, now):
-    try:
-        return build(base, now)
-    except Exception as exc:
-        return {'schema': SCHEMA, 'generated_utc': U.iso_ms(now), 'generated_ms': now,
-                'stale_after_minutes': STALE//K.MIN, 'paused': False, 'integrity': 'failed',
-                'studies': {}, 'pilots': {}, 'warnings': [], 'alerts': [f'Integrity or diagnostics failure: {type(exc).__name__}: {exc}']}
+    return build(base, now)
 
 
 def options_pilot_health(base, now, out):
-    from research_tools.options_pilot import core as P, study
+    from research_tools.options_pilot import core as P
+    import options_pilot_report as study
     from research_tools.options_pilot.__main__ import paused
     if not (base / P.STREAM / 'registration.jsonl').exists():
         out['options_expiry_pilot'] = {'state': 'awaiting-registration'}
@@ -504,12 +564,50 @@ def options_pilot_health(base, now, out):
         out['alerts'].append('Options pilot missed two consecutive closed captures')
 
 
+
+def maturity_health(base, now, out):
+    from research_tools.options_30d import core as P, study
+    from research_tools.options_30d.__main__ import paused
+    if not (base / P.STREAM / 'registration.jsonl').exists():
+        out['options_30d_pilot'] = {'state': 'awaiting-registration'}
+        return
+    reg = P.Journal(base, 'registration').get('options-30d-v1')
+    if not reg:
+        raise ValueError('30-day pilot registration missing')
+    a = P.activation(base)
+    out['options_30d_pilot'] = study.report(base, now)
+    if paused(base):
+        out['options_30d_pilot']['state'] = 'paused'
+        return
+    if not a:
+        if now-reg['data']['created_ms'] > STALE:
+            out['alerts'].append('30-day pilot registration unconfirmed for more than 45 minutes')
+        return
+    runs = [r['data']['ended_ms'] for r in P.Journal(base, 'runs').rows
+            if r['data']['stage'] == 'collect' and r['data']['state'] == 'completed']
+    if now - max(runs, default=a['confirmed_ms']) > STALE:
+        out['alerts'].append('30-day pilot collection heartbeat older than 45 minutes')
+    rows = {r['data']['slot']: r['data'] for r in P.Journal(base, 'observations').rows}
+    closed = list(range(a['first_slot'], (now-GRACE)//K.HOUR*K.HOUR, K.HOUR))[-2:]
+    if len(closed) == 2 and all(rows.get(t, {}).get('state') != 'captured' for t in closed):
+        out['alerts'].append('30-day pilot missed two consecutive closed captures')
+
+
+def immediate_book_health(base, now, out):
+    import options_capture_timing
+    out['immediate_books'] = options_capture_timing.report(base, now)
+
+
 def markdown(out):
     lines = ['# Market study operational health', '', f'Generated {out["generated_utc"]}. Integrity: {out["integrity"]}.',
              '', 'Operational diagnostics only; frozen study results and launch clocks are unchanged.',
              'Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.',
              '', 'Paused: '+str(out['paused']), '', '## Alerts']
     lines += ['- '+x for x in out['alerts']] or ['None.']
+    for name, component in out.get('components', {}).items():
+        lines += [f"- {name} verification: {component['integrity']}"]
+    for name, status in out.get('report_freshness', {}).items():
+        lines += [f"- {name} published report: {status['state']}; last successful refresh: {U.iso_ms(status['last_success_ms']) if status.get('last_success_ms') is not None else 'unavailable'}"]
     lines += ['', '## Coverage', '', '| Program | Successful / due | Coverage | Consecutive misses |', '|---|---:|---:|---:|']
     summaries = {**out['studies'], **out['pilots']}
     options = out['pilots'].get('options', {})
@@ -557,6 +655,15 @@ def markdown(out):
     v = out.get('state_v2_verification')
     if v:
         lines += ['', f"State v2 numerical replay: {v['state']}, {v['scores']} scores reproduced."]
+    progress = out.get('state_v2_progress')
+    if progress:
+        lines += ['', f"State v2 evidence: {progress['scored']}/{progress['minimum_scored_for_interval']} scored observations for the frozen minimum interval threshold; "
+                  f"{progress['complete_block_equivalents']}/{progress['minimum_blocks']} block equivalents. "
+                  f"Scheduled review: {U.iso_ms(progress['review_due_ms'])}. {progress['interpretation']}"]
+    timing = out.get('immediate_books')
+    if timing:
+        lines += ['', f"Immediate selected books: {timing['usable']} usable / {timing['attempted']} attempted / {timing['expected']} selected in 24h; "
+                  f"median/p90 source lag (ms): {timing['source_to_book_ms']['median']} / {timing['source_to_book_ms']['p90']}.", timing['interpretation']]
     q = out.get('source_quality', {})
     if q:
         lines += ['', '## Source quality', '', q['interpretation']]
@@ -567,6 +674,7 @@ def markdown(out):
     p = out.get('options_expiry_pilot', {})
     lines += ['', f"Separate options expiry pilot: {p.get('state', 'unknown')}. "
               '[Prospective feasibility report](options_expiry_pilot.md).']
+    lines += ['', f"Separate 30-day maturity pilot: {out.get('options_30d_pilot', {}).get('state', 'unverified')}. [Report](options_30d_pilot.md)."]
     return '\n'.join(lines)+'\n'
 
 
@@ -577,7 +685,7 @@ def main():
     out = safe_build(ROOT, int(time.time()*1000))
     print(markdown(out))
     if args.command == 'report':
-        if out['integrity'] == 'ok':
+        if out['components']['source_quality']['integrity'] == 'ok':
             import source_quality
             source_quality.persist(ROOT, out['source_quality'])
         K.atomic(ROOT/'reports/market_study_health.json', (json.dumps(out, indent=2, allow_nan=False)+'\n').encode())

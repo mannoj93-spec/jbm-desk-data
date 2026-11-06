@@ -75,7 +75,7 @@ jobs:
         if: steps.preflight.outcome == 'success'
         continue-on-error: true
         timeout-minutes: 10
-        run: python desk/range_job.py refit
+        run: python range_source_repair.py refit
       - name: Forecast (retrieve, prepare, validate, freeze, register - one transaction)
         id: forecast
         if: steps.refit.outcome == 'success'
