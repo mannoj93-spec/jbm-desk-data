@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-06T10:31:38.564Z. Integrity: failed.
+Generated 2026-11-06T10:46:37.501Z. Integrity: failed.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
