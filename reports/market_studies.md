@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-11-06T05:31:43.918Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-06T05:47:31.411Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 75 | 41 | 41 |
 | range | collecting (descriptive) | 75 | 35 | 35 |
 | state | collecting (descriptive) | 300 | 209 | 205 |
-| paired | collecting (descriptive) | 1199 | 1105 | 1100 |
+| paired | collecting (descriptive) | 1200 | 1106 | 1101 |
 
 ## Primary comparisons
 
@@ -18,7 +18,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 | turnover | -0.706197 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
 | range | 0.00480849 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | 0.000236564 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
-| paired | -0.00170455 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
+| paired | -0.001703 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
 
@@ -48,12 +48,12 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 | Horizon | Arm | Scored | Directional | Neutral | Conditional hit rate |
 |---|---|---:|---:|---:|---:|
-| 60m | perp_original_clock | 1100 | 667 | 433 | 50.67% |
-| 60m | perp_synchronized_clock | 1100 | 667 | 433 | 50.67% |
-| 60m | combined_synchronized_clock | 1100 | 653 | 447 | 51.00% |
-| 15m | perp_original_clock | 1100 | 667 | 433 | 47.53% |
-| 15m | perp_synchronized_clock | 1100 | 667 | 433 | 47.53% |
-| 15m | combined_synchronized_clock | 1100 | 653 | 447 | 47.32% |
+| 60m | perp_original_clock | 1101 | 667 | 434 | 50.67% |
+| 60m | perp_synchronized_clock | 1101 | 667 | 434 | 50.67% |
+| 60m | combined_synchronized_clock | 1101 | 653 | 448 | 51.00% |
+| 15m | perp_original_clock | 1101 | 667 | 434 | 47.53% |
+| 15m | perp_synchronized_clock | 1101 | 667 | 434 | 47.53% |
+| 15m | combined_synchronized_clock | 1101 | 653 | 448 | 47.32% |
 
 ## Data usability pilots
 
