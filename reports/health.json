@@ -256,7 +256,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-11-06T07:29:46Z",
+ "generated_utc": "2026-11-06T07:44:49Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -266,7 +266,7 @@
     "2026-11-05T16:12:00Z"
    ],
    "delayed": [],
-   "last_arrival_utc": "2026-11-06T07:27:01Z",
+   "last_arrival_utc": "2026-11-06T07:42:02Z",
    "on_time": 95,
    "on_time_max_lag_s": 3,
    "opportunities": 96,
@@ -280,21 +280,21 @@
   ],
   "recovery_checks": {
    "service-watch": {
-    "age_min": 2.6,
+    "age_min": 2.7,
     "last_check": "passed",
-    "last_completed_utc": "2026-11-06T07:27:08Z",
+    "last_completed_utc": "2026-11-06T07:42:10Z",
     "last_executed": true,
-    "run_id": 42180947891,
+    "run_id": 42182588360,
     "run_result": "failure",
     "stale_after_min": 45,
     "state": "fresh"
    },
    "study-watch": {
-    "age_min": 1.7,
+    "age_min": 1.9,
     "last_check": "check failed",
-    "last_completed_utc": "2026-11-06T07:28:04Z",
+    "last_completed_utc": "2026-11-06T07:42:57Z",
     "last_executed": true,
-    "run_id": 42180947891,
+    "run_id": 42182588360,
     "run_result": "failure",
     "stale_after_min": 45,
     "state": "fresh"
@@ -356,10 +356,10 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_completed_utc": "2026-11-06T07:28:07Z",
+    "last_completed_utc": "2026-11-06T07:43:00Z",
     "last_result": "failure",
-    "last_run_id": 42180947891,
-    "last_scheduled_start_utc": "2026-11-06T07:27:01Z",
+    "last_run_id": 42182588360,
+    "last_scheduled_start_utc": "2026-11-06T07:42:02Z",
     "last_success_utc": null,
     "native": {
      "last_completed_utc": "2026-11-06T07:25:02Z",
@@ -405,7 +405,7 @@
     "recorded_state": "no-rebalance"
    }
   ],
-  "report_age_min": 173.3,
+  "report_age_min": 188.3,
   "report_coverage": 0.7718,
   "report_generated_utc": "2026-11-06T04:36:30.954Z",
   "report_scheduled_decisions": 206,
@@ -415,13 +415,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 87.0,
+  "age_min": 102.0,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 97,
    "expected_slots": 96,
-   "from_ms": 1793863786458,
-   "from_utc": "2026-11-05T07:29:46Z",
+   "from_ms": 1793864689656,
+   "from_utc": "2026-11-05T07:44:49Z",
    "intervals": 95,
    "intervals_with_automated_run": 93,
    "intervals_with_successful_automated_run": 93,
@@ -432,8 +432,8 @@
     "native-schedule": 4,
     "recovery": 93
    },
-   "to_ms": 1793950186458,
-   "to_utc": "2026-11-06T07:29:46Z"
+   "to_ms": 1793951089656,
+   "to_utc": "2026-11-06T07:44:49Z"
   },
   "gaps": [
    {
@@ -512,6 +512,13 @@
     "minutes": 357.97,
     "start_ms": 1793923489085,
     "start_utc": "2026-11-06T00:04:49Z"
+   },
+   {
+    "end_ms": null,
+    "end_utc": null,
+    "minutes": 102.04,
+    "start_ms": 1793944967281,
+    "start_utc": "2026-11-06T06:02:47Z"
    }
   ],
   "last_scheduled_utc": "2026-11-06T06:02:47Z",
@@ -531,14 +538,14 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-11-06T07:28:13Z",
-   "last_automated_utc": "2026-11-06T07:28:13Z",
+   "last_activity_utc": "2026-11-06T07:43:12Z",
+   "last_automated_utc": "2026-11-06T07:43:12Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-11-06T07:28:13Z",
+   "last_success_utc": "2026-11-06T07:43:12Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
   "stale_limit_min": 90,
-  "state": "healthy"
+  "state": "stale"
  }
 }
