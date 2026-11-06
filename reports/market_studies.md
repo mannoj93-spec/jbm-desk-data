@@ -1,6 +1,6 @@
 # Market studies
 
-Generated 2026-11-06T14:01:56.166Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-06T14:06:41.415Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
@@ -57,7 +57,7 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 ## Data usability pilots
 
-- Options: 308 captures; usable 7d RR25 in 253, usable 30d RR25 in 86; 231 valid hourly changes.
+- Options: 309 captures; usable 7d RR25 in 254, usable 30d RR25 in 86; 231 valid hourly changes.
 - Liquidations: 815 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 2, "missed": 66, "ok": 1139}`.
 - Exchange stress: 617/617 scheduled records. Capture states: `{"missed": 43, "ok": 574}`. Ratings: `{"low": 574}`.
 
