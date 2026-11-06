@@ -1,14 +1,5004 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-11-06T16:02:11.045Z",
-  "generated_ms": 1793980931045,
+  "generated_utc": "2026-11-06T16:19:57.124Z",
+  "generated_ms": 1793981997124,
+  "window_start_ms": 1793895597124,
   "stale_after_minutes": 45,
   "paused": false,
-  "integrity": "failed",
-  "studies": {},
-  "pilots": {},
-  "warnings": [],
-  "alerts": [
-    "Integrity or diagnostics failure: ValueError: Pilot selection failed reproduction"
-  ]
+  "studies": {
+    "turnover": {
+      "due": 5,
+      "successful": 0,
+      "coverage": 0.0,
+      "states": {
+        "missed": 5
+      },
+      "consecutive_misses": 5,
+      "last_success_ms": null,
+      "pending_successful": 1,
+      "recovered_before_close": true,
+      "active_consecutive_misses": 0,
+      "recorded": 5,
+      "eligible_forecasts": 0,
+      "abstained": 0,
+      "abstention_rate": 0.0,
+      "pending_outcomes": 0,
+      "overdue_scores": 0,
+      "publication_delay_minutes": {
+        "n": 0,
+        "min": null,
+        "median": null,
+        "p90": null,
+        "max": null
+      },
+      "opportunities": [
+        {
+          "slot": 1793908800000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation"
+        },
+        {
+          "slot": 1793923200000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation"
+        },
+        {
+          "slot": 1793937600000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation"
+        },
+        {
+          "slot": 1793952000000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation"
+        },
+        {
+          "slot": 1793966400000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation"
+        }
+      ]
+    },
+    "range": {
+      "due": 5,
+      "successful": 0,
+      "coverage": 0.0,
+      "states": {
+        "missed": 5
+      },
+      "consecutive_misses": 5,
+      "last_success_ms": null,
+      "pending_successful": 1,
+      "recovered_before_close": true,
+      "active_consecutive_misses": 0,
+      "recorded": 5,
+      "eligible_forecasts": 0,
+      "abstained": 0,
+      "abstention_rate": 0.0,
+      "pending_outcomes": 1,
+      "overdue_scores": 0,
+      "publication_delay_minutes": {
+        "n": 0,
+        "min": null,
+        "median": null,
+        "p90": null,
+        "max": null
+      },
+      "opportunities": [
+        {
+          "slot": 1793908800000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation",
+          "source_confirmed_ms": null
+        },
+        {
+          "slot": 1793923200000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation",
+          "source_confirmed_ms": null
+        },
+        {
+          "slot": 1793937600000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation",
+          "source_confirmed_ms": null
+        },
+        {
+          "slot": 1793952000000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation",
+          "source_confirmed_ms": null
+        },
+        {
+          "slot": 1793966400000,
+          "state": "missed",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "missed",
+          "eligible_forecast": false,
+          "reason": "no on-time preparation",
+          "source_confirmed_ms": null
+        }
+      ]
+    },
+    "state": {
+      "due": 23,
+      "successful": 15,
+      "coverage": 0.6521739130434783,
+      "states": {
+        "abstained": 8,
+        "ok": 15
+      },
+      "consecutive_misses": 1,
+      "last_success_ms": 1793973707484,
+      "pending_successful": 1,
+      "recovered_before_close": true,
+      "active_consecutive_misses": 0,
+      "recorded": 23,
+      "eligible_forecasts": 15,
+      "abstained": 8,
+      "abstention_rate": 0.34782608695652173,
+      "pending_outcomes": 3,
+      "overdue_scores": 0,
+      "publication_delay_minutes": {
+        "n": 15,
+        "min": 1.4223166666666667,
+        "median": 1.6232333333333333,
+        "p90": 1.8963,
+        "max": 2.6654333333333335
+      },
+      "opportunities": [
+        {
+          "slot": 1793898000000,
+          "state": "abstained",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
+          "reason": null
+        },
+        {
+          "slot": 1793901600000,
+          "state": "abstained",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
+          "reason": null
+        },
+        {
+          "slot": 1793905200000,
+          "state": "ok",
+          "success_ms": 1793905313778,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793908800000,
+          "state": "abstained",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
+          "reason": null
+        },
+        {
+          "slot": 1793912400000,
+          "state": "abstained",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
+          "reason": null
+        },
+        {
+          "slot": 1793916000000,
+          "state": "ok",
+          "success_ms": 1793916105659,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793919600000,
+          "state": "ok",
+          "success_ms": 1793919697394,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793923200000,
+          "state": "abstained",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
+          "reason": null
+        },
+        {
+          "slot": 1793926800000,
+          "state": "abstained",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
+          "reason": null
+        },
+        {
+          "slot": 1793930400000,
+          "state": "ok",
+          "success_ms": 1793930556368,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793934000000,
+          "state": "ok",
+          "success_ms": 1793934087120,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793937600000,
+          "state": "ok",
+          "success_ms": 1793937685339,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793941200000,
+          "state": "ok",
+          "success_ms": 1793941293422,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793944800000,
+          "state": "ok",
+          "success_ms": 1793944886854,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793948400000,
+          "state": "ok",
+          "success_ms": 1793948486535,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793952000000,
+          "state": "ok",
+          "success_ms": 1793952104125,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793955600000,
+          "state": "ok",
+          "success_ms": 1793955689896,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793959200000,
+          "state": "ok",
+          "success_ms": 1793959359926,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793962800000,
+          "state": "ok",
+          "success_ms": 1793962895644,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793966400000,
+          "state": "abstained",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
+          "reason": null
+        },
+        {
+          "slot": 1793970000000,
+          "state": "ok",
+          "success_ms": 1793970100327,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793973600000,
+          "state": "ok",
+          "success_ms": 1793973707484,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793977200000,
+          "state": "abstained",
+          "success_ms": null,
+          "recorded": true,
+          "forecast_state": "abstained",
+          "eligible_forecast": false,
+          "reason": null
+        }
+      ]
+    },
+    "paired": {
+      "due": 93,
+      "successful": 93,
+      "coverage": 1.0,
+      "states": {
+        "ok": 93
+      },
+      "consecutive_misses": 0,
+      "last_success_ms": 1793979110181,
+      "pending_successful": 3,
+      "recovered_before_close": false,
+      "active_consecutive_misses": 0,
+      "recorded": 93,
+      "eligible_forecasts": 93,
+      "abstained": 0,
+      "abstention_rate": 0.0,
+      "pending_outcomes": 5,
+      "overdue_scores": 0,
+      "publication_delay_minutes": {
+        "n": 93,
+        "min": 1.2391666666666667,
+        "median": 1.7914,
+        "p90": 4.655433333333334,
+        "max": 19.2102
+      },
+      "opportunities": [
+        {
+          "slot": 1793896200000,
+          "state": "ok",
+          "success_ms": 1793896576296,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793897100000,
+          "state": "ok",
+          "success_ms": 1793897358483,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793898000000,
+          "state": "ok",
+          "success_ms": 1793898126884,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793898900000,
+          "state": "ok",
+          "success_ms": 1793899011268,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793899800000,
+          "state": "ok",
+          "success_ms": 1793899926691,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793900700000,
+          "state": "ok",
+          "success_ms": 1793900871176,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793901600000,
+          "state": "ok",
+          "success_ms": 1793901726697,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793902500000,
+          "state": "ok",
+          "success_ms": 1793902625404,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793903400000,
+          "state": "ok",
+          "success_ms": 1793903519191,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793904300000,
+          "state": "ok",
+          "success_ms": 1793904414317,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793905200000,
+          "state": "ok",
+          "success_ms": 1793905313778,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793906100000,
+          "state": "ok",
+          "success_ms": 1793906204596,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793907000000,
+          "state": "ok",
+          "success_ms": 1793907118246,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793907900000,
+          "state": "ok",
+          "success_ms": 1793908030296,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793908800000,
+          "state": "ok",
+          "success_ms": 1793908912208,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793909700000,
+          "state": "ok",
+          "success_ms": 1793910046331,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793910600000,
+          "state": "ok",
+          "success_ms": 1793910900316,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793911500000,
+          "state": "ok",
+          "success_ms": 1793912526959,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793912400000,
+          "state": "ok",
+          "success_ms": 1793912526959,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793913300000,
+          "state": "ok",
+          "success_ms": 1793913409423,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793914200000,
+          "state": "ok",
+          "success_ms": 1793914366560,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793915100000,
+          "state": "ok",
+          "success_ms": 1793915193083,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793916000000,
+          "state": "ok",
+          "success_ms": 1793916105659,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793916900000,
+          "state": "ok",
+          "success_ms": 1793917012997,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793917800000,
+          "state": "ok",
+          "success_ms": 1793917915577,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793918700000,
+          "state": "ok",
+          "success_ms": 1793919697394,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793919600000,
+          "state": "ok",
+          "success_ms": 1793919697394,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793920500000,
+          "state": "ok",
+          "success_ms": 1793920603112,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793921400000,
+          "state": "ok",
+          "success_ms": 1793921496542,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793922300000,
+          "state": "ok",
+          "success_ms": 1793922399993,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793923200000,
+          "state": "ok",
+          "success_ms": 1793923404307,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793924100000,
+          "state": "ok",
+          "success_ms": 1793924301855,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793925000000,
+          "state": "ok",
+          "success_ms": 1793925233279,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793925900000,
+          "state": "ok",
+          "success_ms": 1793925988416,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793926800000,
+          "state": "ok",
+          "success_ms": 1793927785567,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793927700000,
+          "state": "ok",
+          "success_ms": 1793927785567,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793928600000,
+          "state": "ok",
+          "success_ms": 1793928691810,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793929500000,
+          "state": "ok",
+          "success_ms": 1793929585657,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793930400000,
+          "state": "ok",
+          "success_ms": 1793930556368,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793931300000,
+          "state": "ok",
+          "success_ms": 1793931388109,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793932200000,
+          "state": "ok",
+          "success_ms": 1793932286739,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793933100000,
+          "state": "ok",
+          "success_ms": 1793933177117,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793934000000,
+          "state": "ok",
+          "success_ms": 1793934087120,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793934900000,
+          "state": "ok",
+          "success_ms": 1793935059356,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793935800000,
+          "state": "ok",
+          "success_ms": 1793935890630,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793936700000,
+          "state": "ok",
+          "success_ms": 1793936789848,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793937600000,
+          "state": "ok",
+          "success_ms": 1793937685339,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793938500000,
+          "state": "ok",
+          "success_ms": 1793938694842,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793939400000,
+          "state": "ok",
+          "success_ms": 1793939679326,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793940300000,
+          "state": "ok",
+          "success_ms": 1793941293422,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793941200000,
+          "state": "ok",
+          "success_ms": 1793941293422,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793942100000,
+          "state": "ok",
+          "success_ms": 1793942186608,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793943000000,
+          "state": "ok",
+          "success_ms": 1793943094812,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793943900000,
+          "state": "ok",
+          "success_ms": 1793944043801,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793944800000,
+          "state": "ok",
+          "success_ms": 1793944886854,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793945700000,
+          "state": "ok",
+          "success_ms": 1793945788027,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793946600000,
+          "state": "ok",
+          "success_ms": 1793946674350,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793947500000,
+          "state": "ok",
+          "success_ms": 1793947586011,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793948400000,
+          "state": "ok",
+          "success_ms": 1793948486535,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793949300000,
+          "state": "ok",
+          "success_ms": 1793949387658,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793950200000,
+          "state": "ok",
+          "success_ms": 1793950281047,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793951100000,
+          "state": "ok",
+          "success_ms": 1793951178623,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793952000000,
+          "state": "ok",
+          "success_ms": 1793952104125,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793952900000,
+          "state": "ok",
+          "success_ms": 1793953129512,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793953800000,
+          "state": "ok",
+          "success_ms": 1793954033264,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793954700000,
+          "state": "ok",
+          "success_ms": 1793954846465,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793955600000,
+          "state": "ok",
+          "success_ms": 1793955689896,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793956500000,
+          "state": "ok",
+          "success_ms": 1793956595048,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793957400000,
+          "state": "ok",
+          "success_ms": 1793957492846,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793958300000,
+          "state": "ok",
+          "success_ms": 1793958403772,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793959200000,
+          "state": "ok",
+          "success_ms": 1793959359926,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793960100000,
+          "state": "ok",
+          "success_ms": 1793960190191,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793961000000,
+          "state": "ok",
+          "success_ms": 1793961086373,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793961900000,
+          "state": "ok",
+          "success_ms": 1793961988289,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793962800000,
+          "state": "ok",
+          "success_ms": 1793962895644,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793963700000,
+          "state": "ok",
+          "success_ms": 1793963854597,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793964600000,
+          "state": "ok",
+          "success_ms": 1793964685329,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793965500000,
+          "state": "ok",
+          "success_ms": 1793965592838,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793966400000,
+          "state": "ok",
+          "success_ms": 1793967552612,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793967300000,
+          "state": "ok",
+          "success_ms": 1793967552612,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793968200000,
+          "state": "ok",
+          "success_ms": 1793968524699,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793969100000,
+          "state": "ok",
+          "success_ms": 1793969189854,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793970000000,
+          "state": "ok",
+          "success_ms": 1793970100327,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793970900000,
+          "state": "ok",
+          "success_ms": 1793970990599,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793971800000,
+          "state": "ok",
+          "success_ms": 1793971890333,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793972700000,
+          "state": "ok",
+          "success_ms": 1793972866506,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793973600000,
+          "state": "ok",
+          "success_ms": 1793973707484,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793974500000,
+          "state": "ok",
+          "success_ms": 1793975493156,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793975400000,
+          "state": "ok",
+          "success_ms": 1793975493156,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793976300000,
+          "state": "ok",
+          "success_ms": 1793976399645,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793977200000,
+          "state": "ok",
+          "success_ms": 1793977378162,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793978100000,
+          "state": "ok",
+          "success_ms": 1793978228435,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        },
+        {
+          "slot": 1793979000000,
+          "state": "ok",
+          "success_ms": 1793979110181,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
+        }
+      ]
+    },
+    "state_v2": {
+      "due": 23,
+      "successful": 23,
+      "coverage": 1.0,
+      "states": {
+        "ok": 23
+      },
+      "consecutive_misses": 0,
+      "last_success_ms": 1793977379296,
+      "pending_successful": 1,
+      "recovered_before_close": false,
+      "active_consecutive_misses": 0,
+      "recorded": 23,
+      "eligible_forecasts": 23,
+      "abstained": 0,
+      "abstention_rate": 0.0,
+      "first_slot": 1793059200000,
+      "paused": false,
+      "opportunities": [
+        {
+          "slot": 1793898000000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793898127706,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793901600000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793901727690,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793905200000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793905314693,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793908800000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793908913153,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793912400000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793912527856,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793916000000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793916106774,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793919600000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793919698409,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793923200000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793923405444,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793926800000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793927786472,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793930400000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793930557518,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793934000000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793934088068,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793937600000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793937686108,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793941200000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793941294466,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793944800000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793944887881,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793948400000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793948487559,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793952000000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793952105152,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793955600000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793955690834,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793959200000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793959360951,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793962800000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793962896645,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793966400000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793967553466,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793970000000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793970101190,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793973600000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793973708332,
+          "reasons": [
+            ""
+          ]
+        },
+        {
+          "slot": 1793977200000,
+          "state": "ok",
+          "recorded": true,
+          "eligible_forecast": true,
+          "forecast_state": "ready",
+          "success_ms": 1793977379296,
+          "reasons": [
+            ""
+          ]
+        }
+      ],
+      "pending_outcomes": 5,
+      "overdue_scores": 0
+    }
+  },
+  "pilots": {
+    "stress": {
+      "due": 47,
+      "successful": 47,
+      "coverage": 1.0,
+      "states": {
+        "ok": 47
+      },
+      "consecutive_misses": 0,
+      "last_success_ms": 1793979113226,
+      "pending_successful": 1,
+      "recovered_before_close": false,
+      "active_consecutive_misses": 0
+    },
+    "liquidations": {
+      "due": 92,
+      "successful": 92,
+      "coverage": 1.0,
+      "states": {
+        "ok": 92
+      },
+      "consecutive_misses": 0,
+      "last_success_ms": 1793977383605,
+      "pending_successful": 4,
+      "recovered_before_close": false,
+      "active_consecutive_misses": 0,
+      "by_vintage": {
+        "0": {
+          "due": 23,
+          "successful": 23,
+          "coverage": 1.0,
+          "states": {
+            "ok": 23
+          },
+          "consecutive_misses": 0,
+          "last_success_ms": 1793977383605
+        },
+        "1": {
+          "due": 23,
+          "successful": 23,
+          "coverage": 1.0,
+          "states": {
+            "ok": 23
+          },
+          "consecutive_misses": 0,
+          "last_success_ms": 1793977382403
+        },
+        "6": {
+          "due": 23,
+          "successful": 23,
+          "coverage": 1.0,
+          "states": {
+            "ok": 23
+          },
+          "consecutive_misses": 0,
+          "last_success_ms": 1793977382099
+        },
+        "18": {
+          "due": 23,
+          "successful": 23,
+          "coverage": 1.0,
+          "states": {
+            "ok": 23
+          },
+          "consecutive_misses": 0,
+          "last_success_ms": 1793977381802
+        }
+      }
+    },
+    "options": {
+      "due": 23,
+      "successful": 0,
+      "coverage": 0.0,
+      "states": {
+        "unusable": 23
+      },
+      "consecutive_misses": 23,
+      "last_success_ms": null,
+      "pending_successful": 0,
+      "recovered_before_close": false,
+      "active_consecutive_misses": 23,
+      "capture": {
+        "due": 23,
+        "successful": 23,
+        "coverage": 1.0,
+        "states": {
+          "ok": 23
+        },
+        "consecutive_misses": 0,
+        "last_success_ms": 1793978066393,
+        "pending_successful": 1,
+        "recovered_before_close": false,
+        "active_consecutive_misses": 0
+      },
+      "horizons": {
+        "rr25_7d": {
+          "due": 23,
+          "successful": 23,
+          "coverage": 1.0,
+          "states": {
+            "ok": 23
+          },
+          "consecutive_misses": 0,
+          "last_success_ms": 1793978066393
+        },
+        "rr25_30d": {
+          "due": 23,
+          "successful": 0,
+          "coverage": 0.0,
+          "states": {
+            "no-bracketing-expiry": 23
+          },
+          "consecutive_misses": 23,
+          "last_success_ms": null
+        }
+      }
+    }
+  },
+  "alerts": [],
+  "warnings": [
+    "turnover: last-24h operational coverage below 80% (not a research threshold)",
+    "range: last-24h operational coverage below 80% (not a research threshold)",
+    "state: 8/23 recorded closed opportunities abstained in 24h (>20%; operational warning only)",
+    "state: last-24h operational coverage below 80% (not a research threshold)",
+    "options rr25_30d: 0/23 closed opportunities usable (<80%; quality warning, not a collection outage)",
+    "3 retained source-quality incidents; affected score windows are listed without changing results"
+  ],
+  "integrity": "ok",
+  "components": {
+    "v1": {
+      "integrity": "ok",
+      "verified_ms": 1793981997124
+    },
+    "state_v2": {
+      "integrity": "ok",
+      "verified_ms": 1793981997124
+    },
+    "options_expiry": {
+      "integrity": "ok",
+      "verified_ms": 1793981997124
+    },
+    "options_30d": {
+      "integrity": "ok",
+      "verified_ms": 1793981997124
+    },
+    "immediate_books": {
+      "integrity": "ok",
+      "verified_ms": 1793981997124
+    },
+    "source_quality": {
+      "integrity": "ok",
+      "verified_ms": 1793981997124
+    },
+    "report_freshness": {
+      "integrity": "ok",
+      "verified_ms": 1793981997124
+    }
+  },
+  "depth_diagnostics": {
+    "last_24h": {
+      "forecasts": 24,
+      "abstained": 8,
+      "missing_depth_age": 0,
+      "depth_age_minutes": {
+        "n": 24,
+        "min": 13.516666666666667,
+        "median": 15.975,
+        "p90": 30.883333333333333,
+        "max": 31.016666666666666
+      },
+      "abstention_reasons": {
+        "flow_per_depth: stale-depth: measured 30 min before T (limit 30)": 7,
+        "flow_per_depth: stale-depth: measured 31 min before T (limit 30)": 1
+      },
+      "records": [
+        {
+          "slot": 1793898000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.416666666666668,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793901600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.666666666666668,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793905200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.716666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793908800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.533333333333335,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793912400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.516666666666666,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793916000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.883333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793919600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 13.516666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793923200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.933333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793926800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.95,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793930400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793934000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793937600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793941200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 14.516666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793944800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793948400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793952000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793955600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793959200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793962800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793966400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.016666666666666,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793970000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793973600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793977200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.883333333333333,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793980800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.833333333333334,
+          "reasons": []
+        }
+      ],
+      "interpretation": "Recorded as-of depth ages; unavailable ages are not zero. No feature reselection or threshold changes."
+    },
+    "since_deployment": {
+      "forecasts": 280,
+      "abstained": 73,
+      "missing_depth_age": 2,
+      "depth_age_minutes": {
+        "n": 278,
+        "min": 0.95,
+        "median": 16.05,
+        "p90": 30.95,
+        "max": 45.85
+      },
+      "abstention_reasons": {
+        "flow_per_depth: stale-depth: measured 31 min before T (limit 30)": 17,
+        "flow_per_depth: stale-depth: measured 30 min before T (limit 30)": 53,
+        "ret_15m_bp: stale-inputs: latest perp bar closed 47 min before T": 1,
+        "rv_1h_bp: incomplete-or-stale": 1,
+        "flow_per_depth: stale-inputs: latest perp bar closed 47 min before T": 1,
+        "d_oi_1h_pct: stale-oi: newest usable OI stamp 55 min before T (limit 45)": 1,
+        "oi_x_ret: stale-oi: newest usable OI stamp 55 min before T (limit 45)": 1,
+        "flow_per_depth: stale-depth: measured 45 min before T (limit 30)": 1,
+        "flow_per_depth: stale-depth: measured 40 min before T (limit 30)": 1
+      },
+      "records": [
+        {
+          "slot": 1792976400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.116666666666667,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1792980000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.116666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1792983600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1792987200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.683333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1792990800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1792994400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1792998000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793001600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793005200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.166666666666668,
+          "reasons": []
+        },
+        {
+          "slot": 1793008800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793012400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793016000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793019600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.05,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793023200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793026800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793030400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.033333333333335,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793034000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793037600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.016666666666666,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793041200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.75,
+          "reasons": []
+        },
+        {
+          "slot": 1793044800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.05,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793048400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.816666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793052000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793055600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 1.0666666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793059200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793062800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.3,
+          "reasons": []
+        },
+        {
+          "slot": 1793066400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.15,
+          "reasons": []
+        },
+        {
+          "slot": 1793070000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.15,
+          "reasons": []
+        },
+        {
+          "slot": 1793073600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793077200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793080800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 1.1333333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793084400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793088000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793091600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.75,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793095200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793098800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.0,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793102400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793106000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.716666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793109600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793113200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.966666666666665,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793116800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793120400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793124000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.766666666666666,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793127600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793131200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.0,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793134800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 12.416666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793138400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793142000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793145600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793149200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.116666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793152800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793156400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793160000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793163600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.15,
+          "reasons": []
+        },
+        {
+          "slot": 1793167200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793170800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793174400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793178000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793181600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793185200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793188800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.116666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793192400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793196000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.066666666666666,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793199600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.916666666666668,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793203200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793206800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793210400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.85,
+          "reasons": []
+        },
+        {
+          "slot": 1793214000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.583333333333332,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793217600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793221200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.866666666666667,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793224800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 17.3,
+          "reasons": []
+        },
+        {
+          "slot": 1793228400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793232000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793235600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793239200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793242800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793246400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793250000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793253600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793257200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793260800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793264400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793268000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793271600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793275200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793278800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793282400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793286000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793289600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.9,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793293200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793296800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.833333333333332,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793300400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.1,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793304000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793307600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.8,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793311200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.983333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793314800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.0,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793318400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 0.9666666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793322000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.933333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793325600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.9,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793329200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 29.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793332800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.9,
+          "reasons": []
+        },
+        {
+          "slot": 1793336400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.966666666666665,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793340000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.866666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793343600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.75,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793347200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.0,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793350800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793354400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 9.733333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793358000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793361600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793365200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793368800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.933333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793372400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793376000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.866666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793379600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 14.416666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793383200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.933333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793386800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.9,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793390400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.883333333333333,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793394000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 8.8,
+          "reasons": []
+        },
+        {
+          "slot": 1793397600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793401200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.733333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793404800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793408400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793412000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793415600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.766666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793419200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.133333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793422800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793426400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 9.2,
+          "reasons": []
+        },
+        {
+          "slot": 1793430000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.116666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793433600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793437200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793440800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.016666666666666,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793444400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.133333333333333,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793448000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793451600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793455200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793458800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.733333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793462400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793466000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793469600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.15,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793473200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793476800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793480400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.2,
+          "reasons": []
+        },
+        {
+          "slot": 1793484000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.866666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793487600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793491200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793494800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793498400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793502000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793505600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793509200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793512800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.15,
+          "reasons": []
+        },
+        {
+          "slot": 1793516400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.116666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793520000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.116666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793523600000,
+          "state": "abstained",
+          "depth_state": "unavailable",
+          "depth_age_minutes": null,
+          "reasons": [
+            "ret_15m_bp: stale-inputs: latest perp bar closed 47 min before T",
+            "rv_1h_bp: incomplete-or-stale",
+            "flow_per_depth: stale-inputs: latest perp bar closed 47 min before T",
+            "d_oi_1h_pct: stale-oi: newest usable OI stamp 55 min before T (limit 45)",
+            "oi_x_ret: stale-oi: newest usable OI stamp 55 min before T (limit 45)"
+          ]
+        },
+        {
+          "slot": 1793527200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793530800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793534400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793538000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793541600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793545200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793548800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793552400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.116666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793556000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.116666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793559600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793563200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793566800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.083333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793570400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793574000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793577600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 9.533333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793581200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793584800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.066666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793588400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 11.2,
+          "reasons": []
+        },
+        {
+          "slot": 1793592000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793595600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.033333333333335,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793599200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793602800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.116666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793606400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793610000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.0,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793613600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.883333333333333,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793617200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.783333333333335,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793620800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.85,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793624400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793628000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.966666666666665,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793631600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.433333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793635200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.7,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793638800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.966666666666665,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793642400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.616666666666667,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793646000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.9,
+          "reasons": []
+        },
+        {
+          "slot": 1793649600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.833333333333332,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793653200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.883333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793656800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793660400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793664000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.866666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793667600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.716666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793671200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793674800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793678400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.883333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793682000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.8,
+          "reasons": []
+        },
+        {
+          "slot": 1793685600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793689200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.05,
+          "reasons": []
+        },
+        {
+          "slot": 1793692800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793696400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793700000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793703600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.766666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793707200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 13.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793710800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.0,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793714400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793718000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793721600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.866666666666667,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793725200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.85,
+          "reasons": []
+        },
+        {
+          "slot": 1793728800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 29.733333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793732400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 28.1,
+          "reasons": []
+        },
+        {
+          "slot": 1793736000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 27.25,
+          "reasons": []
+        },
+        {
+          "slot": 1793739600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 29.516666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793743200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.4,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793746800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793750400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.216666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793754000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 28.833333333333332,
+          "reasons": []
+        },
+        {
+          "slot": 1793757600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793761200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 0.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793764800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.733333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793768400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.75,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793772000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.716666666666665,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793775600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.9,
+          "reasons": []
+        },
+        {
+          "slot": 1793779200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.966666666666665,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793782800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.8,
+          "reasons": []
+        },
+        {
+          "slot": 1793786400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 45.85,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 45 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793790000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 40.36666666666667,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 40 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793793600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.933333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793797200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.866666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793800800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.883333333333333,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793804400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.716666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793808000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.683333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793811600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.466666666666665,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793815200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.8,
+          "reasons": []
+        },
+        {
+          "slot": 1793818800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.8,
+          "reasons": []
+        },
+        {
+          "slot": 1793822400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.8,
+          "reasons": []
+        },
+        {
+          "slot": 1793826000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.683333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793829600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.833333333333332,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793833200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793836800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 25.25,
+          "reasons": []
+        },
+        {
+          "slot": 1793840400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.966666666666665,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793844000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793847600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.766666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793851200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.966666666666665,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793854800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.033333333333335,
+          "reasons": []
+        },
+        {
+          "slot": 1793858400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793862000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793865600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793869200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.983333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793872800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793876400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793880000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.9,
+          "reasons": []
+        },
+        {
+          "slot": 1793883600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.916666666666668,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793887200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.866666666666667,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793890800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.916666666666668,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793894400000,
+          "state": "missed",
+          "depth_state": "unavailable",
+          "depth_age_minutes": null,
+          "reasons": [
+            "no on-time preparation"
+          ]
+        },
+        {
+          "slot": 1793898000000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.416666666666668,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793901600000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.666666666666668,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793905200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.716666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793908800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.533333333333335,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793912400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.516666666666666,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793916000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.883333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793919600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 13.516666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793923200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.933333333333334,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793926800000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.95,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793930400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793934000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793937600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793941200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 14.516666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793944800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793948400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793952000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793955600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793959200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793962800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793966400000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 31.016666666666666,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 31 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793970000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793973600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793977200000,
+          "state": "abstained",
+          "depth_state": "stale",
+          "depth_age_minutes": 30.883333333333333,
+          "reasons": [
+            "flow_per_depth: stale-depth: measured 30 min before T (limit 30)"
+          ]
+        },
+        {
+          "slot": 1793980800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.833333333333334,
+          "reasons": []
+        }
+      ],
+      "interpretation": "Recorded as-of depth ages; unavailable ages are not zero. No feature reselection or threshold changes."
+    },
+    "state_v2_last_24h": {
+      "forecasts": 24,
+      "abstained": 0,
+      "missing_depth_age": 0,
+      "depth_age_minutes": {
+        "n": 24,
+        "min": 13.516666666666667,
+        "median": 15.916666666666666,
+        "p90": 15.983333333333333,
+        "max": 16.016666666666666
+      },
+      "abstention_reasons": {},
+      "records": [
+        {
+          "slot": 1793898000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.616666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793901600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.75,
+          "reasons": []
+        },
+        {
+          "slot": 1793905200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.716666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793908800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.383333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793912400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 14.216666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793916000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.883333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793919600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 13.516666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793923200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793926800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793930400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793934000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.95,
+          "reasons": []
+        },
+        {
+          "slot": 1793937600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793941200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 14.516666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793944800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.0,
+          "reasons": []
+        },
+        {
+          "slot": 1793948400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793952000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 16.016666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793955600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793959200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793962800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.933333333333334,
+          "reasons": []
+        },
+        {
+          "slot": 1793966400000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.966666666666667,
+          "reasons": []
+        },
+        {
+          "slot": 1793970000000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.983333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793973600000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.916666666666666,
+          "reasons": []
+        },
+        {
+          "slot": 1793977200000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.783333333333333,
+          "reasons": []
+        },
+        {
+          "slot": 1793980800000,
+          "state": "ready",
+          "depth_state": "ok",
+          "depth_age_minutes": 15.833333333333334,
+          "reasons": []
+        }
+      ],
+      "interpretation": "Recorded as-of depth ages; unavailable ages are not zero. No feature reselection or threshold changes."
+    }
+  },
+  "deployment": {
+    "label": "Study recovery deployment (PR #53)",
+    "started_utc": "2026-10-26T00:58:03Z",
+    "commit": "d03301c59ec95502e716faf06502c875298a2866",
+    "started_ms": 1792976283000,
+    "studies": {
+      "turnover": {
+        "due": 69,
+        "successful": 35,
+        "coverage": 0.5072463768115942,
+        "states": {
+          "ok": 35,
+          "missed": 34
+        },
+        "consecutive_misses": 34,
+        "last_success_ms": 1793477970021,
+        "pending_successful": 1,
+        "recovered_before_close": true,
+        "active_consecutive_misses": 0,
+        "recorded": 69,
+        "eligible_forecasts": 35,
+        "abstained": 0,
+        "abstention_rate": 0.0
+      },
+      "range": {
+        "due": 69,
+        "successful": 35,
+        "coverage": 0.5072463768115942,
+        "states": {
+          "ok": 35,
+          "missed": 34
+        },
+        "consecutive_misses": 34,
+        "last_success_ms": 1793477967651,
+        "pending_successful": 1,
+        "recovered_before_close": true,
+        "active_consecutive_misses": 0,
+        "recorded": 69,
+        "eligible_forecasts": 35,
+        "abstained": 0,
+        "abstention_rate": 0.0
+      },
+      "state": {
+        "due": 279,
+        "successful": 205,
+        "coverage": 0.7347670250896058,
+        "states": {
+          "abstained": 73,
+          "ok": 205,
+          "missed": 1
+        },
+        "consecutive_misses": 1,
+        "last_success_ms": 1793973707484,
+        "pending_successful": 1,
+        "recovered_before_close": true,
+        "active_consecutive_misses": 0,
+        "recorded": 279,
+        "eligible_forecasts": 205,
+        "abstained": 73,
+        "abstention_rate": 0.2616487455197133
+      },
+      "paired": {
+        "due": 1115,
+        "successful": 1105,
+        "coverage": 0.9910313901345291,
+        "states": {
+          "ok": 1105,
+          "abstained": 2,
+          "missed": 4,
+          "late-publication": 4
+        },
+        "consecutive_misses": 0,
+        "last_success_ms": 1793979110181,
+        "pending_successful": 3,
+        "recovered_before_close": false,
+        "active_consecutive_misses": 0,
+        "recorded": 1115,
+        "eligible_forecasts": 1105,
+        "abstained": 2,
+        "abstention_rate": 0.0017937219730941704
+      }
+    },
+    "pilots": {
+      "stress": {
+        "due": 558,
+        "successful": 554,
+        "coverage": 0.992831541218638,
+        "states": {
+          "ok": 554,
+          "missed": 4
+        },
+        "consecutive_misses": 0,
+        "last_success_ms": 1793979113226,
+        "pending_successful": 1,
+        "recovered_before_close": false,
+        "active_consecutive_misses": 0
+      },
+      "liquidations": {
+        "due": 1116,
+        "successful": 1106,
+        "coverage": 0.9910394265232975,
+        "states": {
+          "ok": 1106,
+          "coverage-unknown": 2,
+          "missed": 8
+        },
+        "consecutive_misses": 0,
+        "last_success_ms": 1793977383605,
+        "pending_successful": 4,
+        "recovered_before_close": false,
+        "active_consecutive_misses": 0
+      },
+      "options": {
+        "due": 279,
+        "successful": 50,
+        "coverage": 0.17921146953405018,
+        "states": {
+          "ok": 50,
+          "unusable": 229
+        },
+        "consecutive_misses": 224,
+        "last_success_ms": 1793171643744,
+        "pending_successful": 0,
+        "recovered_before_close": false,
+        "active_consecutive_misses": 224
+      }
+    }
+  },
+  "last_prepare_ms": 1793981965722,
+  "paired_diagnostics": {
+    "scored_forecasts": 1143,
+    "unique_entries": 1006,
+    "repeated_entry_groups": 137,
+    "largest_disjoint_60m_subset": 267,
+    "equal_entry_clock_share": 1,
+    "entry_grouped_mean_difference": -0.0008076540755467197,
+    "interpretation": "Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage."
+  },
+  "options_quality": {
+    "captures": 25,
+    "legs": 19277,
+    "rejection_counts": {
+      "delta-distance": 16701,
+      "wide": 1668,
+      "low-oi": 3123,
+      "maturity": 12524,
+      "missing-or-malformed": 1086
+    },
+    "size_states": {
+      "not-in-source": 19277
+    },
+    "quote_age_ms": {
+      "n": 18191,
+      "min": 2955,
+      "median": 4718,
+      "p90": 5459,
+      "max": 5727
+    },
+    "relative_spread": {
+      "n": 18191,
+      "min": 0.001352265043948615,
+      "median": 0.03773584905660381,
+      "p90": 0.23853211009174308,
+      "max": 1.3333333333333333
+    },
+    "delta_distance": {
+      "n": 19277,
+      "min": 0.00010274420829825548,
+      "median": 0.23967434990864955,
+      "p90": 0.7083332425677309,
+      "max": 0.75
+    },
+    "eligibility_transitions_by_horizon": {
+      "rr25_7d": 1
+    },
+    "selected_strike_changes_by_expiry": {
+      "13NOV26": 10,
+      "20NOV26": 5,
+      "27NOV26": 9,
+      "7NOV26": 7,
+      "8NOV26": 9,
+      "9NOV26": 10,
+      "10NOV26": 1
+    },
+    "bracketing_expiry_changes": 1,
+    "selected_by_horizon": {
+      "rr25_7d": {
+        "usable_captures": 24,
+        "legs": 96,
+        "quote_age_ms": {
+          "n": 96,
+          "min": 2955,
+          "median": 4721.0,
+          "p90": 5439,
+          "max": 5723
+        },
+        "relative_spread": {
+          "n": 96,
+          "min": 0.0363636363636364,
+          "median": 0.08695652173913052,
+          "p90": 0.14285714285714288,
+          "max": 0.18181818181818182
+        },
+        "delta_distance": {
+          "n": 96,
+          "min": 0.00010274420829825548,
+          "median": 0.012820266510955525,
+          "p90": 0.03768243521775272,
+          "max": 0.0623943140757921
+        },
+        "size_states": {
+          "not-in-source": 96
+        },
+        "diagnostic_reasons": {}
+      },
+      "rr25_30d": {
+        "usable_captures": 0,
+        "legs": 0,
+        "quote_age_ms": {
+          "n": 0,
+          "min": null,
+          "median": null,
+          "p90": null,
+          "max": null
+        },
+        "relative_spread": {
+          "n": 0,
+          "min": null,
+          "median": null,
+          "p90": null,
+          "max": null
+        },
+        "delta_distance": {
+          "n": 0,
+          "min": null,
+          "median": null,
+          "p90": null,
+          "max": null
+        },
+        "size_states": {},
+        "diagnostic_reasons": {}
+      }
+    },
+    "selected_interpretation": "Only call/put legs at the recorded interpolation expiries, separately per horizon. Shared legs count once per capture within each horizon; repeated captures and horizons are dependent. Diagnostic reasons describe the retained selection and never replace its frozen eligibility.",
+    "interpretation": "All observed legs, not independent samples. Rejection reasons overlap. No filter change or predictive admission; quote size stays unavailable when absent."
+  },
+  "training": {
+    "range": {
+      "state": "ready",
+      "members": 156,
+      "cutoff_ms": 1793923200000
+    },
+    "state": {
+      "state": "ready",
+      "members": 643,
+      "cutoff_ms": 1793923200000
+    }
+  },
+  "state_v2_verification": {
+    "state": "verified",
+    "scores": 248
+  },
+  "state_v2_progress": {
+    "scored": 248,
+    "minimum_scored_for_interval": 1680,
+    "remaining_scored_for_interval": 1432,
+    "block_observations": 168,
+    "complete_block_equivalents": 1,
+    "minimum_blocks": 10,
+    "review_due_ms": 1808611200000,
+    "interpretation": "Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion."
+  },
+  "options_expiry_pilot": {
+    "schema": "options-expiry-pilot/1",
+    "generated_ms": 1793981997124,
+    "activation": {
+      "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
+      "confirmed_ms": 1793152036181,
+      "first_slot": 1793152800000,
+      "registration_sha": "de4f07467397f5339782ec934a41f71e30d3c14eaaf43964b721289ef488211a"
+    },
+    "state": "active",
+    "closed": 230,
+    "captured": 230,
+    "pending_captured": 1,
+    "horizons": {
+      "7": {
+        "paired": {
+          "both": 180,
+          "gained": 49,
+          "lost": 0,
+          "neither": 1
+        },
+        "missing_capture": 0,
+        "states": {
+          "nearest-eligible:ok": 229,
+          "nearest-listed:ok": 180,
+          "nearest-listed:1NOV26:no-25-delta-strike|6NOV26:ok": 2,
+          "nearest-listed:1NOV26:low-oi|6NOV26:ok": 10,
+          "nearest-listed:2NOV26:no-25-delta-strike|6NOV26:ok": 5,
+          "nearest-listed:2NOV26:low-oi|6NOV26:ok": 1,
+          "nearest-listed:7NOV26:no-25-delta-strike|13NOV26:ok": 1,
+          "nearest-listed:7NOV26:low-oi|13NOV26:ok": 7,
+          "nearest-listed:8NOV26:low-oi|13NOV26:ok": 15,
+          "nearest-listed:9NOV26:no-25-delta-strike|13NOV26:ok": 1,
+          "nearest-listed:9NOV26:low-oi|13NOV26:ok": 7,
+          "nearest-eligible:no-eligible-bracket": 1,
+          "nearest-listed:9NOV26:low-oi|13NOV26:stale": 1
+        },
+        "joint_value_difference": {
+          "n": 180,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0
+        },
+        "span_days": {
+          "nearest-listed": {
+            "n": 180,
+            "min": 3.9999999999999996,
+            "max": 7.000000000000001,
+            "mean": 6.105555555555555
+          },
+          "nearest-eligible": {
+            "n": 229,
+            "min": 3.9999999999999996,
+            "max": 7.000000000000001,
+            "mean": 6.056768558951965
+          }
+        }
+      },
+      "30": {
+        "paired": {
+          "both": 6,
+          "gained": 0,
+          "lost": 0,
+          "neither": 224
+        },
+        "missing_capture": 0,
+        "states": {
+          "nearest-eligible:ok": 6,
+          "nearest-listed:ok": 6,
+          "nearest-eligible:no-eligible-bracket": 224,
+          "nearest-listed:no-bracketing-expiry": 224
+        },
+        "joint_value_difference": {
+          "n": 6,
+          "min": 0.0,
+          "max": 0.0,
+          "mean": 0.0
+        },
+        "span_days": {
+          "nearest-listed": {
+            "n": 6,
+            "min": 14.0,
+            "max": 14.0,
+            "mean": 14.0
+          },
+          "nearest-eligible": {
+            "n": 6,
+            "min": 14.0,
+            "max": 14.0,
+            "mean": 14.0
+          }
+        }
+      }
+    },
+    "books": {
+      "expected": 940,
+      "attempted": 892,
+      "usable": 888,
+      "states": {
+        "completed": 218,
+        "source-too-old": 12
+      },
+      "quote_states": {
+        "ok": 888,
+        "unavailable": 4
+      },
+      "source_to_book_ms": {
+        "n": 888,
+        "min": 128527,
+        "max": 477503,
+        "mean": 200105.4707207207,
+        "median": 159452.5,
+        "p90": 319225
+      },
+      "bid_size": {
+        "n": 888,
+        "min": 0.1,
+        "max": 302.0,
+        "mean": 72.57792792792793
+      },
+      "ask_size": {
+        "n": 888,
+        "min": 0.1,
+        "max": 229.1,
+        "mean": 71.19087837837837
+      }
+    },
+    "interpretation": "Repeated horizons and contracts are dependent. A usability gain does not demonstrate predictive skill."
+  },
+  "options_30d_pilot": {
+    "schema": "options-30d-maturity/1",
+    "generated_ms": 1793981997124,
+    "activation": {
+      "commit": "1bdff0904c4de8cbe7ebd8bab9ddcb2849f745a8",
+      "confirmed_ms": 1793981977420,
+      "first_slot": 1793984400000,
+      "registration_sha": "eb6b456f715c847563cc3c5744860a4aa904fb45d6e55093e2951c758d9163a2"
+    },
+    "state": "active",
+    "closed": 0,
+    "captured": 0,
+    "pending_captured": 0,
+    "horizons": {
+      "30": {
+        "paired": {
+          "both": 0,
+          "gained": 0,
+          "lost": 0,
+          "neither": 0
+        },
+        "missing_capture": 0,
+        "states": {},
+        "joint_value_difference": {
+          "n": 0,
+          "min": null,
+          "max": null,
+          "mean": null
+        },
+        "span_days": {
+          "eligible-45d": {
+            "n": 0,
+            "min": null,
+            "max": null,
+            "mean": null
+          },
+          "eligible-90d": {
+            "n": 0,
+            "min": null,
+            "max": null,
+            "mean": null
+          }
+        }
+      }
+    },
+    "books": {
+      "expected": 0,
+      "attempted": 0,
+      "usable": 0,
+      "states": {},
+      "quote_states": {},
+      "source_to_book_ms": {
+        "n": 0,
+        "min": null,
+        "max": null,
+        "mean": null
+      },
+      "bid_size": {
+        "n": 0,
+        "min": null,
+        "max": null,
+        "mean": null
+      },
+      "ask_size": {
+        "n": 0,
+        "min": null,
+        "max": null,
+        "mean": null
+      }
+    },
+    "interpretation": "Separate prospective maturity experiment. Compare nearest eligible expiries within 45 versus 90 days, with identical leg filters and a 35-day maximum span in both arms. Repeated captures are dependent; usability is not predictive skill."
+  },
+  "immediate_books": {
+    "source_captures_last_24h": 25,
+    "missing_book_records": 24,
+    "records_last_24h": 1,
+    "expected": 8,
+    "attempted": 8,
+    "usable": 8,
+    "source_to_book_ms": {
+      "n": 8,
+      "min": 328,
+      "max": 684,
+      "mean": 473.0,
+      "median": 498.5,
+      "p90": 567
+    },
+    "states": {
+      "completed": 1
+    },
+    "interpretation": "Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes."
+  },
+  "source_quality": {
+    "schema": "source-quality/1",
+    "generated_ms": 1793981997124,
+    "minimum_consecutive_minutes": 5,
+    "incidents": [
+      {
+        "start_ms": 1793059320000,
+        "end_ms": 1793061480000,
+        "minutes": 36,
+        "price": 80125.6,
+        "state": "recovered",
+        "recovery_ms": 1793061480000,
+        "known_ms": 1793061876974,
+        "bars_sha": "9f445f429265d4b88d247b3b6fcee74caa9490f0e6fa6db19a6e0e3940d52ca9",
+        "id": "binance_klines_1m_BTCUSDT_perp-1793059320000",
+        "series": "binance_klines_1m_BTCUSDT_perp",
+        "cause": "unknown",
+        "cross_feed_bp": {
+          "spot": 27.71648511836311,
+          "mark": 23.96204444522043
+        },
+        "affected_score_windows": [
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793055600000",
+            "window": "60m/combined_synchronized_clock",
+            "score_sha": "4e6fc2f506e588942edc3e01c2a6f35ee142f4d4ea90042114061cc3acf30c40",
+            "entry_ms": 1793056020000,
+            "end_ms": 1793059620000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793055600000",
+            "window": "60m/perp_original_clock",
+            "score_sha": "4e6fc2f506e588942edc3e01c2a6f35ee142f4d4ea90042114061cc3acf30c40",
+            "entry_ms": 1793056020000,
+            "end_ms": 1793059620000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793055600000",
+            "window": "60m/perp_synchronized_clock",
+            "score_sha": "4e6fc2f506e588942edc3e01c2a6f35ee142f4d4ea90042114061cc3acf30c40",
+            "entry_ms": 1793056020000,
+            "end_ms": 1793059620000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793056500000",
+            "window": "60m/combined_synchronized_clock",
+            "score_sha": "3ecaca614ccec228bd1560ce432af4e608dcb97f4e0b606a5a7dc56cc1f45466",
+            "entry_ms": 1793056980000,
+            "end_ms": 1793060580000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793056500000",
+            "window": "60m/perp_original_clock",
+            "score_sha": "3ecaca614ccec228bd1560ce432af4e608dcb97f4e0b606a5a7dc56cc1f45466",
+            "entry_ms": 1793056980000,
+            "end_ms": 1793060580000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793056500000",
+            "window": "60m/perp_synchronized_clock",
+            "score_sha": "3ecaca614ccec228bd1560ce432af4e608dcb97f4e0b606a5a7dc56cc1f45466",
+            "entry_ms": 1793056980000,
+            "end_ms": 1793060580000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793057400000",
+            "window": "60m/combined_synchronized_clock",
+            "score_sha": "f49687960755c0ae025b74a9b28625c988f94c16fea5b8d6ae37ddd2c9134d62",
+            "entry_ms": 1793057820000,
+            "end_ms": 1793061420000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793057400000",
+            "window": "60m/perp_original_clock",
+            "score_sha": "f49687960755c0ae025b74a9b28625c988f94c16fea5b8d6ae37ddd2c9134d62",
+            "entry_ms": 1793057820000,
+            "end_ms": 1793061420000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793057400000",
+            "window": "60m/perp_synchronized_clock",
+            "score_sha": "f49687960755c0ae025b74a9b28625c988f94c16fea5b8d6ae37ddd2c9134d62",
+            "entry_ms": 1793057820000,
+            "end_ms": 1793061420000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793058300000",
+            "window": "15m/combined_synchronized_clock",
+            "score_sha": "ad9c446a6fa8e550d8f3445e8dc69b7bfd3b929f5eb851eae5f39a00e3280073",
+            "entry_ms": 1793059080000,
+            "end_ms": 1793059980000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793058300000",
+            "window": "15m/perp_original_clock",
+            "score_sha": "ad9c446a6fa8e550d8f3445e8dc69b7bfd3b929f5eb851eae5f39a00e3280073",
+            "entry_ms": 1793059080000,
+            "end_ms": 1793059980000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793058300000",
+            "window": "15m/perp_synchronized_clock",
+            "score_sha": "ad9c446a6fa8e550d8f3445e8dc69b7bfd3b929f5eb851eae5f39a00e3280073",
+            "entry_ms": 1793059080000,
+            "end_ms": 1793059980000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793058300000",
+            "window": "60m/combined_synchronized_clock",
+            "score_sha": "ad9c446a6fa8e550d8f3445e8dc69b7bfd3b929f5eb851eae5f39a00e3280073",
+            "entry_ms": 1793059080000,
+            "end_ms": 1793062680000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793058300000",
+            "window": "60m/perp_original_clock",
+            "score_sha": "ad9c446a6fa8e550d8f3445e8dc69b7bfd3b929f5eb851eae5f39a00e3280073",
+            "entry_ms": 1793059080000,
+            "end_ms": 1793062680000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793058300000",
+            "window": "60m/perp_synchronized_clock",
+            "score_sha": "ad9c446a6fa8e550d8f3445e8dc69b7bfd3b929f5eb851eae5f39a00e3280073",
+            "entry_ms": 1793059080000,
+            "end_ms": 1793062680000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793059200000",
+            "window": "15m/combined_synchronized_clock",
+            "score_sha": "f9eab0999c8b7e6479e7dc613f03c7c04ad7517ca6b5bd7ae8addb9393a95a44",
+            "entry_ms": 1793060700000,
+            "end_ms": 1793061600000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793059200000",
+            "window": "15m/perp_original_clock",
+            "score_sha": "f9eab0999c8b7e6479e7dc613f03c7c04ad7517ca6b5bd7ae8addb9393a95a44",
+            "entry_ms": 1793060700000,
+            "end_ms": 1793061600000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793059200000",
+            "window": "15m/perp_synchronized_clock",
+            "score_sha": "f9eab0999c8b7e6479e7dc613f03c7c04ad7517ca6b5bd7ae8addb9393a95a44",
+            "entry_ms": 1793060700000,
+            "end_ms": 1793061600000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793059200000",
+            "window": "60m/combined_synchronized_clock",
+            "score_sha": "f9eab0999c8b7e6479e7dc613f03c7c04ad7517ca6b5bd7ae8addb9393a95a44",
+            "entry_ms": 1793060700000,
+            "end_ms": 1793064300000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793059200000",
+            "window": "60m/perp_original_clock",
+            "score_sha": "f9eab0999c8b7e6479e7dc613f03c7c04ad7517ca6b5bd7ae8addb9393a95a44",
+            "entry_ms": 1793060700000,
+            "end_ms": 1793064300000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "paired-1793059200000",
+            "window": "60m/perp_synchronized_clock",
+            "score_sha": "f9eab0999c8b7e6479e7dc613f03c7c04ad7517ca6b5bd7ae8addb9393a95a44",
+            "entry_ms": 1793060700000,
+            "end_ms": 1793064300000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "state-1793048400000",
+            "window": "state",
+            "score_sha": "d93f824677960cc99c818dee7127baf4aa02ce54e029c7437e3a5094ea9678b7",
+            "entry_ms": 1793050200000,
+            "end_ms": 1793064600000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "state-1793052000000",
+            "window": "state",
+            "score_sha": "3c3b3ec5f585e840695ccf07fc7ada7bbbcdeb2ec658074d1b404d29cda21f9c",
+            "entry_ms": 1793053800000,
+            "end_ms": 1793068200000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "state-1793055600000",
+            "window": "state",
+            "score_sha": "1355a9389ae01549c90bd1c9329d666e7a599e6da96d97e95009595d0974c7ec",
+            "entry_ms": 1793057400000,
+            "end_ms": 1793071800000
+          },
+          {
+            "version": "v1",
+            "forecast_id": "state-1793059200000",
+            "window": "state",
+            "score_sha": "3ade53cfc67ec2365e06e2ab2f32705839fdad54264e3fc395a167584f59f1c7",
+            "entry_ms": 1793061000000,
+            "end_ms": 1793075400000
+          },
+          {
+            "version": "state-v2",
+            "forecast_id": "state-1793059200000",
+            "window": "state",
+            "score_sha": "8c1276e1da107f7b950ee3a3f3fd5a1a79acd3878accd4ce874b10e84711b22d",
+            "entry_ms": 1793061000000,
+            "end_ms": 1793075400000
+          }
+        ]
+      },
+      {
+        "start_ms": 1793059320000,
+        "end_ms": 1793061480000,
+        "minutes": 36,
+        "price": 2324.56,
+        "state": "recovered",
+        "recovery_ms": 1793061480000,
+        "known_ms": 1793061878526,
+        "bars_sha": "cba990c28245e5939ae3ef80fa99b8252a604d82c4ab1014599636b23914d680",
+        "id": "binance_klines_1m_ETHUSDT_perp-1793059320000",
+        "series": "binance_klines_1m_ETHUSDT_perp",
+        "cause": "unknown",
+        "cross_feed_bp": {},
+        "affected_score_windows": []
+      },
+      {
+        "start_ms": 1793059320000,
+        "end_ms": 1793061480000,
+        "minutes": 36,
+        "price": 100.9,
+        "state": "recovered",
+        "recovery_ms": 1793061480000,
+        "known_ms": 1793061879022,
+        "bars_sha": "be45f0963e4a198ed8b1c1834b2e6a68228dd286619ae05d1506e49805132aed",
+        "id": "binance_klines_1m_SOLUSDT_perp-1793059320000",
+        "series": "binance_klines_1m_SOLUSDT_perp",
+        "cause": "unknown",
+        "cross_feed_bp": {},
+        "affected_score_windows": []
+      }
+    ],
+    "unresolved": 0,
+    "interpretation": "Zero trades and a flat last price are a source-quality anomaly, not proof of an exchange outage. Overlapping windows are not independent. Frozen scores and input eligibility remain unchanged."
+  },
+  "report_freshness": {
+    "v1": {
+      "state": "fresh",
+      "last_success_ms": 1793981986652,
+      "age_minutes": 0.17453333333333335
+    },
+    "state_v2": {
+      "state": "fresh",
+      "last_success_ms": 1793981991983,
+      "age_minutes": 0.08568333333333333
+    },
+    "options_expiry": {
+      "state": "fresh",
+      "last_success_ms": 1793981992380,
+      "age_minutes": 0.07906666666666666
+    },
+    "options_30d": {
+      "state": "fresh",
+      "last_success_ms": 1793981996898,
+      "age_minutes": 0.003766666666666667
+    }
+  }
 }
