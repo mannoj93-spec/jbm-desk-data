@@ -1,3 +1,24 @@
+# Revision 2.30.7 — 2026-11-06 research pipeline repairs and 30-day maturity pilot
+
+- Restore November refit input continuity through an external, allowlisted October 28 source repair.
+  Retain raw archive/API/DVOL responses and actual retrieval clocks; require checksum, completeness and
+  12 exact neighboring overlaps. Preserve frozen models and all missed prospective opportunities.
+  Add read-only month-boundary readiness checks with explicit missing timestamps.
+- Replace brittle exact floating equality only for candidate IV and state-v2 loss calculations
+  (absolute tolerance 1e-12); keep structural, raw evidence, selection and clock checks exact. The
+  existing options report uses an external adapter so its registered implementation does not drift.
+- Isolate operational verification by component, retain overall failure, persist independently verified
+  source incidents and expose stale report clocks. Show frozen state-v2 evidence/review progress.
+- Add a separately registered 30-day options maturity pilot: eligible expiries up to 45 versus 90 days,
+  with identical frozen leg filters and a 35-day bracket cap. Next-hour activation on main, no pooling
+  with the earlier pilot and no backfill.
+- Capture bounded selected-contract books immediately after the hourly collector source; retain separate
+  actual clocks, raw responses, skips and completeness. Move original pilot collection earlier and report
+  median/p90 delays. Minute-bar comparisons do not establish a subminute latency advantage.
+
+Production recovery and the new pilot's activation must be observed after merge; local validation alone
+is not a claim that either is already live.
+
 # Revision 2.30.6 (records and recovery) — 2026-10-29
 
 - Restored collector run 40787475302 (started 23:27:17Z Oct 28 on the 2.30 script, push rejected when the PR #59 merge

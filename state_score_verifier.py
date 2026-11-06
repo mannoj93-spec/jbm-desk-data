@@ -1,5 +1,6 @@
 """Read-only numerical replay outside the frozen state-v2 research identity."""
 from lab.data import Store
+from replay_precision import matches
 from research_tools.state_v2 import study, models
 
 
@@ -19,6 +20,8 @@ def verify(base, rows, now):
         losses = {arm: (p - outcome['y']) ** 2 for arm, p in d['probabilities'].items()}
         expected = {'study': 'state', 'slot': d['slot'], 'outcome': outcome, 'losses': losses,
                     'primary_difference': losses['full'] - losses['baseline'], 'event': d['row'].get('event', False)}
-        if any(score.get(k) != v for k, v in expected.items()):
+        if not matches(expected, {k: score.get(k) for k in expected},
+                       lambda p: p == ('primary_difference',) or
+                       len(p) == 2 and p[0] == 'losses' and p[1] in losses):
             raise ValueError('State-v2 cached score failed independent numerical reproduction: ' + key)
     return scores

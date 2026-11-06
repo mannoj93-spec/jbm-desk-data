@@ -146,10 +146,19 @@ def collect(C, st):
                     "t_event_min", "fields": ROW_FIELDS, "rows": rows, "underlying_v2": underlying_v2,
             "estimated_delivery_price": delivery}], partition=C.day)
         st["deribit_quotes_hour"] = hour
+        # Capture selected books before slower forward sources and repository/workflow handoffs.
+        # Failure is diagnostic only; the original full quote capture is already durable.
+        try:
+            import options_capture_timing
+            immediate_books = options_capture_timing.collect(C)
+        except Exception as exc:
+            immediate_books = {"state": "error", "reason": type(exc).__name__ + ": " + str(exc)[:200]}
+    else:
+        immediate_books = {"state": "not-due"}
     out = {"t": C.NOW, "t_event": t_event, "t_event_min": t_event_min, "status": status, "schema": SCHEMA,
            "unit": "open_interest in BTC (contracts of 1 BTC); mark_iv in % vol",
            "fields": ROW_FIELDS[:3], "rows": [r[:3] for r in rows], "underlying": underlying,
-           "quotes_record": quotes_due,
+           "quotes_record": quotes_due, "immediate_books": immediate_books,
            "underlying_fields": ["underlying_index", "underlying_price", "interest_rate"],
            "underlying_v2": underlying_v2, "estimated_delivery_price": delivery,
            "instruments": len(res), "zero_oi_omitted": zero, "zero_oi": zero_names, "excluded": excluded,
