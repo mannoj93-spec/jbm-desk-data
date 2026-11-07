@@ -1,25 +1,25 @@
 {
  "availability": {
-  "generated_utc": "2026-11-06T23:46:27.472Z",
+  "generated_utc": "2026-11-07T00:04:48.101Z",
   "horizons": {
    "24h": {
     "recorded_state": "valid-current",
     "state_now": "valid-current",
-    "valid_until_utc": "2026-11-07T01:15:00Z"
+    "valid_until_utc": "2026-11-07T05:15:00Z"
    },
    "4h": {
     "recorded_state": "valid-current",
     "state_now": "valid-current",
-    "valid_until_utc": "2026-11-07T00:25:00Z"
+    "valid_until_utc": "2026-11-07T04:10:00Z"
    },
    "72h": {
     "recorded_state": "valid-current",
     "state_now": "valid-current",
-    "valid_until_utc": "2026-11-07T01:15:00Z"
+    "valid_until_utc": "2026-11-07T05:15:00Z"
    }
   },
   "status": "within expiry",
-  "status_expires_utc": "2026-11-07T00:25:00Z"
+  "status_expires_utc": "2026-11-07T04:10:00Z"
  },
  "clock": "runner UTC clock at the check (time.time)",
  "decisions": {
@@ -233,7 +233,8 @@
    "2026-11-06T08:00:00Z": "no-rebalance",
    "2026-11-06T12:00:00Z": "no-rebalance",
    "2026-11-06T16:00:00Z": "executed",
-   "2026-11-06T20:00:00Z": "executed"
+   "2026-11-06T20:00:00Z": "executed",
+   "2026-11-07T00:00:00Z": "executed"
   },
   "ps1_launched": true,
   "range": {
@@ -260,7 +261,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-11-06T23:59:50Z",
+ "generated_utc": "2026-11-07T00:11:01Z",
  "job": "health-1.4.0",
  "monitors": {
   "could_not_execute": [],
@@ -276,13 +277,13 @@
    "state": "arriving",
    "window_h": 24
   },
-  "newest_scheduled_start_utc": "2026-11-06T23:58:42Z",
+  "newest_scheduled_start_utc": "2026-11-07T00:08:22Z",
   "problems_detected_by": [
    "range-monitor.yml"
   ],
   "recovery_checks": {
    "service-watch": {
-    "age_min": 2.7,
+    "age_min": 13.9,
     "last_check": "passed",
     "last_completed_utc": "2026-11-06T23:57:08Z",
     "last_executed": true,
@@ -292,7 +293,7 @@
     "state": "fresh"
    },
    "study-watch": {
-    "age_min": 1.8,
+    "age_min": 13.0,
     "last_check": "passed",
     "last_completed_utc": "2026-11-06T23:58:03Z",
     "last_executed": true,
@@ -310,7 +311,7 @@
     "last_completed_utc": "2026-11-06T20:26:09Z",
     "last_result": "success",
     "last_run_id": 42287352335,
-    "last_scheduled_start_utc": "2026-11-06T20:19:23Z",
+    "last_scheduled_start_utc": "2026-11-07T00:08:22Z",
     "last_success_utc": "2026-11-06T20:19:23Z"
    },
    "dashboard.yml": {
@@ -347,11 +348,11 @@
     "last_success_utc": "2026-11-06T21:03:33Z"
    },
    "range.yml": {
-    "last_completed_utc": "2026-11-06T19:05:09Z",
+    "last_completed_utc": "2026-11-07T00:04:53Z",
     "last_result": "success",
-    "last_run_id": 42275710411,
+    "last_run_id": 42315331184,
     "last_scheduled_start_utc": "2026-11-06T23:58:42Z",
-    "last_success_utc": "2026-11-06T19:00:01Z"
+    "last_success_utc": "2026-11-06T23:58:42Z"
    },
    "recovery.yml": {
     "events": [
@@ -402,23 +403,23 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 217.0,
-  "report_coverage": 0.7667,
-  "report_generated_utc": "2026-11-06T20:22:51.318Z",
-  "report_scheduled_decisions": 210,
+  "report_age_min": 4.7,
+  "report_coverage": 0.7678,
+  "report_generated_utc": "2026-11-07T00:06:21.748Z",
+  "report_scheduled_decisions": 211,
   "rule": "the report's coverage is as of its generation; decisions due after it are listed here with their recorded state, never folded into its percentage"
  },
  "report": "health",
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 216.0,
+  "age_min": 1.7,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 99,
    "expected_slots": 96,
-   "from_ms": 1793923190493,
-   "from_utc": "2026-11-05T23:59:50Z",
+   "from_ms": 1793923861716,
+   "from_utc": "2026-11-06T00:11:01Z",
    "intervals": 95,
    "intervals_with_automated_run": 95,
    "intervals_with_successful_automated_run": 95,
@@ -429,8 +430,8 @@
     "native-schedule": 4,
     "recovery": 95
    },
-   "to_ms": 1794009590493,
-   "to_utc": "2026-11-06T23:59:50Z"
+   "to_ms": 1794010261716,
+   "to_utc": "2026-11-07T00:11:01Z"
   },
   "gaps": [
    {
@@ -504,38 +505,38 @@
     "start_utc": "2026-11-06T14:03:04Z"
    },
    {
-    "end_ms": null,
-    "end_utc": null,
-    "minutes": 215.96,
+    "end_ms": 1794010158206,
+    "end_utc": "2026-11-07T00:09:18Z",
+    "minutes": 225.42,
     "start_ms": 1793996632902,
     "start_utc": "2026-11-06T20:23:52Z"
    }
   ],
-  "last_scheduled_utc": "2026-11-06T20:23:52Z",
+  "last_scheduled_utc": "2026-11-07T00:09:18Z",
   "manual_runs_since": 0,
   "rule": "scheduled runs only (manual, local and recovery runs do not close a scheduled gap)",
   "service": {
    "acceptance_target": {
     "breached_24h": false,
     "breached_now": false,
-    "current_gap_min": 1.6,
+    "current_gap_min": 1.7,
     "longest_successful_gap_24h_min": 19.5,
     "max_gap_min": 45,
     "rule": "restoration acceptance target (45 min between persisted critical successes); separate from the watchdog's stale limit"
    },
-   "age_min": 1.6,
-   "data_age_min": 1.6,
+   "age_min": 1.7,
+   "data_age_min": 1.7,
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-11-06T23:58:14Z",
-   "last_automated_utc": "2026-11-06T23:58:14Z",
-   "last_source": "recovery",
-   "last_success_utc": "2026-11-06T23:58:14Z",
+   "last_activity_utc": "2026-11-07T00:09:18Z",
+   "last_automated_utc": "2026-11-07T00:09:18Z",
+   "last_source": "native-schedule",
+   "last_success_utc": "2026-11-07T00:09:18Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
   "stale_limit_min": 90,
-  "state": "stale"
+  "state": "healthy"
  }
 }
