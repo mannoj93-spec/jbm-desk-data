@@ -1,11 +1,11 @@
 # Market studies
 
-Generated 2026-11-07T20:01:50.972Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-07T20:07:59.551Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
-| turnover | collecting (descriptive) | 85 | 48 | 48 |
-| range | collecting (descriptive) | 85 | 42 | 36 |
+| turnover | collecting (descriptive) | 85 | 49 | 49 |
+| range | collecting (descriptive) | 85 | 43 | 36 |
 | state | collecting (descriptive) | 339 | 243 | 239 |
 | paired | collecting (descriptive) | 1353 | 1259 | 1254 |
 
@@ -15,7 +15,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 
 | Study | Paired difference | 90% block interval | First verified launch |
 |---|---:|---|---|
-| turnover | -0.129338 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
+| turnover | -0.102339 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
 | range | 0.00459879 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | -0.00175336 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
 | paired | -0.00154506 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
@@ -26,14 +26,14 @@ Returns, costs and turnover below cover closed intervals. Each latest trade open
 
 | Scenario / arm | Net return | Annualized risk | Exposure | Drawdown | Annual turnover | Costs (USDT) |
 |---|---:|---:|---:|---:|---:|---:|
-| ordinary/B2_05 | -3.81% | 13.76% | 64.52% | 4.13% | 97.3189 | 444.383 |
-| ordinary/B2_10 | -4.29% | 14.98% | 64.27% | 4.63% | 79.4216 | 408.474 |
-| ordinary/VOL_05 | -2.97% | 18.93% | 44.58% | 3.74% | 18.9611 | 78.3691 |
-| ordinary/VOL_10 | -2.82% | 17.41% | 46.02% | 3.54% | 15.8929 | 65.5761 |
-| stressed/B2_05 | -4.13% | 13.70% | 64.52% | 4.40% | 97.3376 | 771.187 |
-| stressed/B2_10 | -4.55% | 14.90% | 64.28% | 4.84% | 79.4286 | 675.012 |
-| stressed/VOL_05 | -3.03% | 18.88% | 44.59% | 3.75% | 18.9719 | 142.3 |
-| stressed/VOL_10 | -2.88% | 17.38% | 46.04% | 3.54% | 15.9121 | 119.284 |
+| ordinary/B2_05 | -3.80% | 13.62% | 64.69% | 4.13% | 98.3086 | 452.864 |
+| ordinary/B2_10 | -4.27% | 14.83% | 64.41% | 4.63% | 78.5735 | 408.474 |
+| ordinary/VOL_05 | -2.96% | 18.73% | 44.46% | 3.74% | 18.7541 | 78.3691 |
+| ordinary/VOL_10 | -2.81% | 17.22% | 45.88% | 3.54% | 15.7192 | 65.5761 |
+| stressed/B2_05 | -4.12% | 13.56% | 64.70% | 4.40% | 98.3275 | 786.552 |
+| stressed/B2_10 | -4.53% | 14.75% | 64.42% | 4.84% | 78.583 | 675.012 |
+| stressed/VOL_05 | -3.02% | 18.69% | 44.46% | 3.75% | 18.7648 | 142.3 |
+| stressed/VOL_10 | -2.87% | 17.20% | 45.90% | 3.54% | 15.7382 | 119.284 |
 
 ## Range calibration
 
