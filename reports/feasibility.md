@@ -1,6 +1,6 @@
 # Research feasibility
 
-Generated 2026-11-08T08:23:18Z by feasibility-1.2.1; source cutoff 2026-11-08T06:39Z. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
+Generated 2026-11-08T12:22:27Z by feasibility-1.2.1; source cutoff 2026-11-08T06:39Z. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
 
 ## Lab designs
 
@@ -100,12 +100,12 @@ Observable days = hours with a selected hourly control (the lab's coverage count
 
 | stream | limiting factor | detail |
 |---|---|---|
-| RC1D B2 vs B0 (24h) | time (accumulation) | {"blocks": 4, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 43.18, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 209, "rate_per_day": 4.84, "time_to_checkpoint": "~44 d"} |
-| RC1D B2 vs B0 (4h) | time (accumulation) | {"blocks": 5, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 43.18, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 214, "rate_per_day": 4.96, "time_to_checkpoint": "~42 d"} |
-| RC1D B2 vs B0 (72h) | time (accumulation) | {"blocks": 4, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 43.18, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 205, "rate_per_day": 4.75, "time_to_checkpoint": "~45 d"} |
-| Companion B2 vs B1 (24h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 15, "paired": 167} |
-| Companion B2 vs B1 (4h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 18, "paired": 169} |
+| RC1D B2 vs B0 (24h) | time (accumulation) | {"blocks": 5, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 43.35, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 210, "rate_per_day": 4.84, "time_to_checkpoint": "~43 d"} |
+| RC1D B2 vs B0 (4h) | time (accumulation) | {"blocks": 5, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 43.35, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 215, "rate_per_day": 4.96, "time_to_checkpoint": "~41 d"} |
+| RC1D B2 vs B0 (72h) | time (accumulation) | {"blocks": 4, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 43.35, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 205, "rate_per_day": 4.73, "time_to_checkpoint": "~45 d"} |
+| Companion B2 vs B1 (24h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 16, "paired": 167} |
+| Companion B2 vs B1 (4h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 18, "paired": 170} |
 | Companion B2 vs B1 (72h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 13, "paired": 165} |
-| PS1 paper sizing | infrastructure capability | {"checkpoint": {}, "coverage": 0.7717, "intervals": 168, "outcomes": {"executed": 169, "missed: no run": 6, "missed: stale: processed after close + max_delay": 8, "no-rebalance: forecast unavailable": 36}} |
+| PS1 paper sizing | infrastructure capability | {"checkpoint": {}, "coverage": 0.7727, "intervals": 169, "outcomes": {"executed": 170, "missed: no run": 6, "missed: stale: processed after close + max_delay": 8, "no-rebalance: forecast unavailable": 36}} |
 
 Rules: only with >= 5 qualifying observations; 90% Garwood interval on the rate. observed zero (collection capable) is reported separately from not observable; an unobservable rate is null, never 0.0. no design, threshold or evaluation version is changed by this report.
