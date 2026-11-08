@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-08T08:21:33.660Z. Integrity: ok.
+Generated 2026-11-08T08:46:36.506Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,35 +16,35 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-08T08:21:23.730Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-08T08:21:28.137Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-08T08:21:28.490Z
-- options_30d published report: fresh; last successful refresh: 2026-11-08T08:21:32.941Z
+- v1 published report: fresh; last successful refresh: 2026-11-08T08:46:29.852Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-08T08:46:32.933Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-08T08:46:33.174Z
+- options_30d published report: fresh; last successful refresh: 2026-11-08T08:46:36.002Z
 
 ## Coverage
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
 | turnover | 5/5 | 100.0% | 0 |
-| range | 5/5 | 100.0% | 0 |
-| state | 21/23 | 91.3% | 0 |
-| paired | 94/94 | 100.0% | 0 |
-| state_v2 | 23/23 | 100.0% | 0 |
+| range | 6/6 | 100.0% | 0 |
+| state | 21/24 | 87.5% | 1 |
+| paired | 93/93 | 100.0% | 0 |
+| state_v2 | 24/24 | 100.0% | 0 |
 | stress | 47/47 | 100.0% | 0 |
-| liquidations | 91/92 | 98.9% | 0 |
+| liquidations | 95/96 | 99.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 23/23 | 100.0% | 0 |
 | options usability rr25_30d | 0/23 | 0.0% | 23 |
 
 turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-range: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state: 23/23 closed opportunities recorded; 21 eligible forecasts; 2 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state: 24/24 closed opportunities recorded; 21 eligible forecasts; 3 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 94/94 closed opportunities recorded; 94 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 93/93 closed opportunities recorded; 93 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state_v2: 23/23 closed opportunities recorded; 23 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state_v2: 24/24 closed opportunities recorded; 24 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 ## Since recovery deployment
 
@@ -54,11 +54,11 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
 | turnover | 45/79 | 1 |
-| range | 45/79 | 1 |
-| state | 241/319 | 0 |
-| paired | 1266/1276 | 2 |
-| stress | 634/638 | 1 |
-| liquidations | 1265/1276 | 4 |
+| range | 46/80 | 0 |
+| state | 241/320 | 0 |
+| paired | 1267/1277 | 3 |
+| stress | 635/639 | 1 |
+| liquidations | 1269/1280 | 0 |
 | options | 50/319 | 0 |
 
 ## Diagnostics
@@ -69,7 +69,7 @@ Warnings:
 - options rr25_30d: 0/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 1303 scored forecasts; 1137 unique entries; 301 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 1305 scored forecasts; 1138 unique entries; 301 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 3 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.0 / 31.05.
@@ -93,9 +93,9 @@ Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median
 
 Selected rr25_30d legs: 0 usable captures, 0 leg observations. Quote age median (ms): None; relative spread median: None. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 288 scores reproduced.
+State v2 numerical replay: verified, 289 scores reproduced.
 
-State v2 evidence: 288/1680 scored observations for the frozen minimum interval threshold; 1/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 289/1680 scored observations for the frozen minimum interval threshold; 1/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 192 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 436.0 / 665.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
