@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-08T22:32:08.343Z. Integrity: ok.
+Generated 2026-11-08T22:37:24.333Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-08T22:31:56.226Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-08T22:32:01.824Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-08T22:32:02.249Z
-- options_30d published report: fresh; last successful refresh: 2026-11-08T22:32:07.310Z
+- v1 published report: fresh; last successful refresh: 2026-11-08T22:37:11.269Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-08T22:37:17.231Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-08T22:37:17.769Z
+- options_30d published report: fresh; last successful refresh: 2026-11-08T22:37:23.276Z
 
 ## Coverage
 
@@ -28,10 +28,10 @@ None.
 | turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 20/24 | 83.3% | 0 |
-| paired | 93/93 | 100.0% | 0 |
+| paired | 94/94 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 95/96 | 99.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 23/23 | 100.0% | 0 |
 | options usability rr25_30d | 0/23 | 0.0% | 23 |
@@ -42,7 +42,7 @@ range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. A
 
 state: 24/24 closed opportunities recorded; 20 eligible forecasts; 4 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 93/93 closed opportunities recorded; 93 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 94/94 closed opportunities recorded; 94 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 24/24 closed opportunities recorded; 24 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -56,9 +56,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 49/83 | 0 |
 | range | 49/83 | 0 |
 | state | 253/334 | 0 |
-| paired | 1322/1332 | 3 |
-| stress | 662/666 | 2 |
-| liquidations | 1321/1332 | 3 |
+| paired | 1323/1333 | 2 |
+| stress | 663/667 | 1 |
+| liquidations | 1324/1336 | 0 |
 | options | 50/333 | 0 |
 
 ## Diagnostics
@@ -93,9 +93,9 @@ Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median
 
 Selected rr25_30d legs: 0 usable captures, 0 leg observations. Quote age median (ms): None; relative spread median: None. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 302 scores reproduced.
+State v2 numerical replay: verified, 303 scores reproduced.
 
-State v2 evidence: 302/1680 scored observations for the frozen minimum interval threshold; 1/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 303/1680 scored observations for the frozen minimum interval threshold; 1/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 192 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 451.5 / 648.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
