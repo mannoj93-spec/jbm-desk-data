@@ -1,6 +1,6 @@
 {
   "schema": "options-30d-maturity/1",
-  "generated_ms": 1794124371564,
+  "generated_ms": 1794125987608,
   "activation": {
     "commit": "1bdff0904c4de8cbe7ebd8bab9ddcb2849f745a8",
     "confirmed_ms": 1793981977420,
@@ -8,21 +8,21 @@
     "registration_sha": "eb6b456f715c847563cc3c5744860a4aa904fb45d6e55093e2951c758d9163a2"
   },
   "state": "active",
-  "closed": 38,
-  "captured": 38,
+  "closed": 39,
+  "captured": 39,
   "pending_captured": 1,
   "horizons": {
     "30": {
       "paired": {
         "both": 0,
-        "gained": 38,
+        "gained": 39,
         "lost": 0,
         "neither": 0
       },
       "missing_capture": 0,
       "states": {
-        "eligible-45d:no-eligible-bracket": 38,
-        "eligible-90d:ok": 38
+        "eligible-45d:no-eligible-bracket": 39,
+        "eligible-90d:ok": 39
       },
       "joint_value_difference": {
         "n": 0,
@@ -38,7 +38,7 @@
           "mean": null
         },
         "eligible-90d": {
-          "n": 38,
+          "n": 39,
           "min": 28.0,
           "max": 28.0,
           "mean": 28.0
@@ -47,33 +47,33 @@
     }
   },
   "books": {
-    "expected": 152,
-    "attempted": 132,
-    "usable": 132,
+    "expected": 156,
+    "attempted": 136,
+    "usable": 136,
     "states": {
-      "completed": 33,
+      "completed": 34,
       "source-too-old": 5
     },
     "quote_states": {
-      "ok": 132
+      "ok": 136
     },
     "source_to_book_ms": {
-      "n": 132,
+      "n": 136,
       "min": 138314,
       "max": 345254,
-      "mean": 187297.80303030304
+      "mean": 186215.5588235294
     },
     "bid_size": {
-      "n": 132,
+      "n": 136,
       "min": 0.1,
       "max": 265.8,
-      "mean": 65.56439393939394
+      "mean": 65.46691176470588
     },
     "ask_size": {
-      "n": 132,
+      "n": 136,
       "min": 0.6,
       "max": 161.0,
-      "mean": 49.76439393939393
+      "mean": 49.824999999999996
     }
   },
   "interpretation": "Separate prospective maturity experiment. Compare nearest eligible expiries within 45 versus 90 days, with identical leg filters and a 35-day maximum span in both arms. Repeated captures are dependent; usability is not predictive skill."

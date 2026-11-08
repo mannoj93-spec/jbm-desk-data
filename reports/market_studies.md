@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-11-08T07:52:45.422Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-08T08:19:36.347Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
-| turnover | collecting (descriptive) | 87 | 51 | 51 |
-| range | collecting (descriptive) | 87 | 45 | 39 |
-| state | collecting (descriptive) | 350 | 253 | 250 |
-| paired | collecting (descriptive) | 1400 | 1306 | 1301 |
+| turnover | collecting (descriptive) | 88 | 52 | 52 |
+| range | collecting (descriptive) | 88 | 46 | 39 |
+| state | collecting (descriptive) | 351 | 253 | 250 |
+| paired | collecting (descriptive) | 1402 | 1308 | 1303 |
 
 ## Primary comparisons
 
@@ -15,10 +15,10 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 
 | Study | Paired difference | 90% block interval | First verified launch |
 |---|---:|---|---|
-| turnover | -0.120701 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
+| turnover | -0.114472 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
 | range | 0.00398566 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | -0.00166874 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
-| paired | -0.000912759 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
+| paired | -0.000911358 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
 
@@ -26,14 +26,14 @@ Returns, costs and turnover below cover closed intervals. Each latest trade open
 
 | Scenario / arm | Net return | Annualized risk | Exposure | Drawdown | Annual turnover | Costs (USDT) |
 |---|---:|---:|---:|---:|---:|---:|
-| ordinary/B2_05 | -3.73% | 13.37% | 65.15% | 4.13% | 109.114 | 508.442 |
-| ordinary/B2_10 | -4.20% | 14.55% | 64.88% | 4.63% | 90.7544 | 467.869 |
-| ordinary/VOL_05 | -2.90% | 18.35% | 44.19% | 3.74% | 18.322 | 78.3691 |
-| ordinary/VOL_10 | -2.75% | 16.88% | 45.58% | 3.54% | 15.3567 | 65.5761 |
-| stressed/B2_05 | -4.10% | 13.30% | 65.16% | 4.40% | 109.115 | 887.257 |
-| stressed/B2_10 | -4.51% | 14.46% | 64.89% | 4.84% | 90.7468 | 782.71 |
-| stressed/VOL_05 | -2.96% | 18.31% | 44.20% | 3.75% | 18.3326 | 142.3 |
-| stressed/VOL_10 | -2.80% | 16.86% | 45.60% | 3.54% | 15.3753 | 119.284 |
+| ordinary/B2_05 | -3.76% | 13.23% | 65.18% | 4.13% | 107.91 | 508.442 |
+| ordinary/B2_10 | -4.24% | 14.40% | 64.90% | 4.63% | 89.7591 | 467.869 |
+| ordinary/VOL_05 | -2.92% | 18.17% | 44.07% | 3.74% | 18.1173 | 78.3691 |
+| ordinary/VOL_10 | -2.77% | 16.71% | 45.44% | 3.54% | 15.1849 | 65.5761 |
+| stressed/B2_05 | -4.13% | 13.16% | 65.19% | 4.40% | 107.916 | 887.257 |
+| stressed/B2_10 | -4.55% | 14.32% | 64.92% | 4.84% | 89.7551 | 782.71 |
+| stressed/VOL_05 | -2.98% | 18.13% | 44.08% | 3.75% | 18.1278 | 142.3 |
+| stressed/VOL_10 | -2.82% | 16.69% | 45.46% | 3.54% | 15.2033 | 119.284 |
 
 ## Range calibration
 
@@ -48,18 +48,18 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 | Horizon | Arm | Scored | Directional | Neutral | Conditional hit rate |
 |---|---|---:|---:|---:|---:|
-| 60m | perp_original_clock | 1301 | 801 | 500 | 48.56% |
-| 60m | perp_synchronized_clock | 1301 | 801 | 500 | 48.56% |
-| 60m | combined_synchronized_clock | 1301 | 794 | 507 | 48.74% |
-| 15m | perp_original_clock | 1301 | 801 | 500 | 47.07% |
-| 15m | perp_synchronized_clock | 1301 | 801 | 500 | 47.07% |
-| 15m | combined_synchronized_clock | 1301 | 794 | 507 | 46.47% |
+| 60m | perp_original_clock | 1303 | 802 | 501 | 48.50% |
+| 60m | perp_synchronized_clock | 1303 | 802 | 501 | 48.50% |
+| 60m | combined_synchronized_clock | 1303 | 795 | 508 | 48.68% |
+| 15m | perp_original_clock | 1303 | 802 | 501 | 47.01% |
+| 15m | perp_synchronized_clock | 1303 | 802 | 501 | 47.01% |
+| 15m | combined_synchronized_clock | 1303 | 795 | 508 | 46.42% |
 
 ## Data usability pilots
 
-- Options: 350 captures; usable 7d RR25 in 295, usable 30d RR25 in 86; 271 valid hourly changes.
-- Liquidations: 937 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 3, "missed": 66, "ok": 1302}`.
-- Exchange stress: 700/700 scheduled records. Capture states: `{"missed": 43, "ok": 657}`. Ratings: `{"low": 657}`.
+- Options: 351 captures; usable 7d RR25 in 296, usable 30d RR25 in 86; 272 valid hourly changes.
+- Liquidations: 940 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 3, "missed": 66, "ok": 1306}`.
+- Exchange stress: 701/701 scheduled records. Capture states: `{"missed": 43, "ok": 658}`. Ratings: `{"low": 658}`.
 
 These pilots measure availability and revisions; they are not predictive evidence. Unknown source coverage is never zero activity.
 
