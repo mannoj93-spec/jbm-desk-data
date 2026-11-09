@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-09T11:32:26.042Z. Integrity: ok.
+Generated 2026-11-09T11:47:08.109Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-09T11:32:15.345Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-09T11:32:20.124Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-09T11:32:20.508Z
-- options_30d published report: fresh; last successful refresh: 2026-11-09T11:32:24.878Z
+- v1 published report: fresh; last successful refresh: 2026-11-09T11:46:54.632Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-09T11:47:00.724Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-09T11:47:01.189Z
+- options_30d published report: fresh; last successful refresh: 2026-11-09T11:47:06.826Z
 
 ## Coverage
 
@@ -30,8 +30,8 @@ None.
 | state | 16/24 | 66.7% | 0 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 85/92 | 92.4% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 89/96 | 92.7% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 23/23 | 100.0% | 0 |
 | options usability rr25_30d | 0/23 | 0.0% | 23 |
@@ -56,9 +56,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 52/86 | 0 |
 | range | 52/86 | 0 |
 | state | 260/347 | 0 |
-| paired | 1374/1384 | 3 |
-| stress | 688/692 | 2 |
-| liquidations | 1366/1384 | 4 |
+| paired | 1375/1385 | 3 |
+| stress | 689/693 | 1 |
+| liquidations | 1370/1388 | 0 |
 | options | 50/346 | 0 |
 
 ## Diagnostics
@@ -71,7 +71,7 @@ Warnings:
 - options rr25_30d: 0/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 1411 scored forecasts; 1227 unique entries; 324 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 1413 scored forecasts; 1228 unique entries; 324 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 8 abstentions; 0 unavailable depth ages. Median/max age in minutes: 16.0 / 31.0.
@@ -95,9 +95,9 @@ Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median
 
 Selected rr25_30d legs: 0 usable captures, 0 leg observations. Quote age median (ms): None; relative spread median: None. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 315 scores reproduced.
+State v2 numerical replay: verified, 316 scores reproduced.
 
-State v2 evidence: 315/1680 scored observations for the frozen minimum interval threshold; 1/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 316/1680 scored observations for the frozen minimum interval threshold; 1/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 192 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 482.0 / 690.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
