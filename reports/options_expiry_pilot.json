@@ -1,6 +1,6 @@
 {
   "schema": "options-expiry-pilot/1",
-  "generated_ms": 1794189394580,
+  "generated_ms": 1794190624912,
   "activation": {
     "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
     "confirmed_ms": 1793152036181,
@@ -8,21 +8,21 @@
     "registration_sha": "de4f07467397f5339782ec934a41f71e30d3c14eaaf43964b721289ef488211a"
   },
   "state": "active",
-  "closed": 287,
-  "captured": 287,
+  "closed": 288,
+  "captured": 288,
   "pending_captured": 1,
   "horizons": {
     "7": {
       "paired": {
-        "both": 237,
+        "both": 238,
         "gained": 49,
         "lost": 0,
         "neither": 1
       },
       "missing_capture": 0,
       "states": {
-        "nearest-eligible:ok": 286,
-        "nearest-listed:ok": 237,
+        "nearest-eligible:ok": 287,
+        "nearest-listed:ok": 238,
         "nearest-listed:1NOV26:no-25-delta-strike|6NOV26:ok": 2,
         "nearest-listed:1NOV26:low-oi|6NOV26:ok": 10,
         "nearest-listed:2NOV26:no-25-delta-strike|6NOV26:ok": 5,
@@ -36,23 +36,23 @@
         "nearest-listed:9NOV26:low-oi|13NOV26:stale": 1
       },
       "joint_value_difference": {
-        "n": 237,
+        "n": 238,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 237,
+          "n": 238,
           "min": 3.9999999999999996,
           "max": 7.000000000000001,
-          "mean": 6.320675105485232
+          "mean": 6.323529411764706
         },
         "nearest-eligible": {
-          "n": 286,
+          "n": 287,
           "min": 3.9999999999999996,
           "max": 7.000000000000001,
-          "mean": 6.244755244755245
+          "mean": 6.2473867595818815
         }
       }
     },
@@ -61,14 +61,14 @@
         "both": 6,
         "gained": 0,
         "lost": 0,
-        "neither": 281
+        "neither": 282
       },
       "missing_capture": 0,
       "states": {
         "nearest-eligible:ok": 6,
         "nearest-listed:ok": 6,
-        "nearest-eligible:no-eligible-bracket": 281,
-        "nearest-listed:no-bracketing-expiry": 281
+        "nearest-eligible:no-eligible-bracket": 282,
+        "nearest-listed:no-bracketing-expiry": 282
       },
       "joint_value_difference": {
         "n": 6,
@@ -93,36 +93,36 @@
     }
   },
   "books": {
-    "expected": 1168,
-    "attempted": 1100,
-    "usable": 1096,
+    "expected": 1172,
+    "attempted": 1104,
+    "usable": 1100,
     "states": {
-      "completed": 270,
+      "completed": 271,
       "source-too-old": 17
     },
     "quote_states": {
-      "ok": 1096,
+      "ok": 1100,
       "unavailable": 4
     },
     "source_to_book_ms": {
-      "n": 1096,
+      "n": 1100,
       "min": 128527,
       "max": 477503,
-      "mean": 199002.5310218978,
-      "median": 157327.0,
+      "mean": 199072.31818181818,
+      "median": 157332.5,
       "p90": 319225
     },
     "bid_size": {
-      "n": 1096,
+      "n": 1100,
       "min": 0.1,
       "max": 302.0,
-      "mean": 75.34981751824817
+      "mean": 75.63
     },
     "ask_size": {
-      "n": 1096,
+      "n": 1100,
       "min": 0.1,
       "max": 229.1,
-      "mean": 73.2780109489051
+      "mean": 73.20418181818182
     }
   },
   "interpretation": "Repeated horizons and contracts are dependent. A usability gain does not demonstrate predictive skill."
