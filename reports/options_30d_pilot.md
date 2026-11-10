@@ -1,15 +1,15 @@
 # Prospective 30-day options maturity pilot
 
-State: active. Captures: 88/89 closed hours.
+State: active. Captures: 89/90 closed hours.
 
 Control: nearest eligible expiries within 45 days. Alternate: within 90 days. Both capped at a 35-day span.
 Identical frozen leg filters and source capture; no extrapolation. Later books do not alter quote eligibility.
 
 | Horizon | Both usable | Gained | Lost | Neither | Missing capture |
 |---|---:|---:|---:|---:|---:|
-| 30d | 1 | 86 | 0 | 1 | 1 |
+| 30d | 2 | 86 | 0 | 1 | 1 |
 
-Books: 316 usable / 316 attempted / 348 selected distinct contracts across hours.
+Books: 320 usable / 320 attempted / 352 selected distinct contracts across hours.
 Quote sizes, source-to-book lag, spans, value differences and failure reasons: [JSON report](options_30d_pilot.json).
 
 Separate prospective maturity experiment. Compare nearest eligible expiries within 45 versus 90 days, with identical leg filters and a 35-day maximum span in both arms. Repeated captures are dependent; usability is not predictive skill.
