@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-10T17:02:41.102Z. Integrity: ok.
+Generated 2026-11-10T17:13:51.198Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-10T17:02:27.179Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-10T17:02:33.407Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-10T17:02:33.854Z
-- options_30d published report: fresh; last successful refresh: 2026-11-10T17:02:39.569Z
+- v1 published report: fresh; last successful refresh: 2026-11-10T17:13:42.441Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-10T17:13:46.085Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-10T17:13:46.364Z
+- options_30d published report: fresh; last successful refresh: 2026-11-10T17:13:49.746Z
 
 ## Coverage
 
@@ -28,13 +28,13 @@ None.
 | turnover | 5/5 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 15/23 | 65.2% | 0 |
-| paired | 93/93 | 100.0% | 0 |
+| paired | 94/94 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options capture | 22/22 | 100.0% | 0 |
-| options usability rr25_7d | 14/22 | 63.6% | 8 |
-| options usability rr25_30d | 7/22 | 31.8% | 0 |
+| options capture | 23/23 | 100.0% | 0 |
+| options usability rr25_7d | 14/23 | 60.9% | 9 |
+| options usability rr25_30d | 8/23 | 34.8% | 0 |
 
 turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -42,7 +42,7 @@ range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. A
 
 state: 23/23 closed opportunities recorded; 15 eligible forecasts; 8 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 93/93 closed opportunities recorded; 93 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 94/94 closed opportunities recorded; 94 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 23/23 closed opportunities recorded; 23 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -56,10 +56,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 59/93 | 1 |
 | range | 60/94 | 0 |
 | state | 276/376 | 0 |
-| paired | 1492/1502 | 3 |
-| stress | 747/751 | 2 |
+| paired | 1493/1503 | 2 |
+| stress | 748/752 | 1 |
 | liquidations | 1486/1504 | 4 |
-| options | 50/375 | 0 |
+| options | 50/376 | 0 |
 
 ## Diagnostics
 
@@ -68,8 +68,8 @@ Training readiness, per-opportunity reasons and source confirmations, publicatio
 Warnings:
 - state: 8/23 recorded closed opportunities abstained in 24h (>20%; operational warning only)
 - state: last-24h operational coverage below 80% (not a research threshold)
-- options rr25_7d: 14/22 closed opportunities usable (<80%; quality warning, not a collection outage)
-- options rr25_30d: 7/22 closed opportunities usable (<80%; quality warning, not a collection outage)
+- options rr25_7d: 14/23 closed opportunities usable (<80%; quality warning, not a collection outage)
+- options rr25_30d: 8/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
 Paired study: 1530 scored forecasts; 1332 unique entries; 351 windows in the largest disjoint subset. These are not independent-sample counts.
