@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-10T17:32:06.277Z. Integrity: ok.
+Generated 2026-11-10T17:47:55.530Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,27 +16,27 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-10T17:31:57.203Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-10T17:32:00.948Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-10T17:32:01.257Z
-- options_30d published report: fresh; last successful refresh: 2026-11-10T17:32:05.276Z
+- v1 published report: fresh; last successful refresh: 2026-11-10T17:47:42.981Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-10T17:47:48.558Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-10T17:47:49.288Z
+- options_30d published report: fresh; last successful refresh: 2026-11-10T17:47:54.246Z
 
 ## Coverage
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
-| turnover | 5/5 | 100.0% | 0 |
+| turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 15/24 | 62.5% | 1 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 14/23 | 60.9% | 9 |
 | options usability rr25_30d | 8/23 | 34.8% | 0 |
 
-turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -53,12 +53,12 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 59/93 | 1 |
+| turnover | 60/94 | 0 |
 | range | 60/94 | 0 |
 | state | 276/377 | 0 |
-| paired | 1494/1504 | 3 |
-| stress | 748/752 | 2 |
-| liquidations | 1486/1504 | 4 |
+| paired | 1495/1505 | 3 |
+| stress | 749/753 | 1 |
+| liquidations | 1490/1508 | 0 |
 | options | 50/376 | 0 |
 
 ## Diagnostics
@@ -95,9 +95,9 @@ Selected rr25_7d legs: 14 usable captures, 56 leg observations. Quote age median
 
 Selected rr25_30d legs: 9 usable captures, 36 leg observations. Quote age median (ms): 4802.0; relative spread median: 0.05064102564102568. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 345 scores reproduced.
+State v2 numerical replay: verified, 346 scores reproduced.
 
-State v2 evidence: 345/1680 scored observations for the frozen minimum interval threshold; 2/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 346/1680 scored observations for the frozen minimum interval threshold; 2/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 184 usable / 184 attempted / 184 selected in 24h; median/p90 source lag (ms): 504.0 / 719.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
