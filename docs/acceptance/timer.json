@@ -13,7 +13,16 @@
   {
    "date": "2026-10-07",
    "change": "job id 8579326 pinned (repo 2.28.1); first export: docs/acceptance/receipts/2026-10-07-cron-job-org.json"
+  },
+  {
+   "date": "2026-11-11",
+   "change": "token expiry field added, unrecorded (repo 2.30.9)"
   }
  ],
- "job_title": "JBM recovery dispatcher"
+ "job_title": "JBM recovery dispatcher",
+ "token": {
+  "expires_utc": null,
+  "recorded": "not recorded - the operator reads the expiry of the fine-grained token used by this job in GitHub (Settings > Developer settings > Fine-grained tokens) and records it here as YYYY-MM-DDTHH:MM:SSZ",
+  "note": "created about 2026-10-05 to 2026-10-07 with an expiry of at most one year; the repository cannot read it. reports/health.md warns 30 days before a recorded expiry and says 'not recorded' until then."
+ }
 }

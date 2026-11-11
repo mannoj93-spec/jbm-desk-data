@@ -221,7 +221,7 @@ class HealthAndWatchdogTests(unittest.TestCase):
         # 2.28: the other run's jobs (a collector job standing in) ran setup steps but no range check step; 2.27 called
         # that "check executed" and a detection (review counterexample 5) - it detected nothing
         self.assertEqual(m["workflows"]["range-monitor.yml"]["last_check"], "failed before checking")
-        self.assertEqual(m["could_not_execute"], ["range-monitor.yml", "watchdog.yml"])
+        self.assertEqual(m["could_not_execute"], ["range-monitor.yml", "range-readiness.yml", "watchdog.yml"])   # 2.30.9 adds readiness
         self.assertEqual(m["problems_detected_by"], [])
 
     def test_unknown_ps1_action_is_an_invalid_problem_state(self):

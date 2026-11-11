@@ -46,7 +46,7 @@ operational alert rules, diagnostic outputs, pause behavior and the separation f
 | Collector (`collect.yml`, formerly *Hourly collector*) | Every 15 minutes at :07, :22, :37, :52 UTC; manual; manual backfill | Preserve history, snapshots, liquidations, forward books and registration records |
 | Forecast intake | Owner's forecast issues opened/edited/reopened; hourly :37 recovery; manual | Validate, freeze, persist, then acknowledge a forecast |
 | Weekly report | Monday 00:30 UTC; manual | Coverage, errors, scores of the issue-intake forecasts, research summaries, review candidates (desk range forecasts are scored hourly, below) |
-| Collector watchdog | Every 30 minutes at :17 and :47 UTC; manual | Fails (so GitHub emails the owner) when the collector is stale or missing, or running but failing |
+| Collector watchdog | Every 30 minutes at :17 and :47 UTC (native schedule: 4 of 48 starts arrived on Nov 10-11 2026); manual | Fails (so GitHub emails the owner) when the collector is stale or missing, or running but failing, or (2.30.9) when the external timer has not arrived for 45 minutes |
 | Research lab (`research.yml`) | Every 6 hours at :41 (00:41 UTC also runs a 60-day reconstruction); manual | Versioned events, outcomes, experiments and evidence cards, `reports/research.md`, `reports/skill_proposals.md`, and the coverage refresh of `reports/latest.md`; computes without the write lock, merges into a fresh checkout and commits through `repo-write` |
 | Regression and numerical fixtures | Code/workflow pushes and pull requests; manual | Arithmetic fixtures and offline failure-path regression tests |
 | Range forecasts (`range.yml`) | 00:02, 04:02, 08:02, 12:02, 16:02, 20:02 UTC; manual | Desk tests and release drift check, monthly fit validation/refit, one registration batch per 4H close, publication confirmation, `reports/range_status.json` and `reports/range.md`; holds `repo-write` |
@@ -114,6 +114,27 @@ reported about 90–120 minutes after its last run, plus any delay in starting t
 watchdog runs on the same Actions scheduler, so a platform-wide scheduling outage silences both
 (observed Oct 3 2026: no scheduled run of any workflow from 11:17:56Z to 13:26:49Z; then, from 13:26:49Z, no scheduled collector run for at least 109 minutes while GitHub delivered only six scheduled runs of other workflows through 15:15Z, the 12:00Z Range forecasts schedule arriving 2 h 57 min late and correctly refusing the stale bar; cause not established). From 2.24 the
 watchdog keeps reporting a recovered gap as a warning for a day instead of turning plainly green.
+
+**Native schedule as the secondary trigger (2.30.9; operator decision, Nov 11 2026).** The external timer starts
+almost every run (Nov 8-10 2026: 5, 3 and 4 native collector starts a day beside 96-100 automated runs), so a native
+silence is no longer an incident. `health.py` stops writing a `collector_gap` row per silence and writes one
+`native_schedule_day` summary row per closed UTC day (native starts, automated runs, silences over the limit, longest
+silence); rows already recorded stay. Every silence in the 72-hour lookback is still listed in `reports/health.json`.
+The watchdog prints one line counting recovered native silences instead of one warning each, and gains a second step,
+**Check external timer arrivals**, which fails when no external arrival is on record for more than 45 minutes or the
+arrivals cannot be read. Limit that this does not remove: the watchdog itself starts on the native schedule. In the
+24 hours to 2026-11-11T15:45Z it ran 4 times of 48 scheduled, with gaps up to 473 minutes, so a silent external
+timer is reported when the watchdog next happens to start - hours, not the 90-120 minutes above. The operator
+declined an independent alert (a hosted dead-man ping, or the hourly Claude task reading `reports/health.json`) on
+Nov 11 2026.
+
+**Timer token expiry (2.30.9).** The fine-grained token behind the external timer expires; a 401 from GitHub then
+stops the primary trigger. `docs/acceptance/timer.json` carries `token.expires_utc`, recorded by the operator (the
+repository cannot read it). `reports/health.md` shows `expiry not recorded` until it is filled, `expiring` within
+30 days, and `expired` after.
+
+**Record integrity (2.30.9).** `health.py` used to skip a line it could not parse. It still skips it, and now counts
+it by file under `integrity.malformed_lines` and in `reports/health.md`: malformed is not absent.
 
 **Operational health (2.24).** Every collector run executes `health.py --record` (read-only over all
 research and forecast records; never fails the collector). It writes `reports/health.{json,md}` and
@@ -275,7 +296,8 @@ cutoff, and publishing hours later would present the freeze as on time. The next
 
 **Independent alerting.** The external scheduler's failure notifications cover a refused dispatch call; GitHub's
 failed-run notifications cover a failing dispatcher or service watch. Neither reports a silence of the external
-scheduler itself; an hourly Claude scheduled task reading `reports/health.json` remains an option, not configured.
+scheduler itself. From 2.30.9 the watchdog's external-timer step does, but only when the watchdog starts (see
+"Native schedule as the secondary trigger"). The operator declined an independent alert on Nov 11 2026.
 
 **Release gate (repo 2.24.1; push guard 2.25).** `release-check.yml` (job `release`, check context `release`) verifies `SHA256SUMS`
 and `desk/release.json` on every pull request. The gate makes it required on `main` with a ruleset. GitHub does not
