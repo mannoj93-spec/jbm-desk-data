@@ -79,24 +79,90 @@ class HealthTests(unittest.TestCase):
     def ev(self, at, **kw):
         return H.evaluate(self.b.d, now_ms=MS(at), stale_min=90, **kw)
 
-    def test_ongoing_gap_then_recovery_recorded_once_each(self):
+    def test_native_silence_stays_in_the_report_and_gets_no_incident_row_of_its_own(self):
+        # Repo 2.30.9: the native schedule is the secondary trigger. A silence is still measured and listed in the
+        # report at every evaluation, but it is no longer one incident row per silence.
         during = T0 + dt.timedelta(hours=13)
         d1 = self.ev(during)
         self.assertEqual(d1["source"]["state"], "stale")
         self.assertIsNone(d1["source"]["gaps"][-1]["end_utc"])
-        new = H.record(self.b.d, d1)
-        self.assertEqual([r["status"] for r in new if r["kind"] == "collector_gap"], ["ongoing"])
-        self.assertEqual([r for r in H.record(self.b.d, self.ev(during + dt.timedelta(minutes=10))) if r["kind"] == "collector_gap"], [])
+        self.assertEqual([r for r in H.record(self.b.d, d1) if r["kind"] == "collector_gap"], [])
         self.b.runs([T0 + dt.timedelta(hours=13, minutes=27)])
-        after = T0 + dt.timedelta(hours=13, minutes=40)
-        d2 = self.ev(after)
+        d2 = self.ev(T0 + dt.timedelta(hours=13, minutes=40))
         self.assertEqual(d2["source"]["state"], "healthy")
         self.assertEqual(d2["source"]["gaps"][0]["end_utc"], "2026-10-03T13:27:00Z")     # stays visible after recovery
-        new = [r for r in H.record(self.b.d, d2) if r["kind"] == "collector_gap"]
-        self.assertEqual((len(new), new[0]["status"], new[0]["recorded_after_end"]), (1, "resolved", True))
-        self.assertEqual(new[0]["first_recorded_utc"], "2026-10-03T13:40:00Z")            # detection != event time
-        self.assertEqual(new[0]["start_utc"], "2026-10-03T11:00:00Z")          # last scheduled record before the gap
-        self.assertEqual([r for r in H.record(self.b.d, self.ev(after + dt.timedelta(minutes=15))) if r["kind"] == "collector_gap"], [])
+        self.assertEqual([r for r in H.record(self.b.d, d2) if r["kind"] == "collector_gap"], [])
+        self.assertIn("1 silence(s) over 90 min", H.markdown(d2))
+
+    def test_native_schedule_is_summarized_once_per_closed_day(self):
+        self.b.runs([T0 + dt.timedelta(hours=13, minutes=27)])                 # one native start after a 147-min silence
+        same_day = self.ev(T0 + dt.timedelta(hours=14))
+        self.assertEqual(same_day["source"]["native_daily"], [])               # the day has not closed: no summary yet
+        self.assertEqual([r for r in H.record(self.b.d, same_day) if r["kind"] == "native_schedule_day"], [])
+        nxt = T0 + dt.timedelta(days=1, hours=2)
+        d = self.ev(nxt)
+        day = d["source"]["native_daily"]
+        self.assertEqual([(x["day"], x["native_runs"], x["automated_runs"], x["native_gaps_over_limit"]) for x in day],
+                         [("2026-10-03", 46, 46, 1)])
+        self.assertEqual(day[0]["longest_native_silence_min"], 633.0)          # 13:27 to midnight: day edges count
+        new = [r for r in H.record(self.b.d, d) if r["kind"] == "native_schedule_day"]
+        self.assertEqual([(r["start_utc"], r["end_utc"], r["status"], r["native_runs"], r["recorded_after_end"]) for r in new],
+                         [("2026-10-03T00:00:00Z", "2026-10-04T00:00:00Z", "summary", 46, True)])
+        again = H.record(self.b.d, self.ev(nxt + dt.timedelta(hours=3)))       # recorded once, never again
+        self.assertEqual([r for r in again if r["kind"] == "native_schedule_day"], [])
+        self.assertIn("2026-10-03 46 of 46 automated runs", H.markdown(d))
+
+    def test_malformed_lines_are_counted_not_dropped_silently(self):
+        clean = self.ev(T0 + dt.timedelta(hours=11))
+        self.assertEqual(clean["integrity"]["malformed_lines"], {})
+        self.assertIn("no malformed lines", H.markdown(clean))
+        p = Path(self.b.d) / "state/incidents.jsonl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text('{"kind": "service_gap", "subject": "x", "start_utc": "a", "end_utc": "b"}\n{"kind": "torn\n[1, 2]\n\n')
+        d = self.ev(T0 + dt.timedelta(hours=11))
+        self.assertEqual(d["integrity"]["malformed_lines"], {"state/incidents.jsonl": 2})   # torn line and a non-object; blank is nothing
+        self.assertIn("MALFORMED LINES SKIPPED - state/incidents.jsonl 2", H.markdown(d))
+        self.assertEqual(len(H.rows(p)), 1)
+        p.write_text('{"kind": "service_gap", "subject": "x", "start_utc": "a", "end_utc": "b"}\n')
+        self.assertEqual(self.ev(T0 + dt.timedelta(hours=11))["integrity"]["malformed_lines"], {})
+
+    def test_timer_token_expiry_is_unrecorded_until_the_operator_records_it(self):
+        now = T0 + dt.timedelta(hours=11)
+        d = self.ev(now)
+        self.assertEqual(d["timer_token"]["state"], "unrecorded")
+        self.assertIn("expiry not recorded", H.markdown(d))
+        decl = Path(self.b.d) / "docs/acceptance/timer.json"
+        decl.parent.mkdir(parents=True, exist_ok=True)
+        for expires, state in [("2027-10-05T00:00:00Z", "ok"), ("2026-10-20T00:00:00Z", "expiring"),
+                               ("2026-10-03T11:00:00Z", "expired"), ("2026-10-01T00:00:00Z", "expired")]:
+            decl.write_text(json.dumps({"token": {"expires_utc": expires, "recorded": "test"}}))
+            self.assertEqual(self.ev(now)["timer_token"]["state"], state, expires)
+        for bad in [{"token": {"expires_utc": "soon"}}, {"token": {"expires_utc": None}}, {"token": "x"}, {}]:
+            decl.write_text(json.dumps(bad))
+            self.assertEqual(self.ev(now)["timer_token"]["state"], "unrecorded", bad)   # unreadable is never 'ok'
+        decl.write_text(json.dumps({"token": {"expires_utc": "2026-10-20T00:00:00Z"}}))
+        self.assertIn("expiring; expires 2026-10-20T00:00:00Z", H.markdown(self.ev(now)))
+
+    def test_timer_check_fails_on_a_silent_or_unreadable_primary_trigger(self):
+        now = dt.datetime(2026, 10, 5, 20, 20, tzinfo=dt.timezone.utc)
+        def opener_for(created):
+            class Resp:
+                def __enter__(self_): return self_
+                def __exit__(self_, *a): return False
+                def read(self_): return json.dumps({"workflow_runs": [
+                    {"event": "workflow_dispatch", "display_title": "Recovery dispatcher (external)", "created_at": c}
+                    for c in created]}).encode()
+            return lambda req, timeout=20: Resp()
+        arriving = [f"2026-10-05T{h:02d}:{m:02d}:05Z" for h in range(17, 21) for m in (12, 27, 42, 57) if (h, m) <= (20, 12)]
+        code, msg = H.timer_check("tok", "o/r", now, opener_for(arriving))
+        self.assertEqual(code, 0); self.assertIn("external timer arriving", msg)
+        code, msg = H.timer_check("tok", "o/r", now, opener_for(arriving[:-4]))          # nothing for over 45 minutes
+        self.assertEqual(code, 1); self.assertIn("external timer silent", msg)
+        self.assertEqual(H.timer_check("tok", "o/r", now, opener_for([]))[0], 1)         # never arrived
+        self.assertEqual(H.timer_check(None, "o/r", now)[0], 1)                          # unknown is not arriving
+        def broken(req, timeout=20): raise OSError("down")
+        code, msg = H.timer_check("tok", "o/r", now, broken)
+        self.assertEqual(code, 1); self.assertIn("unknown", msg)
 
     def test_manual_runs_do_not_close_a_scheduled_gap(self):
         self.b.runs([T0 + dt.timedelta(hours=12, minutes=30)], trigger="workflow_dispatch")

@@ -27,6 +27,11 @@ another:
               monitors.external_timer: arrivals of the designated primary trigger per :12/:27/:42/:57 opportunity
               (on time / delayed / absent) apart from the native dispatcher heartbeat; overall service health stays
               its own question and may be healthy while external arrivals are missing.
+  2.30.9      (health-1.5.0; operator decision Nov 11 2026) the native schedule is the secondary trigger: no
+              incident row per native silence (kind collector_gap; rows on file stay), one native_schedule_day summary
+              row per closed UTC day (source.native_daily). timer_token: the recorded expiry of the credential behind
+              the external timer (unrecorded / ok / expiring / expired). integrity.malformed_lines: lines rows()
+              skipped, by file - counted, never dropped silently. --timer-check: the watchdog's external-timer step.
   2.27        source.service separates data freshness (the newest automated CRITICAL SUCCESS) from activity (the
               newest automated run record, any result): a fresh failure stays "failing", fresh activity never makes
               stale data healthy, and the 45-minute restoration acceptance target is reported beside - never merged
@@ -58,15 +63,20 @@ for p in (str(ROOT), str(ROOT / "desk")):
 import cadence                    # noqa: E402
 from watchdog import load_runs    # noqa: E402
 
-VERSION = "health-1.4.0"
+VERSION = "health-1.5.0"
 ACCEPTANCE_GAP_MIN = 45          # restoration acceptance target (scripts/service_acceptance.py) - not the watchdog limit
 UTC = dt.timezone.utc
 LOOKBACK_H = 72                   # decisions and gaps examined (incidents already recorded stay recorded)
-MONITORS = {"watchdog.yml": 90, "range-monitor.yml": 510}
+MONITORS = {"watchdog.yml": 90, "range-monitor.yml": 510, "range-readiness.yml": 1800}
 DISPATCHER = ("recovery.yml", 45)   # repo 2.25: any event; three 15-minute invocations   # minutes: 90 = the collector stale limit (three
-#   30-minute watchdog slots); 510 = 8.5 h, the range monitor's publication limit (two 4-hourly slots + grace)
+#   30-minute watchdog slots); 510 = 8.5 h, the range monitor's publication limit (two 4-hourly slots + grace);
+#   1800 = 30 h, the daily range-source readiness check plus the lateness of a native daily start (repo 2.30.9)
 SCHEDULED_WORKFLOWS = ("collect.yml", "watchdog.yml", "dashboard.yml", "intake.yml", "range-score.yml", "range.yml",
-                       "research-streams.yml", "range-monitor.yml", "research.yml")
+                       "research-streams.yml", "range-monitor.yml", "research.yml", "range-readiness.yml")
+TIMER_DECLARATION = "docs/acceptance/timer.json"
+TOKEN_WARN_DAYS = 30
+MALFORMED = {}                    # file -> lines skipped as unparseable or non-object by rows() in this process
+_BASE = None                      # the base of the evaluation in progress: MALFORMED keys are relative to it
 INCIDENTS = "state/incidents.jsonl"
 PROBLEM_STATES = ("absent", "failed", "missed", "no decision record", "invalid")
 
@@ -84,17 +94,32 @@ def parse(s):
 
 
 def rows(path):
-    out = []
+    """Object rows of a JSONL file. A blank line is nothing; any other line that does not parse to an object is
+    skipped AND counted in MALFORMED (repo 2.30.9: before, it vanished silently) - malformed is not absent."""
+    out, bad = [], 0
     try:
         for line in Path(path).read_text().splitlines():
+            if not line.strip():
+                continue
             try:
                 r = json.loads(line)
             except ValueError:
+                bad += 1
                 continue
             if isinstance(r, dict):
                 out.append(r)
+            else:
+                bad += 1
     except FileNotFoundError:
         pass
+    try:
+        key = Path(path).resolve().relative_to(Path(_BASE or ROOT).resolve()).as_posix()
+    except ValueError:
+        key = Path(path).name
+    if bad:
+        MALFORMED[key] = bad
+    else:
+        MALFORMED.pop(key, None)
     return out
 
 
@@ -152,9 +177,48 @@ def source(base, now_ms, stale_min):
         service["acceptance_target"]["breached_24h"] = cov["longest_successful_gap_min"] > ACCEPTANCE_GAP_MIN
     return {"state": state, "last_scheduled_utc": iso(last), "age_min": round(age, 1) if age is not None else None,
             "stale_limit_min": stale_min, "manual_runs_since": len(manual),
+            "native_daily": native_daily(runs, now_ms, stale_min),
             "gaps": [dict(g, start_utc=iso(g["start_ms"]), end_utc=iso(g["end_ms"])) for g in gaps],
             "rule": "scheduled runs only (manual, local and recovery runs do not close a scheduled gap)",
             "service": service, "coverage_24h": cov}
+
+
+def native_daily(runs, now_ms, stale_min, days=LOOKBACK_H // 24):
+    """One summary per CLOSED UTC day (repo 2.30.9). The native schedule has been the secondary trigger since the
+    external timer became primary (2.28); its silences are counted here once a day instead of one incident row each.
+    Counts are of stored run records: native starts, all automated runs, native silences over the limit that END in
+    the day, and the longest native silence inside the day (day edges included)."""
+    day_ms = 86_400_000
+    end = now_ms - now_ms % day_ms
+    out = []
+    for i in range(days, 0, -1):
+        a, b = end - i * day_ms, end - (i - 1) * day_ms
+        inday = [r for r in runs if a <= r["t"] < b]
+        if not inday:                                    # no stored run that day: nothing to summarize
+            continue
+        native = sorted(r["t"] for r in inday if cadence.schedule_evidence(r))
+        edges = [a] + native + [b]
+        over = [g for g in cadence.scheduled_gaps(runs, stale_min) if g["end_ms"] is not None and a <= g["end_ms"] < b]
+        out.append({"day": iso(a)[:10], "start_utc": iso(a), "end_utc": iso(b), "native_runs": len(native),
+                    "automated_runs": sum(1 for r in inday if cadence.automated_evidence(r)),
+                    "native_gaps_over_limit": len(over),
+                    "longest_native_silence_min": round(max(y - x for x, y in zip(edges, edges[1:])) / 60_000, 1)})
+    return out
+
+
+def timer_token(base, now):
+    """Recorded expiry of the credential behind the external timer (repo 2.30.9). The repository cannot read the
+    token; the operator records its expiry in the timer declaration. Unrecorded is a state, never 'ok'."""
+    decl = jload(Path(base) / TIMER_DECLARATION, {}) or {}
+    tok = decl.get("token") if isinstance(decl.get("token"), dict) else {}
+    exp = parse(tok.get("expires_utc")) if isinstance(tok.get("expires_utc"), str) else None
+    if exp is None:
+        return {"state": "unrecorded", "expires_utc": None, "warn_days": TOKEN_WARN_DAYS,
+                "rule": f"record token.expires_utc in {TIMER_DECLARATION}; an expired token stops the primary trigger"}
+    days = (exp - now).total_seconds() / 86400
+    return {"state": "expired" if days <= 0 else ("expiring" if days <= TOKEN_WARN_DAYS else "ok"),
+            "expires_utc": tok["expires_utc"], "days_left": round(days, 1), "warn_days": TOKEN_WARN_DAYS,
+            "recorded": tok.get("recorded")}
 
 
 # --------------------------------------------------------------------------------------------- decisions
@@ -311,7 +375,8 @@ def monitors(now, token=None, repo=None, opener=None):
 
 
 CHECK_STEPS = {"watchdog.yml": "Check for a stale, missing, or failing collector",
-               "range-monitor.yml": "Check the range stream"}
+               "range-monitor.yml": "Check the range stream",
+               "range-readiness.yml": "Check closed archive history (month to date; whole previous month on days 1-3)"}
 
 
 def _get(url, token, opener):
@@ -447,6 +512,9 @@ def evaluate(base=ROOT, now_ms=None, token=None, repo=None, opener=None, stale_m
     now_ms = int(time.time() * 1000) if now_ms is None else now_ms
     now = dt.datetime.fromtimestamp(now_ms / 1000, UTC)
     stale_min = stale_min or cadence.stale_minutes()
+    global _BASE
+    _BASE = base
+    MALFORMED.clear()
     rng, rinfo = range_decisions(base, now)
     ps1, pinfo = ps1_decisions(base, now)
     doc = {"report": "health", "schema": "health-1", "job": VERSION,
@@ -458,19 +526,29 @@ def evaluate(base=ROOT, now_ms=None, token=None, repo=None, opener=None, stale_m
            "availability": availability(base, now),
            "scoring_backlog": rinfo.get("scoring_backlog", {}),
            "monitors": monitors(now, token, repo, opener),
+           "timer_token": timer_token(base, now),
            "freshness_rule": f"this report is written by the collector run; older than {stale_min} min means no "
                              "collector run has persisted a newer report - the scheduler may have been silent, the run "
                              "may not have executed (no runner), may have failed, or may have failed to persist; its "
                              "contents are not current"}
+    rows(base / INCIDENTS)                       # counted here so a damaged incident log is reported, not skipped
+    doc["integrity"] = {"malformed_lines": dict(sorted(MALFORMED.items())),
+                        "rule": "lines this evaluation skipped as unparseable or non-object, by file; such a line is "
+                                "malformed, not absent, and the figures above exclude it"}
     return doc
 
 
 def incidents(doc):
     """Incident rows implied by one evaluation: event times from the records, never from this clock."""
     out = []
-    for g in doc["source"]["gaps"]:
-        out.append({"kind": "collector_gap", "subject": "scheduled collector", "start_utc": g["start_utc"],
-                    "end_utc": g["end_utc"], "minutes": g["minutes"], "status": "ongoing" if g["end_utc"] is None else "resolved"})
+    # Repo 2.30.9 (operator decision, Nov 11 2026): a native-schedule silence no longer gets an incident row of its
+    # own (kind collector_gap; rows already recorded stay recorded). The native schedule is the secondary trigger,
+    # so it is summarized once per closed UTC day; every silence in the lookback is still listed in the report.
+    for d in doc["source"].get("native_daily") or []:
+        out.append({"kind": "native_schedule_day", "subject": "scheduled collector", "start_utc": d["start_utc"],
+                    "end_utc": d["end_utc"], "minutes": d["longest_native_silence_min"], "status": "summary",
+                    "native_runs": d["native_runs"], "automated_runs": d["automated_runs"],
+                    "native_gaps_over_limit": d["native_gaps_over_limit"]})
     for g in (doc["source"].get("service") or {}).get("gaps", []):
         out.append({"kind": "service_gap", "subject": "automated collector (native or recovery)", "start_utc": g["start_utc"],
                     "end_utc": g["end_utc"], "minutes": g["minutes"], "status": "ongoing" if g["end_utc"] is None else "resolved"})
@@ -497,7 +575,8 @@ def record(base, doc):
         if inc["kind"].endswith("_decision"):
             end = None
         row = dict(inc, first_recorded_utc=doc["generated_utc"], detector=VERSION, clock=doc["clock"],
-                   recorded_after_end=bool(inc["kind"] in ("collector_gap", "service_gap") and inc["end_utc"] is not None))
+                   recorded_after_end=bool(inc["kind"] in ("collector_gap", "service_gap", "native_schedule_day")
+                                           and inc["end_utc"] is not None))
         new.append(row)
         have.add(k)
     if new:
@@ -514,9 +593,11 @@ def record(base, doc):
 def markdown(doc):
     s, cov, av, mon = doc["source"], doc["ps1_coverage"], doc["availability"], doc["monitors"]
     L = ["# Operational health", "", f"Generated {doc['generated_utc']} by {doc['job']} ({doc['clock']}). {doc['freshness_rule']}.", "",
-         f"**Native collector schedule:** {s['state']}; last scheduled collector run {s['last_scheduled_utc']} ({s['age_min']} min). "
-         f"Silences over {s['stale_limit_min']} min in the last {LOOKBACK_H} h: "
-         + ("; ".join(f"{g['start_utc']} to {g['end_utc'] or 'ongoing'} ({g['minutes']:.0f} min)" for g in s["gaps"]) or "none") + ".", "",
+         f"**Native collector schedule (secondary trigger):** last scheduled collector run {s['last_scheduled_utc']} "
+         f"({s['age_min']} min); {len(s['gaps'])} silence(s) over {s['stale_limit_min']} min in the last {LOOKBACK_H} h"
+         + (f", longest {max(g['minutes'] for g in s['gaps']):.0f} min" if s["gaps"] else "") + ". Native starts per closed day: "
+         + ("; ".join(f"{d['day']} {d['native_runs']} of {d['automated_runs']} automated runs" for d in s.get("native_daily") or []) or "n/a")
+         + ". Each silence is in reports/health.json; incidents carry one summary row per day.", "",
          f"**Service continuity:** {(s.get('service') or {}).get('state')}; last persisted critical success "
          f"{(s.get('service') or {}).get('last_success_utc')} ({(s.get('service') or {}).get('data_age_min')} min); last automated "
          f"activity {(s.get('service') or {}).get('last_activity_utc')} ({(s.get('service') or {}).get('last_activity_result')}, "
@@ -543,14 +624,45 @@ def markdown(doc):
                     f"opportunities on time in {t.get('window_h')} h, {len(t.get('delayed') or [])} delayed, absent "
                     + (", ".join(t.get('absent') or []) or "none") + f"; last arrival {t.get('last_arrival_utc')}. Arrivals "
                     "only: whether each request was sent needs the provider's history." if isinstance(t, dict) and "opportunities" in t
-                    else "**External timer:** unknown.")(mon.get("external_timer") or {}), ""]
+                    else "**External timer:** unknown.")(mon.get("external_timer") or {}), "",
+         (lambda k: "**External timer token:** " + (
+             f"expiry not recorded - record token.expires_utc in {TIMER_DECLARATION}; an expired token stops the primary trigger."
+             if k.get("state") == "unrecorded" else
+             f"{k.get('state')}; expires {k.get('expires_utc')} ({k.get('days_left')} days)."))(doc.get("timer_token") or {}), "",
+         (lambda m: "**Record integrity:** " + ("no malformed lines in the files read." if not m else
+                    "MALFORMED LINES SKIPPED - " + "; ".join(f"{k} {v}" for k, v in m.items()) + "."))(
+             (doc.get("integrity") or {}).get("malformed_lines") or {}), ""]
     for name, check in mon.get('recovery_checks', {}).items():
         L += [f"Recovery {name}: {check['state']}; {check['last_check']}; "
               f"last check completion {check.get('last_completed_utc') or 'unavailable'}."]
     return "\n".join(L)
 
 
+def timer_check(token, repo, now=None, opener=None):
+    """(exit code, message) for the watchdog's external-timer step (repo 2.30.9): 1 when the primary trigger has not
+    arrived for more than 45 minutes or the arrivals cannot be read; arrivals only, as external_timer says."""
+    now = now or dt.datetime.now(UTC)
+    if not (token and repo):
+        return 1, "external timer arrivals unknown: no GitHub token in this run (unknown is not arriving)"
+    try:
+        ext = _get(f"https://api.github.com/repos/{repo}/actions/workflows/{DISPATCHER[0]}/runs?per_page=100"
+                   f"&event=workflow_dispatch", token, opener or urllib.request.urlopen).get("workflow_runs", [])
+    except Exception as exc:                                      # noqa: BLE001 - reported as unknown
+        return 1, f"external timer arrivals unknown: run list unavailable ({type(exc).__name__})"
+    t = external_timer(ext, now, hours=3)
+    msg = (f"external timer {t['state']}: last arrival {t['last_arrival_utc']}; {t['on_time']} of {t['opportunities']} "
+           f"opportunities on time in {t['window_h']} h, {len(t['delayed'])} delayed, {len(t['absent'])} absent")
+    return (1 if t["state"] == "silent" else 0), msg
+
+
 def main(argv):
+    if "--timer-check" in argv:
+        code, msg = timer_check(os.environ.get("GITHUB_TOKEN"), os.environ.get("GITHUB_REPOSITORY"))
+        print(f"::{'error' if code else 'notice'} title=External timer (primary trigger)::{msg}")
+        if os.environ.get("GITHUB_STEP_SUMMARY"):
+            with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as fh:
+                fh.write(f"### External timer (primary trigger)\n\n{msg}\n")
+        return code
     doc = evaluate(token=os.environ.get("GITHUB_TOKEN"), repo=os.environ.get("GITHUB_REPOSITORY"))
     if "--record" in argv:
         new = record(ROOT, doc)

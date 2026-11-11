@@ -12,6 +12,7 @@ on:
         type: string
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: collector-watchdog
   cancel-in-progress: true
@@ -32,3 +33,11 @@ jobs:
         env:
           WATCHDOG_STALE_MIN: ${{ inputs.stale_minutes || vars.WATCHDOG_STALE_MIN || '90' }}
         run: python watchdog.py
+      - name: Check external timer arrivals (primary trigger)
+        # Repo 2.30.9: the external timer starts almost every collector run, so its silence is the alert. This
+        # step fails when no external arrival is on record for more than 45 minutes, or the arrivals cannot be
+        # read. It is only as timely as this workflow's own native schedule.
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python health.py --timer-check

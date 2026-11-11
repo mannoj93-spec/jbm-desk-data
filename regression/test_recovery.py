@@ -296,7 +296,10 @@ class ServiceVersusNativeTests(unittest.TestCase):
             self.assertEqual(len(src["service"]["gaps"]), 1)             # 15 -> 200 min stays visible
             self.assertEqual(src["coverage_24h"]["runs_by_source"], {"native-schedule": 1, "recovery": 2})
             kinds = [i["kind"] for i in H.incidents({"source": src, "decisions": {"range": {}, "ps1": {}}})]
-            self.assertEqual(sorted(kinds), ["collector_gap", "service_gap"])   # native ongoing; service recovered
+            # 2.30.9: the ongoing native silence is in src["gaps"] and no longer an incident row; the recovered
+            # service gap is. The day has not closed, so there is no native summary row yet.
+            self.assertEqual(sorted(kinds), ["service_gap"])
+            self.assertIsNone(src["gaps"][-1]["end_ms"])
 
 
 class WiringTests(unittest.TestCase):

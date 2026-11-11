@@ -97,10 +97,12 @@ def check(base, now_ms, stale_min=None):
             seen[source] = (count + 1, message)
     for source, (count, message) in sorted(seen.items()):
         warnings.append(f"{source}: {count}/{len(recent)} recent automated runs; latest: {message[:160]}")
-    # 2.24: a recovered silence stays visible as a warning for a day; health.py records it durably
-    for gap in cadence.scheduled_gaps(runs, stale_min, since_ms=now_ms - 24 * 60 * MINUTE):
-        warnings.append(f"recovered native gap: no scheduled run {iso(gap['start_ms'])} to {iso(gap['end_ms'])} "
-                        f"({gap['minutes']:.0f} min, limit {stale_min}); see reports/health.json")
+    # 2.30.9: recovered native silences are counted in one line, not one warning each (the native schedule is the
+    # secondary trigger; each silence stays listed in reports/health.json). A recovered SERVICE gap keeps its own line.
+    native_gaps = cadence.scheduled_gaps(runs, stale_min, since_ms=now_ms - 24 * 60 * MINUTE)
+    if native_gaps:
+        warnings.append(f"{len(native_gaps)} recovered native silence(s) over {stale_min} min in 24 h, longest "
+                        f"{max(g['minutes'] for g in native_gaps):.0f} min; see reports/health.json")
     for gap in cadence.gaps(runs, stale_min, cadence.successful_automated, since_ms=now_ms - 24 * 60 * MINUTE):
         warnings.append(f"recovered service gap: no automated critical success {iso(gap['start_ms'])} to {iso(gap['end_ms'])} "
                         f"({gap['minutes']:.0f} min, limit {stale_min}); see reports/health.json")

@@ -1,3 +1,22 @@
+# Revision 2.30.9 — 2026-11-11 monitors: native schedule as the secondary trigger
+
+Operator decisions, Nov 11 2026: stop one incident row per native-schedule silence, keep a daily summary, alert on
+the external timer's absence; no independent alert service.
+
+- `health.py` (health-1.5.0): no new `collector_gap` rows (193 of the 258 rows on file were these); one
+  `native_schedule_day` summary row per closed UTC day. `reports/health.json` still lists every silence in its
+  lookback and gains `source.native_daily`, `timer_token` and `integrity`. Existing fields keep their meaning.
+- `watchdog.yml`: a second step fails when the external timer has not arrived for more than 45 minutes or its
+  arrivals cannot be read (`health.py --timer-check`; needs `actions: read`). `watchdog.py` counts recovered native
+  silences in one line instead of one warning each. The collector verdict is unchanged.
+- `docs/acceptance/timer.json`: `token.expires_utc`, unrecorded until the operator fills it; health reports
+  unrecorded / ok / expiring (30 days) / expired.
+- `health.py rows()` counts lines it skips as unparseable or non-object, by file, instead of dropping them silently.
+- `range-readiness.yml` joins the monitored scheduled workflows (heartbeat limit 30 hours).
+- Measured and documented, not fixed: the watchdog ran 4 times of 48 scheduled in the 24 hours to
+  2026-11-11T15:45Z (gaps up to 473 minutes). A silent external timer is therefore reported when the watchdog next
+  starts, which can be hours.
+
 # Revision 2.30.8 — 2026-11-11 daily range-source readiness and registry-driven repairs
 
 - `range_source_repair.py readiness` checks closed archive history every day (current month through yesterday;
