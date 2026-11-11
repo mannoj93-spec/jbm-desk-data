@@ -1,3 +1,24 @@
+# Revision 2.30.10 — 2026-11-11 lab parking and workflow housekeeping
+
+- **Parked lab designs** (operator decision): B1-underwater-adds, D1-active-twap and E1-liquidity-recovery are no
+  longer run by the scheduled lab (`research_lab_ops.json`, `scripts/lab_designs.py`, `research.yml`). No lab code
+  changes; registrations, ledgers and evidence cards stay as recorded. B1 alone took 2,126.8 of 2,353.5 lab seconds
+  (run 42976436886) with zero test episodes, and the lab step had reached 48.75 minutes against its 50-minute job
+  limit. `feasibility.py` (feasibility-1.3.0) marks parked designs and gives them no checkpoint estimate.
+- **Release gate in three shards** (`fixtures.yml`, `scripts/run_regression_shard.py`): the suite is discovered as
+  before and every test is placed in exactly one shard, checked before anything runs. Also compiles every Python
+  file. No test was changed or removed. The gate now also runs every `desk/test_*.py` - the preflight sets the
+  range and stream jobs run before each production run, which the gate did not cover.
+- **Forecast intake**: the hourly schedule is removed; issue events and manual runs remain. No forecast was ever
+  submitted by issue.
+- **Weekly report**: earlier "Desk report" issues opened by the workflow are closed when a new one opens (11 were
+  open).
+- **Dashboard deploy job**: sparse checkout of `scripts/` (it loads one helper).
+- `skillcheck.py` retired: it checked a four-file package layout that no longer exists.
+- Considered and not done: a sparse checkout for the range forecast job (checkout is 55 s of a run whose forecast
+  froze 6 m 45 s before its window; it cannot be rehearsed without writing to the production record) and for the
+  study watch (it reads seven data and stream trees; a list that went stale would hide missing inputs).
+
 # Revision 2.30.9 — 2026-11-11 monitors: native schedule as the secondary trigger
 
 Operator decisions, Nov 11 2026: stop one incident row per native-schedule silence, keep a daily summary, alert on

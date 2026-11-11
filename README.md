@@ -185,7 +185,7 @@ flowchart LR
 | [Range publication](.github/workflows/range.yml) / [scoring](.github/workflows/range-score.yml) | Four-hour decisions / hourly scoring | Forecasts confirmed before windows open; matured outcomes and current status |
 | [Research streams](.github/workflows/research-streams.yml) | After range runs, with a four-hour fallback | B1 companion, PS1, and feasibility reports |
 | [Market studies](.github/workflows/market-studies.yml) | After Collector and Range forecasts, with a quarter-hour fallback | Registration, publication confirmation, paper executions, pilots, matured scores, and reports |
-| [Forecast intake](.github/workflows/intake.yml) / [weekly report](.github/workflows/report.yml) | Issue events plus recovery / weekly | Frozen issue-submitted forecasts and their scores |
+| [Forecast intake](.github/workflows/intake.yml) / [weekly report](.github/workflows/report.yml) | Issue events (manual reconcile) / weekly | Frozen issue-submitted forecasts and their scores |
 | [Dashboard](.github/workflows/dashboard.yml) | Relevant workflow completions, dashboard changes, and a half-hour fallback | Static snapshot with source hashes and checkout identity |
 
 Workflow files are the source of truth for exact triggers. Scheduled times are targets;

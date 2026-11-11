@@ -45,7 +45,16 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           head -c 60000 reports/latest.md > body.md
-          gh issue create --title "Desk report $(date -u +%F)" --body-file body.md
+          new=$(gh issue create --title "Desk report $(date -u +%F)" --body-file body.md)
+          echo "$new"
+          # Repo 2.30.10: one open report at a time. Earlier report issues opened by this workflow are closed
+          # without a comment (no notification per issue); their text stays. A failure here never fails the report.
+          keep="${new##*/}"
+          gh issue list --state open --limit 200 --json number,title,author \
+            --jq '.[] | select(.title | startswith("Desk report ")) | select(.author.is_bot) | .number' |
+          while read -r n; do
+            [ "$n" = "$keep" ] || gh issue close "$n" --reason completed || echo "::warning::could not close report issue #$n"
+          done || echo "::warning::could not list earlier report issues"
       - name: Preserve work on failure
         if: failure()
         uses: actions/upload-artifact@v6

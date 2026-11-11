@@ -2,8 +2,9 @@ name: Forecast intake
 on:
   issues:
     types: [opened, edited, reopened]
-  schedule:
-    - cron: '37 * * * *'
+  # Repo 2.30.10: the hourly schedule is removed. No forecast was ever submitted by issue (registry/ holds range
+  # forecasts only), and thread forecasts go to the artifact registry. An issue event still runs this job; if that
+  # run fails, start it manually to reconcile open forecast issues.
   workflow_dispatch:
     inputs:
       issue_number:

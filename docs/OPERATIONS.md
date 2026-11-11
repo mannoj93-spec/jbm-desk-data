@@ -44,7 +44,7 @@ operational alert rules, diagnostic outputs, pause behavior and the separation f
 | Workflow | Trigger | Purpose |
 |---|---|---|
 | Collector (`collect.yml`, formerly *Hourly collector*) | Every 15 minutes at :07, :22, :37, :52 UTC; manual; manual backfill | Preserve history, snapshots, liquidations, forward books and registration records |
-| Forecast intake | Owner's forecast issues opened/edited/reopened; hourly :37 recovery; manual | Validate, freeze, persist, then acknowledge a forecast |
+| Forecast intake | Owner's forecast issues opened/edited/reopened; manual (the hourly recovery pass was removed in 2.30.10: no forecast was ever submitted by issue) | Validate, freeze, persist, then acknowledge a forecast |
 | Weekly report | Monday 00:30 UTC; manual | Coverage, errors, scores of the issue-intake forecasts, research summaries, review candidates (desk range forecasts are scored hourly, below) |
 | Collector watchdog | Every 30 minutes at :17 and :47 UTC (native schedule: 4 of 48 starts arrived on Nov 10-11 2026); manual | Fails (so GitHub emails the owner) when the collector is stale or missing, or running but failing, or (2.30.9) when the external timer has not arrived for 45 minutes |
 | Research lab (`research.yml`) | Every 6 hours at :41 (00:41 UTC also runs a 60-day reconstruction); manual | Versioned events, outcomes, experiments and evidence cards, `reports/research.md`, `reports/skill_proposals.md`, and the coverage refresh of `reports/latest.md`; computes without the write lock, merges into a fresh checkout and commits through `repo-write` |
@@ -62,8 +62,8 @@ default queue: one running and at most one pending, a newer pending run replacin
 During an outage or a long backfill, obsolete scheduled runs are therefore cancelled while still
 pending instead of piling up; nothing that is running is cancelled, so persistence always
 finishes. Manual and backfill runs have their own groups and are never cancelled by the schedule.
-The hourly intake recovery pass revisits open forecast issues missed by event delivery or
-queueing. A repository owned by an organization needs an explicit authorized-user policy before
+Until 2.30.10 an hourly intake recovery pass revisited open forecast issues missed by event delivery or
+queueing; it is removed, and a missed issue is reconciled by starting **Forecast intake** manually. A repository owned by an organization needs an explicit authorized-user policy before
 phone intake can be used: the default accepts only an individual repository owner's login.
 
 **Time budget of a routine run.** Network work ends 10 minutes into the run
@@ -504,6 +504,18 @@ establish an edge or authorize a skill change.
 
 ## Research lab (lab-2.2, revisions 2.8-2.10)
 
+**Parked designs (2.30.10; operator decision, Nov 11 2026).** `research_lab_ops.json` lists designs the scheduled
+lab does not run: B1-underwater-adds, D1-active-twap and E1-liquidity-recovery. The lab's code is unchanged -
+`scripts/lab_designs.py` prints the remaining ids and the workflow passes them as `lab.run --designs`. A parked
+design keeps its design file, registration, ledger rows and last evidence card; nothing is retired, and it reaches
+no checkpoint while parked. `reports/research.md` lists only the designs that ran; `reports/feasibility.md` marks
+the parked ones (their measured limiting factor is kept) and gives them no checkpoint estimate. Why B1: in run 42976436886 (Nov 11) it took 2,126.8 of the
+lab's 2,353.5 seconds with zero test episodes in 45 observable days, and the lab step had grown from 2 minutes on
+Oct 7 to 48.75 minutes on Nov 10 against a 50-minute job limit - one slower run from cancelling every lab cycle.
+Without the three, the same code over the same data ran in 215 seconds locally. To unpark, remove the entry by pull
+request; first check how the design's hourly control selection treats the parked interval (not established).
+The Hyperliquid cohort capture continues (operator decision): C1 still uses it.
+
 ```sh
 python -m lab.run update                         # as-of replay over stored data
 python -m lab.run update --reconstruct-days 60   # plus an exploratory historical reconstruction
@@ -644,6 +656,6 @@ modified.
 **Streaming service.** See [stream/README.md](../stream/README.md): what it records, how to run and
 deploy it, measured resource use, and the infrastructure decision it is waiting for.
 
-`skillcheck.py` is a mechanical checker for an external four-file skill package. It does not
-install or edit skills. Review weekly report candidates against the package before adopting
-any conclusion. No trading-performance claims are made by this release.
+`skillcheck.py` was retired in 2.30.10: it checked a four-file skill package layout that no longer exists, and
+the package carries its own `check_package.py`. Review weekly report candidates against the package before
+adopting any conclusion. No trading-performance claims are made by this release.
