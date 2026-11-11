@@ -1,3 +1,24 @@
+# Revision 2.30.8 — 2026-11-11 daily range-source readiness and registry-driven repairs
+
+- `range_source_repair.py readiness` checks closed archive history every day (current month through yesterday;
+  whole previous month on days 1-3) instead of only in the last four and first three days of a month. Results:
+  `ready`, `ready-unpublished-tail`, `ready-approved-repair`, `blocked`; a failed retrieval blocks. `--as-of`
+  rehearses another date. The workflow takes the same input, reads the dispatched ref on a manual run, uses a
+  sparse checkout (8 MB instead of the full tree) and writes a step summary.
+- Approved interior gaps move from constants to `research_tools/source_repairs.json`. The admitted shape is
+  unchanged and enforced in code (at most six consecutive 4h bars, one day inside a month, monthly archive complete
+  except for the gap, 12 exact neighbouring overlaps, unchanged DVOL admission). The registry pins each evidence
+  file by hash. Replaying the retained October evidence through the new code reproduces the delta on main
+  byte for byte (`a681d33d...`); a test holds that.
+- `range-repair-capture.yml`: manual capture of evidence for one new gap, pushed to a review branch. It never
+  writes main and never adds a registry entry. `capture-evidence` now requires its arguments and refuses to
+  overwrite an existing file.
+- `docs/incidents/2026-11-01-range-refit-outage.md`: the 34 decisions lost Nov 1-6, and the later observation that
+  the provider republished October on Nov 11 with bars equal to the repaired delta on all compared fields.
+- Not changed: forecasting code, model specification, fits, contract, any registered forecast or score.
+- Not established: the capture workflow has not captured a real gap (none exists); against the live archive it
+  correctly refused the October gap, which the provider has since filled.
+
 # Revision 2.30.7 — 2026-11-06 research pipeline repairs and 30-day maturity pilot
 
 - Restore November refit input continuity through an external, allowlisted October 28 source repair.

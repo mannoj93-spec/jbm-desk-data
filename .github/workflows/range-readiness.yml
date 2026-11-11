@@ -1,8 +1,13 @@
-name: Month-end range source readiness
+name: Range source readiness (daily)
 on:
   schedule:
     - cron: '37 22 * * *'
   workflow_dispatch:
+    inputs:
+      as_of:
+        description: 'Rehearsal only: assess as of this UTC time (YYYY-MM-DDTHH:MM:SSZ). Empty = now.'
+        required: false
+        default: ''
 permissions:
   contents: read
 concurrency:
@@ -15,9 +20,42 @@ jobs:
     steps:
       - uses: actions/checkout@v5
         with:
-          ref: main
+          # A scheduled run reads main; a manual run reads the ref it was dispatched on, so a change to
+          # the check can be rehearsed against the live archive before it is merged.
+          sparse-checkout: |
+            desk
+            research_tools
+          sparse-checkout-cone-mode: true
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - name: Check closed archive history around the month boundary
-        run: python range_source_repair.py readiness
+      - name: Check closed archive history (month to date; whole previous month on days 1-3)
+        env:
+          AS_OF: ${{ inputs.as_of }}
+        run: |
+          set -euo pipefail
+          if [ -n "${AS_OF:-}" ]; then
+            [[ "$AS_OF" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$ ]] || { echo "::error::as_of must be YYYY-MM-DDTHH:MM:SSZ"; exit 2; }
+            python range_source_repair.py readiness --as-of "$AS_OF" | tee "$RUNNER_TEMP/readiness.json"
+          else
+            python range_source_repair.py readiness | tee "$RUNNER_TEMP/readiness.json"
+          fi
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### Range source readiness"
+            python - "$RUNNER_TEMP/readiness.json" <<'PY'
+          import json, sys
+          try:
+              d = json.load(open(sys.argv[1]))
+          except Exception as exc:
+              print(f"No result was produced ({type(exc).__name__}). This is a failed check, not a pass.")
+              raise SystemExit(0)
+          print(f"- state: **{d['state']}**")
+          print(f"- window: {d.get('from_utc')} to {d.get('through_utc_exclusive')} (exclusive)")
+          print(f"- unapproved interior gaps: {d.get('unapproved_interior_4h_opens') or 'none'}")
+          print(f"- unpublished trailing bars: {len(d.get('unpublished_tail_4h_opens') or [])}")
+          print(f"- inadmissible file states: {d.get('inadmissible_states') or 'none'}")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"
