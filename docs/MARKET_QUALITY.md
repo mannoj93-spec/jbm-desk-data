@@ -87,16 +87,31 @@ and predictive validity requires a separately registered experiment.
 model specification, prior fits and prospective decisions are unchanged. The reviewed source bundle
 `research_tools/fixtures/november_2026_source_repair.json` retains the October archive ZIP and provider
 checksum, historical API response, DVOL responses, response hashes, headers and actual retrieval clocks.
-It admits only the six missing BTCUSDT four-hour bars on October 28, 2026. All 12 neighboring bars must
+It admits only the six missing BTCUSDT four-hour bars on October 28, 2026 (the first registry entry). All 12 neighboring bars must
 match archive OHLC, volume, taker-buy volume and clocks exactly; malformed, duplicate, conflicting or
 incomplete replacements are rejected. The existing DVOL contract still applies. Raw evidence and the
 complete October training delta are retained as content-addressed files before the frozen November
 refit runs. This repairs historical training inputs; it does not manufacture forecasts for missed slots.
 
-The separate **Month-end range source readiness** workflow checks closed archive history in the last
-four days and first three days of each month. It lists missing bar timestamps and fails on incomplete
-history. It has read-only permissions and never automatically fills a new interior gap. The normal
-refit also prints missing timestamps before passing control to the existing archive/tail admission rules.
+The **Range source readiness (daily)** workflow (repo 2.30.8) checks closed archive history every day: the
+current month through yesterday, and the whole previous month on days 1-3. It lists missing bar timestamps and
+separates four results: `ready`; `ready-unpublished-tail` (only whole trailing days, at most three, are not yet
+published - the frozen refit fills such a tail from closed live bars); `ready-approved-repair` (the only holes are
+gaps listed in the registry); and `blocked` (an unapproved interior gap, a partial day, a missing file before a
+published one, or any file state other than ok, missing or incomplete - a failed retrieval blocks, it never
+passes). Only `blocked` fails the workflow. It has read-only permissions and never fills a gap. A manual run takes
+an `as_of` time for a rehearsal and reads the ref it was dispatched on. The normal refit also prints missing
+timestamps before passing control to the existing archive/tail admission rules.
+
+Approved gaps live in `research_tools/source_repairs.json` (repo 2.30.8). An entry names the first missing 4h open
+and the number of bars, and pins its evidence file by sha256. The approved shape is fixed in code: at most six
+consecutive bars, at least one day inside a single month, the checksum-matched monthly archive complete except for
+that gap, and six exact-match API bars on each side. Anything else is refused. To add a gap: run **Range source
+repair evidence capture** with the gap's first open and bar count; it captures and replays the evidence and pushes
+it to a `repair-evidence/...` branch, never to main. Read the evidence, then add the registry entry by pull
+request - that merge is the approval. Evidence can only be captured after the provider publishes the gap month's
+monthly file (October 2026's appeared about 33.5 hours after the month ended), so the forecasts between the month
+start and the merged repair are still lost. Record: `docs/incidents/2026-11-01-range-refit-outage.md`.
 
 The existing expiry pilot now reports through `python options_pilot_report.py`. Its frozen preparation,
 collection and confirmation modules remain unchanged. Replay allows absolute error at most `1e-12`,

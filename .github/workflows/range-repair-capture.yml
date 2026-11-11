@@ -1,0 +1,67 @@
+name: Range source repair evidence capture
+# Manual only. Captures the raw archive, API and DVOL responses for one interior gap, replays them through
+# the unchanged repair rules, and pushes the evidence file to a review branch. It never writes to main and
+# never adds a registry entry: approval is a reviewed pull request that adds the entry to
+# research_tools/source_repairs.json.
+on:
+  workflow_dispatch:
+    inputs:
+      gap_first_open:
+        description: 'First missing 4h open, UTC (YYYY-MM-DDTHH:00:00Z)'
+        required: true
+      gap_bars:
+        description: 'Consecutive missing 4h bars (1-6)'
+        required: true
+permissions:
+  contents: write
+concurrency:
+  group: range-repair-capture
+  cancel-in-progress: false
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GAP_FIRST_OPEN: ${{ inputs.gap_first_open }}
+      GAP_BARS: ${{ inputs.gap_bars }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          sparse-checkout: |
+            desk
+            research_tools
+          sparse-checkout-cone-mode: true
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Capture and replay the evidence
+        id: capture
+        run: |
+          set -euo pipefail
+          [[ "$GAP_FIRST_OPEN" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00Z$ ]] || { echo "::error::gap_first_open must be YYYY-MM-DDTHH:00:00Z"; exit 2; }
+          [[ "$GAP_BARS" =~ ^[1-6]$ ]] || { echo "::error::gap_bars must be 1-6"; exit 2; }
+          stamp="${GAP_FIRST_OPEN//[-:]/}"
+          out="research_tools/fixtures/source_repair_${stamp}.json"
+          python range_source_repair.py capture-evidence --gap-first-open "$GAP_FIRST_OPEN" --gap-bars "$GAP_BARS" --out "$out" | tee "$RUNNER_TEMP/capture.json"
+          echo "out=$out" >> "$GITHUB_OUTPUT"
+          echo "stamp=$stamp" >> "$GITHUB_OUTPUT"
+      - name: Push the evidence to a review branch (never main)
+        env:
+          OUT: ${{ steps.capture.outputs.out }}
+          STAMP: ${{ steps.capture.outputs.stamp }}
+        run: |
+          set -euo pipefail
+          branch="repair-evidence/${STAMP}-${GITHUB_RUN_ID}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$branch"
+          git add --sparse "$OUT"
+          git commit -m "Range source repair evidence for ${GAP_FIRST_OPEN} (${GAP_BARS} bars); not approved"
+          git push origin "$branch"
+          {
+            echo "### Evidence captured, not approved"
+            echo "- branch: \`$branch\`"
+            echo "- file: \`$OUT\`"
+            echo '```json'; cat "$RUNNER_TEMP/capture.json"; echo '```'
+            echo "Next: read the evidence, then open a pull request that adds the entry to research_tools/source_repairs.json."
+          } >> "$GITHUB_STEP_SUMMARY"

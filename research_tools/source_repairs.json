@@ -1,0 +1,13 @@
+{
+  "schema": "approved-range-source-repairs/1",
+  "rule": "One run of at most six consecutive BTCUSDT 4h bars, at least one day inside a single month, per entry. An entry is added only by a reviewed pull request after the evidence file has been captured and read.",
+  "repairs": [
+    {
+      "gap_first_open_utc": "2026-10-28T00:00:00Z",
+      "gap_bars": 6,
+      "evidence": "research_tools/fixtures/november_2026_source_repair.json",
+      "evidence_file_sha256": "2c9c453d7ab127193f3fbd1f4cca0281c5a99815c6c0a8733b59c76188128295",
+      "approved": "PR #62, merged 2026-11-06T16:09:21Z"
+    }
+  ]
+}
