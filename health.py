@@ -71,7 +71,7 @@ MONITORS = {"watchdog.yml": 90, "range-monitor.yml": 510, "range-readiness.yml":
 DISPATCHER = ("recovery.yml", 45)   # repo 2.25: any event; three 15-minute invocations   # minutes: 90 = the collector stale limit (three
 #   30-minute watchdog slots); 510 = 8.5 h, the range monitor's publication limit (two 4-hourly slots + grace);
 #   1800 = 30 h, the daily range-source readiness check plus the lateness of a native daily start (repo 2.30.9)
-SCHEDULED_WORKFLOWS = ("collect.yml", "watchdog.yml", "dashboard.yml", "intake.yml", "range-score.yml", "range.yml",
+SCHEDULED_WORKFLOWS = ("collect.yml", "watchdog.yml", "dashboard.yml", "range-score.yml", "range.yml",
                        "research-streams.yml", "range-monitor.yml", "research.yml", "range-readiness.yml")
 TIMER_DECLARATION = "docs/acceptance/timer.json"
 TOKEN_WARN_DAYS = 30

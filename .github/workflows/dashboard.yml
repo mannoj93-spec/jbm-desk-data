@@ -68,6 +68,8 @@ jobs:
           # The helper is the exact trusted revision for this run, never a triggering artifact.
           ref: ${{ github.sha }}
           persist-credentials: false
+          # Repo 2.30.10: this job loads scripts/pages_collision.cjs and nothing else.
+          sparse-checkout: scripts
       - name: Deploy research desk
         id: deployment
         continue-on-error: true

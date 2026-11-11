@@ -28,7 +28,7 @@ import re
 import sys
 from pathlib import Path
 
-VERSION = "feasibility-1.2.1"
+VERSION = "feasibility-1.3.0"
 BASE = Path(__file__).resolve().parent
 UTC = dt.timezone.utc
 MIN_EVENTS_FOR_ETA = 5
@@ -117,7 +117,35 @@ def _collector_start(base) -> dt.datetime | None:
     return _t(periods[0]["from"]) if periods else None
 
 
+def parked_designs(base) -> dict:
+    """{design id: entry} from research_lab_ops.json (repo 2.30.10). A parked design is not run by the scheduled lab,
+    so its card stops at its last run. Unreadable is reported, never taken as 'nothing parked'."""
+    path = Path(base) / "research_lab_ops.json"
+    if not path.exists():
+        return {}
+    try:
+        doc = json.loads(path.read_text())
+        return {e["design"]: e for e in doc["parked"]}
+    except (ValueError, KeyError, TypeError):
+        return {"?": {"design": "?", "reason": "research_lab_ops.json unreadable: parked designs unknown"}}
+
+
 def lab_designs(base, now) -> list:
+    out = _lab_designs(base, now)
+    off = parked_designs(base)
+    for r in out:
+        if r["id"] in off or "?" in off:
+            e = off.get(r["id"]) or off["?"]
+            r["parked"] = {k: e.get(k) for k in ("decided", "by", "reason")}
+            if r["id"] in off and "time_to_checkpoint" in r:
+                # No run is adding evidence, so no checkpoint is approaching: the rate recorded up to the last run
+                # is history, and an ETA computed from it would describe a design that is not running. The
+                # limiting factor stays as measured (desk/test_streams.py reads it); parking is its own field.
+                r["time_to_checkpoint"] = None
+    return out
+
+
+def _lab_designs(base, now) -> list:
     base = Path(base)
     idx = (_read(base / "research/evidence/index.json", {}) or {}).get("designs", {})
     started = _collector_start(base)
@@ -344,20 +372,27 @@ def markdown(doc) -> str:
          "|---|---|---|---|---|---|---|---|---|"]
     for r in doc["lab"]:
         if "calendar_exposure" not in r:
-            L.append(f"| {r['id']} | {r.get('status', 'unavailable')} | — | — | — | — | — | {r['limiting']} | — |")
+            L.append(f"| {r['id']} | {r.get('status', 'unavailable')} | — | — | — | — | — | {r['limiting']}"
+                     f"{'; parked' if r.get('parked') else ''} | — |")
             continue
         od = r["observable_exposure"]["days"]
         ck = r["checkpoint"]
         L.append(f"| {r['id']} | {r['status']} | {r['capability'].split(' (')[0]} | {r['calendar_exposure']['days']} | "
                  f"{'unavailable' if od is None else od} | {r['raw_candidates_prospective']} / {r['episodes_prospective']} | "
-                 f"{ck['retained']} / {ck['need']} | {r['limiting_factor']} | {_fmt_eta(r['time_to_checkpoint'])} |")
+                 f"{ck['retained']} / {ck['need']} | {r['limiting_factor']}{'; parked' if r.get('parked') else ''} | "
+                 f"{_fmt_eta(r['time_to_checkpoint'])} |")
     L += ["", "Observable days = hours with a selected hourly control (the lab's coverage count) ÷ 24; calendar days are "
           "shown for reference only and never divide a count.", ""]
     for r in doc["lab"]:
         if "calendar_exposure" not in r:
             L += [f"### {r['id']}", "", r.get("note", "Current evaluation unavailable"), ""]
             continue
-        L += [f"### {r['id']} ({r['version']})", "",
+        L += [f"### {r['id']} ({r['version']})", ""]
+        if r.get("parked"):
+            k = r["parked"]
+            L.append(f"- **Parked** {k.get('decided') or ''} by {k.get('by') or 'unknown'}: {k.get('reason')}. Not run by the "
+                     f"scheduled lab; the figures below are as of its last run ({r['calendar_exposure']['to']}).")
+        L += [
               f"- Data: {r['data_state']}" + (f" — {'; '.join(r['data_reasons'])}" if r['data_reasons'] else ""),
               f"- Zeros: {r['zero_interpretation']}",
               f"- Test (evaluation phase, primary {r['primary_horizon_min']} min): " +

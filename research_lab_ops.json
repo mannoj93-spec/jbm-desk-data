@@ -1,0 +1,24 @@
+{
+  "schema": "research-lab-operations/1",
+  "rule": "A parked design is not run by the scheduled lab. Its design file, registration, ledger rows and last evidence card stay exactly as recorded; nothing is retired, deleted or re-versioned, and a parked design reaches no checkpoint while parked. Parking and unparking are operator decisions made by pull request. Not established: how a design's hourly control selection treats the parked interval if it is later unparked - check that before unparking.",
+  "parked": [
+    {
+      "design": "B1-underwater-adds",
+      "decided": "2026-11-11",
+      "by": "operator",
+      "reason": "zero test episodes in 45.0 observable days (reports/feasibility.md, 2026-11-11), and 2,126.8 of the lab's 2,353.5 seconds in run 42976436886; the lab step reached 48.75 minutes against a 50-minute job limit on 2026-11-10"
+    },
+    {
+      "design": "D1-active-twap",
+      "decided": "2026-11-11",
+      "by": "operator",
+      "reason": "zero test episodes in about 45 observable days (reports/feasibility.md, 2026-11-11)"
+    },
+    {
+      "design": "E1-liquidity-recovery",
+      "decided": "2026-11-11",
+      "by": "operator",
+      "reason": "not observable: the collection cannot see these events without the streaming host, which the operator has not commissioned"
+    }
+  ]
+}

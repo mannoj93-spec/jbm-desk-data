@@ -7,15 +7,45 @@ permissions:
   contents: read
 jobs:
   tests:
+    # Repo 2.30.10: three parallel shards. scripts/run_regression_shard.py discovers the suite as
+    # `unittest discover -s regression` does and puts every test in exactly one shard (checked before it runs),
+    # so the shards together are the complete suite. The caller's `needs.tests.result` is success only when
+    # every shard passed.
+    name: tests (shard ${{ matrix.shard }} of 3)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2]
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
-      - run: python test_fixtures.py
-      - run: python -m unittest discover -s regression -v
-      # 12.2: the O21 research replay as a gate - stored-byte integrity (exact) and numerical equivalence of a
-      # fresh rerun, summary and every row, per value within the declared tolerance. Nonzero exit fails CI.
-      - run: python desk/research/o21_reanalysis.py verify
+      - name: Numerical fixtures
+        if: matrix.shard == 2
+        run: python test_fixtures.py
+      - name: Regression shard
+        run: python scripts/run_regression_shard.py ${{ matrix.shard }} 3 -v
+      - name: Desk tests (the preflight sets the range and stream jobs run before every production run)
+        # Repo 2.30.10: these were not in the release gate, so a change could pass it and still stop the next
+        # forecast at its preflight. Found when a feasibility.py edit passed the regression suite and failed
+        # desk/test_streams.py locally.
+        if: matrix.shard == 2
+        working-directory: desk
+        run: |
+          set -e
+          for t in test_*.py; do
+            echo "::group::$t"
+            PYTHONDONTWRITEBYTECODE=1 python "$t"
+            echo "::endgroup::"
+          done
+      - name: O21 reanalysis replay
+        if: matrix.shard == 2
+        run: python desk/research/o21_reanalysis.py verify
+      - name: Every Python file compiles
+        if: matrix.shard == 2
+        env:
+          PYTHONPYCACHEPREFIX: ${{ runner.temp }}/pyc
+        run: python -m compileall -q .

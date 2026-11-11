@@ -48,9 +48,13 @@ jobs:
           if [ -z "$days" ]; then
             if [ "$(date -u +%H)" = "00" ]; then days=60; else days=0; fi
           fi
+          # Repo 2.30.10: designs parked in research_lab_ops.json are not run (operator decision). The lab's code
+          # is unchanged; scripts/lab_designs.py only chooses its --designs argument and fails closed.
+          designs="$(python scripts/lab_designs.py)"
+          echo "lab designs: $designs"
           # lab-summary.json is the publication metadata (schema lab_summary/2) the persist job checks
           # every output against; the lab writes it itself so stray output cannot corrupt it
-          python -m lab.run update --reconstruct-days "$days" --summary lab-summary.json
+          python -m lab.run update --designs "$designs" --reconstruct-days "$days" --summary lab-summary.json
       - name: Refresh the coverage report (no scoring, no other side effects)
         id: report
         if: always()
