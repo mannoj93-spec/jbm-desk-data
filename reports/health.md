@@ -1,24 +1,24 @@
 # Operational health
 
-Generated 2026-11-11T08:14:56Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-11-11T08:30:01Z by health-1.4.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Native collector schedule:** stale; last scheduled collector run 2026-11-11T02:57:17Z (317.7 min). Silences over 90 min in the last 72 h: 2026-11-08T07:05:04Z to 2026-11-08T14:18:02Z (433 min); 2026-11-08T14:18:02Z to 2026-11-08T18:51:41Z (274 min); 2026-11-08T18:51:41Z to 2026-11-08T22:33:28Z (222 min); 2026-11-08T22:33:28Z to 2026-11-09T01:53:01Z (200 min); 2026-11-09T01:53:01Z to 2026-11-09T09:33:16Z (460 min); 2026-11-09T09:33:16Z to 2026-11-09T20:04:03Z (631 min); 2026-11-09T20:04:03Z to 2026-11-10T02:38:49Z (395 min); 2026-11-10T02:38:49Z to 2026-11-10T10:33:36Z (475 min); 2026-11-10T10:33:36Z to 2026-11-10T18:08:10Z (455 min); 2026-11-10T18:08:10Z to 2026-11-10T23:26:32Z (318 min); 2026-11-10T23:26:32Z to 2026-11-11T02:57:17Z (211 min); 2026-11-11T02:57:17Z to ongoing (318 min).
+**Native collector schedule:** stale; last scheduled collector run 2026-11-11T02:57:17Z (332.7 min). Silences over 90 min in the last 72 h: 2026-11-08T07:05:04Z to 2026-11-08T14:18:02Z (433 min); 2026-11-08T14:18:02Z to 2026-11-08T18:51:41Z (274 min); 2026-11-08T18:51:41Z to 2026-11-08T22:33:28Z (222 min); 2026-11-08T22:33:28Z to 2026-11-09T01:53:01Z (200 min); 2026-11-09T01:53:01Z to 2026-11-09T09:33:16Z (460 min); 2026-11-09T09:33:16Z to 2026-11-09T20:04:03Z (631 min); 2026-11-09T20:04:03Z to 2026-11-10T02:38:49Z (395 min); 2026-11-10T02:38:49Z to 2026-11-10T10:33:36Z (475 min); 2026-11-10T10:33:36Z to 2026-11-10T18:08:10Z (455 min); 2026-11-10T18:08:10Z to 2026-11-10T23:26:32Z (318 min); 2026-11-10T23:26:32Z to 2026-11-11T02:57:17Z (211 min); 2026-11-11T02:57:17Z to ongoing (333 min).
 
-**Service continuity:** healthy; last persisted critical success 2026-11-11T08:13:18Z (1.6 min); last automated activity 2026-11-11T08:13:18Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 4, recovery 93; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 20.4 min.
+**Service continuity:** healthy; last persisted critical success 2026-11-11T08:28:15Z (1.8 min); last automated activity 2026-11-11T08:28:15Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 4, recovery 93; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 20.4 min.
 
 **Range decisions:** 11-10T00:00 published; 11-10T04:00 published; 11-10T08:00 published; 11-10T12:00 published; 11-10T16:00 published; 11-10T20:00 published; 11-11T00:00 published; 11-11T04:00 published.
 
-**PS1 decisions:** 11-10T04:00 executed; 11-10T08:00 executed; 11-10T12:00 executed; 11-10T16:00 executed; 11-10T20:00 executed; 11-11T00:00 executed; 11-11T04:00 executed; 11-11T08:00 pending.
+**PS1 decisions:** 11-10T04:00 executed; 11-10T08:00 executed; 11-10T12:00 executed; 11-10T16:00 executed; 11-10T20:00 executed; 11-11T00:00 executed; 11-11T04:00 executed; 11-11T08:00 executed.
 
-**PS1 report coverage:** 0.7839 as of 2026-11-11T07:18:55.031Z; due since and not covered: none.
+**PS1 report coverage:** 0.7848 as of 2026-11-11T08:23:36.893Z; due since and not covered: none.
 
-**Range availability:** status within expiry (expires 2026-11-11T08:25:00Z); 24h valid-current; 4h valid-current; 72h valid-current.
+**Range availability:** status within expiry (expires 2026-11-11T12:25:00Z); 24h valid-current; 4h valid-current; 72h valid-current.
 
 **Scoring backlog:** none.
 
-**Native scheduled monitors:** stale (GitHub Actions API, scheduled runs); watchdog.yml heartbeat stale (last run 2026-11-11T03:06:37Z: success; last success 2026-11-11T03:06:25Z); range-monitor.yml heartbeat fresh (last run 2026-11-11T01:29:38Z: success; last success 2026-11-11T01:29:29Z); newest scheduled start of any workflow 2026-11-11T07:15:41Z.
+**Native scheduled monitors:** stale (GitHub Actions API, scheduled runs); watchdog.yml heartbeat stale (last run 2026-11-11T03:06:37Z: success; last success 2026-11-11T03:06:25Z); range-monitor.yml heartbeat fresh (last run 2026-11-11T08:27:08Z: success; last success 2026-11-11T08:26:57Z); newest scheduled start of any workflow 2026-11-11T08:26:57Z.
 
-**External timer (primary trigger):** arriving; 96 of 96 opportunities on time in 24 h, 0 delayed, absent none; last arrival 2026-11-11T08:12:02Z. Arrivals only: whether each request was sent needs the provider's history.
+**External timer (primary trigger):** arriving; 96 of 96 opportunities on time in 24 h, 0 delayed, absent none; last arrival 2026-11-11T08:27:02Z. Arrivals only: whether each request was sent needs the provider's history.
 
-Recovery service-watch: fresh; passed; last check completion 2026-11-11T08:12:10Z.
-Recovery study-watch: fresh; passed; last check completion 2026-11-11T08:13:17Z.
+Recovery service-watch: fresh; passed; last check completion 2026-11-11T08:27:09Z.
+Recovery study-watch: fresh; passed; last check completion 2026-11-11T08:28:08Z.
