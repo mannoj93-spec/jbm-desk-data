@@ -10,7 +10,9 @@ jobs:
     # Repo 2.30.10: three parallel shards. scripts/run_regression_shard.py discovers the suite as
     # `unittest discover -s regression` does and puts every test in exactly one shard (checked before it runs),
     # so the shards together are the complete suite. The caller's `needs.tests.result` is success only when
-    # every shard passed.
+    # every shard passed. Repo 2.30.12: every test class is dealt across the shards (the first split left one
+    # shard at 10 minutes), and the non-regression steps are spread: fixtures and desk tests on shard 0, the O21
+    # replay and the compile check on shard 1.
     name: tests (shard ${{ matrix.shard }} of 3)
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -24,7 +26,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Numerical fixtures
-        if: matrix.shard == 2
+        if: matrix.shard == 0
         run: python test_fixtures.py
       - name: Regression shard
         run: python scripts/run_regression_shard.py ${{ matrix.shard }} 3 -v
@@ -32,7 +34,7 @@ jobs:
         # Repo 2.30.10: these were not in the release gate, so a change could pass it and still stop the next
         # forecast at its preflight. Found when a feasibility.py edit passed the regression suite and failed
         # desk/test_streams.py locally.
-        if: matrix.shard == 2
+        if: matrix.shard == 0
         working-directory: desk
         run: |
           set -e
@@ -42,10 +44,10 @@ jobs:
             echo "::endgroup::"
           done
       - name: O21 reanalysis replay
-        if: matrix.shard == 2
+        if: matrix.shard == 1
         run: python desk/research/o21_reanalysis.py verify
       - name: Every Python file compiles
-        if: matrix.shard == 2
+        if: matrix.shard == 1
         env:
           PYTHONPYCACHEPREFIX: ${{ runner.temp }}/pyc
         run: python -m compileall -q .

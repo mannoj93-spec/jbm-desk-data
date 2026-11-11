@@ -1,8 +1,6 @@
 {
- "as_of_utc": "2026-10-29T12:28:55Z",
- "blockers": [
-  "observe a collector run on the 2.30.5 script whose push meets a moved main (none in the 22 collector runs after the merge, to 2026-10-29T12:30Z); the run that straddled the #59 merge still ran 2.30 and failed (recovered in 2.30.6)"
- ],
+ "as_of_utc": "2026-11-11T21:11:45Z",
+ "blockers": [],
  "code": {
   "path": "scripts/commit_push.sh",
   "sha256": "e29a82a385481713fa1c25aa18f3318cb643a9af9a65e60226689ec2179974b0",
@@ -13,14 +11,19 @@
  "schema": "component-readiness/1",
  "states": {
   "deployed": {
-   "evidence": [],
-   "value": false
+   "evidence": [
+    {
+     "kind": "workflow-run",
+     "ref": "every writer since cc299cec runs this script from main"
+    }
+   ],
+   "value": true
   },
   "implemented": {
    "evidence": [
     {
      "kind": "commit",
-     "ref": "at or before 9ac9eeb16be4"
+     "ref": "at or before b092cab47f39"
     }
    ],
    "value": true
@@ -35,8 +38,17 @@
    "value": true
   },
   "observed": {
-   "evidence": [],
-   "value": false
+   "evidence": [
+    {
+     "kind": "workflow-run",
+     "ref": "43053116320 (range, 2026-11-11T15:55Z): push rejected after the PR #64 merge moved main; bounded fetch ok tip=122aee25; rebase ok; push attempt 2 confirmed after 8 s"
+    },
+    {
+     "kind": "workflow-run",
+     "ref": "43070718492 (collector, 2026-11-11T17:42Z): push rejected after the PR #66 merge moved main; bounded fetch ok tip=6b84c10e; rebase ok; push attempt 2 confirmed after 14 s"
+    }
+   ],
+   "value": true
   },
   "pushed": {
    "evidence": [

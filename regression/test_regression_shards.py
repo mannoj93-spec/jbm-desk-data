@@ -23,8 +23,9 @@ def cases(module, names, per_class=3):
 
 class SplitTests(unittest.TestCase):
     def setUp(self):
-        self.tests = (cases("test_acceptance", ["A", "B", "C", "D", "E"]) + cases("test_health", ["H1", "H2"])
-                      + cases("regression.test_acceptance", ["P"]) + cases("unittest.loader", ["_FailedTest"], 1))
+        self.tests = (cases("test_acceptance", ["A", "B", "C", "D", "E"]) + cases("test_health", ["H1", "H2", "H3", "H4"])
+                      + cases("test_rev26", ["R1", "R2", "R3"]) + cases("regression.test_acceptance", ["P"])
+                      + cases("unittest.loader", ["_FailedTest"], 1))
 
     def test_every_test_is_in_exactly_one_shard_for_any_count(self):
         for count in (1, 2, 3, 4, 7):
@@ -32,13 +33,14 @@ class SplitTests(unittest.TestCase):
             self.assertEqual(len(parts), count)
             self.assertEqual(sorted(map(id, self.tests)), sorted(id(t) for p in parts for t in p), count)
 
-    def test_slow_classes_are_spread_and_everything_else_runs_last(self):
+    def test_classes_are_dealt_across_every_shard_and_slow_ones_evenly(self):
         parts = S.shards(self.tests, 3)
-        mods = [{type(t).__module__ for t in p} for p in parts]
-        self.assertTrue(all(m <= {"test_acceptance", "regression.test_acceptance"} for m in mods[:2]))
-        self.assertEqual(mods[2], {"test_health", "unittest.loader"})          # an import failure fails the last shard
-        self.assertEqual([len(p) for p in parts[:2]], [9, 9])                  # six slow classes, three each
-        self.assertEqual(len({type(t) for t in parts[0]} & {type(t) for t in parts[1]}), 0)   # a class is never split
+        slow = [sum(type(t).__module__.endswith("test_acceptance") for t in p) // 3 for p in parts]
+        self.assertEqual(slow, [2, 2, 2])                                      # six slow classes, two per shard
+        self.assertTrue(all(len(p) > 6 for p in parts))                        # the other classes are shared out too
+        owners = [{type(t) for t in p} for p in parts]
+        self.assertFalse(owners[0] & owners[1] or owners[0] & owners[2] or owners[1] & owners[2])   # a class is never split
+        self.assertEqual(sum("unittest.loader" in {type(t).__module__ for t in p} for p in parts), 1)   # an import failure fails one shard
 
     def test_one_shard_is_the_whole_suite_and_the_split_is_deterministic(self):
         self.assertEqual(S.shards(self.tests, 1), [self.tests])

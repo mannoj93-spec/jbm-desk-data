@@ -1,0 +1,76 @@
+{
+ "as_of_utc": "2026-11-11T21:11:45Z",
+ "blockers": [
+  "how a parked design's hourly control selection treats the parked interval if it is unparked: not established",
+  "the weekly report's issue-closing step has not run (next report Monday 00:30 UTC)"
+ ],
+ "code": {
+  "path": "scripts/lab_designs.py",
+  "sha256": "ff72ee4c49f0f07b8b214fdf9911a6e629d0c2ca636bc12dddc8300ff04088e7",
+  "version": "repo 2.30.10"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "lab-parking",
+ "schema": "component-readiness/1",
+ "states": {
+  "deployed": {
+   "evidence": [
+    {
+     "kind": "workflow-run",
+     "ref": "43090780786 (research lab, schedule, 2026-11-11T19:49Z): five active designs, compute job 4 m 47 s, persist success"
+    }
+   ],
+   "value": true
+  },
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before b092cab47f39"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [
+    {
+     "kind": "merge-commit",
+     "ref": "6b84c10e PR #66 merged 2026-11-11T17:43:58Z"
+    }
+   ],
+   "value": true
+  },
+  "observed": {
+   "evidence": [
+    {
+     "kind": "workflow-run",
+     "ref": "43090780786: run 6.2 minutes end to end against 33-53 minutes for the previous five runs"
+    }
+   ],
+   "value": true
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "pull-request",
+     "ref": "#66"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_lab_parking.py"
+    },
+    {
+     "kind": "test",
+     "ref": "regression/test_identity_guard.py"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Parked lab designs and research identity guards"
+}

@@ -5,9 +5,11 @@
 
 The suite is discovered exactly as `python -m unittest discover -s regression` discovers it and then split.
 Every discovered test belongs to exactly one shard, so the shards together are the whole suite: a new test file
-needs no list to be edited, and none can be dropped by a list going stale. Classes of the slow module (SLOW) are
-dealt round-robin, in name order, across every shard but the last; everything else, including a module that
-failed to import, runs in the last shard. COUNT=1 is the whole suite in one shard.
+needs no list to be edited, and none can be dropped by a list going stale. Test classes are dealt round-robin
+across all shards in name order, the classes of the slow module (SLOW) first so they are spread evenly; a module
+that failed to import is dealt like any class and fails the shard it lands in. COUNT=1 is the whole suite.
+(2.30.10 put everything but the slow module in the last shard; measured in CI that shard took 10 minutes beside
+3 and 1.5, so 2.30.12 deals every class.)
 
 The split is checked before anything runs (the shards are disjoint and their union is the discovery); a failed
 check exits 2 without running a test. Prints `shard I/N: K of TOTAL tests` first. Exit 1 when a test fails.
@@ -38,14 +40,8 @@ def assign(owners, count):
     """{owner: shard index} for the distinct owners. Deterministic in the owners' names only."""
     if not isinstance(count, int) or isinstance(count, bool) or count < 1:
         raise ValueError("shard count must be a positive integer")
-    owners = sorted(set(owners))
-    if count == 1:
-        return {o: 0 for o in owners}
-    slow = [o for o in owners if o[0].split(".")[-1] in SLOW]
-    out = {o: count - 1 for o in owners}
-    for i, o in enumerate(slow):
-        out[o] = i % (count - 1)
-    return out
+    owners = sorted(set(owners), key=lambda o: (o[0].split(".")[-1] not in SLOW, o))
+    return {o: i % count for i, o in enumerate(owners)}
 
 
 def shards(tests, count):
