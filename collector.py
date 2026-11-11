@@ -309,6 +309,22 @@ def day(ms):
     return dt.datetime.fromtimestamp(ms / 1000, dt.timezone.utc).strftime("%Y-%m-%d")
 
 
+# Repo 2.30.11: on Nov 11 2026 the five Binance 5-minute series were 1.43 GB of the repository's 2.45 GB history
+# (monthly files, about 5,400 versions each at roughly 15-80 KB a version, though a version adds three rows).
+# Rows stamped from this instant go to daily files, so a routine commit rewrites at most one day of rows. The
+# switch is on a month boundary so every daily file name sorts after the last monthly one. Readers take every
+# *.jsonl in the directory and key rows by their stamp, so row content and readers are unchanged. Hourly series
+# stay monthly.
+SERIES_DAILY_FROM_MS = 1796083200000            # 2026-12-01T00:00:00Z
+
+
+def series_partition(name):
+    """The partition function for one history series: the file a row belongs in, from its stamp."""
+    if not name.endswith("_5m"):
+        return month
+    return lambda ms: day(ms) if ms >= SERIES_DAILY_FROM_MS else month(ms)
+
+
 def append_rows(rel_dir, rows, partition=month, key=None):
     """Monthly files by default; large forward-only books use daily files (partition=day)
     so each routine commit rewrites a small file. `key` overrides the row identity (2.7)."""
@@ -501,7 +517,7 @@ def collect_series(st):
             name = f"binance_{ep}_{period}"
             def one(name=name, ep=ep, period=period, fields=fields):
                 rows, err, calls = binance_futures_data(name, ep, period, fields, None if BACKFILL else ck.get(name))
-                added = append_rows(f"series/{name}", rows) if rows else 0
+                added = append_rows(f"series/{name}", rows, partition=series_partition(name)) if rows else 0
                 if rows:
                     ck[name] = max(ck.get(name) or 0, rows[-1]["t"])
                 RUN["series"][name] = {"added": added, "calls": calls, "err": err,

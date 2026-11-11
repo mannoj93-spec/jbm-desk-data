@@ -451,6 +451,16 @@ source retention, use an explicit backfill after reviewing the gap. A measured H
 boundary is tolerated only during Binance backfill after older data has been received;
 other failures retain the prior checkpoint.
 
+**Five-minute series in daily files from 2026-12-01 (repo 2.30.11).** Measured on a full clone on Nov 11 2026:
+the repository's history was 2.45 GiB in 12,630 commits, and the five Binance 5-minute series
+(`data/series/binance_*_5m/`) were 1,427 MB of it - about 5,400 stored versions of each monthly file at 15-80 KB a
+version, although a version adds three rows. Rows stamped at or after 2026-12-01T00:00:00Z go to
+`data/series/<name>/YYYY-MM-DD.jsonl`; earlier rows, including any later backfill of them, stay in the monthly
+files. Row content, identities and checkpoints are unchanged, and every reader takes all `*.jsonl` in the directory
+and keys rows by stamp. The switch is on a month boundary because inside a month a daily name sorts before the
+monthly one. Hourly series stay monthly. Not established until it runs: how much smaller the stored versions are -
+compare the per-version size of the December files on a full clone with the figures above.
+
 Forward-only books use daily files so each routine commit rewrites a small file:
 `data/options/deribit_btc/YYYY-MM-DD.jsonl` (every BTC option with non-zero OI: instrument, OI in
 BTC, mark IV; underlying price per expiry; about 30 KB per run) and

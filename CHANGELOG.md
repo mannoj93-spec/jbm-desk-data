@@ -1,3 +1,17 @@
+# Revision 2.30.11 — 2026-11-11 five-minute series in daily files from December 1
+
+- `collector.py`: rows of the five Binance 5-minute series stamped at or after 2026-12-01T00:00:00Z are written to
+  daily files (`series_partition`); earlier rows and all hourly series stay monthly. Row content, row identity,
+  checkpoints and `CODE_VERSION` are unchanged. One call site changed.
+- Why: on a full clone (Nov 11 2026; 2.45 GiB, 12,630 commits) those five directories held 1,427 MB of blob
+  history - 55% of the repository - from about 5,400 stored versions of each monthly file. GitHub recommends
+  repositories stay under 1 GB and strongly under 5 GB; its size figure grew 20 MB in 11 hours on Nov 11.
+- Rehearsed with the real collector code against the live endpoints and a patched cutover: all five series split
+  at the cutover (11 rows to the monthly file, 17 to the daily one), and `lab.data.Store.series` returned one
+  contiguous series with every stamp once.
+- Not established: the size of the saving. It starts on Dec 1 and is to be measured on a full clone.
+- Not changed: any reader, any frozen study or lab identity (0 drifted files; evaluation versions equal the
+  registered ones under Python 3.12).
 # Revision 2.30.10 — 2026-11-11 lab parking and workflow housekeeping
 
 - **Parked lab designs** (operator decision): B1-underwater-adds, D1-active-twap and E1-liquidity-recovery are no
