@@ -1,0 +1,73 @@
+{
+ "as_of_utc": "2026-11-11T21:11:45Z",
+ "blockers": [
+  "first scheduled readiness run on main (22:37 UTC daily) not yet read when this record was written",
+  "range-repair-capture.yml has never captured a real gap (none exists); against the live archive it refused the October gap, which the provider has since filled",
+  "a repair cannot be captured before the provider publishes the gap month's monthly archive (about 33.5 h after month end for October 2026)"
+ ],
+ "code": {
+  "path": "range_source_repair.py",
+  "sha256": "c7ed1d8f80ef55dbf442664652f843ce939d205d117183d69ff81be658ca3492",
+  "version": "repo 2.30.8"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "range-source-readiness",
+ "schema": "component-readiness/1",
+ "states": {
+  "deployed": {
+   "evidence": [
+    {
+     "kind": "workflow-run",
+     "ref": "43055968133 (range, 2026-11-11T16:12Z, main 6e9e3ba0): refit entry point returned fit-valid; forecast confirmed 16:20:51Z"
+    }
+   ],
+   "value": true
+  },
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before b092cab47f39"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [
+    {
+     "kind": "merge-commit",
+     "ref": "122aee25 PR #64 merged 2026-11-11T15:55:43Z"
+    }
+   ],
+   "value": true
+  },
+  "observed": {
+   "evidence": [
+    {
+     "kind": "workflow-run",
+     "ref": "43051257211 (readiness, manual on the PR branch, 2026-11-11T15:44Z): ready, Nov 1-10, 10 daily files ok"
+    }
+   ],
+   "value": true
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "pull-request",
+     "ref": "#64"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_research_repairs.py"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Daily range-source readiness and registry-driven repairs"
+}

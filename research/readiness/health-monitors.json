@@ -1,0 +1,84 @@
+{
+ "as_of_utc": "2026-11-11T21:11:45Z",
+ "blockers": [
+  "the watchdog starts on the native schedule: one start between 10:59Z and 18:42Z on 2026-11-11 (463 minutes), so a silent external timer is reported only when it next starts; the operator declined an independent alert",
+  "token.expires_utc in docs/acceptance/timer.json is unrecorded until the operator fills it"
+ ],
+ "code": {
+  "path": "health.py",
+  "sha256": "b57d48364faec4a430d1863fada789b446f77270187ba127e1be4d1bb6ad7421",
+  "version": "health-1.5.0 (repo 2.30.9)"
+ },
+ "generator": "scripts/readiness.py readiness-1.0.0",
+ "id": "health-monitors",
+ "schema": "component-readiness/1",
+ "states": {
+  "deployed": {
+   "evidence": [
+    {
+     "kind": "workflow-run",
+     "ref": "43055963854 (collector, 2026-11-11T16:12Z): Record operational health succeeded on health-1.5.0"
+    }
+   ],
+   "value": true
+  },
+  "implemented": {
+   "evidence": [
+    {
+     "kind": "commit",
+     "ref": "at or before b092cab47f39"
+    }
+   ],
+   "value": true
+  },
+  "merged": {
+   "evidence": [
+    {
+     "kind": "merge-commit",
+     "ref": "6e9e3ba0 PR #65 merged 2026-11-11T16:09:16Z"
+    }
+   ],
+   "value": true
+  },
+  "observed": {
+   "evidence": [
+    {
+     "kind": "observation",
+     "ref": "state/incidents.jsonl: native_schedule_day rows for 2026-11-08, -09 and -10 recorded 2026-11-11T16:15:12Z; reports/health.md carries the token and integrity lines"
+    },
+    {
+     "kind": "workflow-run",
+     "ref": "43080336496 (watchdog, schedule, 2026-11-11T18:42Z): external timer arriving, 12 of 12 opportunities on time in 3 h; one line for 4 recovered native silences"
+    }
+   ],
+   "value": true
+  },
+  "pushed": {
+   "evidence": [
+    {
+     "kind": "pull-request",
+     "ref": "#65"
+    }
+   ],
+   "value": true
+  },
+  "tested": {
+   "evidence": [
+    {
+     "kind": "test",
+     "ref": "regression/test_health.py"
+    },
+    {
+     "kind": "test",
+     "ref": "regression/test_recovery.py"
+    },
+    {
+     "kind": "test",
+     "ref": "regression/test_rev227.py"
+    }
+   ],
+   "value": true
+  }
+ },
+ "title": "Health monitors: native schedule as secondary trigger, timer token, malformed lines"
+}

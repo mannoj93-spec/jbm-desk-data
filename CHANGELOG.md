@@ -1,3 +1,20 @@
+# Revision 2.30.12 — 2026-11-11 records, shard balance and a multiplicity proposal
+
+- `desk/deployments.jsonl`: rows for the PR #60, #62, #64, #65, #66 and #67 merges, and two production observations of
+  the 2.30.5 persistence retry - a range run (43053116320) and a collector run (43070718492) whose pushes met a
+  moved main and were confirmed on the second attempt after 8 s and 14 s. The 2.30.5 record's open blocker is closed.
+- Readiness records regenerated (`scripts/readiness.py`): persistence retry now deployed and observed; new records
+  for range-source readiness (2.30.8), health monitors (2.30.9) and lab parking with the identity guards (2.30.10),
+  each with its production evidence and what is still not established.
+- Release gate shards rebalanced: every test class is dealt across the three shards. The 2.30.10 split left one
+  shard at 10 minutes beside 3 and 1.5. Fixtures and desk tests run on shard 0, the O21 replay and compile check
+  on shard 1. Same tests, each still in exactly one shard.
+- `docs/proposals/2026-11-11-market-study-multiplicity.md`: a proposed, **not adopted** rule for reading the four
+  concurrently registered market-study primaries (state read once, from v2; each at one quarter of the error rate).
+  No protocol, registration or clock changes.
+- Observed in production from 2.30.10: the research lab's first scheduled run with the three designs parked took
+  6.2 minutes end to end (run 43090780786), against 33-53 minutes for the five runs before it.
+
 # Revision 2.30.11 — 2026-11-11 five-minute series in daily files from December 1
 
 - `collector.py`: rows of the five Binance 5-minute series stamped at or after 2026-12-01T00:00:00Z are written to
