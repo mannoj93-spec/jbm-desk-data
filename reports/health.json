@@ -296,7 +296,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-11-12T22:15:05Z",
+ "generated_utc": "2026-11-12T22:20:55Z",
  "integrity": {
   "malformed_lines": {},
   "rule": "lines this evaluation skipped as unparseable or non-object, by file; such a line is malformed, not absent, and the figures above exclude it"
@@ -316,11 +316,11 @@
    "state": "arriving",
    "window_h": 24
   },
-  "newest_scheduled_start_utc": "2026-11-12T20:26:26Z",
+  "newest_scheduled_start_utc": "2026-11-12T22:15:23Z",
   "problems_detected_by": [],
   "recovery_checks": {
    "service-watch": {
-    "age_min": 2.9,
+    "age_min": 8.8,
     "last_check": "passed",
     "last_completed_utc": "2026-11-12T22:12:09Z",
     "last_executed": true,
@@ -330,7 +330,7 @@
     "state": "fresh"
    },
    "study-watch": {
-    "age_min": 1.7,
+    "age_min": 7.6,
     "last_check": "passed",
     "last_completed_utc": "2026-11-12T22:13:21Z",
     "last_executed": true,
@@ -348,7 +348,7 @@
     "last_completed_utc": "2026-11-12T16:13:39Z",
     "last_result": "success",
     "last_run_id": 43255704003,
-    "last_scheduled_start_utc": "2026-11-12T16:10:13Z",
+    "last_scheduled_start_utc": "2026-11-12T22:15:23Z",
     "last_success_utc": "2026-11-12T16:10:13Z"
    },
    "dashboard.yml": {
@@ -439,7 +439,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 110.1,
+  "report_age_min": 115.9,
   "report_coverage": 0.7886,
   "report_generated_utc": "2026-11-12T20:25:02.176Z",
   "report_scheduled_decisions": 246,
@@ -449,13 +449,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 363.9,
+  "age_min": 1.6,
   "coverage_24h": {
    "automated_critical_failures": 0,
-   "automated_runs": 97,
+   "automated_runs": 98,
    "expected_slots": 96,
-   "from_ms": 1794435305529,
-   "from_utc": "2026-11-11T22:15:05Z",
+   "from_ms": 1794435655040,
+   "from_utc": "2026-11-11T22:20:55Z",
    "intervals": 95,
    "intervals_with_automated_run": 95,
    "intervals_with_successful_automated_run": 95,
@@ -463,11 +463,11 @@
    "longest_successful_gap_min": 17.8,
    "rule": "activity = any automated stored record (heartbeat); success = critical_success records only",
    "runs_by_source": {
-    "native-schedule": 3,
+    "native-schedule": 4,
     "recovery": 94
    },
-   "to_ms": 1794521705529,
-   "to_utc": "2026-11-12T22:15:05Z"
+   "to_ms": 1794522055040,
+   "to_utc": "2026-11-12T22:20:55Z"
   },
   "gaps": [
    {
@@ -541,14 +541,14 @@
     "start_utc": "2026-11-12T07:36:17Z"
    },
    {
-    "end_ms": null,
-    "end_utc": null,
-    "minutes": 363.88,
+    "end_ms": 1794521956743,
+    "end_utc": "2026-11-12T22:19:16Z",
+    "minutes": 368.06,
     "start_ms": 1794499872911,
     "start_utc": "2026-11-12T16:11:12Z"
    }
   ],
-  "last_scheduled_utc": "2026-11-12T16:11:12Z",
+  "last_scheduled_utc": "2026-11-12T22:19:16Z",
   "manual_runs_since": 0,
   "native_daily": [
    {
@@ -594,15 +594,15 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-11-12T22:13:32Z",
-   "last_automated_utc": "2026-11-12T22:13:32Z",
-   "last_source": "recovery",
-   "last_success_utc": "2026-11-12T22:13:32Z",
+   "last_activity_utc": "2026-11-12T22:19:16Z",
+   "last_automated_utc": "2026-11-12T22:19:16Z",
+   "last_source": "native-schedule",
+   "last_success_utc": "2026-11-12T22:19:16Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
   "stale_limit_min": 90,
-  "state": "stale"
+  "state": "healthy"
  },
  "timer_token": {
   "expires_utc": null,
