@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-12T13:32:04.831Z. Integrity: ok.
+Generated 2026-11-12T13:47:13.003Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,27 +16,27 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-12T13:31:53.335Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-12T13:31:58.265Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-12T13:31:58.702Z
-- options_30d published report: fresh; last successful refresh: 2026-11-12T13:32:03.327Z
+- v1 published report: fresh; last successful refresh: 2026-11-12T13:47:00.205Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-12T13:47:06.166Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-12T13:47:06.999Z
+- options_30d published report: fresh; last successful refresh: 2026-11-12T13:47:11.576Z
 
 ## Coverage
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
-| turnover | 5/5 | 100.0% | 0 |
+| turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 9/24 | 37.5% | 0 |
 | paired | 92/93 | 98.9% | 0 |
 | state_v2 | 23/24 | 95.8% | 0 |
-| stress | 45/46 | 97.8% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 46/47 | 97.9% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 17/23 | 73.9% | 0 |
 | options usability rr25_30d | 23/23 | 100.0% | 0 |
 
-turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -53,12 +53,12 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 70/104 | 1 |
+| turnover | 71/105 | 0 |
 | range | 71/105 | 0 |
 | state | 295/421 | 0 |
-| paired | 1669/1680 | 3 |
-| stress | 835/840 | 2 |
-| liquidations | 1662/1680 | 4 |
+| paired | 1670/1681 | 3 |
+| stress | 836/841 | 1 |
+| liquidations | 1666/1684 | 0 |
 | options | 84/420 | 1 |
 
 ## Diagnostics
@@ -105,9 +105,9 @@ Selected rr25_7d legs: 18 usable captures, 72 leg observations. Quote age median
 
 Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 5282.5; relative spread median: 0.04878048780487809. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 388 scores reproduced.
+State v2 numerical replay: verified, 389 scores reproduced.
 
-State v2 evidence: 388/1680 scored observations for the frozen minimum interval threshold; 2/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 389/1680 scored observations for the frozen minimum interval threshold; 2/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 192 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 555.5 / 1076.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
