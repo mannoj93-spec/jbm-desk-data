@@ -1,6 +1,6 @@
 {
  "availability": {
-  "generated_utc": "2026-11-12T20:27:48.042Z",
+  "generated_utc": "2026-11-12T21:46:33.737Z",
   "horizons": {
    "24h": {
     "recorded_state": "valid-current",
@@ -296,7 +296,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-11-12T21:45:07Z",
+ "generated_utc": "2026-11-12T22:00:09Z",
  "integrity": {
   "malformed_lines": {},
   "rule": "lines this evaluation skipped as unparseable or non-object, by file; such a line is malformed, not absent, and the figures above exclude it"
@@ -308,7 +308,7 @@
   "external_timer": {
    "absent": [],
    "delayed": [],
-   "last_arrival_utc": "2026-11-12T21:42:02Z",
+   "last_arrival_utc": "2026-11-12T21:57:02Z",
    "on_time": 96,
    "on_time_max_lag_s": 3,
    "opportunities": 96,
@@ -322,19 +322,19 @@
    "service-watch": {
     "age_min": 3.0,
     "last_check": "passed",
-    "last_completed_utc": "2026-11-12T21:42:09Z",
+    "last_completed_utc": "2026-11-12T21:57:10Z",
     "last_executed": true,
-    "run_id": 43312817370,
+    "run_id": 43315232846,
     "run_result": "success",
     "stale_after_min": 45,
     "state": "fresh"
    },
    "study-watch": {
-    "age_min": 1.5,
+    "age_min": 1.8,
     "last_check": "passed",
-    "last_completed_utc": "2026-11-12T21:43:37Z",
+    "last_completed_utc": "2026-11-12T21:58:21Z",
     "last_executed": true,
-    "run_id": 43312817370,
+    "run_id": 43315232846,
     "run_result": "success",
     "stale_after_min": 45,
     "state": "fresh"
@@ -395,11 +395,11 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_completed_utc": "2026-11-12T21:43:40Z",
+    "last_completed_utc": "2026-11-12T21:58:25Z",
     "last_result": "success",
-    "last_run_id": 43312817370,
-    "last_scheduled_start_utc": "2026-11-12T21:42:02Z",
-    "last_success_utc": "2026-11-12T21:42:02Z",
+    "last_run_id": 43315232846,
+    "last_scheduled_start_utc": "2026-11-12T21:57:02Z",
+    "last_success_utc": "2026-11-12T21:57:02Z",
     "native": {
      "last_completed_utc": "2026-11-12T17:18:16Z",
      "last_result": "failure",
@@ -439,7 +439,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 80.1,
+  "report_age_min": 95.1,
   "report_coverage": 0.7886,
   "report_generated_utc": "2026-11-12T20:25:02.176Z",
   "report_scheduled_decisions": 246,
@@ -449,13 +449,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 333.9,
+  "age_min": 348.9,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 97,
    "expected_slots": 96,
-   "from_ms": 1794433507480,
-   "from_utc": "2026-11-11T21:45:07Z",
+   "from_ms": 1794434409625,
+   "from_utc": "2026-11-11T22:00:09Z",
    "intervals": 95,
    "intervals_with_automated_run": 95,
    "intervals_with_successful_automated_run": 95,
@@ -466,8 +466,8 @@
     "native-schedule": 3,
     "recovery": 94
    },
-   "to_ms": 1794519907480,
-   "to_utc": "2026-11-12T21:45:07Z"
+   "to_ms": 1794520809625,
+   "to_utc": "2026-11-12T22:00:09Z"
   },
   "gaps": [
    {
@@ -543,7 +543,7 @@
    {
     "end_ms": null,
     "end_utc": null,
-    "minutes": 333.91,
+    "minutes": 348.95,
     "start_ms": 1794499872911,
     "start_utc": "2026-11-12T16:11:12Z"
    }
@@ -594,10 +594,10 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-11-12T21:43:18Z",
-   "last_automated_utc": "2026-11-12T21:43:18Z",
+   "last_activity_utc": "2026-11-12T21:58:19Z",
+   "last_automated_utc": "2026-11-12T21:58:19Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-11-12T21:43:18Z",
+   "last_success_utc": "2026-11-12T21:58:19Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
