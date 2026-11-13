@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-11-13T18:48:48.054Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-13T19:02:19.550Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 120 | 84 | 84 |
 | range | collecting (descriptive) | 120 | 78 | 72 |
-| state | collecting (descriptive) | 481 | 313 | 313 |
-| paired | collecting (descriptive) | 1924 | 1829 | 1824 |
+| state | collecting (descriptive) | 482 | 313 | 313 |
+| paired | collecting (descriptive) | 1925 | 1830 | 1824 |
 
 ## Primary comparisons
 
@@ -58,8 +58,8 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 ## Data usability pilots
 
 - Options: 481 captures; usable 7d RR25 in 401, usable 30d RR25 in 151; 370 valid hourly changes.
-- Liquidations: 1323 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 10, "missed": 66, "ok": 1819}`.
-- Exchange stress: 962/962 scheduled records. Capture states: `{"missed": 44, "ok": 918}`. Ratings: `{"low": 918}`.
+- Liquidations: 1326 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 10, "missed": 66, "ok": 1823}`.
+- Exchange stress: 963/963 scheduled records. Capture states: `{"missed": 44, "ok": 919}`. Ratings: `{"low": 919}`.
 
 These pilots measure availability and revisions; they are not predictive evidence. Unknown source coverage is never zero activity.
 
