@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-11-13T15:34:55.759Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-13T16:02:35.823Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
-| turnover | collecting (descriptive) | 119 | 83 | 83 |
-| range | collecting (descriptive) | 119 | 77 | 71 |
-| state | collecting (descriptive) | 478 | 313 | 312 |
-| paired | collecting (descriptive) | 1911 | 1816 | 1811 |
+| turnover | collecting (descriptive) | 120 | 83 | 83 |
+| range | collecting (descriptive) | 120 | 77 | 71 |
+| state | collecting (descriptive) | 479 | 313 | 312 |
+| paired | collecting (descriptive) | 1913 | 1818 | 1813 |
 
 ## Primary comparisons
 
@@ -18,7 +18,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 | turnover | 0.274265 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
 | range | 0.00392772 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | 0.000143014 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
-| paired | 0.000310602 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
+| paired | 0.000310259 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
 
@@ -48,18 +48,18 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 | Horizon | Arm | Scored | Directional | Neutral | Conditional hit rate |
 |---|---|---:|---:|---:|---:|
-| 60m | perp_original_clock | 1811 | 1097 | 714 | 48.59% |
-| 60m | perp_synchronized_clock | 1811 | 1097 | 714 | 48.59% |
-| 60m | combined_synchronized_clock | 1811 | 1086 | 725 | 48.34% |
-| 15m | perp_original_clock | 1811 | 1097 | 714 | 47.58% |
-| 15m | perp_synchronized_clock | 1811 | 1097 | 714 | 47.58% |
-| 15m | combined_synchronized_clock | 1811 | 1086 | 725 | 46.87% |
+| 60m | perp_original_clock | 1813 | 1098 | 715 | 48.54% |
+| 60m | perp_synchronized_clock | 1813 | 1098 | 715 | 48.54% |
+| 60m | combined_synchronized_clock | 1813 | 1087 | 726 | 48.30% |
+| 15m | perp_original_clock | 1813 | 1098 | 715 | 47.63% |
+| 15m | perp_synchronized_clock | 1813 | 1098 | 715 | 47.63% |
+| 15m | combined_synchronized_clock | 1813 | 1087 | 726 | 46.92% |
 
 ## Data usability pilots
 
 - Options: 478 captures; usable 7d RR25 in 398, usable 30d RR25 in 148; 367 valid hourly changes.
-- Liquidations: 1314 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 10, "missed": 66, "ok": 1807}`.
-- Exchange stress: 956/956 scheduled records. Capture states: `{"missed": 44, "ok": 912}`. Ratings: `{"low": 912}`.
+- Liquidations: 1317 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 10, "missed": 66, "ok": 1811}`.
+- Exchange stress: 957/957 scheduled records. Capture states: `{"missed": 44, "ok": 913}`. Ratings: `{"low": 913}`.
 
 These pilots measure availability and revisions; they are not predictive evidence. Unknown source coverage is never zero activity.
 
