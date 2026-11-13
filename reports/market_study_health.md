@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-13T12:08:11.197Z. Integrity: ok.
+Generated 2026-11-13T12:20:50.086Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-13T12:07:54.755Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-13T12:08:01.548Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-13T12:08:02.037Z
-- options_30d published report: fresh; last successful refresh: 2026-11-13T12:08:08.873Z
+- v1 published report: fresh; last successful refresh: 2026-11-13T12:20:30.795Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-13T12:20:38.371Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-13T12:20:38.941Z
+- options_30d published report: fresh; last successful refresh: 2026-11-13T12:20:47.175Z
 
 ## Coverage
 
@@ -46,6 +46,8 @@ paired: 94/94 closed opportunities recorded; 94 eligible forecasts; 0 abstention
 
 state_v2: 23/23 closed opportunities recorded; 23 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
+options: newer verified success; the current miss alert is cleared. Historical misses remain.
+
 ## Since recovery deployment
 
 Study recovery deployment (PR #53), 2026-10-26T00:58:03Z; commit `d03301c59ec95502e716faf06502c875298a2866`.
@@ -53,13 +55,13 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 76/110 | 0 |
-| range | 76/110 | 0 |
+| turnover | 76/110 | 1 |
+| range | 76/110 | 1 |
 | state | 300/443 | 0 |
-| paired | 1760/1771 | 2 |
+| paired | 1761/1772 | 2 |
 | stress | 881/886 | 1 |
 | liquidations | 1754/1772 | 4 |
-| options | 90/443 | 0 |
+| options | 90/443 | 1 |
 
 ## Diagnostics
 
@@ -92,15 +94,15 @@ State depth (since_deployment): 444 forecasts, 143 abstentions; 3 unavailable de
 
 State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.775 / 29.65.
 
-Selected rr25_7d legs: 18 usable captures, 72 leg observations. Quote age median (ms): 4919.5; relative spread median: 0.093073593073593. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 18 usable captures, 72 leg observations. Quote age median (ms): 4731.5; relative spread median: 0.093073593073593. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-Selected rr25_30d legs: 7 usable captures, 28 leg observations. Quote age median (ms): 7557.5; relative spread median: 0.050000000000000044. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_30d legs: 7 usable captures, 28 leg observations. Quote age median (ms): 5488.0; relative spread median: 0.04939024390243907. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 State v2 numerical replay: verified, 411 scores reproduced.
 
 State v2 evidence: 411/1680 scored observations for the frozen minimum interval threshold; 2/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
-Immediate selected books: 180 usable / 180 attempted / 180 selected in 24h; median/p90 source lag (ms): 525.5 / 768.
+Immediate selected books: 180 usable / 180 attempted / 180 selected in 24h; median/p90 source lag (ms): 525.5 / 763.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
 
 ## Source quality
