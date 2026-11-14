@@ -1,6 +1,6 @@
 # Market studies
 
-Generated 2026-11-14T01:47:10.996Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-14T01:49:28.223Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
