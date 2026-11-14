@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-14T13:33:33.745Z. Integrity: ok.
+Generated 2026-11-14T13:47:20.193Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,27 +16,27 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-14T13:33:17.572Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-14T13:33:24.124Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-14T13:33:24.583Z
-- options_30d published report: fresh; last successful refresh: 2026-11-14T13:33:31.259Z
+- v1 published report: fresh; last successful refresh: 2026-11-14T13:47:06.098Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-14T13:47:11.865Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-14T13:47:12.433Z
+- options_30d published report: fresh; last successful refresh: 2026-11-14T13:47:18.144Z
 
 ## Coverage
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
-| turnover | 5/5 | 100.0% | 0 |
+| turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 12/24 | 50.0% | 0 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 23/23 | 100.0% | 0 |
 | options usability rr25_30d | 23/23 | 100.0% | 0 |
 
-turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -53,12 +53,12 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 82/116 | 1 |
+| turnover | 83/117 | 0 |
 | range | 83/117 | 0 |
 | state | 312/469 | 0 |
-| paired | 1861/1872 | 3 |
-| stress | 931/936 | 2 |
-| liquidations | 1854/1872 | 4 |
+| paired | 1862/1873 | 3 |
+| stress | 932/937 | 1 |
+| liquidations | 1858/1876 | 0 |
 | options | 115/468 | 1 |
 
 ## Diagnostics
@@ -94,9 +94,9 @@ Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median
 
 Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4603.0; relative spread median: 0.05263157894736847. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 436 scores reproduced.
+State v2 numerical replay: verified, 437 scores reproduced.
 
-State v2 evidence: 436/1680 scored observations for the frozen minimum interval threshold; 2/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 437/1680 scored observations for the frozen minimum interval threshold; 2/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 192 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 468.5 / 693.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
