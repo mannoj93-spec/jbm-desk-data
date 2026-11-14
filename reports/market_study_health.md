@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-14T23:04:19.514Z. Integrity: ok.
+Generated 2026-11-14T23:17:34.690Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-14T23:04:05.705Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-14T23:04:11.179Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-14T23:04:11.560Z
-- options_30d published report: fresh; last successful refresh: 2026-11-14T23:04:17.339Z
+- v1 published report: fresh; last successful refresh: 2026-11-14T23:17:17.987Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-14T23:17:24.507Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-14T23:17:24.973Z
+- options_30d published report: fresh; last successful refresh: 2026-11-14T23:17:32.063Z
 
 ## Coverage
 
@@ -30,11 +30,11 @@ None.
 | state | 10/23 | 43.5% | 1 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options capture | 22/22 | 100.0% | 0 |
-| options usability rr25_7d | 22/22 | 100.0% | 0 |
-| options usability rr25_30d | 22/22 | 100.0% | 0 |
+| options capture | 23/23 | 100.0% | 0 |
+| options usability rr25_7d | 23/23 | 100.0% | 0 |
+| options usability rr25_30d | 23/23 | 100.0% | 0 |
 
 turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -56,10 +56,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 85/119 | 0 |
 | range | 85/119 | 0 |
 | state | 313/478 | 0 |
-| paired | 1899/1910 | 3 |
-| stress | 950/955 | 2 |
+| paired | 1900/1911 | 3 |
+| stress | 951/956 | 1 |
 | liquidations | 1894/1912 | 4 |
-| options | 124/477 | 1 |
+| options | 125/478 | 1 |
 
 ## Diagnostics
 
@@ -70,7 +70,7 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 1936 scored forecasts; 1671 unique entries; 437 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 1938 scored forecasts; 1672 unique entries; 438 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 14 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.666666666666664 / 30.883333333333333.
@@ -90,9 +90,9 @@ State depth (since_deployment): 479 forecasts, 165 abstentions; 3 unavailable de
 
 State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.816666666666666 / 28.583333333333332.
 
-Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4688.5; relative spread median: 0.07846153846153839. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4752.5; relative spread median: 0.07846153846153839. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4686.5; relative spread median: 0.05263157894736847. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4758.5; relative spread median: 0.05263157894736847. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 State v2 numerical replay: verified, 446 scores reproduced.
 
