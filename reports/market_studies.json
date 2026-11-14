@@ -1,5 +1,5 @@
 {
-  "generated_ms": 1794675747116,
+  "generated_ms": 1794676723877,
   "activation": {
     "commit": "c37fa7906c02ff9407e1a1bdf73f04f69d24a9ce",
     "confirmed_ms": 1792863369620,
@@ -152,7 +152,7 @@
         "status": "collecting (descriptive)",
         "checkpoint_rules": "Descriptive only before 365 days and 20 blocks. Support requires stressed primary 90% block interval above zero, >=80% scheduled coverage, both B2 volatilities 10%-20%, and B2_10 drawdown no more than 2 percentage points worse. No automated promotion.",
         "review": {
-          "days_since_launch": 20.826214155092593,
+          "days_since_launch": 20.83751925925926,
           "C1_due": false,
           "C2_due": false,
           "action": "operator review only; no automatic status change"
@@ -174,12 +174,12 @@
       "on_time_published": 84,
       "late_publication": 0,
       "pending_confirmation": 0,
-      "scored": 77,
+      "scored": 78,
       "launch_ms": 1792988374052,
       "status": "collecting (descriptive)",
       "results": {
-        "paired": 77,
-        "mean_difference": 0.004503259966737661,
+        "paired": 78,
+        "mean_difference": 0.004632635173587178,
         "block_size": 42,
         "complete_block_equivalents": 1,
         "ci90": null,
@@ -189,12 +189,12 @@
       "review_eligible": false,
       "calibration": {
         "control": {
-          "coverage": 0.6623376623376623,
-          "width": 0.031932321905337666
+          "coverage": 0.6538461538461539,
+          "width": 0.03188276792178205
         },
         "calibrated": {
-          "coverage": 0.6493506493506493,
-          "width": 0.028236873501374025
+          "coverage": 0.6410256410256411,
+          "width": 0.028221823779548717
         }
       }
     },
@@ -241,23 +241,23 @@
       }
     },
     "paired": {
-      "scheduled": 2013,
-      "recorded": 2013,
+      "scheduled": 2014,
+      "recorded": 2014,
       "states": {
         "missed": 89,
-        "ready": 1922,
+        "ready": 1923,
         "abstained": 2
       },
       "missing_run": 0,
-      "on_time_published": 1918,
+      "on_time_published": 1919,
       "late_publication": 4,
       "pending_confirmation": 0,
-      "scored": 1913,
+      "scored": 1914,
       "launch_ms": 1792866677940,
       "status": "collecting (descriptive)",
       "results": {
-        "paired": 1913,
-        "mean_difference": 0.0002940407736539467,
+        "paired": 1914,
+        "mean_difference": 0.0002938871473354232,
         "block_size": 672,
         "complete_block_equivalents": 2,
         "ci90": null,
@@ -268,53 +268,53 @@
       "conditional_hits": {
         "60": {
           "perp_original_clock": {
-            "scored": 1913,
+            "scored": 1914,
             "directional": 1145,
-            "neutral": 768,
+            "neutral": 769,
             "hits": 561,
             "conditional_hit_rate": 0.48995633187772925
           },
           "perp_synchronized_clock": {
-            "scored": 1913,
+            "scored": 1914,
             "directional": 1145,
-            "neutral": 768,
+            "neutral": 769,
             "hits": 561,
             "conditional_hit_rate": 0.48995633187772925
           },
           "combined_synchronized_clock": {
-            "scored": 1913,
+            "scored": 1914,
             "directional": 1134,
-            "neutral": 779,
+            "neutral": 780,
             "hits": 553,
             "conditional_hit_rate": 0.4876543209876543
           }
         },
         "15": {
           "perp_original_clock": {
-            "scored": 1913,
+            "scored": 1914,
             "directional": 1145,
-            "neutral": 768,
+            "neutral": 769,
             "hits": 542,
             "conditional_hit_rate": 0.4733624454148472
           },
           "perp_synchronized_clock": {
-            "scored": 1913,
+            "scored": 1914,
             "directional": 1145,
-            "neutral": 768,
+            "neutral": 769,
             "hits": 542,
             "conditional_hit_rate": 0.4733624454148472
           },
           "combined_synchronized_clock": {
-            "scored": 1913,
+            "scored": 1914,
             "directional": 1134,
-            "neutral": 779,
+            "neutral": 780,
             "hits": 530,
             "conditional_hit_rate": 0.4673721340388007
           }
         }
       },
       "equal_entry_clock_share": 1.0,
-      "secondary_15m_difference": 0.0013395190799790904,
+      "secondary_15m_difference": 0.0013388192267502611,
       "clock_only_60m_difference": 0.0
     }
   },
@@ -12453,10 +12453,10 @@
       "interpretation": "source-specific retrospective diagnostic; first observations stay immutable"
     },
     "options": {
-      "captures": 503,
+      "captures": 504,
       "expected_hourly_slots": 504,
       "rr25_7d_states": {
-        "ok": 423,
+        "ok": 424,
         "31OCT26:low-oi|6NOV26:ok": 5,
         "1NOV26:no-25-delta-strike|6NOV26:ok": 2,
         "1NOV26:low-oi|6NOV26:ok": 10,
@@ -12476,17 +12476,17 @@
         "16NOV26:low-oi|20NOV26:ok": 3
       },
       "rr25_30d_states": {
-        "ok": 173,
+        "ok": 174,
         "no-bracketing-expiry": 312,
         "27NOV26:ok|25DEC26:wide": 1,
         "4DEC26:low-oi|25DEC26:ok": 17
       },
       "rejections": {
-        "delta-distance": 329083,
-        "low-oi": 66744,
-        "maturity": 228457,
-        "missing-or-malformed": 25470,
-        "wide": 32353,
+        "delta-distance": 329796,
+        "low-oi": 66850,
+        "maturity": 228870,
+        "missing-or-malformed": 25532,
+        "wide": 32455,
         "stale-or-future": 726
       },
       "changes": [
@@ -14057,6 +14057,10 @@
         {
           "t": 1794672390627,
           "change_7d": -2.203800000000001
+        },
+        {
+          "t": 1794676462268,
+          "change_7d": -0.7685999999999993
         }
       ],
       "term_structure": [
@@ -14659,6 +14663,10 @@
         {
           "t": 1794672390627,
           "rr25_30d_minus_7d": 4.6646
+        },
+        {
+          "t": 1794676462268,
+          "rr25_30d_minus_7d": 3.7037999999999993
         }
       ],
       "interpretation": "usability only; no predictive admission"
