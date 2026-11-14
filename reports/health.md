@@ -1,10 +1,10 @@
 # Operational health
 
-Generated 2026-11-14T02:45:12Z by health-1.5.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-11-14T02:51:39Z by health-1.5.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Native collector schedule (secondary trigger):** last scheduled collector run 2026-11-13T22:50:33Z (234.7 min); 12 silence(s) over 90 min in the last 72 h, longest 515 min. Native starts per closed day: 2026-11-11 3 of 96 automated runs; 2026-11-12 4 of 98 automated runs; 2026-11-13 4 of 98 automated runs. Each silence is in reports/health.json; incidents carry one summary row per day.
+**Native collector schedule (secondary trigger):** last scheduled collector run 2026-11-14T02:49:46Z (1.9 min); 12 silence(s) over 90 min in the last 72 h, longest 515 min. Native starts per closed day: 2026-11-11 3 of 96 automated runs; 2026-11-12 4 of 98 automated runs; 2026-11-13 4 of 98 automated runs. Each silence is in reports/health.json; incidents carry one summary row per day.
 
-**Service continuity:** healthy; last persisted critical success 2026-11-14T02:43:19Z (1.9 min); last automated activity 2026-11-14T02:43:19Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 3, recovery 95; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 21.2 min.
+**Service continuity:** healthy; last persisted critical success 2026-11-14T02:49:46Z (1.9 min); last automated activity 2026-11-14T02:49:46Z (critical success, native-schedule). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 4, recovery 95; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 21.2 min.
 
 **Range decisions:** 11-12T20:00 published; 11-13T00:00 published; 11-13T04:00 published; 11-13T08:00 published; 11-13T12:00 published; 11-13T16:00 published; 11-13T20:00 published; 11-14T00:00 published.
 
