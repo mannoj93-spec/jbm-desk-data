@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-11-15T15:02:39.901Z",
-  "generated_ms": 1794754959901,
-  "window_start_ms": 1794668559901,
+  "generated_utc": "2026-11-15T15:17:29.692Z",
+  "generated_ms": 1794755849692,
+  "window_start_ms": 1794669449692,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -415,7 +415,7 @@
         "abstained": 1
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1794752224261,
+      "last_success_ms": 1794754107006,
       "pending_successful": 3,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
@@ -428,20 +428,11 @@
       "publication_delay_minutes": {
         "n": 92,
         "min": 1.0339666666666667,
-        "median": 2.242325,
-        "p90": 16.7285,
-        "max": 18.227616666666666
+        "median": 2.266208333333333,
+        "p90": 16.9058,
+        "max": 18.4501
       },
       "opportunities": [
-        {
-          "slot": 1794669300000,
-          "state": "ok",
-          "success_ms": 1794669418316,
-          "recorded": true,
-          "forecast_state": "ready",
-          "eligible_forecast": true,
-          "reason": null
-        },
         {
           "slot": 1794670200000,
           "state": "ok",
@@ -1269,6 +1260,15 @@
           "forecast_state": "ready",
           "eligible_forecast": true,
           "reason": null
+        },
+        {
+          "slot": 1794753000000,
+          "state": "ok",
+          "success_ms": 1794754107006,
+          "recorded": true,
+          "forecast_state": "ready",
+          "eligible_forecast": true,
+          "reason": null
         }
       ]
     },
@@ -1551,15 +1551,15 @@
   },
   "pilots": {
     "stress": {
-      "due": 46,
-      "successful": 46,
+      "due": 47,
+      "successful": 47,
       "coverage": 1.0,
       "states": {
-        "ok": 46
+        "ok": 47
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1794751321114,
-      "pending_successful": 2,
+      "last_success_ms": 1794754116983,
+      "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0
     },
@@ -1619,50 +1619,50 @@
       }
     },
     "options": {
-      "due": 22,
-      "successful": 22,
+      "due": 23,
+      "successful": 23,
       "coverage": 1.0,
       "states": {
-        "ok": 22
+        "ok": 23
       },
       "consecutive_misses": 0,
-      "last_success_ms": 1794748455658,
+      "last_success_ms": 1794752064724,
       "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
       "capture": {
-        "due": 22,
-        "successful": 22,
+        "due": 23,
+        "successful": 23,
         "coverage": 1.0,
         "states": {
-          "ok": 22
+          "ok": 23
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1794748455658,
+        "last_success_ms": 1794752064724,
         "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       },
       "horizons": {
         "rr25_7d": {
-          "due": 22,
-          "successful": 22,
+          "due": 23,
+          "successful": 23,
           "coverage": 1.0,
           "states": {
-            "ok": 22
+            "ok": 23
           },
           "consecutive_misses": 0,
-          "last_success_ms": 1794748455658
+          "last_success_ms": 1794752064724
         },
         "rr25_30d": {
-          "due": 22,
-          "successful": 22,
+          "due": 23,
+          "successful": 23,
           "coverage": 1.0,
           "states": {
-            "ok": 22
+            "ok": 23
           },
           "consecutive_misses": 0,
-          "last_success_ms": 1794748455658
+          "last_success_ms": 1794752064724
         }
       }
     }
@@ -1677,31 +1677,31 @@
   "components": {
     "v1": {
       "integrity": "ok",
-      "verified_ms": 1794754959901
+      "verified_ms": 1794755849692
     },
     "state_v2": {
       "integrity": "ok",
-      "verified_ms": 1794754959901
+      "verified_ms": 1794755849692
     },
     "options_expiry": {
       "integrity": "ok",
-      "verified_ms": 1794754959901
+      "verified_ms": 1794755849692
     },
     "options_30d": {
       "integrity": "ok",
-      "verified_ms": 1794754959901
+      "verified_ms": 1794755849692
     },
     "immediate_books": {
       "integrity": "ok",
-      "verified_ms": 1794754959901
+      "verified_ms": 1794755849692
     },
     "source_quality": {
       "integrity": "ok",
-      "verified_ms": 1794754959901
+      "verified_ms": 1794755849692
     },
     "report_freshness": {
       "integrity": "ok",
-      "verified_ms": 1794754959901
+      "verified_ms": 1794755849692
     }
   },
   "depth_diagnostics": {
@@ -6024,38 +6024,38 @@
         "abstention_rate": 0.354251012145749
       },
       "paired": {
-        "due": 1974,
-        "successful": 1962,
-        "coverage": 0.993920972644377,
+        "due": 1975,
+        "successful": 1963,
+        "coverage": 0.9939240506329113,
         "states": {
-          "ok": 1962,
+          "ok": 1963,
           "abstained": 3,
           "missed": 5,
           "late-publication": 4
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1794752224261,
+        "last_success_ms": 1794754107006,
         "pending_successful": 3,
         "recovered_before_close": false,
         "active_consecutive_misses": 0,
-        "recorded": 1974,
-        "eligible_forecasts": 1962,
+        "recorded": 1975,
+        "eligible_forecasts": 1963,
         "abstained": 3,
-        "abstention_rate": 0.001519756838905775
+        "abstention_rate": 0.0015189873417721519
       }
     },
     "pilots": {
       "stress": {
-        "due": 987,
-        "successful": 982,
-        "coverage": 0.9949341438703141,
+        "due": 988,
+        "successful": 983,
+        "coverage": 0.9949392712550608,
         "states": {
-          "ok": 982,
+          "ok": 983,
           "missed": 5
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1794751321114,
-        "pending_successful": 2,
+        "last_success_ms": 1794754116983,
+        "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       },
@@ -6075,74 +6075,74 @@
         "active_consecutive_misses": 0
       },
       "options": {
-        "due": 493,
-        "successful": 140,
-        "coverage": 0.2839756592292089,
+        "due": 494,
+        "successful": 141,
+        "coverage": 0.2854251012145749,
         "states": {
-          "ok": 140,
+          "ok": 141,
           "unusable": 353
         },
         "consecutive_misses": 0,
-        "last_success_ms": 1794748455658,
+        "last_success_ms": 1794752064724,
         "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0
       }
     }
   },
-  "last_prepare_ms": 1794754901623,
+  "last_prepare_ms": 1794755798632,
   "paired_diagnostics": {
-    "scored_forecasts": 2000,
-    "unique_entries": 1728,
+    "scored_forecasts": 2001,
+    "unique_entries": 1729,
     "repeated_entry_groups": 272,
     "largest_disjoint_60m_subset": 452,
     "equal_entry_clock_share": 1,
-    "entry_grouped_mean_difference": 7.233796296296296e-05,
+    "entry_grouped_mean_difference": 7.229612492770387e-05,
     "interpretation": "Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage."
   },
   "options_quality": {
     "captures": 24,
-    "legs": 19907,
+    "legs": 19968,
     "rejection_counts": {
-      "maturity": 10208,
-      "delta-distance": 17825,
-      "wide": 2904,
-      "missing-or-malformed": 1686,
-      "low-oi": 2614
+      "delta-distance": 17884,
+      "maturity": 10241,
+      "low-oi": 2621,
+      "wide": 2920,
+      "missing-or-malformed": 1689
     },
     "size_states": {
-      "not-in-source": 19907
+      "not-in-source": 19968
     },
     "quote_age_ms": {
-      "n": 18221,
+      "n": 18279,
       "min": 3056,
       "median": 5139,
-      "p90": 10571,
-      "max": 14080
+      "p90": 7685,
+      "max": 12804
     },
     "relative_spread": {
-      "n": 18221,
+      "n": 18279,
       "min": 0.0028632784538296374,
-      "median": 0.04878048780487809,
+      "median": 0.04921700223713651,
       "p90": 0.4615384615384616,
       "max": 1.9991113085980894
     },
     "delta_distance": {
-      "n": 19907,
+      "n": 19968,
       "min": 3.0686190430895266e-06,
-      "median": 0.24595734432682148,
-      "p90": 0.7388227303127837,
+      "median": 0.24589351243687424,
+      "p90": 0.7386787417055597,
       "max": 0.75
     },
     "eligibility_transitions_by_horizon": {},
     "selected_strike_changes_by_expiry": {
-      "20NOV26": 15,
       "16NOV26": 10,
-      "17NOV26": 18,
+      "17NOV26": 19,
       "25DEC26": 13,
-      "4DEC26": 12,
-      "27NOV26": 10,
-      "18NOV26": 8
+      "4DEC26": 13,
+      "20NOV26": 15,
+      "27NOV26": 11,
+      "18NOV26": 9
     },
     "bracketing_expiry_changes": 0,
     "selected_by_horizon": {
@@ -6153,8 +6153,8 @@
           "n": 96,
           "min": 3056,
           "median": 5205.0,
-          "p90": 10242,
-          "max": 14077
+          "p90": 7604,
+          "max": 12804
         },
         "relative_spread": {
           "n": 96,
@@ -6166,8 +6166,8 @@
         "delta_distance": {
           "n": 96,
           "min": 0.0002897383597738057,
-          "median": 0.01844986857216635,
-          "p90": 0.03290300697011572,
+          "median": 0.01633686415011254,
+          "p90": 0.032601875030840555,
           "max": 0.04416085516577939
         },
         "size_states": {
@@ -6182,20 +6182,20 @@
           "n": 96,
           "min": 3057,
           "median": 5210.5,
-          "p90": 10574,
-          "max": 14079
+          "p90": 7604,
+          "max": 12774
         },
         "relative_spread": {
           "n": 96,
           "min": 0.016260162601626032,
-          "median": 0.0519568151147099,
-          "p90": 0.07407407407407414,
+          "median": 0.053342816500711286,
+          "p90": 0.07692307692307686,
           "max": 0.1276595744680852
         },
         "delta_distance": {
           "n": 96,
           "min": 0.00017100846437523298,
-          "median": 0.015013259648019583,
+          "median": 0.015487623853482457,
           "p90": 0.0308696667006223,
           "max": 0.07064558294778711
         },
@@ -6236,7 +6236,7 @@
   },
   "options_expiry_pilot": {
     "schema": "options-expiry-pilot/1",
-    "generated_ms": 1794754959901,
+    "generated_ms": 1794755849692,
     "activation": {
       "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
       "confirmed_ms": 1793152036181,
@@ -6246,7 +6246,7 @@
     "state": "active",
     "closed": 445,
     "captured": 444,
-    "pending_captured": 0,
+    "pending_captured": 1,
     "horizons": {
       "7": {
         "paired": {
@@ -6373,7 +6373,7 @@
   },
   "options_30d_pilot": {
     "schema": "options-30d-maturity/1",
-    "generated_ms": 1794754959901,
+    "generated_ms": 1794755849692,
     "activation": {
       "commit": "1bdff0904c4de8cbe7ebd8bab9ddcb2849f745a8",
       "confirmed_ms": 1793981977420,
@@ -6383,7 +6383,7 @@
     "state": "active",
     "closed": 214,
     "captured": 213,
-    "pending_captured": 0,
+    "pending_captured": 1,
     "horizons": {
       "30": {
         "paired": {
@@ -6464,9 +6464,9 @@
       "n": 192,
       "min": 260,
       "max": 959,
-      "mean": 516.765625,
+      "mean": 521.0104166666666,
       "median": 524.5,
-      "p90": 761
+      "p90": 767
     },
     "states": {
       "completed": 24
@@ -6475,7 +6475,7 @@
   },
   "source_quality": {
     "schema": "source-quality/1",
-    "generated_ms": 1794754959901,
+    "generated_ms": 1794755849692,
     "minimum_consecutive_minutes": 5,
     "incidents": [
       {
@@ -6742,23 +6742,23 @@
   "report_freshness": {
     "v1": {
       "state": "fresh",
-      "last_success_ms": 1794754937506,
-      "age_minutes": 0.37325
+      "last_success_ms": 1794755832162,
+      "age_minutes": 0.2921666666666667
     },
     "state_v2": {
       "state": "fresh",
-      "last_success_ms": 1794754945799,
-      "age_minutes": 0.23503333333333334
+      "last_success_ms": 1794755838785,
+      "age_minutes": 0.18178333333333332
     },
     "options_expiry": {
       "state": "fresh",
-      "last_success_ms": 1794754946398,
-      "age_minutes": 0.22505
+      "last_success_ms": 1794755839342,
+      "age_minutes": 0.1725
     },
     "options_30d": {
       "state": "fresh",
-      "last_success_ms": 1794754956109,
-      "age_minutes": 0.0632
+      "last_success_ms": 1794755846735,
+      "age_minutes": 0.04928333333333333
     }
   }
 }
