@@ -310,7 +310,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-11-15T07:30:01Z",
+ "generated_utc": "2026-11-15T07:45:15Z",
  "integrity": {
   "malformed_lines": {},
   "rule": "lines this evaluation skipped as unparseable or non-object, by file; such a line is malformed, not absent, and the figures above exclude it"
@@ -322,7 +322,7 @@
   "external_timer": {
    "absent": [],
    "delayed": [],
-   "last_arrival_utc": "2026-11-15T07:27:02Z",
+   "last_arrival_utc": "2026-11-15T07:42:02Z",
    "on_time": 96,
    "on_time_max_lag_s": 3,
    "opportunities": 96,
@@ -334,21 +334,21 @@
   "problems_detected_by": [],
   "recovery_checks": {
    "service-watch": {
-    "age_min": 2.9,
+    "age_min": 3.1,
     "last_check": "passed",
-    "last_completed_utc": "2026-11-15T07:27:09Z",
+    "last_completed_utc": "2026-11-15T07:42:10Z",
     "last_executed": true,
-    "run_id": 43689993500,
+    "run_id": 43691103335,
     "run_result": "success",
     "stale_after_min": 45,
     "state": "fresh"
    },
    "study-watch": {
-    "age_min": 1.6,
+    "age_min": 1.9,
     "last_check": "passed",
-    "last_completed_utc": "2026-11-15T07:28:23Z",
+    "last_completed_utc": "2026-11-15T07:43:23Z",
     "last_executed": true,
-    "run_id": 43689993500,
+    "run_id": 43691103335,
     "run_result": "success",
     "stale_after_min": 45,
     "state": "fresh"
@@ -409,11 +409,11 @@
      "schedule",
      "workflow_dispatch"
     ],
-    "last_completed_utc": "2026-11-15T07:28:26Z",
+    "last_completed_utc": "2026-11-15T07:43:26Z",
     "last_result": "success",
-    "last_run_id": 43689993500,
-    "last_scheduled_start_utc": "2026-11-15T07:27:02Z",
-    "last_success_utc": "2026-11-15T07:27:02Z",
+    "last_run_id": 43691103335,
+    "last_scheduled_start_utc": "2026-11-15T07:42:02Z",
+    "last_success_utc": "2026-11-15T07:42:02Z",
     "native": {
      "last_completed_utc": "2026-11-15T01:21:05Z",
      "last_result": "failure",
@@ -453,7 +453,7 @@
  },
  "ps1_coverage": {
   "not_covered": [],
-  "report_age_min": 9.9,
+  "report_age_min": 25.2,
   "report_coverage": 0.7923,
   "report_generated_utc": "2026-11-15T07:20:05.442Z",
   "report_scheduled_decisions": 260,
@@ -463,13 +463,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 49.9,
+  "age_min": 65.1,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 99,
    "expected_slots": 96,
-   "from_ms": 1794641401794,
-   "from_utc": "2026-11-14T07:30:01Z",
+   "from_ms": 1794642315881,
+   "from_utc": "2026-11-14T07:45:15Z",
    "intervals": 95,
    "intervals_with_automated_run": 95,
    "intervals_with_successful_automated_run": 95,
@@ -480,17 +480,10 @@
     "native-schedule": 5,
     "recovery": 94
    },
-   "to_ms": 1794727801794,
-   "to_utc": "2026-11-15T07:30:01Z"
+   "to_ms": 1794728715881,
+   "to_utc": "2026-11-15T07:45:15Z"
   },
   "gaps": [
-   {
-    "end_ms": 1794468977721,
-    "end_utc": "2026-11-12T07:36:17Z",
-    "minutes": 430.82,
-    "start_ms": 1794443128705,
-    "start_utc": "2026-11-12T00:25:28Z"
-   },
    {
     "end_ms": 1794499872911,
     "end_utc": "2026-11-12T16:11:12Z",
@@ -612,20 +605,20 @@
    "acceptance_target": {
     "breached_24h": false,
     "breached_now": false,
-    "current_gap_min": 1.6,
+    "current_gap_min": 2.0,
     "longest_successful_gap_24h_min": 19.4,
     "max_gap_min": 45,
     "rule": "restoration acceptance target (45 min between persisted critical successes); separate from the watchdog's stale limit"
    },
-   "age_min": 1.6,
-   "data_age_min": 1.6,
+   "age_min": 2.0,
+   "data_age_min": 2.0,
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-11-15T07:28:24Z",
-   "last_automated_utc": "2026-11-15T07:28:24Z",
+   "last_activity_utc": "2026-11-15T07:43:16Z",
+   "last_automated_utc": "2026-11-15T07:43:16Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-11-15T07:28:24Z",
+   "last_success_utc": "2026-11-15T07:43:16Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
