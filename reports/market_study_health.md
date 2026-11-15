@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-15T09:32:38.423Z. Integrity: ok.
+Generated 2026-11-15T09:48:38.889Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,27 +16,27 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-15T09:32:16.491Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-15T09:32:24.773Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-15T09:32:25.361Z
-- options_30d published report: fresh; last successful refresh: 2026-11-15T09:32:34.748Z
+- v1 published report: fresh; last successful refresh: 2026-11-15T09:48:16.629Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-15T09:48:24.969Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-15T09:48:25.578Z
+- options_30d published report: fresh; last successful refresh: 2026-11-15T09:48:35.099Z
 
 ## Coverage
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
-| turnover | 5/5 | 100.0% | 0 |
+| turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 7/24 | 29.2% | 0 |
 | paired | 92/93 | 98.9% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 23/23 | 100.0% | 0 |
 | options usability rr25_30d | 23/23 | 100.0% | 0 |
 
-turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -53,12 +53,12 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 87/121 | 1 |
+| turnover | 88/122 | 0 |
 | range | 88/122 | 0 |
 | state | 315/489 | 0 |
-| paired | 1940/1952 | 3 |
-| stress | 971/976 | 2 |
-| liquidations | 1934/1952 | 4 |
+| paired | 1941/1953 | 3 |
+| stress | 972/977 | 1 |
+| liquidations | 1938/1956 | 0 |
 | options | 135/488 | 1 |
 
 ## Diagnostics
@@ -94,9 +94,9 @@ Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median
 
 Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 5228.0; relative spread median: 0.05263157894736847. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 456 scores reproduced.
+State v2 numerical replay: verified, 457 scores reproduced.
 
-State v2 evidence: 456/1680 scored observations for the frozen minimum interval threshold; 2/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 457/1680 scored observations for the frozen minimum interval threshold; 2/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 192 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 533.0 / 707.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
