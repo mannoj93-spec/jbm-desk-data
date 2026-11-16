@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-11-16T12:49:49.907Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-16T13:03:50.835Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 137 | 101 | 101 |
-| range | collecting (descriptive) | 137 | 95 | 88 |
-| state | collecting (descriptive) | 547 | 338 | 336 |
-| paired | collecting (descriptive) | 2188 | 2092 | 2087 |
+| range | collecting (descriptive) | 137 | 95 | 89 |
+| state | collecting (descriptive) | 548 | 338 | 336 |
+| paired | collecting (descriptive) | 2189 | 2093 | 2087 |
 
 ## Primary comparisons
 
@@ -16,7 +16,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 | Study | Paired difference | 90% block interval | First verified launch |
 |---|---:|---|---|
 | turnover | -0.0367064 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
-| range | 0.003726 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
+| range | 0.00371077 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | 0.000938256 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
 | paired | -0.000209631 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
@@ -39,8 +39,8 @@ Returns, costs and turnover below cover closed intervals. Each latest trade open
 
 | Arm | 80% interval coverage | Mean interval width (ln H/L) |
 |---|---:|---:|
-| control | 61.36% | 0.0321003 |
-| calibrated | 60.23% | 0.0289939 |
+| control | 61.80% | 0.0323445 |
+| calibrated | 60.67% | 0.0292997 |
 
 ## Paired-flow direction checks
 
@@ -58,8 +58,8 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 ## Data usability pilots
 
 - Options: 547 captures; usable 7d RR25 in 467, usable 30d RR25 in 217; 428 valid hourly changes.
-- Liquidations: 1521 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 10, "missed": 66, "ok": 2083}`.
-- Exchange stress: 1094/1094 scheduled records. Capture states: `{"missed": 44, "ok": 1050}`. Ratings: `{"low": 1050}`.
+- Liquidations: 1524 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 10, "missed": 66, "ok": 2087}`.
+- Exchange stress: 1095/1095 scheduled records. Capture states: `{"missed": 44, "ok": 1051}`. Ratings: `{"low": 1051}`.
 
 These pilots measure availability and revisions; they are not predictive evidence. Unknown source coverage is never zero activity.
 
