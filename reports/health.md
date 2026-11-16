@@ -1,10 +1,10 @@
 # Operational health
 
-Generated 2026-11-16T09:59:57Z by health-1.5.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-11-16T10:15:03Z by health-1.5.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Native collector schedule (secondary trigger):** last scheduled collector run 2026-11-16T03:02:13Z (417.7 min); 14 silence(s) over 90 min in the last 72 h, longest 461 min. Native starts per closed day: 2026-11-13 4 of 98 automated runs; 2026-11-14 4 of 100 automated runs; 2026-11-15 5 of 99 automated runs. Each silence is in reports/health.json; incidents carry one summary row per day.
+**Native collector schedule (secondary trigger):** last scheduled collector run 2026-11-16T03:02:13Z (432.8 min); 13 silence(s) over 90 min in the last 72 h, longest 461 min. Native starts per closed day: 2026-11-13 4 of 98 automated runs; 2026-11-14 4 of 100 automated runs; 2026-11-15 5 of 99 automated runs. Each silence is in reports/health.json; incidents carry one summary row per day.
 
-**Service continuity:** healthy; last persisted critical success 2026-11-16T09:58:26Z (1.5 min); last automated activity 2026-11-16T09:58:26Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 4, recovery 96; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 18.8 min.
+**Service continuity:** healthy; last persisted critical success 2026-11-16T10:13:25Z (1.6 min); last automated activity 2026-11-16T10:13:25Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 4, recovery 96; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 18.8 min.
 
 **Range decisions:** 11-15T04:00 published; 11-15T08:00 published; 11-15T12:00 published; 11-15T16:00 published; 11-15T20:00 published; 11-16T00:00 published; 11-16T04:00 published; 11-16T08:00 published.
 
@@ -18,11 +18,11 @@ Generated 2026-11-16T09:59:57Z by health-1.5.0 (runner UTC clock at the check (t
 
 **Native scheduled monitors:** fresh (GitHub Actions API, scheduled runs); watchdog.yml heartbeat fresh (last run 2026-11-16T09:46:38Z: success; last success 2026-11-16T09:46:27Z); range-monitor.yml heartbeat fresh (last run 2026-11-16T08:38:25Z: success; last success 2026-11-16T08:38:16Z); range-readiness.yml heartbeat fresh (last run 2026-11-16T02:22:49Z: success; last success 2026-11-16T02:22:27Z); newest scheduled start of any workflow 2026-11-16T09:46:27Z.
 
-**External timer (primary trigger):** arriving; 96 of 96 opportunities on time in 24 h, 0 delayed, absent none; last arrival 2026-11-16T09:57:02Z. Arrivals only: whether each request was sent needs the provider's history.
+**External timer (primary trigger):** arriving; 96 of 96 opportunities on time in 24 h, 0 delayed, absent none; last arrival 2026-11-16T10:12:02Z. Arrivals only: whether each request was sent needs the provider's history.
 
 **External timer token:** expiry not recorded - record token.expires_utc in docs/acceptance/timer.json; an expired token stops the primary trigger.
 
 **Record integrity:** no malformed lines in the files read.
 
-Recovery service-watch: fresh; passed; last check completion 2026-11-16T09:57:13Z.
-Recovery study-watch: fresh; check failed; last check completion 2026-11-16T09:58:18Z.
+Recovery service-watch: fresh; passed; last check completion 2026-11-16T10:12:10Z.
+Recovery study-watch: fresh; passed; last check completion 2026-11-16T10:13:24Z.
