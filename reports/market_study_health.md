@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-16T10:50:17.161Z. Integrity: ok.
+Generated 2026-11-16T10:57:59.820Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-16T10:49:58.938Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-16T10:50:05.715Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-16T10:50:06.202Z
-- options_30d published report: fresh; last successful refresh: 2026-11-16T10:50:13.939Z
+- v1 published report: fresh; last successful refresh: 2026-11-16T10:57:41.575Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-16T10:57:48.332Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-16T10:57:48.824Z
+- options_30d published report: fresh; last successful refresh: 2026-11-16T10:57:56.587Z
 
 ## Coverage
 
@@ -70,7 +70,7 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 2079 scored forecasts; 1795 unique entries; 469 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 2080 scored forecasts; 1796 unique entries; 469 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 15 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.675 / 30.9.
