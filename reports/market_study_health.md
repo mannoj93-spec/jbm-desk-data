@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-17T00:20:51.852Z. Integrity: ok.
+Generated 2026-11-17T00:23:26.287Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-17T00:20:26.922Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-17T00:20:35.915Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-17T00:20:36.561Z
-- options_30d published report: fresh; last successful refresh: 2026-11-17T00:20:47.345Z
+- v1 published report: fresh; last successful refresh: 2026-11-17T00:23:01.729Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-17T00:23:10.502Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-17T00:23:11.138Z
+- options_30d published report: fresh; last successful refresh: 2026-11-17T00:23:21.839Z
 
 ## Coverage
 
