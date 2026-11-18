@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-18T09:32:56.744Z. Integrity: ok.
+Generated 2026-11-18T09:47:48.314Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,27 +16,27 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-18T09:32:35.367Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-18T09:32:43.062Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-18T09:32:43.756Z
-- options_30d published report: fresh; last successful refresh: 2026-11-18T09:32:52.866Z
+- v1 published report: fresh; last successful refresh: 2026-11-18T09:47:31.316Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-18T09:47:37.703Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-18T09:47:38.210Z
+- options_30d published report: fresh; last successful refresh: 2026-11-18T09:47:45.217Z
 
 ## Coverage
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
-| turnover | 5/5 | 100.0% | 0 |
+| turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 7/24 | 29.2% | 2 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 17/23 | 73.9% | 0 |
 | options usability rr25_30d | 23/23 | 100.0% | 0 |
 
-turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -53,12 +53,12 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 105/139 | 1 |
+| turnover | 106/140 | 0 |
 | range | 105/140 | 0 |
 | state | 341/561 | 0 |
-| paired | 2226/2240 | 3 |
-| stress | 1114/1120 | 2 |
-| liquidations | 2222/2240 | 4 |
+| paired | 2227/2241 | 3 |
+| stress | 1115/1121 | 1 |
+| liquidations | 2226/2244 | 0 |
 | options | 201/560 | 1 |
 
 ## Diagnostics
@@ -95,9 +95,9 @@ Selected rr25_7d legs: 18 usable captures, 72 leg observations. Quote age median
 
 Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4681.5; relative spread median: 0.040816326530612276. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 528 scores reproduced.
+State v2 numerical replay: verified, 529 scores reproduced.
 
-State v2 evidence: 528/1680 scored observations for the frozen minimum interval threshold; 3/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 529/1680 scored observations for the frozen minimum interval threshold; 3/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 192 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 529.5 / 772.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
