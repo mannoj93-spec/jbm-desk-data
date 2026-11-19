@@ -1,5 +1,5 @@
 {
-  "generated_ms": 1795093351895,
+  "generated_ms": 1795094337190,
   "activation": {
     "commit": "c37fa7906c02ff9407e1a1bdf73f04f69d24a9ce",
     "confirmed_ms": 1792863369620,
@@ -152,7 +152,7 @@
         "status": "collecting (descriptive)",
         "checkpoint_rules": "Descriptive only before 365 days and 20 blocks. Support requires stressed primary 90% block interval above zero, >=80% scheduled coverage, both B2 volatilities 10%-20%, and B2_10 drawdown no more than 2 percentage points worse. No automated promotion.",
         "review": {
-          "days_since_launch": 25.659602800925924,
+          "days_since_launch": 25.67100667824074,
           "C1_due": false,
           "C2_due": false,
           "action": "operator review only; no automatic status change"
@@ -174,12 +174,12 @@
       "on_time_published": 112,
       "late_publication": 0,
       "pending_confirmation": 0,
-      "scored": 105,
+      "scored": 106,
       "launch_ms": 1792988374052,
       "status": "collecting (descriptive)",
       "results": {
-        "paired": 105,
-        "mean_difference": 0.0043625694036361915,
+        "paired": 106,
+        "mean_difference": 0.004403965750866039,
         "block_size": 42,
         "complete_block_equivalents": 2,
         "ci90": null,
@@ -189,12 +189,12 @@
       "review_eligible": false,
       "calibration": {
         "control": {
-          "coverage": 0.6761904761904762,
-          "width": 0.03493101818847619
+          "coverage": 0.6792452830188679,
+          "width": 0.035063664567320754
         },
         "calibrated": {
-          "coverage": 0.6666666666666666,
-          "width": 0.033567393449407616
+          "coverage": 0.6698113207547169,
+          "width": 0.03379545687494151
         }
       }
     },
@@ -241,23 +241,23 @@
       }
     },
     "paired": {
-      "scheduled": 2477,
-      "recorded": 2477,
+      "scheduled": 2478,
+      "recorded": 2478,
       "states": {
         "missed": 91,
-        "ready": 2383,
+        "ready": 2384,
         "abstained": 3
       },
       "missing_run": 0,
-      "on_time_published": 2379,
+      "on_time_published": 2380,
       "late_publication": 4,
       "pending_confirmation": 0,
-      "scored": 2374,
+      "scored": 2375,
       "launch_ms": 1792866677940,
       "status": "collecting (descriptive)",
       "results": {
-        "paired": 2374,
-        "mean_difference": -0.0005791912384161752,
+        "paired": 2375,
+        "mean_difference": -0.0005789473684210527,
         "block_size": 672,
         "complete_block_equivalents": 3,
         "ci90": null,
@@ -268,53 +268,53 @@
       "conditional_hits": {
         "60": {
           "perp_original_clock": {
-            "scored": 2374,
+            "scored": 2375,
             "directional": 1401,
-            "neutral": 973,
+            "neutral": 974,
             "hits": 673,
             "conditional_hit_rate": 0.48037116345467523
           },
           "perp_synchronized_clock": {
-            "scored": 2374,
+            "scored": 2375,
             "directional": 1401,
-            "neutral": 973,
+            "neutral": 974,
             "hits": 673,
             "conditional_hit_rate": 0.48037116345467523
           },
           "combined_synchronized_clock": {
-            "scored": 2374,
+            "scored": 2375,
             "directional": 1379,
-            "neutral": 995,
+            "neutral": 996,
             "hits": 662,
             "conditional_hit_rate": 0.48005801305293694
           }
         },
         "15": {
           "perp_original_clock": {
-            "scored": 2374,
+            "scored": 2375,
             "directional": 1401,
-            "neutral": 973,
+            "neutral": 974,
             "hits": 673,
             "conditional_hit_rate": 0.48037116345467523
           },
           "perp_synchronized_clock": {
-            "scored": 2374,
+            "scored": 2375,
             "directional": 1401,
-            "neutral": 973,
+            "neutral": 974,
             "hits": 673,
             "conditional_hit_rate": 0.48037116345467523
           },
           "combined_synchronized_clock": {
-            "scored": 2374,
+            "scored": 2375,
             "directional": 1379,
-            "neutral": 995,
+            "neutral": 996,
             "hits": 648,
             "conditional_hit_rate": 0.4699057287889775
           }
         }
       },
       "equal_entry_clock_share": 1.0,
-      "secondary_15m_difference": 0.002369418702611626,
+      "secondary_15m_difference": 0.002368421052631579,
       "clock_only_60m_difference": 0.0
     }
   },
@@ -15237,10 +15237,10 @@
       "interpretation": "source-specific retrospective diagnostic; first observations stay immutable"
     },
     "options": {
-      "captures": 619,
+      "captures": 620,
       "expected_hourly_slots": 620,
       "rr25_7d_states": {
-        "ok": 526,
+        "ok": 527,
         "31OCT26:low-oi|6NOV26:ok": 5,
         "1NOV26:no-25-delta-strike|6NOV26:ok": 2,
         "1NOV26:low-oi|6NOV26:ok": 10,
@@ -15263,17 +15263,17 @@
         "22NOV26:low-oi|27NOV26:ok": 6
       },
       "rr25_30d_states": {
-        "ok": 289,
+        "ok": 290,
         "no-bracketing-expiry": 312,
         "27NOV26:ok|25DEC26:wide": 1,
         "4DEC26:low-oi|25DEC26:ok": 17
       },
       "rejections": {
-        "delta-distance": 414289,
-        "low-oi": 79161,
-        "maturity": 278108,
-        "missing-or-malformed": 32938,
-        "wide": 43337,
+        "delta-distance": 414982,
+        "low-oi": 79262,
+        "maturity": 278562,
+        "missing-or-malformed": 32996,
+        "wide": 43404,
         "stale-or-future": 726,
         "no-two-sided-or-crossed": 20
       },
@@ -17193,6 +17193,10 @@
         {
           "t": 1795090457798,
           "change_7d": 0.5537999999999998
+        },
+        {
+          "t": 1795094076780,
+          "change_7d": -0.8317999999999994
         }
       ],
       "term_structure": [
@@ -18207,6 +18211,10 @@
         {
           "t": 1795090457798,
           "rr25_30d_minus_7d": -0.4629999999999992
+        },
+        {
+          "t": 1795094076780,
+          "rr25_30d_minus_7d": 0.2546999999999997
         }
       ],
       "interpretation": "usability only; no predictive admission"
