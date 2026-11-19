@@ -8,13 +8,13 @@
    "b0_point_lr": 0.047414446083,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-11-19T00:00:00Z",
-   "elapsed_fraction": 0.0,
+   "elapsed_fraction": 0.015,
    "end_utc": "2026-11-20T00:25:00Z",
    "frozen_sha256": "e076f20c1584043d01146761417076d824bb3eb232f2ad70365ee4a8e029ccbf",
    "horizon": "24h",
    "id": "range-rc1d-24h-20261119T0000Z",
-   "label": "range-rc1d-24h-20261119T0000Z - full-window range forecast for [2026-11-19T00:25:00Z, 2026-11-20T00:25:00Z) (0% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-11-19T00:18:39.764Z",
+   "label": "range-rc1d-24h-20261119T0000Z - full-window range forecast for [2026-11-19T00:25:00Z, 2026-11-20T00:25:00Z) (2% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
+   "now_utc": "2026-11-19T00:46:40.018Z",
    "point_lr": 0.042810026948,
    "points_at_decision_close": {
     "point": 2757.2,
@@ -43,13 +43,13 @@
    "b0_point_lr": 0.017428059714,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-11-19T00:00:00Z",
-   "elapsed_fraction": 0.0,
+   "elapsed_fraction": 0.0903,
    "end_utc": "2026-11-19T04:25:00Z",
    "frozen_sha256": "96eccd7ed384a425dd58884fc27a23d06d04f6d79a13f9f63867c1c39afdb870",
    "horizon": "4h",
    "id": "range-rc1d-4h-20261119T0000Z",
-   "label": "range-rc1d-4h-20261119T0000Z - full-window range forecast for [2026-11-19T00:25:00Z, 2026-11-19T04:25:00Z) (0% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-11-19T00:18:39.764Z",
+   "label": "range-rc1d-4h-20261119T0000Z - full-window range forecast for [2026-11-19T00:25:00Z, 2026-11-19T04:25:00Z) (9% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
+   "now_utc": "2026-11-19T00:46:40.018Z",
    "point_lr": 0.016121129267,
    "points_at_decision_close": {
     "point": 1024.5,
@@ -78,13 +78,13 @@
    "b0_point_lr": 0.062017782198,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-11-19T00:00:00Z",
-   "elapsed_fraction": 0.0,
+   "elapsed_fraction": 0.005,
    "end_utc": "2026-11-22T00:25:00Z",
    "frozen_sha256": "cb18801f710b82a04816bc02b2015ade3bf5d7fdd7855119691728784d195bd2",
    "horizon": "72h",
    "id": "range-rc1d-72h-20261119T0000Z",
    "label": "range-rc1d-72h-20261119T0000Z - full-window range forecast for [2026-11-19T00:25:00Z, 2026-11-22T00:25:00Z) (0% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-11-19T00:18:39.764Z",
+   "now_utc": "2026-11-19T00:46:40.018Z",
    "point_lr": 0.055758460759,
    "points_at_decision_close": {
     "point": 3614.7,
@@ -123,88 +123,88 @@
   "block_decisions": 42,
   "horizons": {
    "24h": {
-    "b2_better": 167,
+    "b2_better": 168,
     "b2_worse": 106,
     "blocks": 6,
     "coverage_b0": 0.755,
-    "coverage_b2": 0.802,
-    "diff_mean": -0.08198,
+    "coverage_b2": 0.803,
+    "diff_mean": -0.08177,
     "diff_mean_ci95": null,
-    "diff_median": -0.07265,
+    "diff_median": -0.07256,
     "first_decision_utc": "2026-09-26T04:00:00Z",
-    "last_decision_utc": "2026-11-17T20:00:00Z",
-    "mae_b0": 0.44066,
-    "mae_b2": 0.35868,
+    "last_decision_utc": "2026-11-18T00:00:00Z",
+    "mae_b0": 0.43933,
+    "mae_b2": 0.35755,
     "metric": "mean absolute error of ln range (log units), B2 vs B0 persistence",
-    "n": 273,
-    "reduction_vs_b0": 0.186,
+    "n": 274,
+    "reduction_vs_b0": 0.1861,
     "ties": 0,
     "uncertainty": "unavailable: 6 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10",
     "width_b0": 1.304,
     "width_b2": 1.1135,
     "window_overlap": {
      "basis": "actual registered [start, end) windows of the scored pairs; every eligible pair stays in the analysis - the disjoint count describes dependence, it is not an effective sample size and selects nothing",
-     "largest_disjoint_subset": 46,
-     "overlapping_another": 273,
-     "windows": 273
+     "largest_disjoint_subset": 47,
+     "overlapping_another": 274,
+     "windows": 274
     },
-    "windows": "24h windows, one per 4H decision; actual registered [start, end) windows: 273 of 273 overlap another, largest disjoint subset 46"
+    "windows": "24h windows, one per 4H decision; actual registered [start, end) windows: 274 of 274 overlap another, largest disjoint subset 47"
    },
    "4h": {
     "b2_better": 164,
-    "b2_worse": 114,
+    "b2_worse": 115,
     "blocks": 6,
-    "coverage_b0": 0.766,
+    "coverage_b0": 0.767,
     "coverage_b2": 0.781,
-    "diff_mean": -0.08712,
+    "diff_mean": -0.08659,
     "diff_mean_ci95": null,
-    "diff_median": -0.04999,
+    "diff_median": -0.0494,
     "first_decision_utc": "2026-09-26T04:00:00Z",
-    "last_decision_utc": "2026-11-18T16:00:00Z",
-    "mae_b0": 0.48893,
-    "mae_b2": 0.40181,
+    "last_decision_utc": "2026-11-18T20:00:00Z",
+    "mae_b0": 0.48762,
+    "mae_b2": 0.40103,
     "metric": "mean absolute error of ln range (log units), B2 vs B0 persistence",
-    "n": 278,
-    "reduction_vs_b0": 0.1782,
+    "n": 279,
+    "reduction_vs_b0": 0.1776,
     "ties": 0,
     "uncertainty": "unavailable: 6 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10",
     "width_b0": 1.4446,
     "width_b2": 1.2448,
     "window_overlap": {
      "basis": "actual registered [start, end) windows of the scored pairs; every eligible pair stays in the analysis - the disjoint count describes dependence, it is not an effective sample size and selects nothing",
-     "largest_disjoint_subset": 247,
+     "largest_disjoint_subset": 248,
      "overlapping_another": 62,
-     "windows": 278
+     "windows": 279
     },
-    "windows": "4h windows, one per 4H decision; actual registered [start, end) windows: 62 of 278 overlap another, largest disjoint subset 247"
+    "windows": "4h windows, one per 4H decision; actual registered [start, end) windows: 62 of 279 overlap another, largest disjoint subset 248"
    },
    "72h": {
     "b2_better": 168,
-    "b2_worse": 93,
+    "b2_worse": 94,
     "blocks": 6,
     "coverage_b0": 0.866,
     "coverage_b2": 0.828,
-    "diff_mean": -0.04098,
+    "diff_mean": -0.04006,
     "diff_mean_ci95": null,
-    "diff_median": -0.04661,
+    "diff_median": -0.04583,
     "first_decision_utc": "2026-09-26T04:00:00Z",
-    "last_decision_utc": "2026-11-15T20:00:00Z",
-    "mae_b0": 0.33989,
-    "mae_b2": 0.29892,
+    "last_decision_utc": "2026-11-16T00:00:00Z",
+    "mae_b0": 0.33862,
+    "mae_b2": 0.29856,
     "metric": "mean absolute error of ln range (log units), B2 vs B0 persistence",
-    "n": 261,
-    "reduction_vs_b0": 0.1206,
+    "n": 262,
+    "reduction_vs_b0": 0.1183,
     "ties": 0,
     "uncertainty": "unavailable: 6 complete block(s) of 42 decisions; rc1d-eval-1 (2026-09-30) needs 10",
     "width_b0": 1.1937,
-    "width_b2": 1.0378,
+    "width_b2": 1.0377,
     "window_overlap": {
      "basis": "actual registered [start, end) windows of the scored pairs; every eligible pair stays in the analysis - the disjoint count describes dependence, it is not an effective sample size and selects nothing",
      "largest_disjoint_subset": 16,
-     "overlapping_another": 261,
-     "windows": 261
+     "overlapping_another": 262,
+     "windows": 262
     },
-    "windows": "72h windows, one per 4H decision; actual registered [start, end) windows: 261 of 261 overlap another, largest disjoint subset 16"
+    "windows": "72h windows, one per 4H decision; actual registered [start, end) windows: 262 of 262 overlap another, largest disjoint subset 16"
    }
   },
   "method": "rc1d-eval-1 (2026-09-30)",
@@ -213,7 +213,7 @@
  },
  "expected_decisions": 323,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-11-19T00:18:39.764Z",
+ "generated_utc": "2026-11-19T00:46:40.018Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
@@ -222,8 +222,8 @@
  "outcomes": {
   "failed": 35,
   "missing": 5,
-  "registered-pending": 18,
-  "scored": 261,
+  "registered-pending": 17,
+  "scored": 262,
   "skipped": 4
  },
  "provenance_corrections": [
@@ -245,8 +245,8 @@
     "range-rc1d-24h-20261116T0000Z",
     "range-rc1d-72h-20261116T0000Z"
    ],
-   "outcome": "registered-pending",
-   "reason": "eligible; 2/3 scored"
+   "outcome": "scored",
+   "reason": "all horizons scored"
   },
   {
    "decision_utc": "2026-11-16T04:00:00Z",
@@ -366,7 +366,7 @@
     "range-rc1d-72h-20261118T0000Z"
    ],
    "outcome": "registered-pending",
-   "reason": "eligible; 1/3 scored"
+   "reason": "eligible; 2/3 scored"
   },
   {
    "decision_utc": "2026-11-18T04:00:00Z",
@@ -416,7 +416,7 @@
     "range-rc1d-72h-20261118T2000Z"
    ],
    "outcome": "registered-pending",
-   "reason": "eligible; 0/3 scored"
+   "reason": "eligible; 1/3 scored"
   }
  ],
  "release": {
@@ -429,27 +429,27 @@
  "scored": {
   "24h": {
    "coverage_b0": 0.755,
-   "coverage_b2": 0.802,
-   "mae_b0": 0.44066,
-   "mae_b2": 0.35868,
-   "n": 273,
-   "skill": 0.186
+   "coverage_b2": 0.803,
+   "mae_b0": 0.43933,
+   "mae_b2": 0.35755,
+   "n": 274,
+   "skill": 0.1861
   },
   "4h": {
-   "coverage_b0": 0.766,
+   "coverage_b0": 0.767,
    "coverage_b2": 0.781,
-   "mae_b0": 0.48893,
-   "mae_b2": 0.40181,
-   "n": 278,
-   "skill": 0.1782
+   "mae_b0": 0.48762,
+   "mae_b2": 0.40103,
+   "n": 279,
+   "skill": 0.1776
   },
   "72h": {
    "coverage_b0": 0.866,
    "coverage_b2": 0.828,
-   "mae_b0": 0.33989,
-   "mae_b2": 0.29892,
-   "n": 261,
-   "skill": 0.1206
+   "mae_b0": 0.33862,
+   "mae_b2": 0.29856,
+   "n": 262,
+   "skill": 0.1183
   }
  },
  "scoring": {
@@ -458,27 +458,27 @@
    "ineligible": 0,
    "overdue": 0,
    "ready": 0,
-   "scored": 273,
+   "scored": 274,
    "scoring-failed": 0,
-   "waiting-maturity": 7
+   "waiting-maturity": 6
   },
   "4h": {
    "backlog": [],
    "ineligible": 0,
    "overdue": 0,
    "ready": 0,
-   "scored": 278,
+   "scored": 279,
    "scoring-failed": 0,
-   "waiting-maturity": 2
+   "waiting-maturity": 1
   },
   "72h": {
    "backlog": [],
    "ineligible": 0,
    "overdue": 0,
    "ready": 0,
-   "scored": 261,
+   "scored": 262,
    "scoring-failed": 0,
-   "waiting-maturity": 19
+   "waiting-maturity": 18
   }
  },
  "status_expires_utc": "2026-11-19T04:25:00Z"
