@@ -1,3 +1,16 @@
+# Revision 2.30.13 — proposed 2026-11-11: state v1 abstentions as a warning
+
+Awaiting the operator's decision; not merged without it.
+
+- `market_study_ops.py`: when the trailing missed state-v1 opportunities are all recorded abstentions and the
+  separately registered state-v2 published an eligible forecast for each of those hours, the check reports a
+  warning instead of an alert. A missing run, a late publication, an hour v2 also missed, or v2 absent, paused or
+  unreadable still alerts. Operational diagnostics only: no study code, record, identity or clock changes.
+- Why: the operator decided on Nov 11 2026 to stop state v1, but the frozen v1 code can only pause all of v1
+  (turnover, range calibration and paired with it). State v1 abstains on about half its hours because its depth
+  observation sits exactly at its 30-minute limit; on Nov 9 and 10 that turned the recovery dispatcher red 23 and
+  22 times.
+
 # Revision 2.30.12 — 2026-11-11 records, shard balance and a multiplicity proposal
 
 - `desk/deployments.jsonl`: rows for the PR #60, #62, #64, #65, #66 and #67 merges, and two production observations of

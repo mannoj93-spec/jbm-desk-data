@@ -87,6 +87,26 @@ def abstention_warning(out, kind, summary):
                                'opportunities abstained in 24h (>20%; operational warning only)')
 
 
+def state_v2_eligible_slots(base):
+    """Hours for which the separately registered state-v2 published an eligible forecast; empty when v2 is not
+    registered, not activated or paused, or its records cannot be read."""
+    from research_tools.state_v2 import core as V
+    from research_tools.state_v2.__main__ import paused
+    try:
+        if not (base / V.STREAM / 'registration.jsonl').exists() or not V.activation(base) or paused(base):
+            return set()
+        return {f['data']['slot'] for f, c in V.verified(base) if c and c['data']['eligible']}
+    except Exception:                                       # unreadable v2 records never excuse a v1 miss
+        return set()
+
+
+def state_v1_superseded(missed, v2_slots):
+    """True only when every trailing missed state-v1 opportunity is a RECORDED abstention (v1 ran and declined)
+    for an hour state-v2 forecast. A missing run, a late publication or an hour v2 also missed stays an alert."""
+    return bool(missed) and all(x['recorded'] and x['forecast_state'] == 'abstained' and x['slot'] in v2_slots
+                                for x in missed)
+
+
 def state_v2_health(base, now, out):
     from research_tools.state_v2 import core as V
     from research_tools.state_v2.__main__ import paused
@@ -397,7 +417,15 @@ def v1_health(base, now, out):
         if deployment_start is not None:
             out['deployment']['studies'][kind] = study_coverage(opportunities, pending_successes, deployment_start)
         if not out['paused'] and summary['active_consecutive_misses'] >= 2:
-            out['alerts'].append(f'{kind}: {summary["active_consecutive_misses"]} consecutive closed opportunities missed')
+            n = summary['active_consecutive_misses']
+            # State v1 abstains when its depth observation is exactly at its 30-minute limit, a selection defect that
+            # state-v2 was registered to correct. While v2 forecasts the same hours, such abstentions are a warning:
+            # they turned the dispatcher red about 23 times a day. Anything else about state v1 still alerts.
+            if kind == 'state' and state_v1_superseded(summary['opportunities'][-n:], state_v2_eligible_slots(base)):
+                out['warnings'].append(f'state: {n} consecutive closed opportunities abstained in v1 while state-v2 '
+                                       'forecast the same hours (v1 depth selection; warning, not an alert)')
+            else:
+                out['alerts'].append(f'{kind}: {n} consecutive closed opportunities missed')
         if overdue:
             out['alerts'].append(f'{kind}: {overdue} scores overdue by more than two hours')
         abstention_warning(out, kind, summary)
