@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-19T18:22:22.728Z. Integrity: ok.
+Generated 2026-11-19T18:28:49.360Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-19T18:22:05.569Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-19T18:22:12.057Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-19T18:22:12.552Z
-- options_30d published report: fresh; last successful refresh: 2026-11-19T18:22:19.611Z
+- v1 published report: fresh; last successful refresh: 2026-11-19T18:28:26.136Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-19T18:28:34.777Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-19T18:28:35.398Z
+- options_30d published report: fresh; last successful refresh: 2026-11-19T18:28:44.895Z
 
 ## Coverage
 
@@ -71,7 +71,7 @@ Warnings:
 - options rr25_7d: 17/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 2395 scored forecasts; 2071 unique entries; 538 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 2396 scored forecasts; 2072 unique entries; 538 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 20 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.641666666666666 / 30.833333333333332.

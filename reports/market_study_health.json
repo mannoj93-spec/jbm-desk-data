@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-11-19T18:22:22.728Z",
-  "generated_ms": 1795112542728,
-  "window_start_ms": 1795026142728,
+  "generated_utc": "2026-11-19T18:28:49.360Z",
+  "generated_ms": 1795112929360,
+  "window_start_ms": 1795026529360,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -422,7 +422,7 @@
       "eligible_forecasts": 94,
       "abstained": 0,
       "abstention_rate": 0.0,
-      "pending_outcomes": 5,
+      "pending_outcomes": 4,
       "overdue_scores": 0,
       "publication_delay_minutes": {
         "n": 94,
@@ -1692,31 +1692,31 @@
   "components": {
     "v1": {
       "integrity": "ok",
-      "verified_ms": 1795112542728
+      "verified_ms": 1795112929360
     },
     "state_v2": {
       "integrity": "ok",
-      "verified_ms": 1795112542728
+      "verified_ms": 1795112929360
     },
     "options_expiry": {
       "integrity": "ok",
-      "verified_ms": 1795112542728
+      "verified_ms": 1795112929360
     },
     "options_30d": {
       "integrity": "ok",
-      "verified_ms": 1795112542728
+      "verified_ms": 1795112929360
     },
     "immediate_books": {
       "integrity": "ok",
-      "verified_ms": 1795112542728
+      "verified_ms": 1795112929360
     },
     "source_quality": {
       "integrity": "ok",
-      "verified_ms": 1795112542728
+      "verified_ms": 1795112929360
     },
     "report_freshness": {
       "integrity": "ok",
-      "verified_ms": 1795112542728
+      "verified_ms": 1795112929360
     }
   },
   "depth_diagnostics": {
@@ -6938,23 +6938,23 @@
       }
     }
   },
-  "last_prepare_ms": 1795112502932,
+  "last_prepare_ms": 1795112873769,
   "paired_diagnostics": {
-    "scored_forecasts": 2395,
-    "unique_entries": 2071,
+    "scored_forecasts": 2396,
+    "unique_entries": 2072,
     "repeated_entry_groups": 324,
     "largest_disjoint_60m_subset": 538,
     "equal_entry_clock_share": 1,
-    "entry_grouped_mean_difference": -0.0003017865765330758,
+    "entry_grouped_mean_difference": -0.00030164092664092663,
     "interpretation": "Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage."
   },
   "options_quality": {
     "captures": 24,
     "legs": 18952,
     "rejection_counts": {
+      "maturity": 10382,
       "delta-distance": 16973,
       "missing-or-malformed": 1503,
-      "maturity": 10382,
       "wide": 1723,
       "low-oi": 2534
     },
@@ -7085,7 +7085,7 @@
   },
   "options_expiry_pilot": {
     "schema": "options-expiry-pilot/1",
-    "generated_ms": 1795112542728,
+    "generated_ms": 1795112929360,
     "activation": {
       "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
       "confirmed_ms": 1793152036181,
@@ -7227,7 +7227,7 @@
   },
   "options_30d_pilot": {
     "schema": "options-30d-maturity/1",
-    "generated_ms": 1795112542728,
+    "generated_ms": 1795112929360,
     "activation": {
       "commit": "1bdff0904c4de8cbe7ebd8bab9ddcb2849f745a8",
       "confirmed_ms": 1793981977420,
@@ -7329,7 +7329,7 @@
   },
   "source_quality": {
     "schema": "source-quality/1",
-    "generated_ms": 1795112542728,
+    "generated_ms": 1795112929360,
     "minimum_consecutive_minutes": 5,
     "incidents": [
       {
@@ -7596,23 +7596,23 @@
   "report_freshness": {
     "v1": {
       "state": "fresh",
-      "last_success_ms": 1795112525569,
-      "age_minutes": 0.2859833333333333
+      "last_success_ms": 1795112906136,
+      "age_minutes": 0.38706666666666667
     },
     "state_v2": {
       "state": "fresh",
-      "last_success_ms": 1795112532057,
-      "age_minutes": 0.17785
+      "last_success_ms": 1795112914777,
+      "age_minutes": 0.24305
     },
     "options_expiry": {
       "state": "fresh",
-      "last_success_ms": 1795112532552,
-      "age_minutes": 0.1696
+      "last_success_ms": 1795112915398,
+      "age_minutes": 0.2327
     },
     "options_30d": {
       "state": "fresh",
-      "last_success_ms": 1795112539611,
-      "age_minutes": 0.05195
+      "last_success_ms": 1795112924895,
+      "age_minutes": 0.07441666666666667
     }
   }
 }
