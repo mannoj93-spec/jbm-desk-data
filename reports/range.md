@@ -4,13 +4,13 @@
 
 Badges show the latest workflow run (recent operation), not what is current: current availability is the table below, on your own clock.
 
-Generated 2026-11-20T20:19:33.268Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-11-20T20:25:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
+Generated 2026-11-20T20:35:07.931Z by reader-12.4.6; contract `RC1D/contract-12.0.0/175a4dd4c6c0`. **Expires 2026-11-20T21:15:00Z**: after that this page cannot say what is current; before then re-check each row's valid-until on your own clock. Machine-readable twin: `reports/range_status.json`. Scores: `registry/scores.jsonl` (scored hourly by `range-score.yml`; the weekly report only summarises).
 
 ## Current availability
 
 | horizon | state | id | window | valid until | reason |
 |---|---|---|---|---|---|
-| 4h | valid-current | range-rc1d-4h-20261120T1600Z | 2026-11-20T16:25:00Z → 2026-11-20T20:25:00Z | 2026-11-20T20:25:00Z | eligible and current |
+| 4h | stale | range-rc1d-4h-20261120T1600Z | 2026-11-20T16:25:00Z → 2026-11-20T20:25:00Z | 2026-11-20T20:25:00Z | window ended |
 | 24h | valid-current | range-rc1d-24h-20261120T1600Z | 2026-11-20T16:25:00Z → 2026-11-21T16:25:00Z | 2026-11-20T21:15:00Z | eligible and current |
 | 72h | valid-current | range-rc1d-72h-20261120T1600Z | 2026-11-20T16:25:00Z → 2026-11-23T16:25:00Z | 2026-11-20T21:15:00Z | eligible and current |
 
@@ -36,9 +36,9 @@ Waiting maturity and ready (the next hourly scorer takes it) are normal; overdue
 
 | horizon | waiting maturity | ready | overdue | scoring failed | scored | ineligible |
 |---|---|---|---|---|---|---|
-| 4h | 1 | 0 | 0 | 0 | 289 | 0 |
-| 24h | 6 | 0 | 0 | 0 | 284 | 0 |
-| 72h | 18 | 0 | 0 | 0 | 272 | 0 |
+| 4h | 0 | 1 | 0 | 0 | 289 | 0 |
+| 24h | 5 | 1 | 0 | 0 | 284 | 0 |
+| 72h | 17 | 1 | 0 | 0 | 272 | 0 |
 
 ## Recent decisions (history)
 
