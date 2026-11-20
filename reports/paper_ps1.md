@@ -1,6 +1,6 @@
 # Paper sizing experiment PS1
 
-Generated 2026-11-20T17:23:25.183Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-11-20T16:27:05.701Z.
+Generated 2026-11-20T20:24:28.389Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-11-20T16:27:05.701Z.
 
 > PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.
 
@@ -10,11 +10,11 @@ Retired before launch, zero observations: `desk/research/ps1/protocol_v2_retired
 
 Ledger rows: 1428 physical; 1428 verified, 0 quarantined, 0 excluded, 0 in progress.
 
-Launched at decision 2026-10-03T00:00:00Z; 48.72 days; 293 scheduled decisions; coverage 81.2%; execution delay after the 4H close: median 21.1 min, max 60.6 min.
+Launched at decision 2026-10-03T00:00:00Z; 48.85 days; 294 scheduled decisions; coverage 81.0%; execution delay after the 4H close: median 21.1 min, max 60.6 min.
 
 Time accounting: elapsed hours between fills; 8760 h/yr; drift and variance rates per hour (protocol v3); no interpolation; the interval opened by the latest trade is pending. 237 closed intervals over 1168.1 h; extended intervals 13.
 
-Outcomes: executed 238; missed: no run 6; missed: stale: processed after close + max_delay 8; no-rebalance: forecast unavailable 41
+Outcomes: executed 238; missed: no run 6; missed: stale: processed after close + max_delay 8; no-rebalance: forecast unavailable 42
 
 Execution states: completed 238
 
@@ -34,6 +34,6 @@ Execution states: completed 238
 
 Dependence: adjacent, non-overlapping intervals that are serially dependent (volatility clusters); 42-interval blocks are the bootstrap's resampling unit, not a measured effective sample size. Uncertainty: moving-block bootstrap of paired intervals (B2 and VOL (log return, dt_h) pairs resampled together), blocks of 42 intervals, 5,000 resamples, seed 20261003; 90% percentile interval of the duration-weighted Sharpe difference. Baseline: VOL (primary), FIXED (control).
 Open interval since 2026-11-20T16:00:00Z: pending - not marked until the next executed rebalance.
-Checkpoints: C1 after 180 days with ≥10 blocks (recorded: False); C2 after 365 days with ≥20 blocks (recorded: False). Owner: operator (paper_ps1.py checkpoint C1|C2 "<note>"); the job never records one. Progress: 48.7 days, 5 complete block(s).
+Checkpoints: C1 after 180 days with ≥10 blocks (recorded: False); C2 after 365 days with ≥20 blocks (recorded: False). Owner: operator (paper_ps1.py checkpoint C1|C2 "<note>"); the job never records one. Progress: 48.9 days, 5 complete block(s).
 
 Simulated fills on captured quotes; not executions. Sizing only - no direction is tested. No status here is a trading edge or an entry endorsement.
