@@ -1,6 +1,6 @@
 {
   "schema": "options-expiry-pilot/1",
-  "generated_ms": 1795186073786,
+  "generated_ms": 1795187010680,
   "activation": {
     "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
     "confirmed_ms": 1793152036181,
@@ -8,21 +8,21 @@
     "registration_sha": "de4f07467397f5339782ec934a41f71e30d3c14eaaf43964b721289ef488211a"
   },
   "state": "active",
-  "closed": 564,
-  "captured": 563,
-  "pending_captured": 1,
+  "closed": 565,
+  "captured": 564,
+  "pending_captured": 0,
   "horizons": {
     "7": {
       "paired": {
-        "both": 467,
+        "both": 468,
         "gained": 93,
         "lost": 0,
         "neither": 3
       },
       "missing_capture": 1,
       "states": {
-        "nearest-eligible:ok": 560,
-        "nearest-listed:ok": 467,
+        "nearest-eligible:ok": 561,
+        "nearest-listed:ok": 468,
         "nearest-listed:1NOV26:no-25-delta-strike|6NOV26:ok": 2,
         "nearest-listed:1NOV26:low-oi|6NOV26:ok": 10,
         "nearest-listed:2NOV26:no-25-delta-strike|6NOV26:ok": 5,
@@ -46,37 +46,37 @@
         "nearest-listed:23NOV26:low-oi|27NOV26:ok": 8
       },
       "joint_value_difference": {
-        "n": 467,
+        "n": 468,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 467,
+          "n": 468,
           "min": 3.9999999999999996,
           "max": 7.000000000000001,
-          "mean": 6.3211991434689505
+          "mean": 6.322649572649572
         },
         "nearest-eligible": {
-          "n": 560,
+          "n": 561,
           "min": 3.9999999999999996,
           "max": 7.999999999999999,
-          "mean": 6.273214285714285
+          "mean": 6.2745098039215685
         }
       }
     },
     "30": {
       "paired": {
-        "both": 222,
+        "both": 223,
         "gained": 29,
         "lost": 0,
         "neither": 312
       },
       "missing_capture": 1,
       "states": {
-        "nearest-eligible:ok": 251,
-        "nearest-listed:ok": 222,
+        "nearest-eligible:ok": 252,
+        "nearest-listed:ok": 223,
         "nearest-eligible:no-eligible-bracket": 312,
         "nearest-listed:no-bracketing-expiry": 311,
         "nearest-listed:27NOV26:ok|25DEC26:wide": 1,
@@ -85,58 +85,58 @@
         "nearest-listed:11DEC26:low-oi|25DEC26:ok": 11
       },
       "joint_value_difference": {
-        "n": 222,
+        "n": 223,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 222,
+          "n": 223,
           "min": 13.999999999999996,
           "max": 28.000000000000004,
-          "mean": 22.292792792792792
+          "mean": 22.255605381165918
         },
         "nearest-eligible": {
-          "n": 251,
+          "n": 252,
           "min": 13.999999999999996,
           "max": 28.000000000000004,
-          "mean": 22.617529880478088
+          "mean": 22.583333333333332
         }
       }
     }
   },
   "books": {
-    "expected": 3236,
-    "attempted": 3052,
-    "usable": 3048,
+    "expected": 3244,
+    "attempted": 3060,
+    "usable": 3056,
     "states": {
-      "completed": 530,
+      "completed": 531,
       "source-too-old": 33
     },
     "quote_states": {
-      "ok": 3048,
+      "ok": 3056,
       "unavailable": 4
     },
     "source_to_book_ms": {
-      "n": 3048,
+      "n": 3056,
       "min": 128527,
       "max": 894941,
-      "mean": 225321.29166666666,
-      "median": 173887.5,
-      "p90": 345832
+      "mean": 225419.01308900522,
+      "median": 173982.0,
+      "p90": 345828
     },
     "bid_size": {
-      "n": 3048,
+      "n": 3056,
       "min": 0.1,
       "max": 320.3,
-      "mean": 89.17844488188977
+      "mean": 89.21354712041884
     },
     "ask_size": {
-      "n": 3048,
+      "n": 3056,
       "min": 0.1,
       "max": 317.5,
-      "mean": 84.88192257217848
+      "mean": 84.83396596858638
     }
   },
   "interpretation": "Repeated horizons and contracts are dependent. A usability gain does not demonstrate predictive skill."
