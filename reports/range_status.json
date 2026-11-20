@@ -8,13 +8,12 @@
    "b0_point_lr": 0.043307206686,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-11-20T16:00:00Z",
-   "elapsed_fraction": 0.1747,
+   "elapsed_fraction": 0.2238,
    "end_utc": "2026-11-21T16:25:00Z",
    "frozen_sha256": "bf6a032694710aad1d5a16c65b38bc03c4b6d7f721a258a3b0f9560ae4effbbf",
    "horizon": "24h",
    "id": "range-rc1d-24h-20261120T1600Z",
-   "label": "range-rc1d-24h-20261120T1600Z - full-window range forecast for [2026-11-20T16:25:00Z, 2026-11-21T16:25:00Z) (17% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-11-20T20:36:30.081Z",
+   "now_utc": "2026-11-20T21:47:15.897Z",
    "point_lr": 0.030770985029,
    "points_at_decision_close": {
     "point": 1857.6,
@@ -28,12 +27,12 @@
     0.055090119683
    ],
    "reader": "reader-12.4.6",
-   "reason": "eligible and current",
+   "reason": "expired at 2026-11-20T21:15:00Z (a newer decision was due; no newer forecast is current)",
    "reference_price": 59445.1,
    "registered_ms": 1795191546087,
    "remaining": null,
    "start_utc": "2026-11-20T16:25:00Z",
-   "state": "valid-current",
+   "state": "stale",
    "valid_until_utc": "2026-11-20T21:15:00Z"
   },
   "4h": {
@@ -48,7 +47,7 @@
    "frozen_sha256": "a7ca58b4b6d1f329377d2fe8337953c899bc05ba6d115ea8d55b67bd1cd9fed1",
    "horizon": "4h",
    "id": "range-rc1d-4h-20261120T1600Z",
-   "now_utc": "2026-11-20T20:36:30.081Z",
+   "now_utc": "2026-11-20T21:47:15.897Z",
    "point_lr": 0.021733949408,
    "points_at_decision_close": {
     "point": 1306.1,
@@ -77,13 +76,12 @@
    "b0_point_lr": 0.059720315672,
    "contract": "RC1D/contract-12.0.0/175a4dd4c6c0",
    "decision_utc": "2026-11-20T16:00:00Z",
-   "elapsed_fraction": 0.0582,
+   "elapsed_fraction": 0.0746,
    "end_utc": "2026-11-23T16:25:00Z",
    "frozen_sha256": "8014f0791e0c5fd77b25e016addd3d44cb3828ee67c894d8b5877b55cf120ff2",
    "horizon": "72h",
    "id": "range-rc1d-72h-20261120T1600Z",
-   "label": "range-rc1d-72h-20261120T1600Z - full-window range forecast for [2026-11-20T16:25:00Z, 2026-11-23T16:25:00Z) (6% elapsed; not a remaining-range forecast), contract RC1D/contract-12.0.0/175a4dd4c6c0",
-   "now_utc": "2026-11-20T20:36:30.081Z",
+   "now_utc": "2026-11-20T21:47:15.897Z",
    "point_lr": 0.061604356816,
    "points_at_decision_close": {
     "point": 3777.2,
@@ -97,23 +95,17 @@
     0.105755809595
    ],
    "reader": "reader-12.4.6",
-   "reason": "eligible and current",
+   "reason": "expired at 2026-11-20T21:15:00Z (a newer decision was due; no newer forecast is current)",
    "reference_price": 59445.1,
    "registered_ms": 1795191546087,
    "remaining": null,
    "start_utc": "2026-11-20T16:25:00Z",
-   "state": "valid-current",
+   "state": "stale",
    "valid_until_utc": "2026-11-20T21:15:00Z"
   }
  },
- "current_decision": {
-  "decision_utc": "2026-11-20T20:00:00Z",
-  "grace_until_utc": "2026-11-20T21:15:00Z",
-  "ids": [],
-  "outcome": "failed",
-  "reason": "ValueError: DVOL retrieval_error is not admissible (live)"
- },
- "due_decisions": 334,
+ "current_decision": null,
+ "due_decisions": 335,
  "evaluation": {
   "block_decisions": 42,
   "horizons": {
@@ -206,16 +198,16 @@
   "min_blocks": 10,
   "note": "Descriptive. Overlapping windows are dependent; the count of non-overlapping windows is not an effective sample size. No support claim; promotion criteria unchanged (queue.md section 0)."
  },
- "expected_decisions": 334,
+ "expected_decisions": 335,
  "freshness_rule": "This file describes the stream as of generated_utc. After status_expires_utc it cannot tell you what is current; before then, re-check every current[h] on your own clock with range_reader.revalidate (valid only while now < valid_until_utc).",
- "generated_utc": "2026-11-20T20:36:30.081Z",
+ "generated_utc": "2026-11-20T21:47:15.897Z",
  "integrity_failures": [],
  "legacy_2_14_registrations": [],
  "non_production_attempts": 0,
  "note": "Generated file. Freshness is the reader's rule applied to your own clock: a valid-current entry is current only while now < current[h].valid_until_utc (range_reader.revalidate); recompute elapsed_fraction from start/end. Only valid-current is citable, as a full-window forecast. A green workflow is not a registration. Publication confirmation uses the runner's clock after a remote fetch.",
  "orphans": [],
  "outcomes": {
-  "failed": 35,
+  "failed": 36,
   "missing": 5,
   "registered-pending": 17,
   "scored": 273,
@@ -233,16 +225,6 @@
  ],
  "reader": "reader-12.4.6",
  "recent": [
-  {
-   "decision_utc": "2026-11-17T20:00:00Z",
-   "ids": [
-    "range-rc1d-4h-20261117T2000Z",
-    "range-rc1d-24h-20261117T2000Z",
-    "range-rc1d-72h-20261117T2000Z"
-   ],
-   "outcome": "scored",
-   "reason": "all horizons scored"
-  },
   {
    "decision_utc": "2026-11-18T00:00:00Z",
    "ids": [
@@ -412,6 +394,12 @@
    ],
    "outcome": "registered-pending",
    "reason": "eligible; 1/3 scored"
+  },
+  {
+   "decision_utc": "2026-11-20T20:00:00Z",
+   "ids": [],
+   "outcome": "failed",
+   "reason": "ValueError: DVOL retrieval_error is not admissible (live)"
   }
  ],
  "release": {
@@ -476,5 +464,5 @@
    "waiting-maturity": 17
   }
  },
- "status_expires_utc": "2026-11-20T21:15:00Z"
+ "status_expires_utc": "2026-11-21T01:15:00Z"
 }
