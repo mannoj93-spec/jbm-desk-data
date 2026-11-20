@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-20T09:02:36.286Z. Integrity: ok.
+Generated 2026-11-20T09:17:48.228Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-20T09:02:19.228Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-20T09:02:25.380Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-20T09:02:25.880Z
-- options_30d published report: fresh; last successful refresh: 2026-11-20T09:02:33.028Z
+- v1 published report: fresh; last successful refresh: 2026-11-20T09:17:25.046Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-20T09:17:33.070Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-20T09:17:33.693Z
+- options_30d published report: fresh; last successful refresh: 2026-11-20T09:17:43.647Z
 
 ## Coverage
 
@@ -30,11 +30,11 @@ None.
 | state | 2/23 | 8.7% | 0 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options capture | 22/22 | 100.0% | 0 |
-| options usability rr25_7d | 14/22 | 63.6% | 0 |
-| options usability rr25_30d | 10/22 | 45.5% | 0 |
+| options capture | 23/23 | 100.0% | 0 |
+| options usability rr25_7d | 15/23 | 65.2% | 0 |
+| options usability rr25_30d | 11/23 | 47.8% | 0 |
 
 turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -56,10 +56,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 117/151 | 1 |
 | range | 117/152 | 0 |
 | state | 353/608 | 0 |
-| paired | 2416/2430 | 3 |
-| stress | 1209/1215 | 2 |
+| paired | 2417/2431 | 3 |
+| stress | 1210/1216 | 1 |
 | liquidations | 2414/2432 | 4 |
-| options | 229/607 | 1 |
+| options | 230/608 | 1 |
 
 ## Diagnostics
 
@@ -68,8 +68,8 @@ Training readiness, per-opportunity reasons and source confirmations, publicatio
 Warnings:
 - state: 21/23 recorded closed opportunities abstained in 24h (>20%; operational warning only)
 - state: last-24h operational coverage below 80% (not a research threshold)
-- options rr25_7d: 14/22 closed opportunities usable (<80%; quality warning, not a collection outage)
-- options rr25_30d: 10/22 closed opportunities usable (<80%; quality warning, not a collection outage)
+- options rr25_7d: 15/23 closed opportunities usable (<80%; quality warning, not a collection outage)
+- options rr25_30d: 11/23 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
 Paired study: 2454 scored forecasts; 2124 unique entries; 550 windows in the largest disjoint subset. These are not independent-sample counts.
@@ -92,7 +92,7 @@ State depth (since_deployment): 609 forecasts, 255 abstentions; 3 unavailable de
 
 State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.65 / 15.833333333333334.
 
-Selected rr25_7d legs: 16 usable captures, 64 leg observations. Quote age median (ms): 4721.0; relative spread median: 0.09090909090909097. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 16 usable captures, 64 leg observations. Quote age median (ms): 4721.0; relative spread median: 0.09307359307359306. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 Selected rr25_30d legs: 12 usable captures, 48 leg observations. Quote age median (ms): 4723.0; relative spread median: 0.04444444444444449. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
