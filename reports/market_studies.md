@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-11-20T16:33:08.187Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-20T16:52:04.166Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 162 | 126 | 126 |
-| range | collecting (descriptive) | 162 | 119 | 112 |
+| range | collecting (descriptive) | 162 | 119 | 113 |
 | state | collecting (descriptive) | 647 | 365 | 365 |
-| paired | collecting (descriptive) | 2587 | 2489 | 2484 |
+| paired | collecting (descriptive) | 2588 | 2490 | 2485 |
 
 ## Primary comparisons
 
@@ -16,9 +16,9 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 | Study | Paired difference | 90% block interval | First verified launch |
 |---|---:|---|---|
 | turnover | 0.0503222 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
-| range | 0.00463682 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
+| range | 0.00466713 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | 0.00076659 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
-| paired | -0.000754831 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
+| paired | -0.000754527 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
 ## Turnover accounts
 
@@ -39,8 +39,8 @@ Returns, costs and turnover below cover closed intervals. Each latest trade open
 
 | Arm | 80% interval coverage | Mean interval width (ln H/L) |
 |---|---:|---:|
-| control | 69.64% | 0.0358715 |
-| calibrated | 68.75% | 0.03514 |
+| control | 69.03% | 0.0360084 |
+| calibrated | 69.03% | 0.0353608 |
 
 ## Paired-flow direction checks
 
@@ -48,12 +48,12 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 | Horizon | Arm | Scored | Directional | Neutral | Conditional hit rate |
 |---|---|---:|---:|---:|---:|
-| 60m | perp_original_clock | 2484 | 1453 | 1031 | 47.97% |
-| 60m | perp_synchronized_clock | 2484 | 1453 | 1031 | 47.97% |
-| 60m | combined_synchronized_clock | 2484 | 1431 | 1053 | 48.01% |
-| 15m | perp_original_clock | 2484 | 1453 | 1031 | 48.45% |
-| 15m | perp_synchronized_clock | 2484 | 1453 | 1031 | 48.45% |
-| 15m | combined_synchronized_clock | 2484 | 1431 | 1053 | 47.45% |
+| 60m | perp_original_clock | 2485 | 1454 | 1031 | 47.94% |
+| 60m | perp_synchronized_clock | 2485 | 1454 | 1031 | 47.94% |
+| 60m | combined_synchronized_clock | 2485 | 1432 | 1053 | 47.97% |
+| 15m | perp_original_clock | 2485 | 1454 | 1031 | 48.42% |
+| 15m | perp_synchronized_clock | 2485 | 1454 | 1031 | 48.42% |
+| 15m | combined_synchronized_clock | 2485 | 1432 | 1053 | 47.42% |
 
 ## Data usability pilots
 
