@@ -1,6 +1,6 @@
 {
   "schema": "options-expiry-pilot/1",
-  "generated_ms": 1795189708080,
+  "generated_ms": 1795190619405,
   "activation": {
     "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
     "confirmed_ms": 1793152036181,
@@ -8,21 +8,21 @@
     "registration_sha": "de4f07467397f5339782ec934a41f71e30d3c14eaaf43964b721289ef488211a"
   },
   "state": "active",
-  "closed": 565,
-  "captured": 564,
-  "pending_captured": 1,
+  "closed": 566,
+  "captured": 565,
+  "pending_captured": 0,
   "horizons": {
     "7": {
       "paired": {
-        "both": 468,
+        "both": 469,
         "gained": 93,
         "lost": 0,
         "neither": 3
       },
       "missing_capture": 1,
       "states": {
-        "nearest-eligible:ok": 561,
-        "nearest-listed:ok": 468,
+        "nearest-eligible:ok": 562,
+        "nearest-listed:ok": 469,
         "nearest-listed:1NOV26:no-25-delta-strike|6NOV26:ok": 2,
         "nearest-listed:1NOV26:low-oi|6NOV26:ok": 10,
         "nearest-listed:2NOV26:no-25-delta-strike|6NOV26:ok": 5,
@@ -46,37 +46,37 @@
         "nearest-listed:23NOV26:low-oi|27NOV26:ok": 8
       },
       "joint_value_difference": {
-        "n": 468,
+        "n": 469,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 468,
+          "n": 469,
           "min": 3.9999999999999996,
           "max": 7.000000000000001,
-          "mean": 6.322649572649572
+          "mean": 6.32409381663113
         },
         "nearest-eligible": {
-          "n": 561,
+          "n": 562,
           "min": 3.9999999999999996,
           "max": 7.999999999999999,
-          "mean": 6.2745098039215685
+          "mean": 6.275800711743773
         }
       }
     },
     "30": {
       "paired": {
-        "both": 223,
+        "both": 224,
         "gained": 29,
         "lost": 0,
         "neither": 312
       },
       "missing_capture": 1,
       "states": {
-        "nearest-eligible:ok": 252,
-        "nearest-listed:ok": 223,
+        "nearest-eligible:ok": 253,
+        "nearest-listed:ok": 224,
         "nearest-eligible:no-eligible-bracket": 312,
         "nearest-listed:no-bracketing-expiry": 311,
         "nearest-listed:27NOV26:ok|25DEC26:wide": 1,
@@ -85,58 +85,58 @@
         "nearest-listed:11DEC26:low-oi|25DEC26:ok": 11
       },
       "joint_value_difference": {
-        "n": 223,
+        "n": 224,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 223,
+          "n": 224,
           "min": 13.999999999999996,
           "max": 28.000000000000004,
-          "mean": 22.255605381165918
+          "mean": 22.21875
         },
         "nearest-eligible": {
-          "n": 252,
+          "n": 253,
           "min": 13.999999999999996,
           "max": 28.000000000000004,
-          "mean": 22.583333333333332
+          "mean": 22.549407114624508
         }
       }
     }
   },
   "books": {
-    "expected": 3244,
-    "attempted": 3060,
-    "usable": 3056,
+    "expected": 3252,
+    "attempted": 3068,
+    "usable": 3064,
     "states": {
-      "completed": 531,
+      "completed": 532,
       "source-too-old": 33
     },
     "quote_states": {
-      "ok": 3056,
+      "ok": 3064,
       "unavailable": 4
     },
     "source_to_book_ms": {
-      "n": 3056,
+      "n": 3064,
       "min": 128527,
       "max": 894941,
-      "mean": 225419.01308900522,
-      "median": 173982.0,
+      "mean": 225353.62075718015,
+      "median": 174088.5,
       "p90": 345828
     },
     "bid_size": {
-      "n": 3056,
+      "n": 3064,
       "min": 0.1,
       "max": 320.3,
-      "mean": 89.21354712041884
+      "mean": 89.3569190600522
     },
     "ask_size": {
-      "n": 3056,
+      "n": 3064,
       "min": 0.1,
       "max": 317.5,
-      "mean": 84.83396596858638
+      "mean": 84.77774151436032
     }
   },
   "interpretation": "Repeated horizons and contracts are dependent. A usability gain does not demonstrate predictive skill."
