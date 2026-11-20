@@ -1,6 +1,6 @@
 {
   "schema": "options-expiry-pilot/1",
-  "generated_ms": 1795178874964,
+  "generated_ms": 1795179876836,
   "activation": {
     "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
     "confirmed_ms": 1793152036181,
@@ -8,21 +8,21 @@
     "registration_sha": "de4f07467397f5339782ec934a41f71e30d3c14eaaf43964b721289ef488211a"
   },
   "state": "active",
-  "closed": 562,
-  "captured": 561,
-  "pending_captured": 1,
+  "closed": 563,
+  "captured": 562,
+  "pending_captured": 0,
   "horizons": {
     "7": {
       "paired": {
-        "both": 465,
+        "both": 466,
         "gained": 93,
         "lost": 0,
         "neither": 3
       },
       "missing_capture": 1,
       "states": {
-        "nearest-eligible:ok": 558,
-        "nearest-listed:ok": 465,
+        "nearest-eligible:ok": 559,
+        "nearest-listed:ok": 466,
         "nearest-listed:1NOV26:no-25-delta-strike|6NOV26:ok": 2,
         "nearest-listed:1NOV26:low-oi|6NOV26:ok": 10,
         "nearest-listed:2NOV26:no-25-delta-strike|6NOV26:ok": 5,
@@ -46,37 +46,37 @@
         "nearest-listed:23NOV26:low-oi|27NOV26:ok": 8
       },
       "joint_value_difference": {
-        "n": 465,
+        "n": 466,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 465,
+          "n": 466,
           "min": 3.9999999999999996,
           "max": 7.000000000000001,
-          "mean": 6.318279569892473
+          "mean": 6.319742489270387
         },
         "nearest-eligible": {
-          "n": 558,
+          "n": 559,
           "min": 3.9999999999999996,
           "max": 7.999999999999999,
-          "mean": 6.270609318996415
+          "mean": 6.271914132379249
         }
       }
     },
     "30": {
       "paired": {
-        "both": 220,
+        "both": 221,
         "gained": 29,
         "lost": 0,
         "neither": 312
       },
       "missing_capture": 1,
       "states": {
-        "nearest-eligible:ok": 249,
-        "nearest-listed:ok": 220,
+        "nearest-eligible:ok": 250,
+        "nearest-listed:ok": 221,
         "nearest-eligible:no-eligible-bracket": 312,
         "nearest-listed:no-bracketing-expiry": 311,
         "nearest-listed:27NOV26:ok|25DEC26:wide": 1,
@@ -85,58 +85,58 @@
         "nearest-listed:11DEC26:low-oi|25DEC26:ok": 11
       },
       "joint_value_difference": {
-        "n": 220,
+        "n": 221,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 220,
+          "n": 221,
           "min": 13.999999999999996,
           "max": 28.000000000000004,
-          "mean": 22.368181818181817
+          "mean": 22.330316742081447
         },
         "nearest-eligible": {
-          "n": 249,
+          "n": 250,
           "min": 13.999999999999996,
           "max": 28.000000000000004,
-          "mean": 22.686746987951807
+          "mean": 22.652
         }
       }
     }
   },
   "books": {
-    "expected": 3220,
-    "attempted": 3036,
-    "usable": 3032,
+    "expected": 3228,
+    "attempted": 3044,
+    "usable": 3040,
     "states": {
-      "completed": 528,
+      "completed": 529,
       "source-too-old": 33
     },
     "quote_states": {
-      "ok": 3032,
+      "ok": 3040,
       "unavailable": 4
     },
     "source_to_book_ms": {
-      "n": 3032,
+      "n": 3040,
       "min": 128527,
       "max": 894941,
-      "mean": 225050.68469656992,
-      "median": 173713.0,
-      "p90": 345520
+      "mean": 225437.29638157896,
+      "median": 173778.0,
+      "p90": 345835
     },
     "bid_size": {
-      "n": 3032,
+      "n": 3040,
       "min": 0.1,
       "max": 320.3,
-      "mean": 88.86678759894458
+      "mean": 89.02457236842106
     },
     "ask_size": {
-      "n": 3032,
+      "n": 3040,
       "min": 0.1,
       "max": 317.5,
-      "mean": 84.89934036939313
+      "mean": 84.95190789473683
     }
   },
   "interpretation": "Repeated horizons and contracts are dependent. A usability gain does not demonstrate predictive skill."
