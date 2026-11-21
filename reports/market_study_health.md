@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-21T08:03:06.119Z. Integrity: ok.
+Generated 2026-11-21T08:20:23.435Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-21T08:02:48.566Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-21T08:02:54.807Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-21T08:02:55.247Z
-- options_30d published report: fresh; last successful refresh: 2026-11-21T08:03:02.700Z
+- v1 published report: fresh; last successful refresh: 2026-11-21T08:20:03.263Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-21T08:20:10.477Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-21T08:20:10.969Z
+- options_30d published report: fresh; last successful refresh: 2026-11-21T08:20:19.563Z
 
 ## Coverage
 
@@ -28,13 +28,13 @@ Paused: False
 | turnover | 4/5 | 80.0% | 0 |
 | range | 4/5 | 80.0% | 0 |
 | state | 4/23 | 17.4% | 3 |
-| paired | 93/93 | 100.0% | 0 |
+| paired | 94/94 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 89/92 | 96.7% | 0 |
-| options capture | 21/22 | 95.5% | 0 |
-| options usability rr25_7d | 19/22 | 86.4% | 0 |
-| options usability rr25_30d | 19/22 | 86.4% | 0 |
+| options capture | 22/23 | 95.7% | 0 |
+| options usability rr25_7d | 20/23 | 87.0% | 0 |
+| options usability rr25_30d | 20/23 | 87.0% | 0 |
 
 turnover: 5/5 closed opportunities recorded; 4 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -42,7 +42,7 @@ range: 5/5 closed opportunities recorded; 4 eligible forecasts; 0 abstentions. A
 
 state: 23/23 closed opportunities recorded; 4 eligible forecasts; 19 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 93/93 closed opportunities recorded; 93 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 94/94 closed opportunities recorded; 94 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 23/23 closed opportunities recorded; 23 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -53,13 +53,13 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 122/157 | 0 |
-| range | 121/157 | 0 |
+| turnover | 122/157 | 1 |
+| range | 121/157 | 1 |
 | state | 357/631 | 0 |
-| paired | 2508/2522 | 3 |
-| stress | 1255/1261 | 2 |
+| paired | 2510/2524 | 2 |
+| stress | 1256/1262 | 1 |
 | liquidations | 2503/2524 | 4 |
-| options | 249/630 | 1 |
+| options | 250/631 | 1 |
 
 ## Diagnostics
 
@@ -70,7 +70,7 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 2546 scored forecasts; 2207 unique entries; 570 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 2547 scored forecasts; 2208 unique entries; 570 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 20 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.491666666666667 / 30.783333333333335.
@@ -90,15 +90,15 @@ State depth (since_deployment): 632 forecasts, 274 abstentions; 3 unavailable de
 
 State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.558333333333334 / 29.783333333333335.
 
-Selected rr25_7d legs: 20 usable captures, 80 leg observations. Quote age median (ms): 5453.0; relative spread median: 0.059714795008912705. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 21 usable captures, 84 leg observations. Quote age median (ms): 5360.5; relative spread median: 0.059714795008912705. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-Selected rr25_30d legs: 20 usable captures, 80 leg observations. Quote age median (ms): 5459.5; relative spread median: 0.04257246376811598. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_30d legs: 21 usable captures, 84 leg observations. Quote age median (ms): 5446.5; relative spread median: 0.04257246376811598. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 State v2 numerical replay: verified, 599 scores reproduced.
 
 State v2 evidence: 599/1680 scored observations for the frozen minimum interval threshold; 3/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
-Immediate selected books: 77 usable / 160 attempted / 160 selected in 24h; median/p90 source lag (ms): 495 / 654.
+Immediate selected books: 77 usable / 168 attempted / 168 selected in 24h; median/p90 source lag (ms): 495 / 654.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
 
 ## Source quality
