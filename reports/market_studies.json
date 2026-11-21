@@ -1,5 +1,5 @@
 {
-  "generated_ms": 1795290443735,
+  "generated_ms": 1795291356150,
   "activation": {
     "commit": "c37fa7906c02ff9407e1a1bdf73f04f69d24a9ce",
     "confirmed_ms": 1792863369620,
@@ -8,13 +8,13 @@
   },
   "studies": {
     "turnover": {
-      "scheduled": 168,
+      "scheduled": 169,
       "recorded": 168,
       "states": {
         "ready": 131,
         "missed": 37
       },
-      "missing_run": 0,
+      "missing_run": 1,
       "on_time_published": 131,
       "late_publication": 0,
       "pending_confirmation": 0,
@@ -23,8 +23,8 @@
       "status": "collecting (descriptive)",
       "results": {
         "executed": 131,
-        "scheduled": 168,
-        "coverage": 0.7797619047619048,
+        "scheduled": 169,
+        "coverage": 0.7751479289940828,
         "primary_stressed_sharpe_difference": -0.23369262856094686,
         "primary_ci90": null,
         "arms": {
@@ -152,7 +152,7 @@
         "status": "collecting (descriptive)",
         "checkpoint_rules": "Descriptive only before 365 days and 20 blocks. Support requires stressed primary 90% block interval above zero, >=80% scheduled coverage, both B2 volatilities 10%-20%, and B2_10 drawdown no more than 2 percentage points worse. No automated promotion.",
         "review": {
-          "days_since_launch": 27.94075835648148,
+          "days_since_launch": 27.95131871527778,
           "C1_due": false,
           "C2_due": false,
           "action": "operator review only; no automatic status change"
@@ -164,13 +164,13 @@
       }
     },
     "range": {
-      "scheduled": 168,
+      "scheduled": 169,
       "recorded": 168,
       "states": {
         "missed": 44,
         "ready": 124
       },
-      "missing_run": 0,
+      "missing_run": 1,
       "on_time_published": 124,
       "late_publication": 0,
       "pending_confirmation": 0,
@@ -199,12 +199,12 @@
       }
     },
     "state": {
-      "scheduled": 674,
-      "recorded": 674,
+      "scheduled": 675,
+      "recorded": 675,
       "states": {
         "missed": 20,
         "ready": 370,
-        "abstained": 284
+        "abstained": 285
       },
       "missing_run": 0,
       "on_time_published": 370,
@@ -241,23 +241,23 @@
       }
     },
     "paired": {
-      "scheduled": 2696,
-      "recorded": 2696,
+      "scheduled": 2697,
+      "recorded": 2697,
       "states": {
         "missed": 91,
-        "ready": 2602,
+        "ready": 2603,
         "abstained": 3
       },
       "missing_run": 0,
-      "on_time_published": 2598,
+      "on_time_published": 2599,
       "late_publication": 4,
       "pending_confirmation": 0,
-      "scored": 2592,
+      "scored": 2594,
       "launch_ms": 1792866677940,
       "status": "collecting (descriptive)",
       "results": {
-        "paired": 2592,
-        "mean_difference": -0.0006028163580246913,
+        "paired": 2594,
+        "mean_difference": -0.0006505397070161913,
         "block_size": 672,
         "complete_block_equivalents": 3,
         "ci90": null,
@@ -268,101 +268,101 @@
       "conditional_hits": {
         "60": {
           "perp_original_clock": {
-            "scored": 2592,
-            "directional": 1496,
+            "scored": 2594,
+            "directional": 1498,
             "neutral": 1096,
-            "hits": 721,
-            "conditional_hit_rate": 0.481951871657754
+            "hits": 722,
+            "conditional_hit_rate": 0.4819759679572764
           },
           "perp_synchronized_clock": {
-            "scored": 2592,
-            "directional": 1496,
+            "scored": 2594,
+            "directional": 1498,
             "neutral": 1096,
-            "hits": 721,
-            "conditional_hit_rate": 0.481951871657754
+            "hits": 722,
+            "conditional_hit_rate": 0.4819759679572764
           },
           "combined_synchronized_clock": {
-            "scored": 2592,
+            "scored": 2594,
             "directional": 1475,
-            "neutral": 1117,
+            "neutral": 1119,
             "hits": 711,
             "conditional_hit_rate": 0.48203389830508475
           }
         },
         "15": {
           "perp_original_clock": {
-            "scored": 2592,
-            "directional": 1496,
+            "scored": 2594,
+            "directional": 1498,
             "neutral": 1096,
-            "hits": 730,
-            "conditional_hit_rate": 0.4879679144385027
+            "hits": 731,
+            "conditional_hit_rate": 0.48798397863818427
           },
           "perp_synchronized_clock": {
-            "scored": 2592,
-            "directional": 1496,
+            "scored": 2594,
+            "directional": 1498,
             "neutral": 1096,
-            "hits": 730,
-            "conditional_hit_rate": 0.4879679144385027
+            "hits": 731,
+            "conditional_hit_rate": 0.48798397863818427
           },
           "combined_synchronized_clock": {
-            "scored": 2592,
+            "scored": 2594,
             "directional": 1475,
-            "neutral": 1117,
+            "neutral": 1119,
             "hits": 706,
             "conditional_hit_rate": 0.4786440677966102
           }
         }
       },
       "equal_entry_clock_share": 1.0,
-      "secondary_15m_difference": 0.002097800925925926,
+      "secondary_15m_difference": 0.0020479953739398612,
       "clock_only_60m_difference": 0.0
     }
   },
   "pilots": {
     "stress": {
-      "opportunities": 1348,
-      "records": 1348,
+      "opportunities": 1349,
+      "records": 1349,
       "states": {
         "missed": 45,
-        "ok": 1303
+        "ok": 1304
       },
       "ratings": {
-        "low": 1303
+        "low": 1304
       },
       "rating_transitions": 0,
       "insurance_ranges": {
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/LDUSDT": {
-          "n": 1303,
+          "n": 1304,
           "min": 1e-08,
           "max": 1e-08,
           "unique": 1
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/USDC": {
-          "n": 1303,
+          "n": 1304,
           "min": 199980383.58181804,
           "max": 499980383.5818181,
           "unique": 2
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/USDT": {
-          "n": 1303,
+          "n": 1304,
           "min": 649666759.4281832,
           "max": 799627277.7244676,
           "unique": 29
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/BTC": {
-          "n": 1303,
+          "n": 1304,
           "min": 69.00161004,
           "max": 69.36355643,
           "unique": 25
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/BNB": {
-          "n": 1303,
+          "n": 1304,
           "min": 1.45e-06,
           "max": 1.45e-06,
           "unique": 1
         },
         "BNBUSDT,BTCUSDT,BTCUSDT_261225,BTCUSDT_270326,ETHBTC,ETHUSDT,ETHUSDT_261225,ETHUSDT_270326/BNFCR": {
-          "n": 1303,
+          "n": 1304,
           "min": 1866938.03866883,
           "max": 1873252.52579221,
           "unique": 29
@@ -373,7 +373,7 @@
     "liquidations": {
       "states": {
         "missed": 66,
-        "ok": 2587,
+        "ok": 2591,
         "coverage-unknown": 14
       },
       "revisions": [
@@ -16116,10 +16116,10 @@
         {
           "end": 1795226400000,
           "vintage_hours": 18,
-          "comparable": false,
-          "size_revision": null,
-          "signal_flip": null,
-          "eligibility_flip": null
+          "comparable": true,
+          "size_revision": 0.0,
+          "signal_flip": false,
+          "eligibility_flip": false
         },
         {
           "end": 1795230000000,
@@ -16396,10 +16396,10 @@
         {
           "end": 1795269600000,
           "vintage_hours": 6,
-          "comparable": false,
-          "size_revision": null,
-          "signal_flip": null,
-          "eligibility_flip": null
+          "comparable": true,
+          "size_revision": 0.0,
+          "signal_flip": false,
+          "eligibility_flip": false
         },
         {
           "end": 1795269600000,
@@ -16508,10 +16508,10 @@
         {
           "end": 1795287600000,
           "vintage_hours": 1,
-          "comparable": false,
-          "size_revision": null,
-          "signal_flip": null,
-          "eligibility_flip": null
+          "comparable": true,
+          "size_revision": 0,
+          "signal_flip": false,
+          "eligibility_flip": false
         },
         {
           "end": 1795287600000,
@@ -16523,6 +16523,30 @@
         },
         {
           "end": 1795287600000,
+          "vintage_hours": 18,
+          "comparable": false,
+          "size_revision": null,
+          "signal_flip": null,
+          "eligibility_flip": null
+        },
+        {
+          "end": 1795291200000,
+          "vintage_hours": 1,
+          "comparable": false,
+          "size_revision": null,
+          "signal_flip": null,
+          "eligibility_flip": null
+        },
+        {
+          "end": 1795291200000,
+          "vintage_hours": 6,
+          "comparable": false,
+          "size_revision": null,
+          "signal_flip": null,
+          "eligibility_flip": null
+        },
+        {
+          "end": 1795291200000,
           "vintage_hours": 18,
           "comparable": false,
           "size_revision": null,
@@ -16534,7 +16558,7 @@
     },
     "options": {
       "captures": 673,
-      "expected_hourly_slots": 674,
+      "expected_hourly_slots": 675,
       "rr25_7d_states": {
         "ok": 570,
         "31OCT26:low-oi|6NOV26:ok": 5,
