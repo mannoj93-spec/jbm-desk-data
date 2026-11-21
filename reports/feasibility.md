@@ -1,19 +1,19 @@
 # Research feasibility
 
-Generated 2026-11-20T20:42:07Z by feasibility-1.3.0; source cutoff 2026-11-20T07:42Z. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
+Generated 2026-11-21T00:28:07Z by feasibility-1.3.0; source cutoff 2026-11-20T20:42Z. Read-only: it restates what the lab and the streams recorded and changes no definition. A zero the collection could not observe is marked **not observable**.
 
 ## Lab designs
 
 | design | status | capability | calendar days | observable days | raw / episodes (prospective) | test retained / need | limiting factor | time to checkpoint 1 |
 |---|---|---|---|---|---|---|---|---|
-| A1-flow-absorption | under prospective evaluation | observable | 55.59 | 54.58 | 149 / 108 | 11 / 100 | time (accumulation) | ~442 d (90%: 267–787 d) |
+| A1-flow-absorption | under prospective evaluation | observable | 56.13 | 55.12 | 153 / 110 | 11 / 100 | time (accumulation) | ~446 d (90%: 269–795 d) |
 | B1-underwater-adds | exploratory | observable | 46.56 | 45.0 | 0 / 0 | 0 / 100 | absent events; parked | no ETA |
-| C1-liquidation-cluster | under prospective evaluation | observable | 55.59 | 54.58 | 24 / 17 | 12 / 100 | time (accumulation) | ~400 d (90%: 247–694 d) |
+| C1-liquidation-cluster | under prospective evaluation | observable | 56.13 | 55.12 | 25 / 18 | 13 / 100 | time (accumulation) | ~369 d (90%: 232–624 d) |
 | D1-active-twap | exploratory | observable | 46.56 | 46.54 | 0 / 0 | 0 / 100 | absent events; parked | no ETA |
 | E1-liquidity-recovery | exploratory | not observable | 46.56 | unavailable | 0 / 0 | 0 / 100 | infrastructure capability; parked | no ETA |
-| F1-options-perp-disagreement | under prospective evaluation | observable | 55.59 | 54.58 | 20 / 3 | 2 / 100 | time (accumulation) | no ETA |
-| G1-alt-stress-propagation | under prospective evaluation | observable | 55.59 | 54.58 | 19 / 19 | 19 / 100 | time (accumulation) | ~233 d (90%: 159–355 d) |
-| H1-deleveraging-stress | exploratory | observable | 55.59 | 55.58 | 242 / 157 | 0 / 100 | absent events | no ETA |
+| F1-options-perp-disagreement | under prospective evaluation | observable | 56.13 | 55.12 | 20 / 3 | 2 / 100 | time (accumulation) | no ETA |
+| G1-alt-stress-propagation | under prospective evaluation | observable | 56.13 | 55.12 | 19 / 19 | 19 / 100 | time (accumulation) | ~235 d (90%: 160–359 d) |
+| H1-deleveraging-stress | exploratory | observable | 56.13 | 56.12 | 248 / 162 | 0 / 100 | absent events | no ETA |
 
 Observable days = hours with a selected hourly control (the lab's coverage count) ÷ 24; calendar days are shown for reference only and never divide a count.
 
@@ -22,9 +22,9 @@ Observable days = hours with a selected hourly control (the lab's coverage count
 - Data: available
 - Zeros: events occur; evidence accumulates with time
 - Test (evaluation phase, primary 60 min): firings 16, episodes 11, scorable 11, retained 11, blocks 10
-- Rates per observable day: test episodes 0.202, retained 0.202
+- Rates per observable day: test episodes 0.2, retained 0.2
 - Exclusions (named in the design): middle response group; windows with missing bars; first 7 days (threshold history)
-- Recorded counters: {"events": 149, "late_inputs": 439, "skipped_history": 144, "skipped_missing": 0, "spot_not_yet_available": 16691, "steps": 16835}
+- Recorded counters: {"events": 153, "late_inputs": 439, "skipped_history": 144, "skipped_missing": 0, "spot_not_yet_available": 16847, "steps": 16991}
 
 ### B1-underwater-adds (ev-125c86066f05)
 
@@ -41,10 +41,10 @@ Observable days = hours with a selected hourly control (the lab's coverage count
 
 - Data: available
 - Zeros: events occur; evidence accumulates with time
-- Test (evaluation phase, primary 240 min): firings 24, episodes 16, scorable 16, retained 12, blocks 7
-- Rates per observable day: test episodes 0.293, retained 0.22
+- Test (evaluation phase, primary 240 min): firings 25, episodes 17, scorable 17, retained 13, blocks 8
+- Rates per observable day: test episodes 0.308, retained 0.236
 - Exclusions (named in the design): sampled accounts only; never market inventory; snapshots without a same-run mark
-- Recorded counters: {"snapshots": 6221, "with_mark": 6219}
+- Recorded counters: {"snapshots": 6274, "with_mark": 6272}
 
 ### D1-active-twap (ev-2b023a90293f)
 
@@ -75,19 +75,19 @@ Observable days = hours with a selected hourly control (the lab's coverage count
 - Data: available
 - Zeros: events occur; evidence accumulates with time
 - Test (evaluation phase, primary 480 min): firings 9, episodes 2, scorable 2, retained 2, blocks 2
-- Rates per observable day: test episodes 0.037, retained 0.037
+- Rates per observable day: test episodes 0.036, retained 0.036
 - Exclusions (named in the design): records before 7 days of z history; panel quotes failing quality checks; events whose rr25_7d quotes are not qualified (regrouped *_ineligible; unknown quality stays unknown)
-- Recorded counters: {"quote_policy": "qualified", "records": 6253, "with_z": 5695}
-- Checkpoint 1: no ETA: 2 retained test observation(s) in 54.6 observable days; an ETA needs >= 5
+- Recorded counters: {"quote_policy": "qualified", "records": 6304, "with_z": 5746}
+- Checkpoint 1: no ETA: 2 retained test observation(s) in 55.1 observable days; an ETA needs >= 5
 
 ### G1-alt-stress-propagation (ev-5cbc55c34b6d)
 
 - Data: available
 - Zeros: events occur; evidence accumulates with time
 - Test (evaluation phase, primary 60 min): firings 19, episodes 19, scorable 19, retained 19, blocks 16
-- Rates per observable day: test episodes 0.348, retained 0.348
+- Rates per observable day: test episodes 0.345, retained 0.345
 - Exclusions (named in the design): same-minute co-movement is not leadership; windows with missing bars in any of the three assets
-- Recorded counters: {"late_inputs": 583, "skipped_missing": 0, "steps": 16835}
+- Recorded counters: {"late_inputs": 583, "skipped_missing": 0, "steps": 16991}
 
 ### H1-deleveraging-stress (ev-02fcecefd1bf)
 
@@ -96,19 +96,19 @@ Observable days = hours with a selected hourly control (the lab's coverage count
 - Test (evaluation phase, primary 30 min): firings 0, episodes 0, scorable 0, retained 0, blocks 0
 - Rates per observable day: test episodes 0.0, retained 0.0
 - Exclusions (named in the design): buckets before 7 days of collected liquidation history; other venues' deleveraging data (unavailable)
-- Recorded counters: {"buckets": 4667, "liquidation_orders": 120655, "stress_rows": 0, "unavailable_sources": ["bybit (HTTP 403 here)", "deribit liquidation flag (1h public delay)", "binance insurance fund"]}
-- Checkpoint 1: no ETA: 0 retained test observation(s) in 55.6 observable days; an ETA needs >= 5
+- Recorded counters: {"buckets": 4766, "liquidation_orders": 127243, "stress_rows": 0, "unavailable_sources": ["bybit (HTTP 403 here)", "deribit liquidation flag (1h public delay)", "binance insurance fund"]}
+- Checkpoint 1: no ETA: 0 retained test observation(s) in 56.1 observable days; an ETA needs >= 5
 
 ## Desk streams
 
 | stream | limiting factor | detail |
 |---|---|---|
-| RC1D B2 vs B0 (24h) | time (accumulation) | {"blocks": 6, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 55.7, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 285, "rate_per_day": 5.12, "time_to_checkpoint": "~26 d"} |
-| RC1D B2 vs B0 (4h) | time (accumulation) | {"blocks": 6, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 55.7, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 290, "rate_per_day": 5.21, "time_to_checkpoint": "~25 d"} |
-| RC1D B2 vs B0 (72h) | time (accumulation) | {"blocks": 6, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 55.7, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 273, "rate_per_day": 4.9, "time_to_checkpoint": "~30 d"} |
+| RC1D B2 vs B0 (24h) | time (accumulation) | {"blocks": 6, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 55.85, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 285, "rate_per_day": 5.1, "time_to_checkpoint": "~26 d"} |
+| RC1D B2 vs B0 (4h) | time (accumulation) | {"blocks": 6, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 55.85, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 290, "rate_per_day": 5.19, "time_to_checkpoint": "~25 d"} |
+| RC1D B2 vs B0 (72h) | time (accumulation) | {"blocks": 6, "calendar_exposure": {"basis": "calendar days since the stream start (one window per 4H decision)", "days": 55.85, "from": "2026-09-26T04:00:00Z"}, "checkpoint": {"block": 42, "need_blocks": 10}, "note": "one scored window per 4H decision when scoring keeps up; deterministic accumulation", "paired_scored": 273, "rate_per_day": 4.89, "time_to_checkpoint": "~30 d"} |
 | Companion B2 vs B1 (24h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 80, "paired": 178} |
 | Companion B2 vs B1 (4h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 85, "paired": 178} |
 | Companion B2 vs B1 (72h) | time (accumulation) | {"checkpoint": {"block": 42, "need_blocks": 10}, "late": 0, "missing": 68, "paired": 178} |
-| PS1 paper sizing | infrastructure capability | {"checkpoint": {}, "coverage": 0.8095, "intervals": 237, "outcomes": {"executed": 238, "missed: no run": 6, "missed: stale: processed after close + max_delay": 8, "no-rebalance: forecast unavailable": 42}} |
+| PS1 paper sizing | infrastructure capability | {"checkpoint": {}, "coverage": 0.8102, "intervals": 238, "outcomes": {"executed": 239, "missed: no run": 6, "missed: stale: processed after close + max_delay": 8, "no-rebalance: forecast unavailable": 42}} |
 
 Rules: only with >= 5 qualifying observations; 90% Garwood interval on the rate. observed zero (collection capable) is reported separately from not observable; an unobservable rate is null, never 0.0. no design, threshold or evaluation version is changed by this report.
