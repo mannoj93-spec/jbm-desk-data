@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-21T16:09:19.665Z. Integrity: ok.
+Generated 2026-11-21T16:20:10.497Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-21T16:08:59.438Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-21T16:09:07.160Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-21T16:09:07.716Z
-- options_30d published report: fresh; last successful refresh: 2026-11-21T16:09:16.027Z
+- v1 published report: fresh; last successful refresh: 2026-11-21T16:19:46.048Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-21T16:19:54.476Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-21T16:19:55.054Z
+- options_30d published report: fresh; last successful refresh: 2026-11-21T16:20:05.682Z
 
 ## Coverage
 
@@ -53,13 +53,13 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 124/159 | 0 |
-| range | 123/159 | 0 |
+| turnover | 124/159 | 1 |
+| range | 123/159 | 1 |
 | state | 358/639 | 0 |
-| paired | 2541/2555 | 2 |
+| paired | 2542/2556 | 2 |
 | stress | 1272/1278 | 1 |
 | liquidations | 2534/2556 | 4 |
-| options | 258/639 | 0 |
+| options | 258/639 | 1 |
 
 ## Diagnostics
 
@@ -70,7 +70,7 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 2578 scored forecasts; 2236 unique entries; 577 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 2579 scored forecasts; 2237 unique entries; 577 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 19 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.40833333333333 / 30.733333333333334.
@@ -90,15 +90,15 @@ State depth (since_deployment): 640 forecasts, 281 abstentions; 3 unavailable de
 
 State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.533333333333333 / 29.783333333333335.
 
-Selected rr25_7d legs: 21 usable captures, 84 leg observations. Quote age median (ms): 4925.0; relative spread median: 0.05798319327731087. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 22 usable captures, 88 leg observations. Quote age median (ms): 4920.0; relative spread median: 0.058823529411764754. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-Selected rr25_30d legs: 21 usable captures, 84 leg observations. Quote age median (ms): 4924.5; relative spread median: 0.0454545454545455. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_30d legs: 22 usable captures, 88 leg observations. Quote age median (ms): 4918.0; relative spread median: 0.0454545454545455. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 State v2 numerical replay: verified, 607 scores reproduced.
 
 State v2 evidence: 607/1680 scored observations for the frozen minimum interval threshold; 3/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
-Immediate selected books: 26 usable / 168 attempted / 168 selected in 24h; median/p90 source lag (ms): 553.0 / 637.
+Immediate selected books: 26 usable / 176 attempted / 176 selected in 24h; median/p90 source lag (ms): 553.0 / 637.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
 
 ## Source quality
