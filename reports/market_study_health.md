@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-21T09:33:18.117Z. Integrity: ok.
+Generated 2026-11-21T09:47:57.749Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,27 +16,27 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-21T09:32:46.636Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-21T09:32:57.196Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-21T09:32:57.921Z
-- options_30d published report: fresh; last successful refresh: 2026-11-21T09:33:11.831Z
+- v1 published report: fresh; last successful refresh: 2026-11-21T09:47:37.208Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-21T09:47:44.524Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-21T09:47:45.024Z
+- options_30d published report: fresh; last successful refresh: 2026-11-21T09:47:53.846Z
 
 ## Coverage
 
 | Program | Successful / due | Coverage | Consecutive misses |
 |---|---:|---:|---:|
-| turnover | 4/5 | 80.0% | 0 |
+| turnover | 5/6 | 83.3% | 0 |
 | range | 5/6 | 83.3% | 0 |
 | state | 4/24 | 16.7% | 5 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 89/92 | 96.7% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 93/96 | 96.9% | 0 |
 | options capture | 22/23 | 95.7% | 0 |
 | options usability rr25_7d | 20/23 | 87.0% | 0 |
 | options usability rr25_30d | 20/23 | 87.0% | 0 |
 
-turnover: 5/5 closed opportunities recorded; 4 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+turnover: 6/6 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 range: 6/6 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -53,12 +53,12 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 
 | Program | Successful / closed | Additional successes awaiting closure |
 |---|---:|---:|
-| turnover | 122/157 | 1 |
+| turnover | 123/158 | 0 |
 | range | 122/158 | 0 |
 | state | 357/633 | 0 |
-| paired | 2514/2528 | 3 |
-| stress | 1258/1264 | 2 |
-| liquidations | 2507/2528 | 4 |
+| paired | 2515/2529 | 3 |
+| stress | 1259/1265 | 1 |
+| liquidations | 2511/2532 | 0 |
 | options | 251/632 | 1 |
 
 ## Diagnostics
@@ -94,9 +94,9 @@ Selected rr25_7d legs: 21 usable captures, 84 leg observations. Quote age median
 
 Selected rr25_30d legs: 21 usable captures, 84 leg observations. Quote age median (ms): 5446.5; relative spread median: 0.04124149659863949. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 600 scores reproduced.
+State v2 numerical replay: verified, 601 scores reproduced.
 
-State v2 evidence: 600/1680 scored observations for the frozen minimum interval threshold; 3/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 601/1680 scored observations for the frozen minimum interval threshold; 3/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 69 usable / 168 attempted / 168 selected in 24h; median/p90 source lag (ms): 495 / 669.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
