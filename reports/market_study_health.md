@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-21T06:34:04.547Z. Integrity: ok.
+Generated 2026-11-21T06:48:35.879Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-21T06:33:47.797Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-21T06:33:53.772Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-21T06:33:54.210Z
-- options_30d published report: fresh; last successful refresh: 2026-11-21T06:34:01.264Z
+- v1 published report: fresh; last successful refresh: 2026-11-21T06:48:10.995Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-21T06:48:19.672Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-21T06:48:20.441Z
+- options_30d published report: fresh; last successful refresh: 2026-11-21T06:48:31.008Z
 
 ## Coverage
 
@@ -30,8 +30,8 @@ Paused: False
 | state | 5/24 | 20.8% | 2 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 89/92 | 96.7% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 93/96 | 96.9% | 0 |
 | options capture | 22/23 | 95.7% | 0 |
 | options usability rr25_7d | 20/23 | 87.0% | 0 |
 | options usability rr25_30d | 20/23 | 87.0% | 0 |
@@ -56,9 +56,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 122/157 | 0 |
 | range | 121/157 | 0 |
 | state | 357/630 | 0 |
-| paired | 2502/2516 | 3 |
-| stress | 1252/1258 | 2 |
-| liquidations | 2495/2516 | 4 |
+| paired | 2503/2517 | 3 |
+| stress | 1253/1259 | 1 |
+| liquidations | 2499/2520 | 0 |
 | options | 248/629 | 1 |
 
 ## Diagnostics
@@ -70,7 +70,7 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 2540 scored forecasts; 2201 unique entries; 569 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 2541 scored forecasts; 2202 unique entries; 569 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 19 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.491666666666667 / 30.783333333333335.
@@ -94,9 +94,9 @@ Selected rr25_7d legs: 21 usable captures, 84 leg observations. Quote age median
 
 Selected rr25_30d legs: 21 usable captures, 84 leg observations. Quote age median (ms): 5446.5; relative spread median: 0.04257246376811598. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-State v2 numerical replay: verified, 597 scores reproduced.
+State v2 numerical replay: verified, 598 scores reproduced.
 
-State v2 evidence: 597/1680 scored observations for the frozen minimum interval threshold; 3/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
+State v2 evidence: 598/1680 scored observations for the frozen minimum interval threshold; 3/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
 Immediate selected books: 92 usable / 168 attempted / 168 selected in 24h; median/p90 source lag (ms): 507.0 / 679.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
