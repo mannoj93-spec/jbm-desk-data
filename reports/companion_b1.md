@@ -1,6 +1,6 @@
 # RC1D companion benchmark: B2 vs B1 (HAR/calendar without DVOL)
 
-Generated 2026-11-22T07:36:38.103Z by companion-1.3.0; observation cutoff (latest included outcome-window end) 2026-11-21T20:25:00.000Z; last scored 2026-11-21T21:34:49.457Z. Stream start: 2026-10-01T00:00:00Z. Registered 537, confirmed 537, eligible 537. Lifecycle active. Evidence class: **descriptive**. Integrity: ok (0 recorded failure rows).
+Generated 2026-11-22T08:25:48.529Z by companion-1.3.0; observation cutoff (latest included outcome-window end) 2026-11-21T20:25:00.000Z; last scored 2026-11-21T21:34:49.457Z. Stream start: 2026-10-01T00:00:00Z. Registered 537, confirmed 537, eligible 537. Lifecycle active. Evidence class: **descriptive**. Integrity: ok (0 recorded failure rows).
 
 > Descriptive forecast-accuracy evidence only. It says whether DVOL adds to B1's range forecast; it says nothing about direction, sizing or trading returns. Late or missing companions stay late or missing.
 
@@ -12,7 +12,7 @@ Generated 2026-11-22T07:36:38.103Z by companion-1.3.0; observation cutoff (lates
 
 Overlap (from actual windows): 4h: 40 of 179 windows overlap another; the largest disjoint subset has 159; 24h: 177 of 178 windows overlap another; the largest disjoint subset has 34; 72h: 178 of 178 windows overlap another; the largest disjoint subset has 13.
 
-Not registered, by reason: late (237); rc1d-unavailable (150)
+Not registered, by reason: late (240); rc1d-unavailable (150)
 
 Method: companion-eval-1 (2026-09-30): rc1d-eval-1 applied to B2 vs B1 on eligible paired windows. Uncertainty: moving-block bootstrap of paired differences, blocks of 42 decisions (a resampling device for dependence, not a measured effective sample size), 2000 resamples, seed 20260930, 95% interval; reported only from 10 blocks. Descriptive. B2 vs B0 here is restricted to windows with an eligible companion, so it can differ from reports/range_status.json (all eligible RC1D windows). Overlapping windows are dependent.
 Evidence class rule: no pre-registered success threshold exists for the companion, so its ceiling is 'exploratory' (an interval with no decision rule); 'descriptive' below the block minimum; 'unavailable' with no scored pair or any integrity failure; 'retired' once terminated.
