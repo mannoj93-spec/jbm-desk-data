@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-22T10:03:26.480Z. Integrity: ok.
+Generated 2026-11-22T10:19:39.819Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-22T10:02:52.920Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-22T10:03:04.076Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-22T10:03:04.838Z
-- options_30d published report: fresh; last successful refresh: 2026-11-22T10:03:19.721Z
+- v1 published report: fresh; last successful refresh: 2026-11-22T10:19:06.284Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-22T10:19:17.444Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-22T10:19:18.239Z
+- options_30d published report: fresh; last successful refresh: 2026-11-22T10:19:32.981Z
 
 ## Coverage
 
@@ -30,11 +30,11 @@ Paused: False
 | state | 4/23 | 17.4% | 3 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options capture | 22/22 | 100.0% | 0 |
-| options usability rr25_7d | 22/22 | 100.0% | 0 |
-| options usability rr25_30d | 22/22 | 100.0% | 0 |
+| options capture | 23/23 | 100.0% | 0 |
+| options usability rr25_7d | 23/23 | 100.0% | 0 |
+| options usability rr25_30d | 23/23 | 100.0% | 0 |
 
 turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -56,10 +56,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 129/164 | 0 |
 | range | 128/164 | 0 |
 | state | 361/657 | 0 |
-| paired | 2612/2626 | 3 |
-| stress | 1307/1313 | 2 |
+| paired | 2613/2627 | 3 |
+| stress | 1308/1314 | 1 |
 | liquidations | 2606/2628 | 4 |
-| options | 275/656 | 1 |
+| options | 276/657 | 1 |
 
 ## Diagnostics
 
