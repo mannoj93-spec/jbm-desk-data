@@ -1,10 +1,10 @@
 # Operational health
 
-Generated 2026-11-23T22:30:36Z by health-1.5.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
+Generated 2026-11-23T22:45:19Z by health-1.5.0 (runner UTC clock at the check (time.time)). this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current.
 
-**Native collector schedule (secondary trigger):** last scheduled collector run 2026-11-23T19:08:53Z (201.7 min); 12 silence(s) over 90 min in the last 72 h, longest 724 min. Native starts per closed day: 2026-11-20 4 of 98 automated runs; 2026-11-21 4 of 98 automated runs; 2026-11-22 4 of 98 automated runs. Each silence is in reports/health.json; incidents carry one summary row per day.
+**Native collector schedule (secondary trigger):** last scheduled collector run 2026-11-23T19:08:53Z (216.4 min); 12 silence(s) over 90 min in the last 72 h, longest 724 min. Native starts per closed day: 2026-11-20 4 of 98 automated runs; 2026-11-21 4 of 98 automated runs; 2026-11-22 4 of 98 automated runs. Each silence is in reports/health.json; incidents carry one summary row per day.
 
-**Service continuity:** healthy; last persisted critical success 2026-11-23T22:28:37Z (2.0 min); last automated activity 2026-11-23T22:28:37Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 3, recovery 94; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 22.7 min.
+**Service continuity:** healthy; last persisted critical success 2026-11-23T22:43:32Z (1.8 min); last automated activity 2026-11-23T22:43:32Z (critical success, recovery). 45-min acceptance target met now. Last 24 h: 96 slots; runs by source native-schedule 3, recovery 94; 95 of 95 slot intervals hold an automated critical success (95 hold any automated activity); longest gap between successes 22.7 min.
 
 **Range decisions:** 11-22T16:00 published; 11-22T20:00 published; 11-23T00:00 published; 11-23T04:00 published; 11-23T08:00 published; 11-23T12:00 published; 11-23T16:00 published; 11-23T20:00 published.
 
@@ -16,13 +16,13 @@ Generated 2026-11-23T22:30:36Z by health-1.5.0 (runner UTC clock at the check (t
 
 **Scoring backlog:** none.
 
-**Native scheduled monitors:** stale (GitHub Actions API, scheduled runs); watchdog.yml heartbeat stale (last run 2026-11-23T10:48:19Z: success; last success 2026-11-23T10:48:04Z); range-monitor.yml heartbeat fresh (last run 2026-11-23T21:45:15Z: success; last success 2026-11-23T21:45:07Z); range-readiness.yml heartbeat fresh (last run 2026-11-23T03:03:47Z: success; last success 2026-11-23T03:03:26Z); newest scheduled start of any workflow 2026-11-23T22:00:10Z.
+**Native scheduled monitors:** fresh (GitHub Actions API, scheduled runs); watchdog.yml heartbeat fresh (last run 2026-11-23T22:39:34Z: success; last success 2026-11-23T22:39:22Z); range-monitor.yml heartbeat fresh (last run 2026-11-23T21:45:15Z: success; last success 2026-11-23T21:45:07Z); range-readiness.yml heartbeat fresh (last run 2026-11-23T03:03:47Z: success; last success 2026-11-23T03:03:26Z); newest scheduled start of any workflow 2026-11-23T22:39:22Z.
 
-**External timer (primary trigger):** arriving; 96 of 96 opportunities on time in 24 h, 0 delayed, absent none; last arrival 2026-11-23T22:27:03Z. Arrivals only: whether each request was sent needs the provider's history.
+**External timer (primary trigger):** arriving; 96 of 96 opportunities on time in 24 h, 0 delayed, absent none; last arrival 2026-11-23T22:42:03Z. Arrivals only: whether each request was sent needs the provider's history.
 
 **External timer token:** expiry not recorded - record token.expires_utc in docs/acceptance/timer.json; an expired token stops the primary trigger.
 
 **Record integrity:** no malformed lines in the files read.
 
-Recovery service-watch: fresh; passed; last check completion 2026-11-23T22:27:11Z.
-Recovery study-watch: fresh; passed; last check completion 2026-11-23T22:28:42Z.
+Recovery service-watch: fresh; passed; last check completion 2026-11-23T22:42:13Z.
+Recovery study-watch: fresh; passed; last check completion 2026-11-23T22:44:08Z.
