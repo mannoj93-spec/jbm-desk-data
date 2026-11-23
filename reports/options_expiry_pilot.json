@@ -1,6 +1,6 @@
 {
   "schema": "options-expiry-pilot/1",
-  "generated_ms": 1795427266668,
+  "generated_ms": 1795428176283,
   "activation": {
     "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
     "confirmed_ms": 1793152036181,
@@ -8,21 +8,21 @@
     "registration_sha": "de4f07467397f5339782ec934a41f71e30d3c14eaaf43964b721289ef488211a"
   },
   "state": "active",
-  "closed": 631,
-  "captured": 629,
-  "pending_captured": 1,
+  "closed": 632,
+  "captured": 630,
+  "pending_captured": 0,
   "horizons": {
     "7": {
       "paired": {
-        "both": 531,
+        "both": 532,
         "gained": 93,
         "lost": 0,
         "neither": 5
       },
       "missing_capture": 2,
       "states": {
-        "nearest-eligible:ok": 624,
-        "nearest-listed:ok": 531,
+        "nearest-eligible:ok": 625,
+        "nearest-listed:ok": 532,
         "nearest-listed:1NOV26:no-25-delta-strike|6NOV26:ok": 2,
         "nearest-listed:1NOV26:low-oi|6NOV26:ok": 10,
         "nearest-listed:2NOV26:no-25-delta-strike|6NOV26:ok": 5,
@@ -47,37 +47,37 @@
         "nearest-listed:27NOV26:wide|4DEC26:no-two-sided": 2
       },
       "joint_value_difference": {
-        "n": 531,
+        "n": 532,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 531,
+          "n": 532,
           "min": 3.9999999999999996,
           "max": 7.000000000000001,
-          "mean": 6.4030131826742
+          "mean": 6.404135338345864
         },
         "nearest-eligible": {
-          "n": 624,
+          "n": 625,
           "min": 3.9999999999999996,
           "max": 7.999999999999999,
-          "mean": 6.347756410256411
+          "mean": 6.3488
         }
       }
     },
     "30": {
       "paired": {
-        "both": 286,
+        "both": 287,
         "gained": 29,
         "lost": 0,
         "neither": 314
       },
       "missing_capture": 2,
       "states": {
-        "nearest-eligible:ok": 315,
-        "nearest-listed:ok": 286,
+        "nearest-eligible:ok": 316,
+        "nearest-listed:ok": 287,
         "nearest-eligible:no-eligible-bracket": 314,
         "nearest-listed:no-bracketing-expiry": 311,
         "nearest-listed:27NOV26:ok|25DEC26:wide": 1,
@@ -88,58 +88,58 @@
         "nearest-listed:11DEC26:no-two-sided|25DEC26:no-two-sided": 1
       },
       "joint_value_difference": {
-        "n": 286,
+        "n": 287,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "nearest-listed": {
-          "n": 286,
+          "n": 287,
           "min": 13.999999999999996,
           "max": 28.000000000000004,
-          "mean": 20.437062937062937
+          "mean": 20.414634146341463
         },
         "nearest-eligible": {
-          "n": 315,
+          "n": 316,
           "min": 13.999999999999996,
           "max": 28.000000000000004,
-          "mean": 20.866666666666667
+          "mean": 20.84493670886076
         }
       }
     }
   },
   "books": {
-    "expected": 3748,
-    "attempted": 3548,
-    "usable": 3366,
+    "expected": 3756,
+    "attempted": 3556,
+    "usable": 3371,
     "states": {
-      "completed": 594,
+      "completed": 595,
       "source-too-old": 35
     },
     "quote_states": {
-      "ok": 3366,
-      "unavailable": 182
+      "ok": 3371,
+      "unavailable": 185
     },
     "source_to_book_ms": {
-      "n": 3374,
+      "n": 3379,
       "min": 128527,
       "max": 894941,
-      "mean": 226435.11410788383,
-      "median": 177539.0,
+      "mean": 226358.5460195324,
+      "median": 177462,
       "p90": 346285
     },
     "bid_size": {
-      "n": 3366,
+      "n": 3371,
       "min": 0.1,
       "max": 320.3,
-      "mean": 87.96024955436721
+      "mean": 87.95031148027292
     },
     "ask_size": {
-      "n": 3366,
+      "n": 3371,
       "min": 0.1,
       "max": 317.5,
-      "mean": 82.79346405228758
+      "mean": 82.75817264906556
     }
   },
   "interpretation": "Repeated horizons and contracts are dependent. A usability gain does not demonstrate predictive skill."
