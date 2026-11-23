@@ -1,6 +1,6 @@
 # Paper sizing experiment PS1
 
-Generated 2026-11-23T08:32:45.664Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-11-23T08:32:39.831Z.
+Generated 2026-11-23T08:34:49.252Z by ps1-job-3.2.0 (PS1 v3, protocol sha256 d0e8c837be9c); source cutoff 2026-11-23T08:32:39.831Z.
 
 > PAPER SIZING EXPERIMENT - simulated fills on captured quotes. Tests position sizing only; it does not test direction, does not execute, and authorizes no entry.
 
