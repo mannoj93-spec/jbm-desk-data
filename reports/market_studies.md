@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-11-23T01:02:32.749Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-23T01:19:11.302Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 176 | 139 | 139 |
-| range | collecting (descriptive) | 176 | 132 | 125 |
+| range | collecting (descriptive) | 176 | 132 | 126 |
 | state | collecting (descriptive) | 704 | 376 | 374 |
-| paired | collecting (descriptive) | 2813 | 2715 | 2710 |
+| paired | collecting (descriptive) | 2814 | 2716 | 2710 |
 
 ## Primary comparisons
 
@@ -16,7 +16,7 @@ Turnover: higher is better. Range and probability scores: lower is better. A das
 | Study | Paired difference | 90% block interval | First verified launch |
 |---|---:|---|---|
 | turnover | -0.322891 | — (insufficient blocks) | 2026-10-24T21:12:42.213Z |
-| range | -0.000264578 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
+| range | -0.000116679 | — (insufficient blocks) | 2026-10-26T04:19:34.052Z |
 | state | 0.00194159 | — (insufficient blocks) | 2026-10-24T21:12:41.518Z |
 | paired | -0.00126845 | — (insufficient blocks) | 2026-10-24T18:31:17.940Z |
 
@@ -39,8 +39,8 @@ Returns, costs and turnover below cover closed intervals. Each latest trade open
 
 | Arm | 80% interval coverage | Mean interval width (ln H/L) |
 |---|---:|---:|
-| control | 65.60% | 0.0366254 |
-| calibrated | 67.20% | 0.0368801 |
+| control | 65.87% | 0.0367392 |
+| calibrated | 67.46% | 0.0371377 |
 
 ## Paired-flow direction checks
 
@@ -57,7 +57,7 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 ## Data usability pilots
 
-- Options: 702 captures; usable 7d RR25 in 599, usable 30d RR25 in 358; 546 valid hourly changes.
+- Options: 703 captures; usable 7d RR25 in 600, usable 30d RR25 in 359; 547 valid hourly changes.
 - Liquidations: 1989 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 14, "missed": 66, "ok": 2707}`.
 - Exchange stress: 1407/1407 scheduled records. Capture states: `{"missed": 45, "ok": 1362}`. Ratings: `{"low": 1362}`.
 
