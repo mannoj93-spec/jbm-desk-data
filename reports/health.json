@@ -362,7 +362,7 @@
   "rule": "recorded state only; later runs, backfills and recovered bars never complete an earlier decision"
  },
  "freshness_rule": "this report is written by the collector run; older than 90 min means no collector run has persisted a newer report - the scheduler may have been silent, the run may not have executed (no runner), may have failed, or may have failed to persist; its contents are not current",
- "generated_utc": "2026-11-23T23:00:09Z",
+ "generated_utc": "2026-11-23T23:15:20Z",
  "integrity": {
   "malformed_lines": {},
   "rule": "lines this evaluation skipped as unparseable or non-object, by file; such a line is malformed, not absent, and the figures above exclude it"
@@ -374,7 +374,7 @@
   "external_timer": {
    "absent": [],
    "delayed": [],
-   "last_arrival_utc": "2026-11-23T22:57:03Z",
+   "last_arrival_utc": "2026-11-23T23:12:04Z",
    "on_time": 96,
    "on_time_max_lag_s": 4,
    "opportunities": 96,
@@ -386,21 +386,21 @@
   "problems_detected_by": [],
   "recovery_checks": {
    "service-watch": {
-    "age_min": 3.0,
+    "age_min": 3.1,
     "last_check": "passed",
-    "last_completed_utc": "2026-11-23T22:57:12Z",
+    "last_completed_utc": "2026-11-23T23:12:17Z",
     "last_executed": true,
-    "run_id": 45284443924,
+    "run_id": 45286696121,
     "run_result": "success",
     "stale_after_min": 45,
     "state": "fresh"
    },
    "study-watch": {
-    "age_min": 1.5,
+    "age_min": 1.8,
     "last_check": "passed",
-    "last_completed_utc": "2026-11-23T22:58:39Z",
+    "last_completed_utc": "2026-11-23T23:13:33Z",
     "last_executed": true,
-    "run_id": 45284443924,
+    "run_id": 45286696121,
     "run_result": "success",
     "stale_after_min": 45,
     "state": "fresh"
@@ -460,11 +460,11 @@
     "events": [
      "workflow_dispatch"
     ],
-    "last_completed_utc": "2026-11-23T22:58:42Z",
+    "last_completed_utc": "2026-11-23T23:13:35Z",
     "last_result": "success",
-    "last_run_id": 45284443924,
-    "last_scheduled_start_utc": "2026-11-23T22:57:03Z",
-    "last_success_utc": "2026-11-23T22:57:03Z",
+    "last_run_id": 45286696121,
+    "last_scheduled_start_utc": "2026-11-23T23:12:04Z",
+    "last_success_utc": "2026-11-23T23:12:04Z",
     "native": {
      "last_completed_utc": null,
      "last_result": null,
@@ -509,7 +509,7 @@
     "recorded_state": "no-rebalance"
    }
   ],
-  "report_age_min": 140.1,
+  "report_age_min": 155.3,
   "report_coverage": 0.8173,
   "report_generated_utc": "2026-11-23T20:40:05.499Z",
   "report_scheduled_decisions": 312,
@@ -519,13 +519,13 @@
  "schema": "health-1",
  "scoring_backlog": {},
  "source": {
-  "age_min": 231.3,
+  "age_min": 246.4,
   "coverage_24h": {
    "automated_critical_failures": 0,
    "automated_runs": 97,
    "expected_slots": 96,
-   "from_ms": 1795388409842,
-   "from_utc": "2026-11-22T23:00:09Z",
+   "from_ms": 1795389320787,
+   "from_utc": "2026-11-22T23:15:20Z",
    "intervals": 95,
    "intervals_with_automated_run": 95,
    "intervals_with_successful_automated_run": 95,
@@ -536,8 +536,8 @@
     "native-schedule": 3,
     "recovery": 94
    },
-   "to_ms": 1795474809842,
-   "to_utc": "2026-11-23T23:00:09Z"
+   "to_ms": 1795475720787,
+   "to_utc": "2026-11-23T23:15:20Z"
   },
   "gaps": [
    {
@@ -613,7 +613,7 @@
    {
     "end_ms": null,
     "end_utc": null,
-    "minutes": 231.27,
+    "minutes": 246.45,
     "start_ms": 1795460933852,
     "start_utc": "2026-11-23T19:08:53Z"
    }
@@ -664,10 +664,10 @@
    "data_state": "fresh",
    "gaps": [],
    "last_activity_result": "critical success",
-   "last_activity_utc": "2026-11-23T22:58:25Z",
-   "last_automated_utc": "2026-11-23T22:58:25Z",
+   "last_activity_utc": "2026-11-23T23:13:36Z",
+   "last_automated_utc": "2026-11-23T23:13:36Z",
    "last_source": "recovery",
-   "last_success_utc": "2026-11-23T22:58:25Z",
+   "last_success_utc": "2026-11-23T23:13:36Z",
    "rule": "native schedule or the authenticated recovery dispatcher; a person's dispatch never counts; gaps and data freshness use critical successes only (2.27)",
    "state": "healthy"
   },
