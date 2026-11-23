@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-23T05:04:39.028Z. Integrity: ok.
+Generated 2026-11-23T05:17:56.908Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-23T05:04:04.632Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-23T05:04:15.822Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-23T05:04:16.585Z
-- options_30d published report: fresh; last successful refresh: 2026-11-23T05:04:31.856Z
+- v1 published report: fresh; last successful refresh: 2026-11-23T05:17:27.536Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-23T05:17:37.618Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-23T05:17:38.297Z
+- options_30d published report: fresh; last successful refresh: 2026-11-23T05:17:51.000Z
 
 ## Coverage
 
@@ -30,11 +30,11 @@ None.
 | state | 5/23 | 21.7% | 1 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options capture | 22/22 | 100.0% | 0 |
-| options usability rr25_7d | 22/22 | 100.0% | 0 |
-| options usability rr25_30d | 22/22 | 100.0% | 0 |
+| options capture | 23/23 | 100.0% | 0 |
+| options usability rr25_7d | 23/23 | 100.0% | 0 |
+| options usability rr25_30d | 23/23 | 100.0% | 0 |
 
 turnover: 5/5 closed opportunities recorded; 5 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -56,10 +56,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 133/168 | 1 |
 | range | 133/169 | 0 |
 | state | 365/676 | 0 |
-| paired | 2688/2702 | 3 |
-| stress | 1345/1351 | 2 |
+| paired | 2689/2703 | 3 |
+| stress | 1346/1352 | 1 |
 | liquidations | 2682/2704 | 4 |
-| options | 294/675 | 1 |
+| options | 295/676 | 1 |
 
 ## Diagnostics
 
@@ -70,7 +70,7 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 2726 scored forecasts; 2362 unique entries; 609 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 2727 scored forecasts; 2363 unique entries; 609 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 19 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.666666666666668 / 30.783333333333335.
@@ -92,13 +92,13 @@ State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable dept
 
 Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4326.5; relative spread median: 0.06666666666666661. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4332.5; relative spread median: 0.04444444444444449. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4332.5; relative spread median: 0.04494949494949499. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 State v2 numerical replay: verified, 644 scores reproduced.
 
 State v2 evidence: 644/1680 scored observations for the frozen minimum interval threshold; 3/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
-Immediate selected books: 11 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 392 / 674.
+Immediate selected books: 10 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 400.0 / 674.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
 
 ## Source quality
