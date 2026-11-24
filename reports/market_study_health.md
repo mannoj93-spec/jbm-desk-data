@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-24T04:22:57.937Z. Integrity: ok.
+Generated 2026-11-24T04:29:38.009Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-24T04:22:21.409Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-24T04:22:33.155Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-24T04:22:33.956Z
-- options_30d published report: fresh; last successful refresh: 2026-11-24T04:22:50.240Z
+- v1 published report: fresh; last successful refresh: 2026-11-24T04:29:01.733Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-24T04:29:13.456Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-24T04:29:14.252Z
+- options_30d published report: fresh; last successful refresh: 2026-11-24T04:29:30.338Z
 
 ## Coverage
 
@@ -70,7 +70,7 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 2819 scored forecasts; 2446 unique entries; 629 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 2820 scored forecasts; 2447 unique entries; 629 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 21 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.53333333333333 / 30.733333333333334.
