@@ -2,7 +2,7 @@
 
 Separate v2 prospective clock. No v1 pooling or retroactive repair; descriptive only.
 
-Generated 2026-11-24T19:05:15.998Z. Scheduled: 692; recorded: 692; eligible: 687; abstained: 4; scored: 682.
+Generated 2026-11-24T19:17:54.272Z. Scheduled: 692; recorded: 692; eligible: 687; abstained: 4; scored: 682.
 
 Primary paired Brier difference: 0.0023357862440278837. 90% block interval: None (null means insufficient evidence).
 
