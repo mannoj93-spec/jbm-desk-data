@@ -1,6 +1,6 @@
 {
   "schema": "options-30d-maturity/1",
-  "generated_ms": 1795520910533,
+  "generated_ms": 1795521820960,
   "activation": {
     "commit": "1bdff0904c4de8cbe7ebd8bab9ddcb2849f745a8",
     "confirmed_ms": 1793981977420,
@@ -8,13 +8,13 @@
     "registration_sha": "eb6b456f715c847563cc3c5744860a4aa904fb45d6e55093e2951c758d9163a2"
   },
   "state": "active",
-  "closed": 426,
-  "captured": 424,
-  "pending_captured": 1,
+  "closed": 427,
+  "captured": 425,
+  "pending_captured": 0,
   "horizons": {
     "30": {
       "paired": {
-        "both": 335,
+        "both": 336,
         "gained": 86,
         "lost": 0,
         "neither": 3
@@ -22,61 +22,61 @@
       "missing_capture": 2,
       "states": {
         "eligible-45d:no-eligible-bracket": 89,
-        "eligible-90d:ok": 421,
-        "eligible-45d:ok": 335,
+        "eligible-90d:ok": 422,
+        "eligible-45d:ok": 336,
         "eligible-90d:no-eligible-bracket": 3
       },
       "joint_value_difference": {
-        "n": 335,
+        "n": 336,
         "min": 0.0,
         "max": 0.0,
         "mean": 0.0
       },
       "span_days": {
         "eligible-45d": {
-          "n": 335,
+          "n": 336,
           "min": 14.0,
           "max": 28.0,
-          "mean": 20.45671641791045
+          "mean": 20.4375
         },
         "eligible-90d": {
-          "n": 421,
+          "n": 422,
           "min": 14.0,
           "max": 28.0,
-          "mean": 21.997624703087887
+          "mean": 21.97867298578199
         }
       }
     }
   },
   "books": {
-    "expected": 1684,
-    "attempted": 1592,
-    "usable": 1497,
+    "expected": 1688,
+    "attempted": 1596,
+    "usable": 1500,
     "states": {
-      "completed": 401,
+      "completed": 402,
       "source-too-old": 23
     },
     "quote_states": {
-      "ok": 1497,
-      "unavailable": 95
+      "ok": 1500,
+      "unavailable": 96
     },
     "source_to_book_ms": {
-      "n": 1501,
+      "n": 1504,
       "min": 138314,
       "max": 897825,
-      "mean": 235742.5276482345
+      "mean": 235912.10638297873
     },
     "bid_size": {
-      "n": 1497,
+      "n": 1500,
       "min": 0.1,
       "max": 303.6,
-      "mean": 88.70768203072812
+      "mean": 88.9212
     },
     "ask_size": {
-      "n": 1497,
+      "n": 1500,
       "min": 0.1,
       "max": 295.3,
-      "mean": 80.3810287241149
+      "mean": 80.49966666666667
     }
   },
   "interpretation": "Separate prospective maturity experiment. Compare nearest eligible expiries within 45 versus 90 days, with identical leg filters and a 35-day maximum span in both arms. Repeated captures are dependent; usability is not predictive skill."
