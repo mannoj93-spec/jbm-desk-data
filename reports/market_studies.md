@@ -1,13 +1,13 @@
 # Market studies
 
-Generated 2026-11-24T06:02:41.826Z. Paper research only. Missing outcomes are never zero.
+Generated 2026-11-24T06:19:07.219Z. Paper research only. Missing outcomes are never zero.
 
 | Study | Status | Scheduled | On-time published | Scored / executed |
 |---|---|---:|---:|---:|
 | turnover | collecting (descriptive) | 183 | 146 | 146 |
 | range | collecting (descriptive) | 183 | 139 | 133 |
 | state | collecting (descriptive) | 733 | 381 | 380 |
-| paired | collecting (descriptive) | 2929 | 2831 | 2826 |
+| paired | collecting (descriptive) | 2930 | 2832 | 2826 |
 
 ## Primary comparisons
 
@@ -57,7 +57,7 @@ Conditional hit rates exclude neutral signals. Scored and neutral counts stay vi
 
 ## Data usability pilots
 
-- Options: 731 captures; usable 7d RR25 in 628, usable 30d RR25 in 387; 575 valid hourly changes.
+- Options: 732 captures; usable 7d RR25 in 629, usable 30d RR25 in 388; 576 valid hourly changes.
 - Liquidations: 2076 comparable first/later vintage pairs; 0 direction changes. Capture states: `{"coverage-unknown": 14, "missed": 66, "ok": 2823}`.
 - Exchange stress: 1465/1465 scheduled records. Capture states: `{"missed": 45, "ok": 1420}`. Ratings: `{"low": 1420}`.
 
