@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-24T03:04:41.475Z. Integrity: ok.
+Generated 2026-11-24T03:18:27.518Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-24T03:04:17.826Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-24T03:04:25.944Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-24T03:04:26.495Z
-- options_30d published report: fresh; last successful refresh: 2026-11-24T03:04:36.686Z
+- v1 published report: fresh; last successful refresh: 2026-11-24T03:17:55.708Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-24T03:18:06.451Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-24T03:18:07.187Z
+- options_30d published report: fresh; last successful refresh: 2026-11-24T03:18:20.980Z
 
 ## Coverage
 
@@ -30,11 +30,11 @@ None.
 | state | 3/23 | 13.0% | 1 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options capture | 22/22 | 100.0% | 0 |
-| options usability rr25_7d | 22/22 | 100.0% | 0 |
-| options usability rr25_30d | 22/22 | 100.0% | 0 |
+| options capture | 23/23 | 100.0% | 0 |
+| options usability rr25_7d | 23/23 | 100.0% | 0 |
+| options usability rr25_30d | 23/23 | 100.0% | 0 |
 
 turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -56,10 +56,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 139/174 | 0 |
 | range | 138/174 | 0 |
 | state | 368/698 | 0 |
-| paired | 2776/2790 | 3 |
-| stress | 1389/1395 | 2 |
+| paired | 2777/2791 | 3 |
+| stress | 1390/1396 | 1 |
 | liquidations | 2770/2792 | 4 |
-| options | 316/697 | 1 |
+| options | 317/698 | 1 |
 
 ## Diagnostics
 
@@ -70,7 +70,7 @@ Warnings:
 - state: last-24h operational coverage below 80% (not a research threshold)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 2814 scored forecasts; 2441 unique entries; 628 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 2815 scored forecasts; 2442 unique entries; 628 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
 State depth (last_24h): 24 forecasts, 21 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.53333333333333 / 30.733333333333334.
@@ -90,7 +90,7 @@ State depth (since_deployment): 699 forecasts, 330 abstentions; 3 unavailable de
 
 State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.608333333333334 / 27.816666666666666.
 
-Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4897.0; relative spread median: 0.06781609195402294. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4897.0; relative spread median: 0.06559139784946236. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4897.5; relative spread median: 0.041666666666666706. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
