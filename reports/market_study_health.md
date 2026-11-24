@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-24T04:34:42.113Z. Integrity: ok.
+Generated 2026-11-24T04:46:31.376Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-24T04:34:06.631Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-24T04:34:18.267Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-24T04:34:19.077Z
-- options_30d published report: fresh; last successful refresh: 2026-11-24T04:34:34.761Z
+- v1 published report: fresh; last successful refresh: 2026-11-24T04:45:55.530Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-24T04:46:07.139Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-24T04:46:07.920Z
+- options_30d published report: fresh; last successful refresh: 2026-11-24T04:46:23.791Z
 
 ## Coverage
 
@@ -30,8 +30,8 @@ Paused: False
 | state | 3/24 | 12.5% | 3 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 23/23 | 100.0% | 0 |
 | options usability rr25_30d | 23/23 | 100.0% | 0 |
@@ -56,9 +56,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 139/174 | 1 |
 | range | 139/175 | 0 |
 | state | 368/700 | 0 |
-| paired | 2782/2796 | 3 |
-| stress | 1392/1398 | 2 |
-| liquidations | 2774/2796 | 4 |
+| paired | 2783/2797 | 3 |
+| stress | 1393/1399 | 1 |
+| liquidations | 2778/2800 | 0 |
 | options | 318/699 | 1 |
 
 ## Diagnostics
