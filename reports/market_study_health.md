@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-25T07:03:24.155Z. Integrity: ok.
+Generated 2026-11-25T07:17:50.851Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-25T07:02:56.086Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-25T07:03:05.551Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-25T07:03:06.175Z
-- options_30d published report: fresh; last successful refresh: 2026-11-25T07:03:18.354Z
+- v1 published report: fresh; last successful refresh: 2026-11-25T07:17:28.687Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-25T07:17:36.243Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-25T07:17:36.767Z
+- options_30d published report: fresh; last successful refresh: 2026-11-25T07:17:46.208Z
 
 ## Coverage
 
@@ -30,11 +30,11 @@ Paused: False
 | state | 9/23 | 39.1% | 2 |
 | paired | 93/93 | 100.0% | 0 |
 | state_v2 | 23/23 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
 | liquidations | 92/92 | 100.0% | 0 |
-| options capture | 22/22 | 100.0% | 0 |
-| options usability rr25_7d | 21/22 | 95.5% | 0 |
-| options usability rr25_30d | 22/22 | 100.0% | 0 |
+| options capture | 23/23 | 100.0% | 0 |
+| options usability rr25_7d | 22/23 | 95.7% | 0 |
+| options usability rr25_30d | 23/23 | 100.0% | 0 |
 
 turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -56,10 +56,10 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 146/181 | 0 |
 | range | 145/181 | 0 |
 | state | 378/726 | 0 |
-| paired | 2888/2902 | 3 |
-| stress | 1445/1451 | 2 |
+| paired | 2889/2903 | 3 |
+| stress | 1446/1452 | 1 |
 | liquidations | 2882/2904 | 4 |
-| options | 343/725 | 1 |
+| options | 344/726 | 1 |
 
 ## Diagnostics
 
@@ -90,15 +90,15 @@ State depth (since_deployment): 727 forecasts, 348 abstentions; 3 unavailable de
 
 State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.633333333333333 / 29.95.
 
-Selected rr25_7d legs: 23 usable captures, 92 leg observations. Quote age median (ms): 4551.0; relative spread median: 0.0714285714285715. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 23 usable captures, 92 leg observations. Quote age median (ms): 4845.0; relative spread median: 0.0714285714285715. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
-Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4699.0; relative spread median: 0.043560606060606105. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_30d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4851.5; relative spread median: 0.04124149659863949. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 State v2 numerical replay: verified, 694 scores reproduced.
 
 State v2 evidence: 694/1680 scored observations for the frozen minimum interval threshold; 4/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
-Immediate selected books: 15 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 592 / 767.
+Immediate selected books: 14 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 604.5 / 767.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
 
 ## Source quality
