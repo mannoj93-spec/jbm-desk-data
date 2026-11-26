@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-26T00:30:35.993Z. Integrity: ok.
+Generated 2026-11-26T00:33:52.734Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ Paused: False
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-26T00:30:06.406Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-26T00:30:16.135Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-26T00:30:16.805Z
-- options_30d published report: fresh; last successful refresh: 2026-11-26T00:30:29.741Z
+- v1 published report: fresh; last successful refresh: 2026-11-26T00:33:12.877Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-26T00:33:25.737Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-26T00:33:26.602Z
+- options_30d published report: fresh; last successful refresh: 2026-11-26T00:33:44.151Z
 
 ## Coverage
 
@@ -56,7 +56,7 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 150/185 | 1 |
 | range | 149/186 | 0 |
 | state | 379/744 | 0 |
-| paired | 2958/2972 | 2 |
+| paired | 2958/2972 | 3 |
 | stress | 1480/1486 | 2 |
 | liquidations | 2950/2972 | 4 |
 | options | 345/743 | 0 |
