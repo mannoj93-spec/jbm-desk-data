@@ -1,8 +1,8 @@
 {
   "schema": "market-study-health/1",
-  "generated_utc": "2026-11-26T00:05:57.411Z",
-  "generated_ms": 1795651557411,
-  "window_start_ms": 1795565157411,
+  "generated_utc": "2026-11-26T00:14:54.042Z",
+  "generated_ms": 1795652094042,
+  "window_start_ms": 1795565694042,
   "stale_after_minutes": 45,
   "paused": false,
   "studies": {
@@ -15,7 +15,7 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1795638056102,
-      "pending_successful": 0,
+      "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
       "recorded": 5,
@@ -89,14 +89,14 @@
       },
       "consecutive_misses": 0,
       "last_success_ms": 1795638046720,
-      "pending_successful": 0,
+      "pending_successful": 1,
       "recovered_before_close": false,
       "active_consecutive_misses": 0,
       "recorded": 5,
       "eligible_forecasts": 4,
       "abstained": 0,
       "abstention_rate": 0.0,
-      "pending_outcomes": 5,
+      "pending_outcomes": 6,
       "overdue_scores": 0,
       "publication_delay_minutes": {
         "n": 4,
@@ -1677,31 +1677,31 @@
   "components": {
     "v1": {
       "integrity": "ok",
-      "verified_ms": 1795651557411
+      "verified_ms": 1795652094042
     },
     "state_v2": {
       "integrity": "ok",
-      "verified_ms": 1795651557411
+      "verified_ms": 1795652094042
     },
     "options_expiry": {
       "integrity": "ok",
-      "verified_ms": 1795651557411
+      "verified_ms": 1795652094042
     },
     "options_30d": {
       "integrity": "ok",
-      "verified_ms": 1795651557411
+      "verified_ms": 1795652094042
     },
     "immediate_books": {
       "integrity": "ok",
-      "verified_ms": 1795651557411
+      "verified_ms": 1795652094042
     },
     "source_quality": {
       "integrity": "ok",
-      "verified_ms": 1795651557411
+      "verified_ms": 1795652094042
     },
     "report_freshness": {
       "integrity": "ok",
-      "verified_ms": 1795651557411
+      "verified_ms": 1795652094042
     }
   },
   "depth_diagnostics": {
@@ -8109,7 +8109,7 @@
         },
         "consecutive_misses": 0,
         "last_success_ms": 1795638056102,
-        "pending_successful": 0,
+        "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0,
         "recorded": 185,
@@ -8127,7 +8127,7 @@
         },
         "consecutive_misses": 0,
         "last_success_ms": 1795638046720,
-        "pending_successful": 0,
+        "pending_successful": 1,
         "recovered_before_close": false,
         "active_consecutive_misses": 0,
         "recorded": 185,
@@ -8222,7 +8222,7 @@
       }
     }
   },
-  "last_prepare_ms": 1795651451023,
+  "last_prepare_ms": 1795652028917,
   "paired_diagnostics": {
     "scored_forecasts": 2994,
     "unique_entries": 2601,
@@ -8233,37 +8233,37 @@
     "interpretation": "Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage."
   },
   "options_quality": {
-    "captures": 24,
-    "legs": 19467,
+    "captures": 23,
+    "legs": 18641,
     "rejection_counts": {
-      "delta-distance": 17359,
-      "low-oi": 2233,
-      "maturity": 10535,
-      "wide": 1635,
-      "missing-or-malformed": 1464
+      "delta-distance": 16624,
+      "low-oi": 2140,
+      "maturity": 10096,
+      "wide": 1569,
+      "missing-or-malformed": 1402
     },
     "size_states": {
-      "not-in-source": 19467
+      "not-in-source": 18641
     },
     "quote_age_ms": {
-      "n": 18003,
-      "min": 3137,
-      "median": 5157,
+      "n": 17239,
+      "min": 3468,
+      "median": 5227,
       "p90": 5779,
       "max": 7700
     },
     "relative_spread": {
-      "n": 18003,
+      "n": 17239,
       "min": 0.0022463496817670472,
-      "median": 0.03149606299212601,
+      "median": 0.031331592689295064,
       "p90": 0.22222222222222232,
       "max": 1.3333333333333333
     },
     "delta_distance": {
-      "n": 19467,
+      "n": 18641,
       "min": 1.7272905278864492e-05,
-      "median": 0.24757885876654495,
-      "p90": 0.7351611385633298,
+      "median": 0.24760590198039645,
+      "p90": 0.7351898311206029,
       "max": 0.7499999999999747
     },
     "eligibility_transitions_by_horizon": {
@@ -8281,60 +8281,60 @@
     "bracketing_expiry_changes": 1,
     "selected_by_horizon": {
       "rr25_7d": {
-        "usable_captures": 20,
-        "legs": 80,
+        "usable_captures": 19,
+        "legs": 76,
         "quote_age_ms": {
-          "n": 80,
-          "min": 3137,
-          "median": 5283.5,
+          "n": 76,
+          "min": 3472,
+          "median": 5308.0,
           "p90": 5782,
           "max": 7699
         },
         "relative_spread": {
-          "n": 80,
+          "n": 76,
           "min": 0.030769230769230795,
           "median": 0.07407407407407414,
           "p90": 0.1250000000000001,
           "max": 0.15384615384615383
         },
         "delta_distance": {
-          "n": 80,
+          "n": 76,
           "min": 0.00029602394798655673,
-          "median": 0.016908538579674143,
+          "median": 0.01701781008304698,
           "p90": 0.030773629812815173,
           "max": 0.047678824452798696
         },
         "size_states": {
-          "not-in-source": 80
+          "not-in-source": 76
         },
         "diagnostic_reasons": {}
       },
       "rr25_30d": {
-        "usable_captures": 8,
-        "legs": 32,
+        "usable_captures": 7,
+        "legs": 28,
         "quote_age_ms": {
-          "n": 32,
-          "min": 3138,
-          "median": 5203.0,
+          "n": 28,
+          "min": 4841,
+          "median": 5257.5,
           "p90": 5453,
           "max": 5463
         },
         "relative_spread": {
-          "n": 32,
+          "n": 28,
           "min": 0.01980198019801968,
-          "median": 0.040816326530612276,
-          "p90": 0.058823529411764754,
+          "median": 0.04124149659863949,
+          "p90": 0.06451612903225812,
           "max": 0.07407407407407414
         },
         "delta_distance": {
-          "n": 32,
+          "n": 28,
           "min": 0.0005310155449088638,
           "median": 0.00845649102045165,
-          "p90": 0.015175467062133352,
+          "p90": 0.015624599003985107,
           "max": 0.01847935867612943
         },
         "size_states": {
-          "not-in-source": 32
+          "not-in-source": 28
         },
         "diagnostic_reasons": {}
       }
@@ -8370,7 +8370,7 @@
   },
   "options_expiry_pilot": {
     "schema": "options-expiry-pilot/1",
-    "generated_ms": 1795651557411,
+    "generated_ms": 1795652094042,
     "activation": {
       "commit": "6894dff67e76ced349f0a137ffd6f664f639461a",
       "confirmed_ms": 1793152036181,
@@ -8519,7 +8519,7 @@
   },
   "options_30d_pilot": {
     "schema": "options-30d-maturity/1",
-    "generated_ms": 1795651557411,
+    "generated_ms": 1795652094042,
     "activation": {
       "commit": "1bdff0904c4de8cbe7ebd8bab9ddcb2849f745a8",
       "confirmed_ms": 1793981977420,
@@ -8601,11 +8601,11 @@
     "interpretation": "Separate prospective maturity experiment. Compare nearest eligible expiries within 45 versus 90 days, with identical leg filters and a 35-day maximum span in both arms. Repeated captures are dependent; usability is not predictive skill."
   },
   "immediate_books": {
-    "source_captures_last_24h": 24,
+    "source_captures_last_24h": 23,
     "missing_book_records": 0,
-    "records_last_24h": 24,
-    "expected": 192,
-    "attempted": 192,
+    "records_last_24h": 23,
+    "expected": 184,
+    "attempted": 184,
     "usable": 15,
     "source_to_book_ms": {
       "n": 15,
@@ -8616,13 +8616,13 @@
       "p90": 856
     },
     "states": {
-      "completed": 24
+      "completed": 23
     },
     "interpretation": "Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes."
   },
   "source_quality": {
     "schema": "source-quality/1",
-    "generated_ms": 1795651557411,
+    "generated_ms": 1795652094042,
     "minimum_consecutive_minutes": 5,
     "incidents": [
       {
@@ -8889,23 +8889,23 @@
   "report_freshness": {
     "v1": {
       "state": "fresh",
-      "last_success_ms": 1795651518362,
-      "age_minutes": 0.6508166666666667
+      "last_success_ms": 1795652063970,
+      "age_minutes": 0.5012
     },
     "state_v2": {
       "state": "fresh",
-      "last_success_ms": 1795651530781,
-      "age_minutes": 0.44383333333333336
+      "last_success_ms": 1795652073873,
+      "age_minutes": 0.33615
     },
     "options_expiry": {
       "state": "fresh",
-      "last_success_ms": 1795651531611,
-      "age_minutes": 0.43
+      "last_success_ms": 1795652074558,
+      "age_minutes": 0.3247333333333333
     },
     "options_30d": {
       "state": "fresh",
-      "last_success_ms": 1795651548976,
-      "age_minutes": 0.14058333333333334
+      "last_success_ms": 1795652087561,
+      "age_minutes": 0.10801666666666666
     }
   }
 }
