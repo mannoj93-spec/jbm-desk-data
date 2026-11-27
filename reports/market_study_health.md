@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-27T04:21:38.167Z. Integrity: ok.
+Generated 2026-11-27T04:24:28.586Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-27T04:21:02.992Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-27T04:21:14.878Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-27T04:21:15.687Z
-- options_30d published report: fresh; last successful refresh: 2026-11-27T04:21:30.773Z
+- v1 published report: fresh; last successful refresh: 2026-11-27T04:24:05.080Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-27T04:24:13.134Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-27T04:24:13.703Z
+- options_30d published report: fresh; last successful refresh: 2026-11-27T04:24:23.728Z
 
 ## Coverage
 
@@ -92,7 +92,7 @@ State depth (since_deployment): 772 forecasts, 385 abstentions; 3 unavailable de
 
 State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.591666666666667 / 29.65.
 
-Selected rr25_7d legs: 23 usable captures, 92 leg observations. Quote age median (ms): 4789.5; relative spread median: 0.0869565217391304. Repeated legs and horizons are dependent; missing sizes stay unavailable.
+Selected rr25_7d legs: 22 usable captures, 88 leg observations. Quote age median (ms): 4715.0; relative spread median: 0.0869565217391304. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
 Selected rr25_30d legs: 0 usable captures, 0 leg observations. Quote age median (ms): None; relative spread median: None. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
@@ -100,7 +100,7 @@ State v2 numerical replay: verified, 739 scores reproduced.
 
 State v2 evidence: 739/1680 scored observations for the frozen minimum interval threshold; 4/10 block equivalents. Scheduled review: 2027-04-25T00:00:00.000Z. Block equivalents are not independent samples. Frozen interval and review rules; no automatic promotion.
 
-Immediate selected books: 13 usable / 200 attempted / 200 selected in 24h; median/p90 source lag (ms): 551 / 656.
+Immediate selected books: 12 usable / 192 attempted / 192 selected in 24h; median/p90 source lag (ms): 554.0 / 656.
 Immediate collector diagnostic, separate from both prospective pilots. Missing and budget-skipped captures are explicit; later sizes never replace original quotes.
 
 ## Source quality
