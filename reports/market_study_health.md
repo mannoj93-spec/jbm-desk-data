@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-27T14:33:35.258Z. Integrity: ok.
+Generated 2026-11-27T14:38:01.259Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-27T14:33:07.823Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-27T14:33:17.239Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-27T14:33:17.852Z
-- options_30d published report: fresh; last successful refresh: 2026-11-27T14:33:29.463Z
+- v1 published report: fresh; last successful refresh: 2026-11-27T14:37:29.200Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-27T14:37:39.697Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-27T14:37:40.399Z
+- options_30d published report: fresh; last successful refresh: 2026-11-27T14:37:54.394Z
 
 ## Coverage
 
@@ -28,10 +28,10 @@ None.
 | turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
 | state | 8/24 | 33.3% | 1 |
-| paired | 93/93 | 100.0% | 0 |
+| paired | 94/94 | 100.0% | 0 |
 | state_v2 | 24/24 | 100.0% | 0 |
-| stress | 46/46 | 100.0% | 0 |
-| liquidations | 92/92 | 100.0% | 0 |
+| stress | 47/47 | 100.0% | 0 |
+| liquidations | 96/96 | 100.0% | 0 |
 | options capture | 23/23 | 100.0% | 0 |
 | options usability rr25_7d | 21/23 | 91.3% | 0 |
 | options usability rr25_30d | 0/23 | 0.0% | 23 |
@@ -42,7 +42,7 @@ range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. A
 
 state: 24/24 closed opportunities recorded; 8 eligible forecasts; 16 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-paired: 93/93 closed opportunities recorded; 93 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+paired: 94/94 closed opportunities recorded; 94 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 state_v2: 24/24 closed opportunities recorded; 24 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
@@ -56,9 +56,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 160/195 | 0 |
 | range | 158/195 | 0 |
 | state | 389/782 | 0 |
-| paired | 3110/3124 | 3 |
-| stress | 1556/1562 | 2 |
-| liquidations | 3102/3124 | 4 |
+| paired | 3111/3125 | 2 |
+| stress | 1557/1563 | 1 |
+| liquidations | 3106/3128 | 0 |
 | options | 345/781 | 0 |
 
 ## Diagnostics
