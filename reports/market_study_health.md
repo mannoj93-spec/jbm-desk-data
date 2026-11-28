@@ -1,6 +1,6 @@
 # Market study operational health
 
-Generated 2026-11-28T01:47:50.635Z. Integrity: ok.
+Generated 2026-11-28T02:03:28.419Z. Integrity: ok.
 
 Operational diagnostics only; frozen study results and launch clocks are unchanged.
 Rolling 24-hour counts include closed deadlines plus five minutes for persistence. Pending outcomes are separate.
@@ -16,10 +16,10 @@ None.
 - immediate_books verification: ok
 - source_quality verification: ok
 - report_freshness verification: ok
-- v1 published report: fresh; last successful refresh: 2026-11-28T01:47:28.599Z
-- state_v2 published report: fresh; last successful refresh: 2026-11-28T01:47:35.976Z
-- options_expiry published report: fresh; last successful refresh: 2026-11-28T01:47:36.493Z
-- options_30d published report: fresh; last successful refresh: 2026-11-28T01:47:45.902Z
+- v1 published report: fresh; last successful refresh: 2026-11-28T02:02:46.874Z
+- state_v2 published report: fresh; last successful refresh: 2026-11-28T02:03:00.082Z
+- options_expiry published report: fresh; last successful refresh: 2026-11-28T02:03:00.956Z
+- options_30d published report: fresh; last successful refresh: 2026-11-28T02:03:19.213Z
 
 ## Coverage
 
@@ -27,24 +27,24 @@ None.
 |---|---:|---:|---:|
 | turnover | 6/6 | 100.0% | 0 |
 | range | 6/6 | 100.0% | 0 |
-| state | 7/24 | 29.2% | 0 |
+| state | 6/23 | 26.1% | 0 |
 | paired | 93/93 | 100.0% | 0 |
-| state_v2 | 24/24 | 100.0% | 0 |
-| stress | 47/47 | 100.0% | 0 |
-| liquidations | 96/96 | 100.0% | 0 |
-| options capture | 23/23 | 100.0% | 0 |
-| options usability rr25_7d | 23/23 | 100.0% | 0 |
-| options usability rr25_30d | 0/23 | 0.0% | 23 |
+| state_v2 | 23/23 | 100.0% | 0 |
+| stress | 46/46 | 100.0% | 0 |
+| liquidations | 92/92 | 100.0% | 0 |
+| options capture | 22/22 | 100.0% | 0 |
+| options usability rr25_7d | 22/22 | 100.0% | 0 |
+| options usability rr25_30d | 0/22 | 0.0% | 22 |
 
 turnover: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 range: 6/6 closed opportunities recorded; 6 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state: 24/24 closed opportunities recorded; 7 eligible forecasts; 17 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state: 23/23 closed opportunities recorded; 6 eligible forecasts; 17 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 paired: 93/93 closed opportunities recorded; 93 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
-state_v2: 24/24 closed opportunities recorded; 24 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
+state_v2: 23/23 closed opportunities recorded; 23 eligible forecasts; 0 abstentions. Abstention rate uses recorded closed opportunities; scheduled research denominators are unchanged.
 
 ## Since recovery deployment
 
@@ -56,9 +56,9 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 | turnover | 163/198 | 0 |
 | range | 161/198 | 0 |
 | state | 391/793 | 0 |
-| paired | 3155/3169 | 3 |
-| stress | 1579/1585 | 1 |
-| liquidations | 3150/3172 | 0 |
+| paired | 3156/3170 | 3 |
+| stress | 1579/1585 | 2 |
+| liquidations | 3150/3172 | 4 |
 | options | 345/792 | 0 |
 
 ## Diagnostics
@@ -66,20 +66,20 @@ Fixed operational comparison by opportunity time, not a reset of research histor
 Training readiness, per-opportunity reasons and source confirmations, publication delays, pending/overdue scores, per-vintage collection, paired unique-entry sensitivity and options quality are in [the JSON report](market_study_health.json).
 
 Warnings:
-- state: 17/24 recorded closed opportunities abstained in 24h (>20%; operational warning only)
+- state: 17/23 recorded closed opportunities abstained in 24h (>20%; operational warning only)
 - state: last-24h operational coverage below 80% (not a research threshold)
-- options rr25_30d: 0/23 closed opportunities usable (<80%; quality warning, not a collection outage)
+- options rr25_30d: 0/22 closed opportunities usable (<80%; quality warning, not a collection outage)
 - 3 retained source-quality incidents; affected score windows are listed without changing results
 
-Paired study: 3192 scored forecasts; 2778 unique entries; 711 windows in the largest disjoint subset. These are not independent-sample counts.
+Paired study: 3194 scored forecasts; 2779 unique entries; 711 windows in the largest disjoint subset. These are not independent-sample counts.
 Sensitivity only: average within each shared entry, then across entries. Overlapping windows remain dependent; no new primary, interval or support claim. Equal minute entry clocks cannot establish a subminute execution or latency advantage.
 
-State depth (last_24h): 24 forecasts, 17 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.416666666666664 / 30.666666666666668.
-- 17: flow_per_depth: stale-depth: measured 30 min before T (limit 30)
+State depth (last_24h): 24 forecasts, 18 abstentions; 0 unavailable depth ages. Median/max age in minutes: 30.491666666666667 / 30.7.
+- 18: flow_per_depth: stale-depth: measured 30 min before T (limit 30)
 
-State depth (since_deployment): 793 forecasts, 401 abstentions; 3 unavailable depth ages. Median/max age in minutes: 30.09166666666667 / 45.85.
+State depth (since_deployment): 794 forecasts, 402 abstentions; 3 unavailable depth ages. Median/max age in minutes: 30.116666666666667 / 45.85.
 - 21: flow_per_depth: stale-depth: measured 31 min before T (limit 30)
-- 374: flow_per_depth: stale-depth: measured 30 min before T (limit 30)
+- 375: flow_per_depth: stale-depth: measured 30 min before T (limit 30)
 - 2: ret_15m_bp: stale-inputs: latest perp bar closed 47 min before T
 - 2: rv_1h_bp: incomplete-or-stale
 - 2: flow_per_depth: stale-inputs: latest perp bar closed 47 min before T
@@ -90,7 +90,7 @@ State depth (since_deployment): 793 forecasts, 401 abstentions; 3 unavailable de
 - 1: flow_per_depth: stale-depth: measured 32 min before T (limit 30)
 - 1: flow_per_depth: stale-depth: measured 33 min before T (limit 30)
 
-State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.616666666666667 / 29.883333333333333.
+State depth (state_v2_last_24h): 24 forecasts, 0 abstentions; 0 unavailable depth ages. Median/max age in minutes: 15.641666666666666 / 29.883333333333333.
 
 Selected rr25_7d legs: 24 usable captures, 96 leg observations. Quote age median (ms): 4745.5; relative spread median: 0.06674082313681869. Repeated legs and horizons are dependent; missing sizes stay unavailable.
 
